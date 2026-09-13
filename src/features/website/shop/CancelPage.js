@@ -12,12 +12,12 @@ export default function CancelPage() {
   const orderNumber = router.query.order || "";
   return (
     <ShopShell title="Checkout cancelled">
-      <div className="ws-card" style={{ padding: 30, textAlign: "center" }}>
-        <p style={{ color: "var(--txt-soft)" }}>
+      <div className="ws-card ws-shop-state">
+        <p className="ws-shop-state-lead">
           No payment was taken{orderNumber ? ` — order ${orderNumber} is on hold` : ""}.
           Your cart is still saved so you can finish later.
         </p>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20 }}>
+        <div className="ws-shop-state-actions">
           <Link href="/website/shop/cart" className="ws-btn ws-btn--primary">
             Return to cart
           </Link>

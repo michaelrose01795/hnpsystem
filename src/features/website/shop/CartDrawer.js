@@ -50,7 +50,7 @@ export default function CartDrawer({ open, cart, onClose }) {
 
         {cart.items.length === 0 ? (
           <div className="ws-cart-empty">
-            <p style={{ marginTop: 0 }}>Your basket is empty.</p>
+            <p>Your basket is empty.</p>
             <Link href="/website/parts-catalog" className="ws-btn ws-btn--ghost">
               Browse parts
             </Link>
@@ -85,9 +85,7 @@ export default function CartDrawer({ open, cart, onClose }) {
                     >
                       −
                     </button>
-                    <span style={{ minWidth: 24, textAlign: "center" }}>
-                      {it.qty}
-                    </span>
+                    <span className="ws-cart-qty-value">{it.qty}</span>
                     <button
                       type="button"
                       className="ws-cart-qty"
@@ -105,7 +103,7 @@ export default function CartDrawer({ open, cart, onClose }) {
                     </button>
                   </div>
                 </div>
-                <div style={{ fontWeight: 700 }}>
+                <div className="ws-cart-item-total">
                   {formatGbp(it.price_pence * it.qty)}
                 </div>
               </div>

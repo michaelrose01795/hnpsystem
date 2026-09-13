@@ -25,7 +25,12 @@ const SEARCH_ROOTS = [
   "src/pages",
 ];
 const EXCLUDED_PREFIXES = [
+  // Customer (/website) UI is a separate design system: raw <button>/<input>
+  // ARE its canonical controls (custglobal.css styles them), so the staff
+  // Button/.app-input contract does not apply. Governed instead by
+  // tools/scripts/check-website-design.js (CLAUDE.md §3.0c).
   "src/pages/website/",
+  "src/features/website/",
 ];
 const FILE_EXT_RE = /\.(js|jsx|ts|tsx)$/;
 
@@ -172,12 +177,6 @@ const MIGRATION_BASELINE = new Map([
   ["src/features/staffStyleReview/StaffStyleReviewPage.js", 1],
   ["src/features/tracking/map/TrackingMap.js", 16],
   ["src/features/vision/components/VisionViews.js", 1],
-  ["src/features/website/components/ShopSection.js", 8],
-  ["src/features/website/components/WebsiteNativeDateTimeInput.js", 9],
-  ["src/features/website/components/WebsiteNativeSelect.js", 2],
-  ["src/features/website/shop/CartPage.js", 3],
-  ["src/features/website/shop/CheckoutPage.js", 9],
-  ["src/features/website/WebsitePage.js", 2],
   ["src/features/websiteManager/panels/SeoPanel.js", 0],
   ["src/pages/admin/compliance/breaches.js", 2],
   ["src/pages/admin/compliance/dpias.js", 1],

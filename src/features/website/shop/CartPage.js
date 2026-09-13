@@ -12,10 +12,8 @@ export default function CartPage() {
   if (cart.items.length === 0) {
     return (
       <ShopShell title="Your basket">
-        <div className="ws-card" style={{ padding: 24, textAlign: "center" }}>
-          <p style={{ marginTop: 0, color: "var(--txt-mute)" }}>
-            Your basket is empty.
-          </p>
+        <div className="ws-card ws-shop-state">
+          <p className="ws-shop-note">Your basket is empty.</p>
           <Link href="/website/parts-catalog" className="ws-btn ws-btn--primary">
             Browse the parts catalogue
           </Link>
@@ -30,7 +28,7 @@ export default function CartPage() {
       <div className="ws-checkout-grid">
         <div>
           {cart.items.map((it) => (
-            <div key={it.id} className="ws-cart-item" style={{ padding: 14 }}>
+            <div key={it.id} className="ws-cart-item ws-cart-item--page">
               <div className="ws-cart-item-media">
                 {it.image_url ? <img src={it.image_url} alt="" /> : null}
               </div>
@@ -45,7 +43,7 @@ export default function CartPage() {
                   >
                     −
                   </button>
-                  <span style={{ minWidth: 24, textAlign: "center" }}>{it.qty}</span>
+                  <span className="ws-cart-qty-value">{it.qty}</span>
                   <button
                     type="button"
                     className="ws-cart-qty"
@@ -62,7 +60,7 @@ export default function CartPage() {
                   </button>
                 </div>
               </div>
-              <div style={{ fontWeight: 700 }}>
+              <div className="ws-cart-item-total">
                 {formatGbp(it.price_pence * it.qty)}
               </div>
             </div>
@@ -70,9 +68,7 @@ export default function CartPage() {
         </div>
 
         <aside className="ws-order-summary">
-          <h3 className="ws-h3" style={{ marginTop: 0 }}>
-            Order summary
-          </h3>
+          <h3 className="ws-h3">Order summary</h3>
           <div className="ws-order-line">
             <span>Subtotal ({cart.totals.count} items)</span>
             <span>{cart.totals.subtotal}</span>
@@ -87,8 +83,7 @@ export default function CartPage() {
           </div>
           <Link
             href="/website/shop/checkout"
-            className="ws-btn ws-btn--primary"
-            style={{ marginTop: 16, display: "inline-block" }}
+            className="ws-btn ws-btn--primary ws-order-cta"
           >
             Checkout
           </Link>

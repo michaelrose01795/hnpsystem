@@ -41,13 +41,11 @@ export default function CustomerWebsiteLayout({ children }) {
     <>
       {children}
       {isPreviewEmbed ? null : (
-      <div
-        // Discreet fixed anchor for the report launcher; kept out of the content
-        // flow and never printed. Non-surface wrapper, so no border rules apply.
-        className="app-website-support-launcher"
-        style={{ position: "fixed", left: "12px", bottom: "12px", zIndex: "var(--z-toast, 60)" }}
-      >
-        <SupportReportLauncher variant="secondary" label="Report a problem" />
+      // Discreet fixed anchor for the report launcher, positioned by
+      // .ws-support-launcher in custglobal.css. The className replaces the staff
+      // app-btn variant, so the button renders as the /website secondary control.
+      <div className="ws-support-launcher">
+        <SupportReportLauncher className="ws-support-launcher__button" label="Report a problem" />
       </div>
       )}
     </>

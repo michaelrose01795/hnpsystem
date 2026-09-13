@@ -116,7 +116,28 @@ export default function BrandLogo({
   // user's stored accent preference.
   const { resolvedMode, effectiveAccent } = useTheme();
 
-  const mode = resolvedMode === "dark" ? "dark" : "light";
+  // On /website the customer theme is `data-website-theme` on <html> (light
+  // when "light", dark when absent), not the staff mode — follow it there so
+  // the wordmark's neutral text turns white on the dark customer surface.
+  const [websiteMode, setWebsiteMode] = useState(null);
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const root = document.documentElement;
+    const read = () =>
+      setWebsiteMode(
+        root.classList.contains("website-scope")
+          ? root.getAttribute("data-website-theme") === "light"
+            ? "light"
+            : "dark"
+          : null,
+      );
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(root, { attributes: true, attributeFilter: ["class", "data-website-theme"] });
+    return () => observer.disconnect();
+  }, []);
+
+  const mode = (websiteMode || resolvedMode) === "dark" ? "dark" : "light";
   const baseSrc = srcProp;
 
   const targetRgb = useMemo(() => {

@@ -133,6 +133,27 @@ Known competing implementations (three tab systems, `.app-toast` vs
 heading hierarchy and form-label primitive) are catalogued in the governance
 doc — recorded on purpose, not yet consolidated.
 
+### 3.0c Customer design system (/website) — THE LAW (2026-09)
+
+`src/styles/custglobal.css` governs **everything under `html.website-scope`** the way `theme.css` + `staffglobal.css` govern staff. Full detail: [docs/ui/website-design-governance.md](docs/ui/website-design-governance.md). Enforced by `npm run check:website` ([tools/scripts/check-website-design.js](tools/scripts/check-website-design.js)), which runs in `predev` and `prebuild`.
+
+| Concern | Canonical source |
+|---|---|
+| Customer stylesheet | `src/styles/custglobal.css` |
+| Registry — families, showcase sections, token purposes, contrast pairs | `src/config/websiteDesignSystem.json` |
+| Showcase (must show 100% of the stylesheet) | `/website/dev` → `src/pages/website/dev.js` + `src/features/website/showcase/` |
+| Generated manifest (never edit) | `src/config/websiteDesign.generated.json` |
+| Recorded debt (may only fall) | `tools/design-baselines/website-design.json` |
+
+**Rules:**
+1. Every selector starts with `html.website-scope`, and every rule sits under an `@family <id>` comment registered in the registry.
+2. **Colour is tokens.** Declare a colour / shadow once in the foundation token block (dark) and re-point it once in the `@family theme` light block. Rules read the token — no literals, no `var(--x, #fallback)`, and no new `[data-website-theme="light"] .component { … }` rule for something a token can carry. Change the token and every page follows.
+3. **Never read a staff token from custglobal.** If a staff-named convention is needed (e.g. `--separating-line`, `--font-family-mono`), re-declare it in the custglobal token block. `--font-family` is the only deliberate inheritance.
+4. Every token needs a registry entry (group + purpose); it then appears in the `/website/dev` token reference automatically.
+5. **Every class custglobal.css declares must be rendered on `/website/dev` in the same change** — add it to the matching section in `src/features/website/showcase/sections/`. A new family needs a registry entry, an `@family` block and a `<ShowcaseSection id>`.
+6. Ratchets (raw colours, `!important`, dead classes, undeclared classNames, inline visual styles and raw colours in customer JS, undefined tokens, contrast) may only go down. `npm run check:website:update` locks in wins; `--accept-new` is a deliberate re-baseline only.
+7. Buttons: raw `<button>` is the secondary action, `.app-btn` is the primary action. There is no third.
+
 ### 3.0 Layer Primitives — THE LAW (post-Layer-Sweep, 2026-05-05)
 
 **Only two surface primitives exist for the entire app:**
@@ -388,6 +409,9 @@ If creating a new file, state why an existing file could not be used instead.
 | Shared UI families | `src/styles/families/*.css` |
 | Family registry | `src/components/ui/variants.js` |
 | Customer (/website) styles | `src/styles/custglobal.css` |
+| Customer design registry | `src/config/websiteDesignSystem.json` |
+| Customer design showcase | `/website/dev` (`src/features/website/showcase/`) |
+| Customer design check | `npm run check:website` |
 | Design governance guide | `docs/ui/staff-design-governance.md` |
 | Design governance check | `npm run check:design` |
 | Global page layout | `src/components/Layout.js` |

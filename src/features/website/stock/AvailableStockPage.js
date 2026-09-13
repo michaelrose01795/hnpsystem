@@ -279,7 +279,7 @@ export default function AvailableStockPage({ initialQuery = {} }) {
             </div>
 
             {activeChips.length ? (
-              <div className="ws-chips ws-stock-chips">
+              <div className="ws-chips">
                 {activeChips.map((chip) => (
                   <button
                     key={chip.key}
@@ -400,7 +400,7 @@ export default function AvailableStockPage({ initialQuery = {} }) {
           </aside>
 
           {/* ---------------- Results ---------------- */}
-          <div className="ws-stock-results">
+          <div>
             {results.length ? (
               <div className="ws-grid ws-grid--cards">
                 {cards.map((card, idx) => (
@@ -415,7 +415,7 @@ export default function AvailableStockPage({ initialQuery = {} }) {
                   will call you when the right one lands.
                 </p>
                 <div className="ws-stock-empty-actions">
-                  <button type="button" className="ws-stock-empty-btn" onClick={clearAll}>
+                  <button type="button" onClick={clearAll}>
                     Clear filters
                   </button>
                   <Link href="/website#contact" className="ws-btn ws-btn--ghost">

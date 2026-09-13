@@ -8,8 +8,8 @@
 //   middle — the links and controls for the page the customer is on,
 //            including whatever the page passes as `navActions` (the
 //            basket button, in practice)
-//   right  — the account button: the customer's profile when signed in,
-//            otherwise Sign in
+//   right  — WebsiteNavActions: dev-only Dev / Overlay, the phone number, then
+//            the account button (Account when signed in, otherwise Login)
 //
 // `breadcrumb` is used by the product page to get back to the catalogue.
 
@@ -19,6 +19,8 @@ import BrandLogo from "@/components/BrandLogo";
 import useWebsiteScope from "../hooks/useWebsiteScope";
 import useWebsiteTheme from "../hooks/useWebsiteTheme";
 import useCustomerSession from "../hooks/useCustomerSession";
+import useWebsiteContent from "../hooks/useWebsiteContent";
+import WebsiteNavActions from "../components/WebsiteNavActions";
 
 export default function ShopShell({
   title,
@@ -32,10 +34,12 @@ export default function ShopShell({
   useWebsiteTheme();
   const router = useRouter();
   const { loading: sessionLoading, customer } = useCustomerSession();
+  const { content } = useWebsiteContent();
+  const contact = content?.siteContent?.contact || {};
+  const design = content?.design;
 
   // asPath keeps any query/hash, so ?next= returns to the exact page.
   const next = encodeURIComponent(router.asPath || "/website/parts-catalog");
-  const firstName = customer?.firstname || customer?.name || "Account";
 
   return (
     <div className="ws-page" data-presentation="website-shop-page">
@@ -59,23 +63,15 @@ export default function ShopShell({
               </Link>
             )}
           </nav>
-          <div className="ws-nav-actions">
-            {sessionLoading ? null : customer ? (
-              <Link
-                href="/website/profile"
-                className="ws-nav-account ws-nav-account--profile"
-              >
-                <span className="ws-nav-account-avatar" aria-hidden="true">
-                  {(firstName[0] || "A").toUpperCase()}
-                </span>
-                <span>{firstName}</span>
-              </Link>
-            ) : (
-              <Link href={`/website/login?next=${next}`} className="ws-nav-account">
-                Sign in
-              </Link>
-            )}
-          </div>
+          <WebsiteNavActions
+            phone={contact.phone}
+            phoneHref={contact.phoneHref}
+            showPhone={design?.showNavPhone !== false}
+            showAccount={design?.showNavAccount !== false}
+            sessionLoading={sessionLoading}
+            customer={customer}
+            loginHref={`/website/login?next=${next}`}
+          />
         </div>
       </header>
       <main>

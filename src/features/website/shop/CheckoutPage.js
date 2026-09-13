@@ -88,10 +88,8 @@ export default function CheckoutPage() {
   if (cart.items.length === 0) {
     return (
       <ShopShell title="Checkout">
-        <div className="ws-card" style={{ padding: 24, textAlign: "center" }}>
-          <p style={{ color: "var(--txt-mute)" }}>
-            Your cart is empty — nothing to check out.
-          </p>
+        <div className="ws-card ws-shop-state">
+          <p className="ws-shop-note">Your cart is empty — nothing to check out.</p>
           <Link href="/website#shop" className="ws-btn ws-btn--primary">
             Back to the shop
           </Link>
@@ -104,10 +102,8 @@ export default function CheckoutPage() {
     <ShopShell title="Checkout">
       <BasketAccountNotice cart={cart} />
       <form onSubmit={handleSubmit} className="ws-checkout-grid">
-        <div className="ws-card" style={{ padding: 20 }}>
-          <h3 className="ws-h3" style={{ marginTop: 0 }}>
-            Contact
-          </h3>
+        <div className="ws-card ws-checkout-panel">
+          <h3 className="ws-h3">Contact</h3>
           <div className="ws-form-row">
             <label>Full name</label>
             <input type="text" required value={form.name} onChange={set("name")} />
@@ -147,28 +143,23 @@ export default function CheckoutPage() {
             <input type="text" required value={form.country} onChange={set("country")} />
           </div>
 
-          {error ? (
-            <p style={{ color: "var(--warning-base)", fontWeight: 600 }}>{error}</p>
-          ) : null}
+          {error ? <p className="ws-form-error">{error}</p> : null}
 
           <button
             type="submit"
-            className="ws-btn ws-btn--primary"
+            className="ws-btn ws-btn--primary ws-checkout-submit"
             disabled={busy}
-            style={{ marginTop: 12 }}
           >
             {busy ? "Redirecting to payment…" : "Pay with Stripe"}
           </button>
-          <p style={{ fontSize: "0.8rem", color: "var(--txt-mute)", marginTop: 10 }}>
+          <p className="ws-checkout-fineprint">
             Card details are handled securely by Stripe. Your card is never
             stored by Humphries &amp; Parks.
           </p>
         </div>
 
         <aside className="ws-order-summary">
-          <h3 className="ws-h3" style={{ marginTop: 0 }}>
-            Order summary
-          </h3>
+          <h3 className="ws-h3">Order summary</h3>
           {cart.items.map((it) => (
             <div key={it.id} className="ws-order-line">
               <span>
@@ -177,7 +168,7 @@ export default function CheckoutPage() {
               <span>{formatGbp(it.price_pence * it.qty)}</span>
             </div>
           ))}
-          <div className="ws-order-line" style={{ marginTop: 8 }}>
+          <div className="ws-order-line ws-order-line--first">
             <span>Subtotal</span>
             <span>{cart.totals.subtotal}</span>
           </div>

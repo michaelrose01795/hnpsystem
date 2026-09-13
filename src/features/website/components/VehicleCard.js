@@ -57,11 +57,11 @@ export default function VehicleCard({ vehicle, priority = false }) {
   );
 
   if (!v.href) {
-    return <article className="ws-card ws-vehicle">{body}</article>;
+    return <article className="ws-card">{body}</article>;
   }
 
   return (
-    <Link href={v.href} className="ws-card ws-vehicle ws-vehicle--link">
+    <Link href={v.href} className="ws-card ws-vehicle--link">
       {body}
     </Link>
   );

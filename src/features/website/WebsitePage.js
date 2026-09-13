@@ -42,11 +42,13 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 
+import BrandLogo from "@/components/BrandLogo";
 import useWebsiteScope from "./hooks/useWebsiteScope";
 import useWebsiteTheme from "./hooks/useWebsiteTheme";
 import useWebsiteContent from "./hooks/useWebsiteContent";
 import useWebsitePreviewMode from "./hooks/useWebsitePreviewMode";
 import PreviewClickTarget from "./components/PreviewClickTarget";
+import WebsiteNavActions, { WebsiteDevNavControls } from "./components/WebsiteNavActions";
 import ShopSection from "./components/ShopSection";
 import VehicleCard from "./components/VehicleCard";
 import HelpArticleModal from "./components/HelpArticleModal";
@@ -344,10 +346,6 @@ export default function WebsitePage() {
     closeMenu();
   };
 
-  const customerFirstName =
-    (authState.customer?.firstname || "").trim() ||
-    (authState.customer?.name || "").trim().split(" ")[0] ||
-    "Account";
 
   const year = new Date().getFullYear();
 
@@ -361,7 +359,7 @@ export default function WebsitePage() {
       <PreviewClickTarget key={row.id} {...click("hero", "Hero banner")}>
         <section id={row.anchor || "top"} data-presentation="website-hero" className="ws-hero">
           <div className="ws-container ws-hero-inner">
-            <div className="ws-hero-text">
+            <div>
               {hero.eyebrow ? <span className="ws-eyebrow">{hero.eyebrow}</span> : null}
               {hero.headline ? <h1 className="ws-h1">{hero.headline}</h1> : null}
               {hero.subhead ? <p className="ws-lead">{hero.subhead}</p> : null}
@@ -413,7 +411,7 @@ export default function WebsitePage() {
         <PreviewClickTarget key={row.id} {...click("partner-brands", "Partner brand strip")}>
           <section
             id={row.anchor || "brands"}
-            className={row.tint ? "ws-section ws-section--tint ws-brands" : "ws-section ws-brands"}
+            className={row.tint ? "ws-section ws-section--tint" : "ws-section"}
           >
             <div className="ws-container ws-brands-inner">
               <span className="ws-brands-label">{row.title || "Authorised retailer for"}</span>
@@ -494,7 +492,7 @@ export default function WebsitePage() {
             <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} />
             <div className="ws-grid ws-grid--cards">
               {asList(offers).map((o) => (
-                <article key={o.id} className="ws-card ws-offer">
+                <article key={o.id} className="ws-card">
                   {o.image ? (
                     <div className="ws-offer-media">
                       <img src={o.image} alt={o.title} loading="lazy" />
@@ -814,7 +812,7 @@ export default function WebsitePage() {
             <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} />
             <div className="ws-grid ws-grid--cards">
               {asList(blogPosts).map((post) => (
-                <article key={post.id} className="ws-card ws-help">
+                <article key={post.id} className="ws-card">
                   {post.image ? (
                     <div className="ws-help-media">
                       <img src={post.image} alt={post.title} loading="lazy" />
@@ -837,13 +835,12 @@ export default function WebsitePage() {
                         popup — one without it stays a plain card. */}
                     {post.detail ? (
                       <div className="ws-help-actions">
-                        {/* `app-btn` is the /website secondary-action pill
-                            (custglobal.css "Secondary action") — on a real
-                            <button> it outranks .ws-btn--ghost, so use it
-                            rather than fight it. */}
+                        {/* A raw <button> is the /website secondary control
+                            (custglobal.css @family controls); `.app-btn` is
+                            reserved for the one primary action per view. */}
                         <button
                           type="button"
-                          className="app-btn ws-help-more"
+                          className="ws-help-more"
                           onClick={() => setOpenArticleId(post.id)}
                           aria-haspopup="dialog"
                         >
@@ -951,9 +948,11 @@ export default function WebsitePage() {
         {sectionPreview ? null : (
           <header className="ws-nav" data-presentation="website-nav">
             <div className="ws-nav-inner">
+              {/* The full-resolution local wordmark, as ShopShell / StockShell use.
+                  The old <img> read brand.logoUrl, a 150px CDN thumbnail that also
+                  went undefined once the live brand row (snake_case) loaded. */}
               <a href="#top" className="ws-brand" onClick={closeMenu}>
-                <img className="ws-logo ws-logo--dark" src={brand.logoWhiteUrl} alt={brand.name} />
-                <img className="ws-logo ws-logo--light" src={brand.logoUrl} alt={brand.name} />
+                <BrandLogo className="ws-logo" alt={brand.name || "Humphries & Parks"} priority />
               </a>
 
               <nav className={menuOpen ? "ws-nav-links ws-nav-links--open" : "ws-nav-links"} aria-label="Primary">
@@ -969,27 +968,20 @@ export default function WebsitePage() {
                     {link.label}
                   </a>
                 ))}
-                {design?.showNavPhone === false || !contact.phone ? null : (
-                  <a
-                    href={contact.phoneHref || `tel:${contact.phone}`}
-                    className="ws-nav-phone"
-                    onClick={closeMenu}
-                  >
-                    {contact.phone}
-                  </a>
-                )}
-                {design?.showNavAccount === false || authState.loading ? null : authState.customer ? (
-                  <Link href="/website/profile" className="ws-nav-account ws-nav-account--profile" onClick={closeMenu}>
-                    <span className="ws-nav-account-avatar" aria-hidden="true">
-                      {(customerFirstName[0] || "A").toUpperCase()}
-                    </span>
-                    <span>{customerFirstName}</span>
-                  </Link>
-                ) : (
-                  <Link href="/website/login" className="ws-nav-account" onClick={closeMenu}>
-                    Login
-                  </Link>
-                )}
+                {/* Phone menu only (custglobal hides this above 640px): the bar
+                    is too narrow there for the phone number and dev controls. */}
+                <div className="ws-nav-menu-extras">
+                  <WebsiteDevNavControls onNavigate={closeMenu} />
+                  {design?.showNavPhone === false || !contact.phone ? null : (
+                    <a
+                      href={contact.phoneHref || `tel:${contact.phone}`}
+                      className="ws-nav-phone"
+                      onClick={closeMenu}
+                    >
+                      {contact.phone}
+                    </a>
+                  )}
+                </div>
               </nav>
 
               <button
@@ -1001,6 +993,17 @@ export default function WebsitePage() {
               >
                 {menuOpen ? "Close" : "Menu"}
               </button>
+
+              {/* Far-right corner: [Dev] [Overlay] [phone] [Account]. */}
+              <WebsiteNavActions
+                phone={contact.phone}
+                phoneHref={contact.phoneHref}
+                showPhone={design?.showNavPhone !== false}
+                showAccount={design?.showNavAccount !== false}
+                sessionLoading={authState.loading}
+                customer={authState.customer}
+                onNavigate={closeMenu}
+              />
             </div>
           </header>
         )}
@@ -1013,8 +1016,7 @@ export default function WebsitePage() {
           <footer className="ws-footer">
             <div className="ws-container ws-footer-inner">
               <div className="ws-footer-top">
-                <img className="ws-logo ws-logo--dark" src={brand.logoWhiteUrl} alt={brand.name} />
-                <img className="ws-logo ws-logo--light" src={brand.logoUrl} alt={brand.name} />
+                <BrandLogo className="ws-logo" alt={brand.name || "Humphries & Parks"} />
                 {legalLinksOut(footer.legal).length ? (
                   <ul className="ws-footer-links">
                     {legalLinksOut(footer.legal).map((l) => (

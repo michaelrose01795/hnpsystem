@@ -22,17 +22,16 @@ export default function SuccessPage() {
 
   return (
     <ShopShell title="Thank you — order received">
-      <div className="ws-card" style={{ padding: 30, textAlign: "center" }}>
-        <p style={{ color: "var(--txt-soft)", fontSize: "1.05rem" }}>
+      <div className="ws-card ws-shop-state">
+        <p className="ws-shop-state-lead">
           Your payment has been accepted. A confirmation email is on its way.
         </p>
         {orderNumber ? (
-          <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>
-            Order reference:{" "}
-            <span style={{ color: "var(--accentText)" }}>{orderNumber}</span>
+          <p className="ws-shop-order-ref">
+            Order reference: <strong>{orderNumber}</strong>
           </p>
         ) : null}
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20 }}>
+        <div className="ws-shop-state-actions">
           <Link href="/website#shop" className="ws-btn ws-btn--primary">
             Keep shopping
           </Link>

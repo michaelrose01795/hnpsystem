@@ -50,12 +50,7 @@ export const siteContent = {
       "A trustworthy, stress-free approach to buying, selling and servicing your car — proudly family-run in the heart of Kent.",
     backgroundUrl:
       "https://images.67degreescdn.co.uk/OxvrVgI7NLjSg9hGumadDgUC4eM=/459x500/smart/144/6/1738080472679900d86a1f5_p1123308-edit.jpg",
-    ctas: [
-      { label: "View Cars", href: "#cars", variant: "primary" },
-      { label: "Book a Service", href: "#service", variant: "ghost" },
-      { label: "Sell Your Car", href: "#sell", variant: "ghost" },
-      { label: "Contact Us", href: "#contact", variant: "ghost" },
-    ],
+    ctas: [],
   },
 
   // The strip of headline figures under the hero. Any number of them; empty

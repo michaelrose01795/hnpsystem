@@ -111,7 +111,7 @@ export default function StockDetailPage({ reg }) {
       title={`${heading} — Humphries & Parks`}
       description={`${vehicle.year} ${heading} in ${vehicle.colour}, ${mileageLabel(vehicle)}, ${formatPrice(vehicle.price)}. Stock number ${vehicle.stockNumber} at Humphries & Parks, West Malling.`}
     >
-      <section className="ws-section ws-stock-detail">
+      <section className="ws-section">
         <div className="ws-container">
           <nav className="ws-stock-breadcrumb" aria-label="Breadcrumb">
             <Link href="/website">Home</Link>

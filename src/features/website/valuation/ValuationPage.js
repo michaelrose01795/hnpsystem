@@ -587,7 +587,7 @@ export default function ValuationPage() {
                     </p>
 
                     {estimate.factors.length ? (
-                      <div className="ws-val-working">
+                      <div>
                         <h3 className="ws-val-working-title">What moved your estimate</h3>
                         <ul className="ws-val-working-list">
                           {estimate.factors.map((factor) => (

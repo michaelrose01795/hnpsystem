@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import BrandLogo from "@/components/BrandLogo";
 import { siteContent } from "@/features/website/data/siteContent";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
@@ -319,11 +320,7 @@ export default function CustomerLoginPage() {
               </Link>
 
               <div className={"authBrand"}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={siteContent.brand.logoUrl}
-                  alt={siteContent.brand.name}
-                />
+                <BrandLogo alt={siteContent.brand.name} priority />
               </div>
             </div>
 
@@ -395,7 +392,7 @@ export default function CustomerLoginPage() {
                   </button>
                   <button
                     type="button"
-                    className={`app-btn profileGhostBtn`}
+                    className={"profileGhostBtn"}
                     onClick={resetToEmailStep}
                   >
                     Use a different email
@@ -443,7 +440,7 @@ export default function CustomerLoginPage() {
                   </button>
                   <button
                     type="button"
-                    className={`app-btn profileGhostBtn`}
+                    className={"profileGhostBtn"}
                     onClick={resetToEmailStep}
                   >
                     Use a different email
@@ -467,10 +464,7 @@ export default function CustomerLoginPage() {
                   </div>
                 </div>
                 {error ? <p className={"authError"}>{error}</p> : null}
-                <form
-                  className={`authForm signupForm`}
-                  onSubmit={handleSignup}
-                >
+                <form className={"authForm"} onSubmit={handleSignup}>
                   <div className={"signupPanel"}>
                     <div className={"authRow"}>
                       <div className={"authField"}>
@@ -539,7 +533,7 @@ export default function CustomerLoginPage() {
                         />
                         <button
                           type="button"
-                          className={`app-btn postcodeLookupButton`}
+                          className={"postcodeLookupButton"}
                           onClick={handleAddressLookup}
                           disabled={addressLookupLoading}
                         >
@@ -581,7 +575,7 @@ export default function CustomerLoginPage() {
                         autoComplete="street-address"
                         required
                         readOnly={!addressManual && addressSuggestions.length > 0}
-                        className={`authInput authTextarea`}
+                        className={"authInput"}
                         value={signupExtras.address}
                         onChange={(e) => updateSignupField("address", e.target.value)}
                       />
@@ -613,7 +607,7 @@ export default function CustomerLoginPage() {
                   </button>
                   <button
                     type="button"
-                    className={`app-btn profileGhostBtn`}
+                    className={"profileGhostBtn"}
                     onClick={resetToEmailStep}
                   >
                     Use a different email

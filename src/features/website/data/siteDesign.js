@@ -11,14 +11,15 @@
 // they are the same data, one copy for the browser and one for the database.
 
 export const navLinks = [
-  { id: "new", label: "New", href: "#cars", filter: "new" },
-  { id: "used", label: "Used", href: "#cars", filter: "used" },
+  { id: "cars", label: "Our Cars", href: "#cars", filter: "all" },
   { id: "offers", label: "Offers", href: "#offers", filter: null },
   { id: "shop", label: "Shop", href: "#shop", filter: null },
   { id: "sell", label: "Sell Your Car", href: "#sell", filter: null },
   { id: "service", label: "Service & Parts", href: "#service", filter: null },
   { id: "motability", label: "Motability", href: "#motability", filter: null },
   { id: "about", label: "About Us", href: "#about", filter: null },
+  { id: "reviews", label: "Reviews", href: "#reviews", filter: null },
+  { id: "team", label: "Meet the Team", href: "#team", filter: null },
   { id: "blog", label: "Blog", href: "#blog", filter: null },
   { id: "contact", label: "Contact Us", href: "#contact", filter: null },
 ];
@@ -159,11 +160,6 @@ export function hexToRgbTriplet(hex, fallback = "185, 28, 28") {
 export function designToCssVars(d) {
   const merged = { ...design, ...(d || {}) };
   const vars = {
-    "--accentMain": merged.accentHex,
-    "--accentText": merged.accentHex,
-    "--primary": merged.accentHex,
-    "--primary-hover": merged.accentHoverHex,
-    "--accentMainRgb": hexToRgbTriplet(merged.accentHex),
     "--ws-maxw": merged.containerWidth,
     "--ws-radius": merged.cornerRadius,
     "--ws-btn-radius": merged.buttonRadius,
@@ -175,5 +171,19 @@ export function designToCssVars(d) {
   };
   const headingStack = HEADING_FONT_STACKS[merged.headingFont];
   if (headingStack) vars["--ws-heading-font"] = headingStack;
+  // Brand colour is only written inline when a saved design actually changes
+  // it. An unconfigured site reads custglobal.css's accent tokens, so the
+  // theme block (e.g. the lifted dark-mode --accentText) is not overridden
+  // by a copy of the default hex.
+  const savedAccent = d?.accentHex;
+  if (savedAccent && savedAccent.toLowerCase() !== design.accentHex) {
+    vars["--accentMain"] = savedAccent;
+    vars["--primary"] = savedAccent;
+    vars["--accentMainRgb"] = hexToRgbTriplet(savedAccent);
+  }
+  const savedHover = d?.accentHoverHex;
+  if (savedHover && savedHover.toLowerCase() !== design.accentHoverHex) {
+    vars["--primary-hover"] = savedHover;
+  }
   return vars;
 }

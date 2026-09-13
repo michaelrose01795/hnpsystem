@@ -119,7 +119,7 @@ export default function HelpArticleModal({ article, onClose }) {
           <div className="ws-article-header-actions">
             <button
               type="button"
-              className="app-btn ws-article-close"
+              className="ws-article-close"
               onClick={onClose}
               aria-label="Close"
             >

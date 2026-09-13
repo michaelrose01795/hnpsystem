@@ -431,6 +431,7 @@ export const BUILDER_SCHEMAS = {
         type: "select",
         options: [
           { value: "", label: "No filter" },
+          { value: "all", label: "All cars" },
           { value: "new", label: "New cars only" },
           { value: "used", label: "Used cars only" },
         ],

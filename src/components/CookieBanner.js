@@ -19,6 +19,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";import LayerSurface from "@/components/ui/LayerSurface";
 import Button from "@/components/ui/Button";
+import WebsiteCookieConsent from "@/features/website/components/WebsiteCookieConsent";
 
 const STORAGE_KEY = "hnp.cookieConsent.v1";
 const ANON_COOKIE = "hnp_anon_id";
@@ -259,6 +260,24 @@ export default function CookieBanner() {
   };
 
   if (!mounted || !open) return null;
+
+  // /website: the customer design system renders its own panel
+  // (WebsiteCookieConsent, styled by custglobal.css .ws-consent); this
+  // component keeps the state, storage and consent API call.
+  if (!isStaffScope) {
+    return (
+      <WebsiteCookieConsent
+        categories={CATEGORIES}
+        selections={selections}
+        onToggle={(key, checked) => setSelections((prev) => ({ ...prev, [key]: checked }))}
+        showCustomise={showCustomise}
+        onCustomise={() => setShowCustomise(true)}
+        onSave={saveCustom}
+        onReject={rejectAll}
+        onAccept={acceptAll}
+      />
+    );
+  }
 
   return (
     <LayerSurface as="div" role="dialog" aria-label="Cookie consent" style={containerStyle}>

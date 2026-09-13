@@ -138,6 +138,13 @@ const nextConfig = { // Exported Next.js configuration object
       { source: "/new-order/:orderNumber", destination: "/order/:orderNumber", permanent: true }, // Parts order detail
       // UK-English sweep (2026-09-08): the access-denied screen is now /unauthorised.
       { source: "/unauthorized", destination: "/unauthorised", permanent: true }, // Access-denied screen
+      // /website dev layout overlay trigger. Typing /website-dev in the address
+      // bar lands on the site with ?website-dev=1, which DevLayoutOverlayContext
+      // consumes (switches the overlay on for dev users) and strips from the URL.
+      // A redirect, not a page: redirects run before the edge proxy and the
+      // client PageAccessGuard, which would otherwise bounce an unlisted route.
+      { source: "/website-dev", destination: "/website?website-dev=1", permanent: false }, // Website dev overlay (site home)
+      { source: "/website-dev/:path*", destination: "/website/:path*?website-dev=1", permanent: false }, // Website dev overlay (any page)
     ]; // Close redirects array
   }, // Close redirects function
   

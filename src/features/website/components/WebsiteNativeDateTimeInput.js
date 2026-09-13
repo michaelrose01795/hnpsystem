@@ -239,7 +239,7 @@ export default function WebsiteNativeDateTimeInput({
             </button>
             <button
               type="button"
-              className="app-btn"
+              className=""
               onClick={() => {
                 onChange?.(toIso(new Date()));
                 setOpen(false);

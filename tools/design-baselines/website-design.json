@@ -1,0 +1,18 @@
+{
+  "raw-colours": {},
+  "important": {
+    "src/styles/custglobal.css#foundation": 5,
+    "src/styles/custglobal.css#controls": 1,
+    "src/styles/custglobal.css#theme": 1
+  },
+  "dead-classes": {
+    "src/styles/custglobal.css#marketing": 1
+  },
+  "undeclared-classes": {},
+  "inline-visual": {},
+  "js-raw-colours": {
+    "src/features/website/data/siteDesign.js": 2
+  },
+  "js-undefined-tokens": {},
+  "contrast": {}
+}

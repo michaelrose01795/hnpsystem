@@ -16,6 +16,8 @@ import BrandLogo from "@/components/BrandLogo";
 import useWebsiteScope from "../hooks/useWebsiteScope";
 import useWebsiteTheme from "../hooks/useWebsiteTheme";
 import useWebsiteContent from "../hooks/useWebsiteContent";
+import useCustomerSession from "../hooks/useCustomerSession";
+import WebsiteNavActions from "../components/WebsiteNavActions";
 
 /* ------------------------------------------------------------------ */
 /* Live-content shape guards                                           */
@@ -58,6 +60,7 @@ export default function StockShell({ title, description, backToSite = false, chi
   const { brand, contact, footer } = content.siteContent;
   const name = brandName(brand);
   const { design } = content;
+  const { loading: sessionLoading, customer } = useCustomerSession();
 
   useWebsiteTheme();
 
@@ -92,16 +95,18 @@ export default function StockShell({ title, description, backToSite = false, chi
                   </Link>
                 </>
               )}
-              {/* No "Contact" link here on purpose — the phone button beside
-                  it IS the contact route, and two of them read as a choice
-                  the visitor does not have to make. The footer still links
-                  back into the site. */}
-              {design?.showNavPhone === false ? null : (
-                <a href={contact.phoneHref} className="ws-nav-phone">
-                  {contact.phone}
-                </a>
-              )}
             </nav>
+            {/* No "Contact" link here on purpose — the phone button IS the
+                contact route, and two of them read as a choice the visitor does
+                not have to make. The footer still links back into the site. */}
+            <WebsiteNavActions
+              phone={contact.phone}
+              phoneHref={contact.phoneHref}
+              showPhone={design?.showNavPhone !== false}
+              showAccount={design?.showNavAccount !== false}
+              sessionLoading={sessionLoading}
+              customer={customer}
+            />
           </div>
         </header>
 

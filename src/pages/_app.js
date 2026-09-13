@@ -43,6 +43,7 @@ const APP_BROWSER_TITLE = "H&P DMS";
 import { SessionProvider } from "next-auth/react"; // import NextAuth session provider
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import { ThemeProvider } from "@/styles/themeProvider";
 import { setPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
@@ -682,6 +683,11 @@ function AppWrapper({ Component, pageProps }) {
   // customer pages off those listeners entirely. The route boundary below also
   // reads it, to pick the softer customer recovery copy.
   const isCustomerFacingSurface = isWebsiteRoute || isCustomerRoute || isPublicVhcReportRoute;
+  // The dev layout overlay also runs on /website, but only once the provider
+  // has confirmed a dev user. Customers never have a staff session, so the
+  // overlay chunk is never requested on a real customer visit.
+  const { canAccess: canUseDevLayoutOverlay } = useDevLayoutOverlay();
+  const showDevLayoutOverlay = !isCustomerFacingSurface || (isWebsiteRoute && canUseDevLayoutOverlay);
 
   // ROUTE-LEVEL ERROR BOUNDARY.
   //
@@ -722,7 +728,7 @@ function AppWrapper({ Component, pageProps }) {
       <GlobalTooltip />
       {/* In-app right-click menu — replaces the browser native context menu app-wide. */}
       <GlobalContextMenu />
-      {!isCustomerFacingSurface && <DevLayoutOverlayRoot />}
+      {showDevLayoutOverlay && <DevLayoutOverlayRoot />}
       {/* Renders nothing unless a Staff Style Review "Search" link put
           ?styleReviewHighlight= on the URL. */}
       {!isCustomerFacingSurface && <StaffStyleReviewHighlighter />}

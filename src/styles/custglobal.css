@@ -1,20 +1,33 @@
 /* file location: src/styles/custglobal.css
-   Customer-facing /website global stylesheet.
+   Customer-facing /website design system — THE LAW for everything under
+   `html.website-scope`. Emitted as a route-scoped stylesheet and linked only
+   from /website routes (tools/scripts/emit-route-scoped-css.js).
 
-   Imported globally in _app.js, but every rule is scoped to
-   `html.website-scope` so it only applies on the /website routes
-   (toggled in the page-level useEffect of WebsitePage / login /
-   profile). The intent is that ANY raw <button>, <a>, <select> on the
-   /website pages reads as the same ghost-pill button family used by
-   "Back to site" on the customer profile — uppercase 12px label,
-   pill corners, glass background, soft white border.
+   ── Governance (docs/ui/website-design-governance.md) ─────────────────────
+   Enforced by `npm run check:website` in predev / prebuild:
 
-   Bespoke buttons (red Continue / Sign in CTAs, the nav rail pills,
-   the avatar profile pill, the auth tab pills) opt OUT of this
-   default by carrying the `app-btn` class — the override below uses
-   `:not(.app-btn)` so they keep their existing module styling. */
+     1. Every selector starts with `html.website-scope`.
+     2. Every rule sits in an `@family <id>` block registered in
+        src/config/websiteDesignSystem.json.
+     3. Every colour, shadow and metric a rule paints with is a TOKEN declared
+        in the foundation token block below — once for dark, re-pointed once
+        in the light block. Change the token and every page follows it.
+     4. The light theme is token values, not per-component light rules.
+     5. Every class declared here is rendered on /website/dev. Add a class,
+        add it to the showcase in the same change, or the build fails.
+     6. Existing literals / !important / dead classes are baselined in
+        tools/design-baselines/website-design.json and may only go down.
 
+   Buttons: raw <button> is the SECONDARY action (flat control material);
+   `.app-btn` is the PRIMARY action (solid brand capsule). There is no third.
+
+   @family foundation — tokens, theme insulation, page surface, scrollbar */
+
+/* Raw links carry no underline and inherit the surrounding ink, so a bare
+   <a> never falls back to the browser's blue (unreadable on the dark theme).
+   Classed links (.ws-btn, .ws-nav-link, …) set their own colour. */
 html.website-scope a {
+  color: inherit;
   text-decoration: none;
 }
 html.website-scope a:hover,
@@ -51,8 +64,11 @@ html.website-scope {
   /* Brand red, fixed regardless of staff accent palette. */
   --accentMainRgb: 185, 28, 28 !important;
   --accentMain: #b91c1c !important;
-  --accentText: #b91c1c !important;
-  --primary: #b91c1c !important;
+  /* Accent as TEXT on the dark page: brand red (#b91c1c) only reaches 3.1:1
+     on #07070b, so dark text uses a lifted red that clears 4.5:1. The light
+     block points it back at --accentMain. */
+  --accentText: #ef4444 !important;
+  --primary: var(--accentMain) !important;
   --primary-hover: #981717 !important;
   --primary-pressed: #7e1313 !important;
   --onAccentText: #ffffff !important;
@@ -73,7 +89,7 @@ html.website-scope {
   --ghostbutton-ring: 1px solid rgba(255, 255, 255, 0.18) !important;
   --input-ring: 1px solid rgba(255, 255, 255, 0.16) !important;
   --checkbox-ring: 2px solid rgba(255, 255, 255, 0.32) !important;
-  --focus-ring: 0 0 0 3px rgba(185, 28, 28, 0.35) !important;
+  --focus-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.35) !important;
 
   /* ── /website control system ──────────────────────────────────────
      Every interactive control on /website (raw <button>, .app-btn,
@@ -85,9 +101,22 @@ html.website-scope {
   --website-control-height: 44px !important;
   --website-control-radius: 14px !important;
   --website-field-gap: 10px !important;
+  /* Control type + shape — every button, field, trigger and link-button reads
+     these, so one edit here resizes the whole customer control set. */
+  --website-control-font-size: 13px !important;
+  --website-control-font-weight: 600 !important;
+  --website-control-letter-spacing: 0.3px !important;
+  --website-control-padding-x: 18px !important;
+  --website-control-glyph: 18px !important;
+  /* Radius scale. Controls are pills; surfaces step down by size. */
+  --website-radius-pill: 999px !important;
+  --website-radius-card: 18px !important;
+  --website-radius-panel: 14px !important;
+  --website-radius-tile: 12px !important;
+  --website-radius-chip: 8px !important;
 
   /* Dark scrollbar with a brand-red thumb on /website. */
-  --scrollbar-thumb: #b91c1c !important;
+  --scrollbar-thumb: var(--accentMain) !important;
   --scrollbar-thumb-hover: #d22424 !important;
 
   /* /website surface elevation — the translucent "lifted panel" washes
@@ -109,11 +138,68 @@ html.website-scope {
      whole customer UI reads as one material.
 
      Primary stays the solid accent capsule (.ws-nav-phone / .ws-btn--primary
-     / .app-btn). Two styles, no third. Adjust here, never at the call-site. */
-  --ws-control-bg: var(--website-elev-2) !important;
-  --ws-control-bg-hover: var(--website-elev-4) !important;
+     / .app-btn). Two styles, no third. Adjust here, never at the call-site.
+
+     The fill is a SURFACE TINT, not a see-through wash: --surface's near-black
+     (lifted one step so it separates from the #07070b page) at high alpha, so
+     the page barely shows through. The light block re-points it to the white
+     --surface. --ws-panel-bg is the same tint, denser, for floating panels
+     (dropdown lists, calendar / time picker, the basket drawer). */
+  --ws-control-bg: rgba(22, 22, 26, 0.82) !important;
+  --ws-control-bg-hover: rgba(38, 38, 44, 0.9) !important;
+  --ws-panel-bg: rgba(14, 14, 19, 0.94) !important;
   --ws-control-ring: rgba(255, 255, 255, 0.10) !important;
   --ws-control-text: var(--txt-bright) !important;
+
+  /* ── Page, overlay and state tokens ───────────────────────────────────
+     Every colour a customer rule paints with is named here once, and
+     re-pointed once in the light theme block. Rules read the
+     token; they never restate the value. Registered with a purpose in
+     src/config/websiteDesignSystem.json and shown on /website/dev. */
+  --website-page-bg: #07070b !important;
+  --website-wash-accent: rgba(var(--accentMainRgb), 0.18) !important;
+  --website-wash-cool: rgba(22, 22, 26, 0.55) !important;
+  --website-scrollbar-track: #07070b !important;
+  --website-overlay-shadow: 0 24px 56px rgba(0, 0, 0, 0.55) !important;
+  --website-specular: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  --website-scrim: rgba(0, 0, 0, 0.58) !important;
+  --website-backdrop: rgba(0, 0, 0, 0.45) !important;
+  --website-drawer-shadow: -18px 0 44px rgba(0, 0, 0, 0.45) !important;
+  --website-on-accent-wash: rgba(255, 255, 255, 0.25) !important;
+  --website-banner-bg: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.22) 0%, rgba(var(--accentMainRgb), 0.10) 100%) !important;
+  --website-banner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 8px 22px rgba(var(--accentMainRgb), 0.18) !important;
+  --website-popup-scrim-tint: rgba(var(--accentMainRgb), 0.34) !important;
+  --website-popup-scrim-base: var(--website-scrim) !important;
+  --website-popup-shadow: 0 30px 70px rgba(0, 0, 0, 0.55) !important;
+  --website-chip-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  --website-photo-ink: #ffffff !important;
+  --website-placeholder: rgba(255, 255, 255, 0.72) !important;
+  --website-input-placeholder: var(--txt-mute) !important;
+  --website-option-bg: #101016 !important;
+  --website-option-selected-bg: rgba(var(--accentMainRgb), 0.28) !important;
+  --website-selected-bg: rgba(var(--accentMainRgb), 0.22) !important;
+  --website-selected-bg-hover: rgba(var(--accentMainRgb), 0.32) !important;
+  --website-selected-ink: var(--onAccentText) !important;
+  --website-selected-hint: var(--txt-mute) !important;
+  --website-day-muted: rgba(255, 255, 255, 0.28) !important;
+  --website-day-disabled: rgba(255, 255, 255, 0.2) !important;
+  --website-success-ink: #4ade80 !important;
+  --website-warning-ink: #fcd34d !important;
+  --website-success-rgb: 34, 197, 94 !important;
+  --website-warning-rgb: 245, 158, 11 !important;
+  --website-danger-rgb: 239, 68, 68 !important;
+  --website-danger-ink: #fca5a5 !important;
+  --website-accent-highlight: rgba(255, 90, 90, 0.98) !important;
+  --website-photo-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+  --website-preview-rgb: 220, 38, 38 !important;
+
+  /* Staff-named conventions custglobal rules use, pinned here so the staff
+     theme cannot reach /website through them: the row-separator pair
+     (brand red, not the staff accent) and the monospace stack. */
+  --separating-line-color: rgba(var(--accentMainRgb), 0.2) !important;
+  --separating-line: 1px solid var(--separating-line-color) !important;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace !important;
 }
 
 html.website-scope body {
@@ -121,29 +207,24 @@ html.website-scope body {
   max-width: 100vw;
   overflow-x: clip;
 
-  /* Customer surface — mirrors the .profileShell background in
-     src/features/website/styles/singlescroll.module.css. Two red glows
-     anchored to top-right + bottom-left, plus two soft cool-grey
-     glows in the opposite corners (top-left + bottom-right) so the
-     dark corners aren't pure #07070b — they lift to a faint grey
-     wash. Literal values used here (rather than var(--accentMainRgb))
-     so even if the insulation block above is bypassed somehow, the
-     wash never goes blue/green. The cool-corner colour is the staff
-     dark-mode --surface (#16161a, theme.css:428) so the customer
-     surface lifts to the same near-black grey the staff app uses.
-     !important defeats the inline background-color the staff
-     themeProvider sets on <html>/<body>. */
+  /* Customer surface — two brand glows anchored top-right + bottom-left and
+     two cool glows in the opposite corners over the page base. All four
+     colours and the base are tokens, so the light theme and any brand change
+     repaint the wash from the token block alone. The token block's
+     !important keeps the staff themeProvider's inline values out; the
+     !important here defeats the inline background-color it sets on
+     <html>/<body>. */
   background:
-    radial-gradient(ellipse at top right, rgba(185, 28, 28, 0.18), transparent 60%),
-    radial-gradient(ellipse at bottom left, rgba(185, 28, 28, 0.18), transparent 60%),
-    radial-gradient(ellipse at top left, rgba(22, 22, 26, 0.55), transparent 60%),
-    radial-gradient(ellipse at bottom right, rgba(22, 22, 26, 0.55), transparent 60%),
-    #07070b !important;
+    radial-gradient(ellipse at top right, var(--website-wash-accent), transparent 60%),
+    radial-gradient(ellipse at bottom left, var(--website-wash-accent), transparent 60%),
+    radial-gradient(ellipse at top left, var(--website-wash-cool), transparent 60%),
+    radial-gradient(ellipse at bottom right, var(--website-wash-cool), transparent 60%),
+    var(--website-page-bg) !important;
   background-attachment: fixed !important;
 }
 
 html.website-scope {
-  background: #07070b !important;
+  background: var(--website-page-bg) !important;
 }
 
 html.website-scope #__next {
@@ -181,25 +262,29 @@ html.website-scope textarea {
   font-family: inherit;
 }
 
-/* Dark scrollbar gutter on every /website page. */
+/* Scrollbar gutter on every /website page — thumb and track are tokens. */
 html.website-scope,
 html.website-scope body {
-  scrollbar-color: var(--scrollbar-thumb) #07070b;
+  scrollbar-color: var(--scrollbar-thumb) var(--website-scrollbar-track);
 }
 html.website-scope::-webkit-scrollbar,
 html.website-scope body::-webkit-scrollbar {
   width: 12px;
   height: 12px;
-  background: #07070b;
+  background: var(--website-scrollbar-track);
 }
 html.website-scope::-webkit-scrollbar-track,
 html.website-scope body::-webkit-scrollbar-track {
-  background: #07070b;
+  background: var(--website-scrollbar-track);
 }
 html.website-scope::-webkit-scrollbar-corner,
 html.website-scope body::-webkit-scrollbar-corner {
-  background: #07070b;
+  background: var(--website-scrollbar-track);
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   @family controls — buttons, raw form controls, form rhythm
+   ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── Secondary action — every raw <button> / [role="button"] on /website
    wears the shared control surface: one flat translucent wash
@@ -217,11 +302,11 @@ html.website-scope [role="button"]:not(.app-btn) {
   justify-content: center;
   gap: 8px;
   min-height: var(--website-control-height);
-  padding: 0 18px;
+  padding: 0 var(--website-control-padding-x);
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   line-height: 1;
   text-align: center;
   color: var(--ws-control-text);
@@ -232,10 +317,10 @@ html.website-scope [role="button"]:not(.app-btn) {
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
   border: none;
-  /* Full-pill capsule for action buttons. Inputs, select, date/time and
-     the file picker keep --website-control-radius (14px) so the
-     rectangular fields stay visually distinct from the pill CTAs. */
-  border-radius: 999px;
+  /* Full-pill capsule. Every control shares it — inputs, select, date/time
+     triggers and the file picker included. Only the banner keeps
+     --website-control-radius. */
+  border-radius: var(--website-radius-pill);
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
@@ -282,18 +367,18 @@ html.website-scope a.app-btn {
   justify-content: center;
   gap: 8px;
   min-height: var(--website-control-height);
-  padding: 0 18px;
+  padding: 0 var(--website-control-padding-x);
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   line-height: 1;
   text-align: center;
   color: var(--onAccentText);
   background: var(--accentMain);
   border: none;
   /* Match the secondary action — full-pill capsule. */
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
@@ -329,6 +414,7 @@ html.website-scope a.app-btn:focus-visible {
     var(--focus-ring);
 }
 
+/* @family pickers — calendar buttons opt out of the control system */
 /* ── Calendar grid buttons are sized by their cell, not the global
    control system — opt them out of the 44px floor and the pill chrome. */
 html.website-scope button.calendar-api__day,
@@ -339,7 +425,7 @@ html.website-scope button.website-calendar__day {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   box-shadow: none;
-  border-radius: 8px;
+  border-radius: var(--website-radius-chip);
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
@@ -349,18 +435,20 @@ html.website-scope button.calendar-api__day {
   aspect-ratio: 1;
   white-space: nowrap;
 }
+/* Picker chrome buttons (month nav, Today / Clear) stay full controls: the
+   44px floor, the pill and the hairline ring. Only the blur is dropped — they
+   already sit on the frosted panel. */
 html.website-scope button.calendar-api__nav-button,
 html.website-scope button.website-calendar__nav,
-html.website-scope .website-calendar__footer button:not(.app-btn) {
-  min-height: 32px;
+html.website-scope .website-calendar__footer button {
+  min-height: var(--website-control-height);
   padding: 0;
   background: var(--ws-control-bg);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: none;
-  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
+  border-radius: var(--website-radius-pill);
   text-transform: none;
-  letter-spacing: 0;
 }
 html.website-scope button.calendar-api__month-year,
 html.website-scope button.calendar-api__today-button,
@@ -374,6 +462,7 @@ html.website-scope button.calendar-api__picker-cell {
   letter-spacing: 0;
 }
 
+/* @family controls — form rhythm and the raw <select> fallback */
 /* Customer form rhythm. Keep the field spacing controlled globally so
    new /website forms inherit the same 10px gaps without per-page fixes. */
 html.website-scope form,
@@ -405,9 +494,9 @@ html.website-scope select:not(.app-btn) {
   min-height: var(--website-control-height);
   padding: 0 42px 0 18px;
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   line-height: 1;
   color: var(--ws-control-text);
   background-color: var(--ws-control-bg);
@@ -419,7 +508,8 @@ html.website-scope select:not(.app-btn) {
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
   border: none;
-  border-radius: var(--website-control-radius);
+  /* Full-pill capsule — the /website button shape. */
+  border-radius: var(--website-radius-pill);
   cursor: pointer;
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
@@ -429,24 +519,27 @@ html.website-scope select:not(.app-btn):hover {
 }
 html.website-scope select:not(.app-btn):focus-visible {
   outline: none;
-  box-shadow:
-    inset 0 0 0 1px var(--ws-control-ring),
-    var(--focus-ring);
+  background-color: var(--ws-control-bg-hover);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
 }
 html.website-scope select:not(.app-btn):disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 html.website-scope select:not(.app-btn) option {
-  color: #ffffff;
-  background: #101016;
+  color: var(--txt-bright);
+  background: var(--website-option-bg);
   font-weight: 600;
 }
 html.website-scope select:not(.app-btn) option:checked,
 html.website-scope select:not(.app-btn) option:hover {
-  background: rgba(var(--accentMainRgb), 0.28);
-  color: #ffffff;
+  background: var(--website-option-selected-bg);
+  color: var(--website-selected-ink);
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   @family select — WebsiteNativeSelect (custom trigger + menu)
+   ═══════════════════════════════════════════════════════════════════════ */
 
 /* Custom-rendered list for /website selects. The hidden native select keeps
    form value semantics; these classes own the visible trigger and menu. */
@@ -465,7 +558,9 @@ html.website-scope .website-native-select__field {
   pointer-events: none;
 }
 
-html.website-scope .website-native-select__trigger {
+/* `button.`-qualified so it ties the raw-button rule (0,2,2) and, declared
+   later, wins — a class-only rule would lose its left alignment. */
+html.website-scope button.website-native-select__trigger {
   width: 100%;
   justify-content: space-between;
   text-align: left;
@@ -486,7 +581,7 @@ html.website-scope .website-native-select__placeholder {
 }
 
 html.website-scope .website-native-select__placeholder {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--website-placeholder);
 }
 
 html.website-scope .website-native-select__caret {
@@ -516,17 +611,18 @@ html.website-scope .website-native-select__menu {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   /* Same secondary control surface as the trigger that opened it, so the
      list reads as the trigger unrolled rather than a separate material.
      The blur keeps the floating panel readable over page content; the
-     drop shadow is lift, not fill, so it stays. */
-  background: var(--ws-control-bg);
+     drop shadow is lift, not fill, so it stays. The fill is the denser
+     panel tint so rows behind the list do not read through it. */
+  background: var(--ws-panel-bg);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     inset 0 0 0 1px var(--ws-control-ring),
-    0 24px 56px rgba(0, 0, 0, 0.55);
+    var(--website-overlay-shadow);
 }
 
 html.website-scope .website-native-select__empty {
@@ -547,12 +643,12 @@ html.website-scope .website-native-select__option {
   justify-content: center;
   gap: 2px;
   min-height: var(--website-control-height);
-  padding: 0 18px;
+  padding: 0 var(--website-control-padding-x);
   font-size: 13px;
   line-height: 1.3;
   color: var(--ws-control-text);
   /* Full-pill capsule — matches the /website button shape style. */
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -563,13 +659,13 @@ html.website-scope .website-native-select__option--active {
 }
 
 html.website-scope .website-native-select__option--selected {
-  background: rgba(var(--accentMainRgb), 0.22);
-  color: #fff;
+  background: var(--website-selected-bg);
+  color: var(--website-selected-ink);
 }
 
 html.website-scope .website-native-select__option--selected:hover,
 html.website-scope .website-native-select__option--selected.website-native-select__option--active {
-  background: rgba(var(--accentMainRgb), 0.32);
+  background: var(--website-selected-bg-hover);
 }
 
 html.website-scope .website-native-select__option-label {
@@ -578,8 +674,17 @@ html.website-scope .website-native-select__option-label {
 
 html.website-scope .website-native-select__option-hint {
   font-size: 11px;
-  color: var(--txt-mute, rgba(255, 255, 255, 0.55));
+  color: var(--txt-mute);
 }
+
+/* The hint follows the row ink onto a selected row. */
+html.website-scope .website-native-select__option--selected .website-native-select__option-hint {
+  color: var(--website-selected-hint);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   @family dropdown — the shared Dropdown API under the customer scope
+   ═══════════════════════════════════════════════════════════════════════ */
 
 /* Shared Dropdown API under the customer scope. Portalled menus receive the
    website-scope class directly, so both descendant and same-node selectors are
@@ -593,12 +698,12 @@ html.website-scope .dropdown-api {
 
 html.website-scope .dropdown-api__label,
 html.website-scope .dropdown-api__helper {
-  color: var(--txt-soft, rgba(255, 255, 255, 0.74));
+  color: var(--txt-soft);
   font-size: 12px;
   font-weight: 600;
 }
 
-html.website-scope .dropdown-api__control {
+html.website-scope button.dropdown-api__control {
   width: 100%;
   justify-content: space-between;
   text-align: left;
@@ -614,7 +719,7 @@ html.website-scope .dropdown-api__option-label {
 }
 
 html.website-scope .dropdown-api__value.is-placeholder {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--website-placeholder);
 }
 
 html.website-scope .dropdown-api__chevron {
@@ -640,14 +745,14 @@ html.website-scope .app-dropdown-menu {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border-radius: 14px;
-  /* Same secondary control surface as .website-native-select__menu. */
-  background: var(--ws-control-bg);
+  border-radius: var(--website-radius-panel);
+  /* Same panel tint as .website-native-select__menu. */
+  background: var(--ws-panel-bg);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     inset 0 0 0 1px var(--ws-control-ring),
-    0 24px 56px rgba(0, 0, 0, 0.55);
+    var(--website-overlay-shadow);
 }
 
 html.website-scope button.dropdown-api__option,
@@ -657,10 +762,13 @@ html.website-scope.app-dropdown-menu button.dropdown-api__option {
   justify-content: center;
   gap: 2px;
   min-height: var(--website-control-height);
-  padding: 0 18px;
+  padding: 0 var(--website-control-padding-x);
   border: none;
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   background: transparent;
+  /* Rows sit inside the ringed panel — no ring of their own, matching the
+     WebsiteNativeSelect option rows. */
+  box-shadow: none;
   color: var(--ws-control-text);
   font-size: 13px;
   line-height: 1.3;
@@ -679,14 +787,14 @@ html.website-scope.app-dropdown-menu button.dropdown-api__option:focus-visible {
 
 html.website-scope button.dropdown-api__option.is-selected,
 html.website-scope.app-dropdown-menu button.dropdown-api__option.is-selected {
-  background: rgba(var(--accentMainRgb), 0.22);
-  color: #fff;
+  background: var(--website-selected-bg);
+  color: var(--website-selected-ink);
 }
 
 html.website-scope .dropdown-api__option-description,
 html.website-scope.app-dropdown-menu .dropdown-api__option-description,
 html.website-scope .dropdown-api__empty {
-  color: var(--txt-mute, rgba(255, 255, 255, 0.55));
+  color: var(--txt-mute);
   font-size: 11px;
 }
 
@@ -697,6 +805,10 @@ html.website-scope .dropdown-api__empty {
   align-items: center;
   justify-content: center;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   @family pickers — WebsiteNativeDateTimeInput triggers
+   ═══════════════════════════════════════════════════════════════════════ */
 
 /* Custom-rendered date/time pickers for /website. The hidden native input
    keeps browser form semantics; the visible trigger uses the same Primary
@@ -716,7 +828,7 @@ html.website-scope .website-native-datetime__field {
   pointer-events: none;
 }
 
-html.website-scope .website-native-datetime__trigger {
+html.website-scope button.website-native-datetime__trigger {
   width: 100%;
   justify-content: space-between;
   text-align: left;
@@ -731,7 +843,7 @@ html.website-scope .website-native-datetime__placeholder {
 }
 
 html.website-scope .website-native-datetime__placeholder {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--website-placeholder);
 }
 
 html.website-scope .website-native-datetime__icon {
@@ -746,17 +858,15 @@ html.website-scope .website-native-datetime[data-type="time"] .website-native-da
   background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='1.4'%3E%3Ccircle cx='8' cy='8' r='5.5'/%3E%3Cpath d='M8 4.5V8l2.5 1.5'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 
+/* @family controls — text inputs, textarea, radio, file picker */
 /* ── Text-like inputs and textareas — share the secondary control
    surface so a "name" field, a "date" field, and a button line up at
-   the same 44px height wearing the same flat wash and hairline ring. CSS module classes (e.g.
-   `.authInput` on login / profile) still win on specificity and
-   keep their bespoke look.
-
-   `type="email"` is intentionally omitted: the customer surface
-   collapses email entry into the standard text input so there's
-   one capsule style and one backend path. New /website forms
-   should use <input type="text"> for email-shaped values. */
+   the same 44px height wearing the same flat wash and hairline ring.
+   Page classes on a field (`.authInput`, …) only add layout; the look
+   always comes from here. `type="email"` is included so sign-in and
+   checkout email fields are the same control as every other text box. */
 html.website-scope input[type="text"]:not(.app-btn),
+html.website-scope input[type="email"]:not(.app-btn),
 html.website-scope input[type="password"]:not(.app-btn),
 html.website-scope input[type="tel"]:not(.app-btn),
 html.website-scope input[type="number"]:not(.app-btn),
@@ -770,11 +880,11 @@ html.website-scope textarea:not(.app-btn) {
   box-sizing: border-box;
   width: 100%;
   min-height: var(--website-control-height);
-  padding: 0 18px;
+  padding: 0 var(--website-control-padding-x);
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   line-height: 1;
   color: var(--ws-control-text);
   background: var(--ws-control-bg);
@@ -784,7 +894,7 @@ html.website-scope textarea:not(.app-btn) {
   /* Text box / textarea share the button capsule shape — the full-pill
      999px corner used by the /website buttons, not the rectangular
      --website-control-radius (14px). */
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
@@ -798,6 +908,7 @@ html.website-scope textarea:not(.app-btn) {
   line-height: 1.45;
 }
 html.website-scope input[type="text"]:not(.app-btn):focus-visible,
+html.website-scope input[type="email"]:not(.app-btn):focus-visible,
 html.website-scope input[type="password"]:not(.app-btn):focus-visible,
 html.website-scope input[type="tel"]:not(.app-btn):focus-visible,
 html.website-scope input[type="number"]:not(.app-btn):focus-visible,
@@ -806,15 +917,15 @@ html.website-scope input[type="url"]:not(.app-btn):focus-visible,
 html.website-scope input[type="date"]:not(.app-btn):focus-visible,
 html.website-scope input[type="time"]:not(.app-btn):focus-visible,
 html.website-scope textarea:not(.app-btn):focus-visible {
+  /* Fields show focus through the fill, not a ring — clicking into a text box
+     must not draw a red halo around it. */
   outline: none;
   background: var(--ws-control-bg-hover);
-  box-shadow:
-    inset 0 0 0 1px var(--ws-control-ring),
-    var(--focus-ring);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
 }
 html.website-scope input::placeholder,
 html.website-scope textarea::placeholder {
-  color: var(--txt-mute);
+  color: var(--website-input-placeholder);
 }
 
 /* Native date/time pickers — let the browser's calendar/time popup
@@ -835,6 +946,25 @@ html.website-scope input[type="date"]::-webkit-calendar-picker-indicator:hover,
 html.website-scope input[type="time"]::-webkit-calendar-picker-indicator:hover {
   filter: invert(0.5) sepia(1) hue-rotate(330deg) saturate(8);
 }
+/* The browser's day / month / year and hour / minute segments: the control
+   ink and type, and a focused segment takes the selected-row tint instead of
+   the browser's blue highlight. Customer pages use WebsiteNativeDateTimeInput;
+   this only keeps a raw fallback on-system. */
+html.website-scope input[type="date"]::-webkit-datetime-edit,
+html.website-scope input[type="time"]::-webkit-datetime-edit {
+  color: var(--ws-control-text);
+  font-weight: var(--website-control-font-weight);
+}
+html.website-scope input[type="date"]::-webkit-datetime-edit-day-field:focus,
+html.website-scope input[type="date"]::-webkit-datetime-edit-month-field:focus,
+html.website-scope input[type="date"]::-webkit-datetime-edit-year-field:focus,
+html.website-scope input[type="time"]::-webkit-datetime-edit-hour-field:focus,
+html.website-scope input[type="time"]::-webkit-datetime-edit-minute-field:focus,
+html.website-scope input[type="time"]::-webkit-datetime-edit-ampm-field:focus {
+  color: var(--website-selected-ink);
+  background: var(--website-selected-bg);
+  border-radius: var(--website-radius-chip);
+}
 
 /* Radios only — the customer surface intentionally has no checkboxes;
    binary on/off choices are presented as a two-option radio group so
@@ -845,7 +975,7 @@ html.website-scope input[type="radio"]:not(.app-btn) {
   width: 18px;
   height: 18px;
   border: var(--checkbox-ring);
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   background: var(--ws-control-bg);
   cursor: pointer;
   position: relative;
@@ -860,8 +990,8 @@ html.website-scope input[type="radio"]:not(.app-btn):checked::after {
   content: "";
   position: absolute;
   inset: 4px;
-  border-radius: 999px;
-  background: #fff;
+  border-radius: var(--website-radius-pill);
+  background: var(--onAccentText);
 }
 html.website-scope input[type="radio"]:not(.app-btn):focus-visible {
   outline: none;
@@ -884,19 +1014,20 @@ html.website-scope input[type="file"]::file-selector-button {
   align-items: center;
   justify-content: center;
   height: var(--website-control-height);
-  padding: 0 18px;
+  padding: 0 var(--website-control-padding-x);
   margin-right: 12px;
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   line-height: 1;
   color: var(--ws-control-text);
   background: var(--ws-control-bg);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
   border: none;
-  border-radius: var(--website-control-radius);
+  /* Full-pill capsule — the /website button shape. */
+  border-radius: var(--website-radius-pill);
   cursor: pointer;
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
@@ -908,22 +1039,27 @@ html.website-scope input[type="file"]::file-selector-button:active {
   transform: translateY(1px);
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   @family pickers — calendar and time-picker surfaces
+   ═══════════════════════════════════════════════════════════════════════ */
+
 html.website-scope .website-calendar {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
   z-index: 50;
   max-width: min(100vw - 24px, 100%);
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   /* Same secondary control surface as the trigger that opened it and as
      the dropdown menus — one material across every floating panel. The
-     blur keeps it readable over page content. */
-  background: var(--ws-control-bg);
+     blur keeps it readable over page content; the denser panel tint keeps
+     the page from showing through. */
+  background: var(--ws-panel-bg);
   backdrop-filter: blur(28px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
   box-shadow:
     inset 0 0 0 1px var(--ws-control-ring),
-    0 24px 56px rgba(0, 0, 0, 0.55);
+    var(--website-overlay-shadow);
 }
 
 html.website-scope .website-calendar {
@@ -935,7 +1071,7 @@ html.website-scope .website-calendar {
      --txt-bright resolves to white in dark mode and to near-black in
      light mode, so the title and any uncoloured text always reads
      against the calendar background. */
-  color: var(--txt-bright, #fff);
+  color: var(--txt-bright);
 }
 
 html.website-scope .website-calendar__header,
@@ -956,35 +1092,14 @@ html.website-scope .website-calendar__title {
   letter-spacing: 0;
 }
 
-html.website-scope .website-calendar__nav,
-html.website-scope .website-calendar__footer button:not(.app-btn) {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ws-control-text);
-  background: var(--ws-control-bg);
-  border: none;
-  cursor: pointer;
-  text-align: center;
-  text-transform: none;
-  letter-spacing: 0;
-  transition: background 0.15s ease;
-}
-
-html.website-scope .website-calendar__nav {
-  width: 32px;
-  height: 32px;
-  min-height: 32px;
-  padding: 0;
-  border-radius: 999px;
-  font-size: 18px;
+/* Month arrows — a 44px circle; the glyph size is set at button specificity
+   so the raw-button 13px does not win. Colours and hover come from the
+   raw-button rule. */
+html.website-scope button.website-calendar__nav {
+  width: var(--website-control-height);
+  height: var(--website-control-height);
+  font-size: var(--website-control-glyph);
   line-height: 1;
-}
-
-html.website-scope .website-calendar__nav:hover,
-html.website-scope .website-calendar__footer button:not(.app-btn):hover {
-  background: var(--ws-control-bg-hover);
 }
 
 html.website-scope .website-calendar__weekdays,
@@ -1003,7 +1118,7 @@ html.website-scope .website-calendar__weekdays span {
   font-size: 10px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: var(--txt-mute, rgba(255, 255, 255, 0.55));
+  color: var(--txt-mute);
 }
 
 html.website-scope .website-calendar__day {
@@ -1018,10 +1133,10 @@ html.website-scope .website-calendar__day {
   font-family: inherit;
   font-size: 13px;
   line-height: 1;
-  color: var(--txt-bright, #fff);
+  color: var(--txt-bright);
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--website-radius-chip);
   text-align: center;
   white-space: nowrap;
   text-transform: none;
@@ -1035,13 +1150,14 @@ html.website-scope .website-calendar__day:hover {
 }
 
 html.website-scope .website-calendar__day:disabled {
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--website-day-disabled);
   cursor: not-allowed;
   background: transparent;
 }
 
-html.website-scope .website-calendar__day--muted {
-  color: rgba(255, 255, 255, 0.28);
+/* Grid-qualified so the muted ink beats the raw-button colour. */
+html.website-scope .website-calendar__grid button.website-calendar__day--muted {
+  color: var(--website-day-muted);
 }
 
 /* Day cells take the full-pill /website button shape. Scoped with the
@@ -1049,20 +1165,13 @@ html.website-scope .website-calendar__day--muted {
    opt-out block (`button.website-calendar__day`, 0,2,2 — radius 8px)
    without touching the shared `.calendar-api__day` reset. */
 html.website-scope .website-calendar__grid button.website-calendar__day {
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
 }
 
-/* Current day — marked by the brand-red focus-ring outline
-   (var(--focus-ring)), NOT a filled capsule. The cell otherwise stays a
-   plain day: transparent fill, theme-aware day-number colour, same pill
-   shape as every other day. */
-/* NOTE: specificity must beat the LIGHT-mode generic button rule
-   `html.website-scope[data-website-theme="light"] button:not(.app-btn)`,
-   which is (0,3,2) — `.website-scope` + `[data-website-theme]` + `:not()`
-   are all class-level — and would otherwise repaint the cell with a white
-   gradient + shadow in light mode. The `.website-calendar__grid` ancestor
-   + both day classes lift this selector to (0,4,2) so the ring wins in
-   BOTH themes. */
+/* Current day — marked by an inset brand-red ring, NOT a filled capsule. The
+   cell otherwise stays a plain day: transparent fill, theme-aware ink, the
+   same pill as every other day. The `.website-calendar__grid` ancestor plus
+   both day classes (0,4,2) beat the raw-button hover rule (0,3,2). */
 html.website-scope .website-calendar__grid button.website-calendar__day.website-calendar__day--today {
   font-weight: 600;
   background: transparent;
@@ -1077,11 +1186,15 @@ html.website-scope .website-calendar__grid button.website-calendar__day.website-
   background: transparent;
   box-shadow: inset 0 0 0 2px rgb(var(--accentMainRgb));
 }
+html.website-scope .website-calendar__grid button.website-calendar__day.website-calendar__day--today:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px rgb(var(--accentMainRgb)),
+    var(--focus-ring);
+}
 
 /* Selected day keeps the solid red fill but NOT a heavier weight — every
    plain day number 1–31 stays the same size and weight (500, set by the
-   calendar opt-out block above). Only today opts out, into the .app-btn
-   capsule. */
+   calendar opt-out block above); only today is 600. */
 html.website-scope .website-calendar__grid button.website-calendar__day.website-calendar__day--selected,
 html.website-scope .website-calendar__grid button.website-calendar__day.website-calendar__day--selected:hover {
   color: var(--onAccentText);
@@ -1092,24 +1205,10 @@ html.website-scope .website-calendar__footer {
   margin-top: 10px;
 }
 
-html.website-scope .website-calendar__footer button:not(.app-btn) {
+/* "Clear" and "Today" are both secondary controls sharing the footer row. */
+html.website-scope .website-calendar__footer button {
   flex: 1;
-  min-height: 34px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-/* The footer's "Today" (current-date) button opts into the Secondary
-   action style by carrying `app-btn`. Keep it sized to the footer row —
-   flex:1 so it shares width with "Clear", and a 34px floor so it lines
-   up with the sibling instead of the 44px control-system default. */
-html.website-scope .website-calendar__footer button.app-btn {
-  flex: 1;
-  min-height: 34px;
-  font-size: 11px;
+  padding: 0 12px;
 }
 
 html.website-scope .website-time-picker {
@@ -1125,27 +1224,12 @@ html.website-scope .website-time-picker__grid {
   padding-right: 2px;
 }
 
+/* Time slots are secondary controls — the raw-button material, pill, ring and
+   type. Only the width is tightened so three fit a row. */
 html.website-scope button.website-time-picker__option {
-  appearance: none;
-  min-height: 34px;
-  padding: 8px 10px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--txt-bright, #fff);
-  background: var(--ws-control-bg);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: center;
-  text-transform: none;
-  letter-spacing: 0;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-html.website-scope button.website-time-picker__option:hover {
-  background: var(--ws-control-bg-hover);
+  padding: 0 10px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 html.website-scope button.website-time-picker__option--selected,
@@ -1153,6 +1237,10 @@ html.website-scope button.website-time-picker__option--selected:hover {
   color: var(--onAccentText);
   background: var(--accentMain);
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   @family banner — notice banner
+   ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── Banner / alert ──────────────────────────────────────────────
    Deliberately NOT the secondary control surface: a notice is not a
@@ -1167,124 +1255,355 @@ html.website-scope .website-banner {
   justify-content: center;
   gap: 8px;
   min-height: var(--website-control-height);
-  padding: 0 18px;
+  padding: 0 var(--website-control-padding-x);
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   line-height: 1;
   text-align: center;
-  color: #ffffff;
-  background:
-    linear-gradient(180deg, rgba(var(--accentMainRgb), 0.22) 0%, rgba(var(--accentMainRgb), 0.10) 100%);
+  color: var(--txt-bright);
+  background: var(--website-banner-bg);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
   border: none;
   border-radius: var(--website-control-radius);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 8px 22px rgba(var(--accentMainRgb), 0.18);
+  box-shadow: var(--website-banner-shadow);
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* ── /website/dev showcase defaults ──────────────────────────────
-   The dev page uses these same global primitives rather than carrying
-   local presentation styles. They are intentionally scoped to the
-   website-dev-* classes so real customer pages only inherit the shared
-   control, card, calendar, banner, scrollbar and typography defaults. */
+/* ── Cookie consent (src/components/CookieBanner.js, /website branch) ──
+   A floating panel: the panel tint, hairline and overlay lift. Its buttons are
+   the two controls — raw <button> for Customise / Reject / Save, .app-btn for
+   Accept — so reject and accept keep equal prominence in size and shape. */
+html.website-scope .ws-consent {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1500;
+  box-sizing: border-box;
+  max-width: 720px;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  margin: 0 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: var(--website-radius-card);
+  color: var(--txt-bright);
+  background: var(--ws-panel-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    inset 0 0 0 1px var(--ws-control-ring),
+    var(--website-overlay-shadow);
+}
+html.website-scope .ws-consent-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-consent-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-consent-options {
+  display: grid;
+  gap: 10px;
+}
+html.website-scope .ws-consent-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--website-radius-panel);
+  background: var(--ws-control-bg);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
+  cursor: pointer;
+}
+html.website-scope .ws-consent-option[data-locked="true"] {
+  cursor: default;
+}
+html.website-scope .ws-consent-option input[type="checkbox"]:not(.app-btn) {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  border: var(--checkbox-ring);
+  border-radius: 5px;
+  background: var(--ws-control-bg);
+  cursor: pointer;
+}
+html.website-scope .ws-consent-option input[type="checkbox"]:not(.app-btn):checked {
+  background: var(--accentMain);
+}
+html.website-scope .ws-consent-option input[type="checkbox"]:not(.app-btn):checked::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 2px;
+  background: var(--onAccentText);
+}
+html.website-scope .ws-consent-option input[type="checkbox"]:not(.app-btn):disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+html.website-scope .ws-consent-option input[type="checkbox"]:not(.app-btn):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+html.website-scope .ws-consent-option-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-consent-option-flag {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-consent-option-note {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  html.website-scope .ws-consent-actions > button {
+    flex: 1 1 auto;
+  }
+}
+
+/* ── "Report a problem" launcher (CustomerWebsiteLayout) ──────────────────
+   Pinned bottom-left, out of the content flow, never printed. The button is
+   a raw <button>, so it is the secondary control. */
+html.website-scope .ws-support-launcher {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 60;
+}
+html.website-scope .ws-support-launcher__button {
+  white-space: nowrap;
+}
+@media print {
+  html.website-scope .ws-support-launcher {
+    display: none;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   @family showcase — /website/dev showcase chrome (website-dev-*)
+
+   The frame the showcase page draws AROUND the real customer primitives:
+   section panels, rows, swatches, stages, the token table. Every value here
+   reads a token from the foundation block, so the showcase re-themes with the
+   exact same switches as the pages it documents — there is no light-mode copy
+   of this block, and there must never be one.
+
+   These classes are exempt from showcase coverage (they ARE the showcase),
+   but they are held to zero raw colours like everything else.
+   ═══════════════════════════════════════════════════════════════════════ */
 html.website-scope .website-dev-shell {
   min-height: 100vh;
   padding: 32px clamp(16px, 4vw, 48px) 96px;
-  background: transparent;
-  color: #fff;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 24px;
-  align-items: start;
+  color: var(--txt-bright);
 }
 
-/* Page title and any section flagged --wide always take the full row. */
-html.website-scope .website-dev-page-title,
-html.website-scope .website-dev-section--wide {
-  grid-column: 1 / -1;
+html.website-scope .website-dev-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-/* Below ~960px the two-column grid is too cramped — collapse to a single
-   column so every showcase section gets the full content width back. */
-@media (max-width: 960px) {
-  html.website-scope .website-dev-shell {
-    grid-template-columns: minmax(0, 1fr);
-  }
+html.website-scope .website-dev-header__text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  max-width: 820px;
 }
 
 html.website-scope .website-dev-page-title {
   margin: 0;
-  font-size: 32px;
+  font-size: clamp(26px, 4vw, 32px);
   font-weight: 800;
   letter-spacing: 0;
+}
+
+html.website-scope .website-dev-page-lead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--txt-soft);
+}
+
+html.website-scope .website-dev-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.website-scope .website-dev-stat {
+  padding: 6px 12px;
+  border-radius: var(--website-radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--txt-soft);
+  background: var(--website-elev-3);
+}
+
+html.website-scope .website-dev-stat strong {
+  color: var(--txt-bright);
+}
+
+html.website-scope .website-dev-index {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--ws-control-ring),
+    var(--website-overlay-shadow);
+}
+
+html.website-scope .website-dev-index__link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--website-control-height);
+  padding: 0 14px;
+  border-radius: var(--website-radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--ws-control-text);
+  background: var(--ws-control-bg);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
+}
+
+html.website-scope .website-dev-index__link:hover {
+  background: var(--ws-control-bg-hover);
+}
+html.website-scope .website-dev-index__link:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--ws-control-ring),
+    var(--focus-ring);
 }
 
 html.website-scope .website-dev-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   padding: 22px clamp(16px, 3vw, 28px);
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 18px;
-  align-self: stretch;
-}
-
-html.website-scope .website-dev-section__header,
-html.website-scope .website-dev-section__body,
-html.website-scope .website-dev-swatch__meta,
-html.website-scope .website-dev-text-scale,
-html.website-scope .website-dev-ref-list,
-html.website-scope .website-dev-locked {
-  display: flex;
-  flex-direction: column;
+  border-radius: var(--website-radius-card);
+  background: var(--website-elev-1);
+  scroll-margin-top: 88px;
 }
 
 html.website-scope .website-dev-section__header {
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 html.website-scope .website-dev-section__title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+html.website-scope .website-dev-section__lead {
+  margin: 0;
+  max-width: 80ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--txt-soft);
+}
+
+html.website-scope .website-dev-section__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--txt-mute);
 }
 
 html.website-scope .website-dev-section__body {
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
 }
 
 html.website-scope .website-dev-row {
   display: grid;
-  grid-template-columns: minmax(140px, 220px) 1fr;
+  grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
 
-html.website-scope .website-dev-row__label,
-html.website-scope .website-dev-form-label {
-  font-size: 11px;
-  text-transform: uppercase;
+html.website-scope .website-dev-row__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  color: var(--txt-mute);
 }
 
-html.website-scope .website-dev-row__label {
-  font-size: 12px;
-  padding-top: 10px;
+html.website-scope .website-dev-row__note {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
 }
 
 html.website-scope .website-dev-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -1293,9 +1612,6 @@ html.website-scope .website-dev-swatch-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-}
-
-html.website-scope .website-dev-cluster {
   gap: 10px;
 }
 
@@ -1307,177 +1623,161 @@ html.website-scope .website-dev-swatch {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 200px;
+  min-width: 220px;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
+  border-radius: var(--website-radius-tile);
+  background: var(--website-elev-2);
 }
 
 html.website-scope .website-dev-swatch__chip {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
-}
-
-html.website-scope .website-dev-swatch__chip--big {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--website-dev-swatch);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
 }
 
 html.website-scope .website-dev-swatch__meta {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
 
 html.website-scope .website-dev-swatch__label {
-  font-size: 13px;
+  font-family: var(--font-family-mono);
+  font-size: 12px;
   font-weight: 600;
-  color: #fff;
-}
-
-html.website-scope .website-dev-swatch__note,
-html.website-scope .website-dev-code,
-html.website-scope .website-dev-code-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--txt-bright);
 }
 
 html.website-scope .website-dev-swatch__note {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
+  color: var(--txt-mute);
+  overflow-wrap: anywhere;
 }
 
+html.website-scope .website-dev-ink-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+}
+
+html.website-scope .website-dev-ink--bright { color: var(--txt-bright); }
+html.website-scope .website-dev-ink--soft { color: var(--txt-soft); }
+html.website-scope .website-dev-ink--mute { color: var(--txt-mute); }
+html.website-scope .website-dev-ink--faint { color: var(--txt-faint); }
+
+/* The real page wash, at the size of a swatch. Reads the same four tokens as
+   `html.website-scope body`, so it can never show a different wash. */
 html.website-scope .website-dev-wash-preview {
-  position: relative;
-  height: 160px;
-  padding: 14px;
   display: flex;
   align-items: flex-end;
-  overflow: hidden;
-  border-radius: 14px;
+  height: 180px;
+  padding: 14px;
+  border-radius: var(--website-radius-panel);
   background:
-    radial-gradient(ellipse at top right, rgba(185, 28, 28, 0.45), transparent 60%),
-    radial-gradient(ellipse at bottom left, rgba(185, 28, 28, 0.45), transparent 60%),
-    radial-gradient(ellipse at top left, rgba(22, 22, 26, 0.70), transparent 60%),
-    radial-gradient(ellipse at bottom right, rgba(22, 22, 26, 0.70), transparent 60%),
-    #07070b;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    radial-gradient(ellipse at top right, var(--website-wash-accent), transparent 60%),
+    radial-gradient(ellipse at bottom left, var(--website-wash-accent), transparent 60%),
+    radial-gradient(ellipse at top left, var(--website-wash-cool), transparent 60%),
+    radial-gradient(ellipse at bottom right, var(--website-wash-cool), transparent 60%),
+    var(--website-page-bg);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
 }
 
 html.website-scope .website-dev-wash-caption {
   max-width: 520px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
   line-height: 1.5;
+  color: var(--txt-soft);
 }
 
-html.website-scope .website-dev-text-scale {
-  gap: 6px;
-  font-size: 14px;
+html.website-scope .website-dev-metric-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 24px;
 }
 
-html.website-scope .website-dev-text-bright { color: #fff; }
-html.website-scope .website-dev-text-soft { color: rgba(255, 255, 255, 0.78); }
-html.website-scope .website-dev-text-mute { color: rgba(255, 255, 255, 0.55); }
-html.website-scope .website-dev-text-faint { color: rgba(255, 255, 255, 0.32); }
-
-html.website-scope .website-dev-heading-one {
-  margin: 0;
-}
-
-html.website-scope .website-dev-heading-two {
-  margin: 8px 0 0;
-}
-
-html.website-scope .website-dev-meta {
-  margin: 0;
+html.website-scope .website-dev-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--txt-soft);
 }
 
-html.website-scope .website-dev-copy {
-  margin: 0;
+html.website-scope .website-dev-metric__sample {
+  flex-shrink: 0;
+  background: var(--accentMain);
 }
 
-html.website-scope .website-dev-token-table-wrap {
-  overflow-x: auto;
-  margin: 0 -8px;
+html.website-scope .website-dev-metric__sample--height {
+  width: 14px;
+  height: var(--website-control-height);
+  border-radius: 4px;
 }
 
-html.website-scope .website-dev-token-table {
-  width: 100%;
-  min-width: 720px;
-  border-collapse: collapse;
+html.website-scope .website-dev-metric__sample--radius {
+  width: calc(var(--website-control-height) * 2);
+  height: var(--website-control-height);
+  border-radius: var(--website-control-radius);
+  background: var(--ws-control-bg);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
 }
 
-html.website-scope .website-dev-token-th {
-  padding: 10px 12px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.5);
-  border-bottom: var(--separating-line);
+html.website-scope .website-dev-metric__sample--gap {
+  width: var(--website-field-gap);
+  height: var(--website-control-height);
+  border-radius: 2px;
 }
 
-html.website-scope .website-dev-token-cell {
-  padding: 10px 12px;
-}
-
-html.website-scope .website-dev-token-cell--chip {
-  width: 36px;
-}
-
-html.website-scope .website-dev-token-cell--name {
-  white-space: nowrap;
-}
-
-html.website-scope .website-dev-token-cell--value {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-html.website-scope .website-dev-token-cell--purpose {
+html.website-scope .website-dev-scroll-host {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 560px;
+  height: 180px;
+  overflow-y: auto;
+  padding: 14px;
+  border-radius: var(--website-radius-tile);
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--txt-soft);
+  background: var(--website-elev-2);
 }
 
-html.website-scope .website-dev-token-chip {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-html.website-scope .website-dev-token-chip--missing {
-  background:
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 3px, transparent 3px, transparent 6px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+html.website-scope .website-dev-scroll-row {
+  margin: 0;
 }
 
 html.website-scope .website-dev-code {
   padding: 2px 6px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  font-family: var(--font-family-mono);
   font-size: 12px;
+  color: var(--txt-bright);
+  background: var(--website-elev-3);
 }
 
 html.website-scope .website-dev-code-mono {
-  color: rgba(255, 255, 255, 0.75);
+  font-family: var(--font-family-mono);
   font-size: 12px;
+  color: var(--txt-soft);
+  overflow-wrap: anywhere;
 }
 
-html.website-scope .website-dev-choice {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
+html.website-scope .website-dev-control-width {
+  width: 100%;
+  max-width: 320px;
+}
+
+html.website-scope .website-dev-wide-control {
+  width: 100%;
+  max-width: 560px;
 }
 
 html.website-scope .website-dev-choice-list {
@@ -1486,132 +1786,177 @@ html.website-scope .website-dev-choice-list {
   gap: 8px;
 }
 
-html.website-scope .website-dev-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--website-field-gap);
+html.website-scope .website-dev-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--txt-soft);
+  cursor: pointer;
 }
 
-html.website-scope .website-dev-form-field {
+html.website-scope .website-dev-form {
   display: flex;
   flex-direction: column;
-  gap: var(--website-field-gap);
-  min-width: 0;
-}
-
-html.website-scope .website-dev-control-width {
-  max-width: 320px;
-}
-
-html.website-scope .website-dev-wide-control {
   max-width: 560px;
 }
 
-html.website-scope .website-dev-calendar-preview {
-  position: relative;
-  width: 320px;
-  height: 360px;
-}
-
-html.website-scope .website-dev-calendar-static {
-  position: static;
-}
-
-/* Static showcase of the open select menu — drops the absolute positioning
-   so the dropdown list renders inline, the same way the calendar surface
-   is shown above it. */
+/* Floating surfaces (menus, calendar) rendered open and in flow. */
+html.website-scope .website-dev-calendar-static,
 html.website-scope .website-dev-select-static {
   position: static;
   max-height: none;
 }
 
-html.website-scope .website-dev-flat-card {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-width: 560px;
-  padding: 22px clamp(16px, 3vw, 28px);
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 18px;
+html.website-scope .website-dev-menu-frame {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
 }
 
-html.website-scope .website-dev-card-eyebrow {
-  margin: 0;
+html.website-scope .website-dev-day-cell {
+  width: 40px;
+}
+
+/* A preview window for position:fixed customer surfaces (basket drawer, Help
+   popup). The transform makes this box the containing block for its fixed
+   descendants, so they open inside the stage instead of over the showcase. */
+html.website-scope .website-dev-stage {
+  position: relative;
+  height: 620px;
+  overflow: hidden;
+  border-radius: var(--website-radius-card);
+  transform: translateZ(0);
+  background: var(--website-page-bg);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
+}
+
+/* The popup sizes itself to the VIEWPORT (100vw / 100dvh); inside a stage it
+   has to size to the stage instead. Showcase-only — the real popup is
+   untouched. */
+html.website-scope .website-dev-stage .ws-article-backdrop {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+}
+
+html.website-scope .website-dev-frame {
+  overflow: hidden;
+  border-radius: var(--website-radius-card);
+  isolation: isolate;
+  background: var(--website-page-bg);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
+}
+
+html.website-scope .website-dev-frame--padded {
+  padding: 20px;
+}
+
+html.website-scope .website-dev-card-pad {
+  padding: 20px;
+}
+
+/* The login shell is a full-viewport layout; in the showcase it sizes to its
+   content. Showcase-only. */
+html.website-scope .website-dev-auth-frame .authShell {
+  min-height: 0;
+}
+
+html.website-scope .website-dev-table-wrap {
+  overflow-x: auto;
+}
+
+html.website-scope .website-dev-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+html.website-scope .website-dev-table__th {
+  padding: 10px 12px;
+  text-align: left;
   font-size: 11px;
-  letter-spacing: 1.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: #b91c1c;
-  font-weight: 700;
+  color: var(--txt-mute);
+  border-bottom: var(--separating-line);
 }
 
-html.website-scope .website-dev-card-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-html.website-scope .website-dev-card-lead {
-  margin: 0;
+html.website-scope .website-dev-table__td {
+  padding: 10px 12px;
+  vertical-align: top;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1.55;
+  line-height: 1.45;
+  color: var(--txt-soft);
+  border-bottom: var(--separating-line);
 }
 
-html.website-scope .website-dev-scroll-host {
-  max-width: 560px;
-  height: 180px;
-  overflow-y: auto;
-  padding: 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.78);
+html.website-scope .website-dev-table__td--nowrap {
+  white-space: nowrap;
 }
 
-html.website-scope .website-dev-banner-strong {
-  color: #fff;
+html.website-scope .website-dev-token-chip {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--website-dev-swatch);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
 }
 
-html.website-scope .website-dev-banner-copy {
-  color: rgba(255, 255, 255, 0.85);
+html.website-scope .website-dev-token-chip--missing {
+  background:
+    repeating-linear-gradient(45deg, var(--website-elev-4), var(--website-elev-4) 3px, transparent 3px, transparent 6px);
 }
 
-html.website-scope .website-dev-scroll-row {
-  margin: 0;
+html.website-scope .website-dev-probe {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
-html.website-scope .website-dev-ref-list {
-  margin: 0;
-  padding-left: 20px;
-  gap: 12px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-html.website-scope .website-dev-ref-note {
-  margin-top: 4px;
+html.website-scope .website-dev-details {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-  line-height: 1.5;
+  color: var(--txt-mute);
+}
+
+html.website-scope .website-dev-class-list {
+  margin: 8px 0 0;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--txt-soft);
+  overflow-wrap: anywhere;
+}
+
+html.website-scope .website-dev-missing {
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--website-radius-tile);
+  font-size: 13px;
+  color: var(--accentText);
+  background: var(--website-elev-2);
 }
 
 html.website-scope .website-dev-locked {
-  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-height: 60vh;
   padding: 24px;
-  color: rgba(255, 255, 255, 0.7);
-  background: #07070b;
+  color: var(--txt-soft);
+  background: var(--website-page-bg);
 }
 
 html.website-scope .website-dev-locked__title {
   margin: 0;
   font-size: 20px;
-  color: #fff;
+  color: var(--txt-bright);
 }
 
 html.website-scope .website-dev-locked__body {
@@ -1621,7 +1966,7 @@ html.website-scope .website-dev-locked__body {
 
 @media (max-width: 720px) {
   html.website-scope .website-dev-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
 
@@ -1631,125 +1976,96 @@ html.website-scope .website-dev-locked__body {
 }
 
 /* ═══ /website light theme ════════════════════════════════════════════
-   Everything above renders the customer surface DARK by default — that
-   is the baseline `html.website-scope` look. When the profile page's
-   theme cycle button writes data-website-theme="light" onto <html>, the
-   overrides below repaint the same control / surface / calendar / banner
-   primitives for a light background.
+   @family theme — the data-website-theme="light" flip
 
-   data-website-theme="dark" (or the attribute being absent) keeps the
-   dark default, so only the light branch needs declaring here. The
-   "System" choice is resolved to a concrete "light" / "dark" value in JS
-   before the attribute is written, so the CSS only ever sees one of the
-   two real themes.
+   Everything above renders the customer surface DARK by default. When a page
+   writes data-website-theme="light" onto <html> (useWebsiteTheme on every
+   public route; the theme button on /website/profile and /website/dev), this
+   block re-points the SAME token names for a light background.
 
-   These selectors carry the extra [data-website-theme="light"] attribute,
-   so they out-specify the dark rules above; `!important` is only repeated
-   where the dark baseline itself used `!important` (the token block,
-   the body/html background and the scrollbar gutter — all of which must
-   still beat the staff themeProvider's inline styles). */
+   THE RULE: the light theme is expressed as token values, not as rules. If a
+   component looks wrong in light mode, give the value it needs a token in the
+   foundation block and re-point it here — do not add a
+   `[data-website-theme="light"] .some-component { … }` rule. The handful of
+   rules left below are the things a custom property genuinely cannot carry
+   (SVG data-URI glyph colours, native color-scheme, browser filters) plus
+   recorded legacy fills that `npm run check:website` tracks as debt.
+
+   `!important` matches the base token block, which must beat the staff
+   themeProvider's inline custom properties on <html>. */
 html.website-scope[data-website-theme="light"] {
   color-scheme: light !important;
 
-  /* Light surface tokens. Brand red is untouched — it stays fixed in
-     both themes (the --accentMain / --primary block above still wins). */
+  /* Light surface and ink. Brand red is untouched — it is fixed in both themes. */
   --surface: #ffffff !important;
   --surfaceMain: #ffffff !important;
   --surfaceText: #14141a !important;
+  --website-page-bg: #fdfdfe !important;
+  --website-wash-accent: rgba(237, 33, 33, 0.22) !important;
+  --website-wash-cool: rgba(214, 214, 222, 0.55) !important;
 
-  /* Light text scale — dark ink on the pale surface (mirrors the dark
-     --txt-* ramp, flipped). */
   --txt-bright: #14141a !important;
   --txt-soft: rgba(20, 20, 26, 0.74) !important;
   --txt-mute: rgba(20, 20, 26, 0.54) !important;
   --txt-faint: rgba(20, 20, 26, 0.34) !important;
+  --website-placeholder: rgba(20, 20, 26, 0.55) !important;
+  --website-input-placeholder: rgba(20, 20, 26, 0.5) !important;
 
   /* Rings darken so they read on the light surface. */
   --ghostbutton-ring: 1px solid rgba(0, 0, 0, 0.16) !important;
   --input-ring: 1px solid rgba(0, 0, 0, 0.14) !important;
   --checkbox-ring: 2px solid rgba(0, 0, 0, 0.28) !important;
-  --focus-ring: 0 0 0 3px rgba(185, 28, 28, 0.30) !important;
+  --focus-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.30) !important;
+  --separating-line-color: rgba(var(--accentMainRgb), 0.14) !important;
 
-  /* Light scrollbar gutter, brand-red thumb retained. */
-  --scrollbar-thumb: #b91c1c !important;
-  --scrollbar-thumb-hover: #d22424 !important;
-
-  /* Surface elevation re-painted as faint dark washes — the customer
-     cards stay just as visible on the pale surface as the white washes
-     are on the dark one. */
+  /* Surface elevation re-painted as faint dark washes. */
   --website-elev-1: rgba(0, 0, 0, 0.05) !important;
   --website-elev-2: rgba(0, 0, 0, 0.06) !important;
   --website-elev-3: rgba(0, 0, 0, 0.085) !important;
   --website-elev-4: rgba(0, 0, 0, 0.11) !important;
 
-  /* Control ring darkens to read on the pale surface. The fill and the ink
-     need no override — --website-elev-* and --txt-bright flip just above. */
+  /* Control material follows the LIGHT --surface (#ffffff): a near-opaque
+     white tint for controls, denser still for floating panels (dropdown
+     lists, calendar / time picker, basket drawer). The dark base block
+     paints the same tokens from the dark surface. The ring darkens to read
+     on the pale surface; ink follows --txt-bright. */
+  --ws-control-bg: rgba(255, 255, 255, 0.82) !important;
+  --ws-control-bg-hover: rgba(240, 240, 244, 0.94) !important;
+  --ws-panel-bg: rgba(255, 255, 255, 0.95) !important;
+  --accentText: var(--accentMain) !important;
+  --website-warning-ink: #92400e !important;
+  --website-danger-ink: #991b1b !important;
+  --website-backdrop: rgba(15, 23, 42, 0.28) !important;
+  --website-drawer-shadow: -18px 0 44px rgba(15, 23, 42, 0.18) !important;
+  --website-banner-bg: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.14) 0%, rgba(var(--accentMainRgb), 0.08) 100%) !important;
+  --website-banner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 8px 22px rgba(var(--accentMainRgb), 0.12) !important;
+  --website-popup-scrim-tint: rgba(var(--accentMainRgb), 0.24) !important;
+  --website-popup-scrim-base: rgba(15, 23, 42, 0.28) !important;
+  --website-popup-shadow: 0 24px 56px rgba(15, 23, 42, 0.22) !important;
+  --website-chip-shadow: 0 4px 12px rgba(15, 23, 42, 0.18) !important;
   --ws-control-ring: rgba(15, 23, 42, 0.12) !important;
+
+  /* Menus and pickers: a lighter lift, and selected rows become the solid
+     brand red — a faint red tint under white ink is unreadable on white. */
+  --website-overlay-shadow: 0 24px 56px rgba(0, 0, 0, 0.18) !important;
+  --website-option-bg: #ffffff !important;
+  --website-option-selected-bg: rgb(var(--accentMainRgb)) !important;
+  --website-selected-bg: rgb(var(--accentMainRgb)) !important;
+  --website-selected-bg-hover: rgb(var(--accentMainRgb)) !important;
+  --website-selected-hint: rgba(255, 255, 255, 0.78) !important;
+  --website-day-muted: rgba(20, 20, 26, 0.32) !important;
+  --website-day-disabled: rgba(20, 20, 26, 0.25) !important;
+
+  --website-scrollbar-track: #e6e6ea !important;
+  --website-success-ink: #15803d !important;
 }
 
-/* Light customer surface — mirrors the dark body wash, flipped: two
-   red glows top-right + bottom-left, two soft cool-grey glows in the
-   opposite corners, over a near-white base. The red uses a brighter
-   tone (232, 60, 60) at a slightly higher alpha than the dark wash so
-   it still reads as a warm corner glow against the pale surface. */
-html.website-scope[data-website-theme="light"] body {
-  background:
-    radial-gradient(ellipse at top right, rgba(237, 33, 33, 0.22), transparent 60%),
-    radial-gradient(ellipse at bottom left, rgba(237, 33, 33, 0.22), transparent 60%),
-    radial-gradient(ellipse at top left, rgba(214, 214, 222, 0.55), transparent 60%),
-    radial-gradient(ellipse at bottom right, rgba(214, 214, 222, 0.55), transparent 60%),
-    #fdfdfe !important;
-  background-attachment: fixed !important;
-}
-html.website-scope[data-website-theme="light"] {
-  background: #fdfdfe !important;
-}
-
-/* Light scrollbar gutter. */
-html.website-scope[data-website-theme="light"],
-html.website-scope[data-website-theme="light"] body {
-  scrollbar-color: var(--scrollbar-thumb) #e6e6ea;
-}
-html.website-scope[data-website-theme="light"]::-webkit-scrollbar,
-html.website-scope[data-website-theme="light"] body::-webkit-scrollbar,
-html.website-scope[data-website-theme="light"]::-webkit-scrollbar-track,
-html.website-scope[data-website-theme="light"] body::-webkit-scrollbar-track,
-html.website-scope[data-website-theme="light"]::-webkit-scrollbar-corner,
-html.website-scope[data-website-theme="light"] body::-webkit-scrollbar-corner {
-  background: #e6e6ea;
-}
-
-/* ── Light control chrome ────────────────────────────────────────────
-   Buttons, selects, inputs, the file picker and the floating menus need
-   NO light-mode fill or ring override any more: they all read from
-   --ws-control-bg / --ws-control-bg-hover / --ws-control-ring /
-   --ws-control-text, and all four flip in the light token block above.
-   Only what the tokens cannot carry is repainted below — the dark caret
-   and picker glyphs, the browser-native <option> list, and the accent
-   selected states that would be unreadable on a white menu. */
-
-/* Light select trigger — dark caret glyph over the same token fill. */
+/* ── What a token cannot carry ────────────────────────────────────────────
+   SVG data-URI glyphs bake their stroke colour into the URL, so the caret and
+   picker icons need a dark copy. */
 html.website-scope[data-website-theme="light"] select:not(.app-btn) {
   background-image:
     url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%2314141a' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
-}
-html.website-scope[data-website-theme="light"] select:not(.app-btn) option {
-  color: #14141a;
-  background: #ffffff;
-}
-/* Light selected / hovered option — the dark rule paints white text on a
-   faint red tint (rgba(red, 0.28) over white), which is unreadable on the
-   white light menu. Light mode uses the solid brand red with white ink. */
-html.website-scope[data-website-theme="light"] select:not(.app-btn) option:checked,
-html.website-scope[data-website-theme="light"] select:not(.app-btn) option:hover {
-  background: rgb(var(--accentMainRgb));
-  color: #ffffff;
-}
-
-/* Custom select trigger / caret / menu — light surfaces. */
-html.website-scope[data-website-theme="light"] .website-native-select__placeholder,
-html.website-scope[data-website-theme="light"] .website-native-datetime__placeholder {
-  color: rgba(20, 20, 26, 0.55);
 }
 html.website-scope[data-website-theme="light"] .website-native-select__caret {
   background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%2314141a' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat center / contain;
@@ -1760,32 +2076,9 @@ html.website-scope[data-website-theme="light"] .website-native-datetime__icon {
 html.website-scope[data-website-theme="light"] .website-native-datetime[data-type="time"] .website-native-datetime__icon {
   background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2314141a' stroke-width='1.4'%3E%3Ccircle cx='8' cy='8' r='5.5'/%3E%3Cpath d='M8 4.5V8l2.5 1.5'/%3E%3C/svg%3E") no-repeat center / contain;
 }
-html.website-scope[data-website-theme="light"] .website-native-select__menu {
-  /* Fill and ring are tokens; only the drop shadow lightens. */
-  box-shadow:
-    inset 0 0 0 1px var(--ws-control-ring),
-    0 24px 56px rgba(0, 0, 0, 0.18);
-}
-/* Light selected option row — the dark rule (faint red tint + white ink)
-   is unreadable on the white light menu. Light mode paints the row solid
-   brand red with white ink so it reads as a clear, selected capsule. */
-html.website-scope[data-website-theme="light"] .website-native-select__option--selected,
-html.website-scope[data-website-theme="light"] .website-native-select__option--selected:hover,
-html.website-scope[data-website-theme="light"] .website-native-select__option--selected.website-native-select__option--active {
-  background: rgb(var(--accentMainRgb));
-  color: #ffffff;
-}
-/* The secondary hint line follows the row ink onto the red fill. */
-html.website-scope[data-website-theme="light"] .website-native-select__option--selected .website-native-select__option-hint {
-  color: rgba(255, 255, 255, 0.78);
-}
 
-html.website-scope[data-website-theme="light"] input::placeholder,
-html.website-scope[data-website-theme="light"] textarea::placeholder {
-  color: rgba(20, 20, 26, 0.5);
-}
-
-/* Native date/time picker indicator — dark glyph on the light capsule. */
+/* Native date/time popups follow the page scheme; the indicator glyph is a
+   browser image, so it is tinted with a filter rather than a colour. */
 html.website-scope[data-website-theme="light"] input[type="date"],
 html.website-scope[data-website-theme="light"] input[type="time"] {
   color-scheme: light;
@@ -1795,135 +2088,14 @@ html.website-scope[data-website-theme="light"] input[type="time"]::-webkit-calen
   filter: opacity(0.7);
 }
 
-/* Light calendar / time-picker surfaces — fill, ring and the chrome
-   buttons inside are tokens; only the drop shadow lightens. */
-html.website-scope[data-website-theme="light"] .website-calendar,
-html.website-scope[data-website-theme="light"] .website-time-picker {
-  box-shadow:
-    inset 0 0 0 1px var(--ws-control-ring),
-    0 24px 56px rgba(0, 0, 0, 0.18);
-}
-/* Today's red focus-ring hover is theme-agnostic (see the --today:hover
-   rule near the day-cell block) — no light-mode override needed. */
-html.website-scope[data-website-theme="light"] .website-calendar__day:disabled {
-  color: rgba(20, 20, 26, 0.25);
-}
-html.website-scope[data-website-theme="light"] .website-calendar__day--muted {
-  color: rgba(20, 20, 26, 0.32);
-}
-/* Selected day / time still render white-on-red — kept from the dark rules. */
-html.website-scope[data-website-theme="light"] button.website-time-picker__option--selected,
-html.website-scope[data-website-theme="light"] button.website-time-picker__option--selected:hover {
-  color: #ffffff;
-}
-
-/* Banner / alert — light: a soft red tint with dark ink so the title and
-   the --txt-soft sub-text both read (the dark theme paints white-on-red). */
-html.website-scope[data-website-theme="light"] .website-banner {
-  color: #14141a;
-  background:
-    linear-gradient(180deg, rgba(var(--accentMainRgb), 0.14) 0%, rgba(var(--accentMainRgb), 0.08) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 0 0 1px rgba(var(--accentMainRgb), 0.18),
-    0 8px 22px rgba(var(--accentMainRgb), 0.12);
-}
-
-/* Radio — light: the unchecked well darkens so it reads on the light
-   surface. The checked state already paints white-on-red, unchanged. */
-html.website-scope[data-website-theme="light"] input[type="radio"]:not(.app-btn) {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-/* ── /website/dev showcase — light variants ──────────────────────────
-   The dev page reuses these website-dev-* primitives. Each carries a
-   light counterpart here so the showcase reads the same way with the
-   light theme active — dark ink on pale panels, mirroring the dark
-   values used above. */
-html.website-scope[data-website-theme="light"] .website-dev-shell {
-  color: #14141a;
-}
-html.website-scope[data-website-theme="light"] .website-dev-section,
-html.website-scope[data-website-theme="light"] .website-dev-flat-card {
-  background: rgba(0, 0, 0, 0.035);
-}
-html.website-scope[data-website-theme="light"] .website-dev-page-title,
-html.website-scope[data-website-theme="light"] .website-dev-section__title,
-html.website-scope[data-website-theme="light"] .website-dev-swatch__label,
-html.website-scope[data-website-theme="light"] .website-dev-card-title,
-html.website-scope[data-website-theme="light"] .website-dev-banner-strong,
-html.website-scope[data-website-theme="light"] .website-dev-code {
-  color: #14141a;
-}
-html.website-scope[data-website-theme="light"] .website-dev-row__label,
-html.website-scope[data-website-theme="light"] .website-dev-form-label,
-html.website-scope[data-website-theme="light"] .website-dev-swatch__note,
-html.website-scope[data-website-theme="light"] .website-dev-meta,
-html.website-scope[data-website-theme="light"] .website-dev-ref-note {
-  color: rgba(20, 20, 26, 0.54);
-}
-html.website-scope[data-website-theme="light"] .website-dev-wash-caption,
-html.website-scope[data-website-theme="light"] .website-dev-card-lead,
-html.website-scope[data-website-theme="light"] .website-dev-token-cell--purpose,
-html.website-scope[data-website-theme="light"] .website-dev-token-cell--value,
-html.website-scope[data-website-theme="light"] .website-dev-code-mono,
-html.website-scope[data-website-theme="light"] .website-dev-choice,
-html.website-scope[data-website-theme="light"] .website-dev-banner-copy,
-html.website-scope[data-website-theme="light"] .website-dev-ref-list,
-html.website-scope[data-website-theme="light"] .website-dev-scroll-host {
-  color: rgba(20, 20, 26, 0.72);
-}
-html.website-scope[data-website-theme="light"] .website-dev-swatch,
-html.website-scope[data-website-theme="light"] .website-dev-scroll-host {
-  background: rgba(0, 0, 0, 0.04);
-}
-html.website-scope[data-website-theme="light"] .website-dev-swatch__chip,
-html.website-scope[data-website-theme="light"] .website-dev-token-chip {
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
-}
-html.website-scope[data-website-theme="light"] .website-dev-token-chip--missing {
-  background:
-    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06) 3px, transparent 3px, transparent 6px);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.10);
-}
-html.website-scope[data-website-theme="light"] .website-dev-token-th {
-  color: rgba(20, 20, 26, 0.5);
-}
-html.website-scope[data-website-theme="light"] .website-dev-code {
-  background: rgba(0, 0, 0, 0.07);
-}
-/* Demonstration text scale flips so each step still reads against the
-   light panel. */
-html.website-scope[data-website-theme="light"] .website-dev-text-bright { color: #14141a; }
-html.website-scope[data-website-theme="light"] .website-dev-text-soft { color: rgba(20, 20, 26, 0.74); }
-html.website-scope[data-website-theme="light"] .website-dev-text-mute { color: rgba(20, 20, 26, 0.54); }
-html.website-scope[data-website-theme="light"] .website-dev-text-faint { color: rgba(20, 20, 26, 0.34); }
-html.website-scope[data-website-theme="light"] .website-dev-card-eyebrow {
-  color: #b91c1c;
-}
-html.website-scope[data-website-theme="light"] .website-dev-locked {
-  color: rgba(20, 20, 26, 0.72);
-  background: #fdfdfe;
-}
-html.website-scope[data-website-theme="light"] .website-dev-locked__title {
-  color: #14141a;
-}
-/* Body wash preview swatch — light variant. Mirrors the light body wash
-   (brighter 232,60,60 red + cool-grey corners over a near-white base),
-   amplified the same way the dark preview amplifies the dark wash so the
-   glows read clearly inside the small swatch. */
-html.website-scope[data-website-theme="light"] .website-dev-wash-preview {
-  background:
-    radial-gradient(ellipse at top right, rgba(237, 33, 33, 0.48), transparent 60%),
-    radial-gradient(ellipse at bottom left, rgba(237, 33, 33, 0.48), transparent 60%),
-    radial-gradient(ellipse at top left, rgba(214, 214, 222, 0.85), transparent 60%),
-    radial-gradient(ellipse at bottom right, rgba(214, 214, 222, 0.85), transparent 60%),
-    #fdfdfe;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
-}
+/* ── Recorded legacy light fills (tracked debt — do not add to) ───────── */
+/* Banner — a softer tint and specular in light; the ink already follows
+   --txt-bright. */
+/* Banner fill / shadow and the radio well are token re-points above
+   (--website-banner-*, --ws-control-bg) — no light rules needed. */
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PUBLIC MARKETING PAGE  (/website)
+   @family marketing — PUBLIC MARKETING PAGE  (/website)
 
    Full stylesheet for src/features/website/WebsitePage.js — the `.ws-*` class
    family. Everything the customer marketing page needs lives here; the
@@ -1943,7 +2115,7 @@ html.website-scope {
 /* ── Page tokens — dark default ──────────────────────────────────────── */
 /* Card surfaces reuse the custglobal "/website surface elevation" washes
    (--website-elev-*, declared higher in this file) — the same frosted-glass
-   card language as .website-dev-flat-card. They flip per theme on their
+   card language on every customer page. They flip per theme on their
    own, so --ws-card needs no light override. */
 html.website-scope .ws-page {
   --ws-card: var(--website-elev-2);
@@ -1981,23 +2153,18 @@ html.website-scope .ws-logo {
   width: auto;
   display: block;
 }
-html.website-scope .ws-logo--light {
-  display: none;
-}
-html.website-scope[data-website-theme="light"] .ws-logo--light {
-  display: block;
-}
-html.website-scope[data-website-theme="light"] .ws-logo--dark {
-  display: none;
-}
 
 /* ── Layout primitives ───────────────────────────────────────────────── */
 html.website-scope .ws-page {
   color: var(--txt-bright);
 }
+/* border-box so the side gutters sit INSIDE width: 100% — content-box pushed
+   every container 36px past the viewport on a phone. max-width adds the two
+   gutters back so the desktop content column stays --ws-maxw wide. */
 html.website-scope .ws-container {
+  box-sizing: border-box;
   width: 100%;
-  max-width: var(--ws-maxw);
+  max-width: calc(var(--ws-maxw) + 2 * clamp(18px, 4vw, 40px));
   margin: 0 auto;
   padding: 0 clamp(18px, 4vw, 40px);
 }
@@ -2075,39 +2242,72 @@ html.website-scope .ws-subhead {
   margin: clamp(40px, 6vw, 72px) 0 24px;
 }
 
-/* ── Buttons (anchors styled as CTAs) ────────────────────────────────── */
-html.website-scope .ws-btn {
+/* ── Buttons (.ws-btn on <a> or <button>) ────────────────────────────────
+   The same two controls as @family controls: --primary is the .app-btn
+   capsule, --ghost the raw-button secondary. Metrics are the control system
+   (44px, 13px / 600 / .3px). Every selector is also written `button.`-
+   qualified: a class-only rule (0,2,1) loses to the raw-button rule (0,2,2)
+   and a <button class="ws-btn ws-btn--primary"> would render secondary. */
+html.website-scope .ws-btn,
+html.website-scope button.ws-btn {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 46px;
-  padding: 0 22px;
+  min-height: var(--website-control-height);
+  padding: 0 var(--website-control-padding-x);
   border-radius: var(--ws-btn-radius, 999px);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-html.website-scope .ws-btn:hover {
-  transform: translateY(-2px);
+html.website-scope .ws-btn:active,
+html.website-scope button.ws-btn:active {
+  transform: translateY(1px);
 }
-html.website-scope .ws-btn--primary {
-  background: var(--accentMain);
+html.website-scope .ws-btn--primary,
+html.website-scope button.ws-btn--primary {
   color: var(--onAccentText);
+  background: var(--accentMain);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow: 0 10px 24px rgba(var(--accentMainRgb), 0.32);
 }
-html.website-scope .ws-btn--primary:hover {
+html.website-scope .ws-btn--primary:hover,
+html.website-scope button.ws-btn--primary:hover {
+  color: var(--onAccentText);
   background: var(--primary-hover);
 }
-html.website-scope .ws-btn--ghost {
-  background: var(--ws-control-bg);
+html.website-scope .ws-btn--primary:focus-visible,
+html.website-scope button.ws-btn--primary:focus-visible {
+  outline: none;
+  box-shadow:
+    0 10px 24px rgba(var(--accentMainRgb), 0.32),
+    var(--focus-ring);
+}
+html.website-scope .ws-btn--ghost,
+html.website-scope button.ws-btn--ghost {
   color: var(--ws-control-text);
+  background: var(--ws-control-bg);
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
 }
-html.website-scope .ws-btn--ghost:hover {
+html.website-scope .ws-btn--ghost:hover,
+html.website-scope button.ws-btn--ghost:hover {
+  color: var(--ws-control-text);
   background: var(--ws-control-bg-hover);
+}
+html.website-scope .ws-btn--ghost:focus-visible,
+html.website-scope button.ws-btn--ghost:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--ws-control-ring),
+    var(--focus-ring);
 }
 
 /* ── Top navigation ──────────────────────────────────────────────────── */
@@ -2148,23 +2348,20 @@ html.website-scope .ws-nav-links {
   min-width: 0;
   overflow: visible;
 }
-@media (min-width: 1280px) {
-  html.website-scope .ws-brand {
-    position: absolute;
-    left: clamp(12px, 2vw, 28px);
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  html.website-scope .ws-nav-links {
-    flex: 0 1 auto;
-  }
-}
+/* The logo stays in flow at every width. It used to be lifted out with
+   position: absolute on desktop so the links centred on the viewport, but once
+   the bar carried 11 links the centred row ran underneath the wordmark between
+   1280px and ~1600px. Centring the links in the space beside the logo keeps
+   them clear of it. */
 html.website-scope .ws-nav-link {
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
   flex: 0 0 auto;
-  padding: 8px clamp(6px, 0.65vw, 12px);
-  border-radius: 10px;
-  font-size: clamp(11px, 0.82vw, 14px);
+  min-height: var(--website-control-height);
+  padding: 0 clamp(6px, 0.65vw, 12px);
+  border-radius: var(--website-radius-pill);
+  font-size: var(--website-control-font-size);
   font-weight: 600;
   line-height: 1;
   color: var(--txt-soft);
@@ -2172,8 +2369,12 @@ html.website-scope .ws-nav-link {
   transition: color 0.18s ease, background 0.18s ease;
 }
 html.website-scope .ws-nav-link:hover {
-  color: var(--txt-bright);
-  background: var(--ws-tint);
+  color: var(--ws-control-text);
+  background: var(--ws-control-bg-hover);
+}
+html.website-scope .ws-nav-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 html.website-scope .ws-nav-link--active {
   color: var(--accentText);
@@ -2182,17 +2383,19 @@ html.website-scope .ws-nav-phone {
   box-sizing: border-box;
   /* inline-flex, not the default inline: an inline <a> ignores min-height,
      so the number sat on the padding box's baseline rather than centred
-     in the capsule. Flex centring puts it in the middle of the 38px. */
+     in the capsule. Flex centring puts it in the middle of the 44px floor. */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  min-height: 38px;
+  min-height: var(--website-control-height);
   margin-left: 8px;
-  padding: 0 clamp(10px, 0.9vw, 16px);
-  border-radius: 999px;
-  font-size: clamp(11px, 0.82vw, 14px);
-  font-weight: 700;
+  padding: 0 var(--website-control-padding-x);
+  border-radius: var(--website-radius-pill);
+  /* The primary capsule's type — same size / weight as every other control. */
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   line-height: 1;
   color: var(--onAccentText);
   background: var(--accentMain);
@@ -2201,6 +2404,8 @@ html.website-scope .ws-nav-phone {
 html.website-scope .ws-nav-phone:hover {
   background: var(--primary-hover);
 }
+/* Sign in / account link — the secondary control material (a link, so the
+   recipe is restated rather than inherited from the raw-button rule). */
 html.website-scope .ws-nav-account {
   box-sizing: border-box;
   display: inline-flex;
@@ -2208,22 +2413,28 @@ html.website-scope .ws-nav-account {
   justify-content: center;
   flex: 0 0 auto;
   gap: 8px;
-  min-height: 44px;
+  min-height: var(--website-control-height);
   margin-left: 4px;
-  padding: 9px clamp(10px, 0.9vw, 16px);
-  border-radius: 999px;
-  font-size: clamp(11px, 0.78vw, 13px);
-  font-weight: 800;
+  padding: 0 clamp(12px, 0.9vw, 18px);
+  border-radius: var(--website-radius-pill);
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   line-height: 1;
-  color: var(--txt-bright);
-  background: var(--ws-card);
-  box-shadow: inset 0 0 0 1px var(--ws-line);
-  text-transform: uppercase;
+  color: var(--ws-control-text);
+  background: var(--ws-control-bg);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
   white-space: nowrap;
 }
 html.website-scope .ws-nav-account:hover {
-  color: var(--txt-bright);
-  background: var(--ws-tint);
+  color: var(--ws-control-text);
+  background: var(--ws-control-bg-hover);
+}
+html.website-scope .ws-nav-account:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--ws-control-ring),
+    var(--focus-ring);
 }
 html.website-scope .ws-nav-account--profile {
   color: var(--onAccentText);
@@ -2233,34 +2444,10 @@ html.website-scope .ws-nav-account--profile {
 html.website-scope .ws-nav-account--profile:hover {
   background: var(--primary-hover);
 }
-html.website-scope .ws-nav-account-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0;
-  line-height: 1;
-}
+/* Menu toggle — a raw <button>, so it IS the secondary control; this rule
+   only hides it on wide screens (revealed ≤640px below). */
 html.website-scope button.ws-nav-toggle {
   display: none;
-  appearance: none;
-  min-height: 42px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--txt-bright);
-  background: var(--ws-card);
-  box-shadow: inset 0 0 0 1px var(--ws-line);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  cursor: pointer;
 }
 
 @media (max-width: 1279px) and (min-width: 641px) {
@@ -2279,7 +2466,7 @@ html.website-scope button.ws-nav-toggle {
   }
   html.website-scope .ws-nav-links::-webkit-scrollbar-thumb {
     background: var(--ws-line);
-    border-radius: 999px;
+    border-radius: var(--website-radius-pill);
   }
 }
 
@@ -2307,14 +2494,15 @@ html.website-scope button.ws-nav-toggle {
     left: 0;
     right: 0;
     padding: 12px clamp(18px, 4vw, 40px) 18px;
-    background: var(--ws-nav-bg);
+    /* Floating menu panel — the dense panel tint and overlay lift. */
+    background: var(--ws-panel-bg);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
     backdrop-filter: blur(16px) saturate(160%);
-    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
+    box-shadow: var(--website-overlay-shadow);
   }
   html.website-scope .ws-nav-links--open .ws-nav-link {
     width: 100%;
-    padding: 12px;
+    padding: 0 16px;
     font-size: 15px;
     line-height: 1.2;
   }
@@ -2362,7 +2550,7 @@ html.website-scope .ws-nav--shop .ws-nav-links::-webkit-scrollbar {
 }
 html.website-scope .ws-nav--shop .ws-nav-links::-webkit-scrollbar-thumb {
   background: var(--ws-line);
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
 }
 html.website-scope .ws-nav-actions {
   display: flex;
@@ -2380,18 +2568,61 @@ html.website-scope .ws-nav--shop .ws-shop-cartbutton {
   min-height: 44px;
   white-space: nowrap;
 }
-@media (min-width: 1280px) {
-  /* The main nav lifts .ws-brand out of flow to centre its links; the grid
-     here does that on its own, so put the logo back in the first column. */
-  html.website-scope .ws-nav--shop .ws-brand {
-    position: static;
-    transform: none;
-  }
-}
 @media (max-width: 860px) {
   html.website-scope .ws-nav--shop .ws-nav-links {
     justify-self: stretch;
     justify-content: flex-start;
+  }
+}
+
+/* ── Top-bar actions (WebsiteNavActions) ──────────────────────────────────
+   One cluster on every /website bar, pinned to the far-right corner:
+   [Dev] [Overlay] [phone] [Account]. The cluster's gap spaces the capsules,
+   so the phone / account's own left margins (from the old in-links layout)
+   are cancelled inside it. Dev / Overlay only render on dev branches,
+   Vercel previews and local builds. */
+html.website-scope .ws-nav-actions .ws-nav-phone,
+html.website-scope .ws-nav-actions .ws-nav-account {
+  margin-left: 0;
+}
+html.website-scope .ws-nav-menu-extras {
+  display: none;
+}
+/* Overlay is a <button>: the raw-button rule already paints it as the same
+   secondary control as the account link. Only the "on" state (solid accent)
+   and its focus ring are restated. */
+html.website-scope button.ws-nav-account.ws-nav-dev--on,
+html.website-scope button.ws-nav-account.ws-nav-dev--on:hover {
+  color: var(--onAccentText);
+  background: var(--accentMain);
+  box-shadow: none;
+}
+html.website-scope button.ws-nav-account.ws-nav-dev--on:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+@media (max-width: 640px) {
+  /* Too narrow for the whole cluster: the bar keeps the account button in the
+     corner (right of the Menu toggle), and the home page's open menu carries
+     the phone number and the dev controls instead. */
+  html.website-scope .ws-nav-actions .ws-nav-phone,
+  html.website-scope .ws-nav-actions .ws-nav-dev {
+    display: none;
+  }
+  html.website-scope button.ws-nav-toggle + .ws-nav-actions {
+    margin-left: 0;
+  }
+  html.website-scope .ws-nav-links--open .ws-nav-menu-extras {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  html.website-scope .ws-nav-links--open .ws-nav-menu-extras .ws-nav-phone,
+  html.website-scope .ws-nav-links--open .ws-nav-menu-extras .ws-nav-account {
+    width: 100%;
+    margin: 0;
   }
 }
 
@@ -2431,7 +2662,7 @@ html.website-scope .ws-trust-item {
   flex-direction: column;
   gap: 4px;
   padding: 18px;
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   background: var(--ws-card);
   box-shadow: inset 0 0 0 1px var(--ws-line);
   text-align: center;
@@ -2452,10 +2683,10 @@ html.website-scope .ws-brands-inner {
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 16px 44px;
+  gap: clamp(20px, 3vw, 32px) clamp(32px, 5vw, 64px);
 }
 html.website-scope .ws-brands-label {
-  font-size: 12px;
+  font-size: clamp(14px, 1.6vw, 17px);
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -2466,12 +2697,13 @@ html.website-scope .ws-brands-list {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 32px;
+  justify-content: center;
+  gap: clamp(28px, 5vw, 56px);
   margin: 0;
   padding: 0;
 }
 html.website-scope .ws-brands-list img {
-  height: 30px;
+  height: clamp(40px, 6vw, 64px);
   width: auto;
   opacity: 0.85;
 }
@@ -2495,8 +2727,7 @@ html.website-scope .ws-grid--team {
 }
 
 /* ── Cards ───────────────────────────────────────────────────────────── */
-/* Frosted-glass card surface — the same recipe as the custglobal
-   .website-dev-flat-card: an elevation wash, a backdrop blur, a thin
+/* Frosted-glass card surface: an elevation wash, a backdrop blur, a thin
    specular top highlight, a hairline ring and a soft drop shadow. */
 html.website-scope .ws-card {
   background: var(--ws-card);
@@ -2504,7 +2735,7 @@ html.website-scope .ws-card {
   backdrop-filter: blur(20px) saturate(180%);
   border-radius: var(--ws-radius);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--website-specular),
     0 0 0 1px var(--ws-line),
     var(--ws-shadow);
   overflow: hidden;
@@ -2550,7 +2781,7 @@ html.website-scope .ws-badge {
   top: 12px;
   left: 12px;
   padding: 5px 11px;
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.3px;
@@ -2578,13 +2809,14 @@ html.website-scope .ws-tabs {
   gap: 8px;
   margin-bottom: 28px;
 }
+/* Filter tabs — secondary controls with soft ink until active. */
 html.website-scope button.ws-tab {
   appearance: none;
-  min-height: 42px;
+  min-height: var(--website-control-height);
   padding: 0 20px;
   border: none;
-  border-radius: 999px;
-  font-size: 14px;
+  border-radius: var(--website-radius-pill);
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   color: var(--txt-soft);
@@ -2602,6 +2834,9 @@ html.website-scope button.ws-tab.ws-tab--active {
   color: var(--onAccentText);
   background: var(--accentMain);
   box-shadow: none;
+}
+html.website-scope button.ws-tab.ws-tab--active:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 /* ── Steps ───────────────────────────────────────────────────────────── */
@@ -2649,7 +2884,7 @@ html.website-scope .ws-ticks li::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   font-size: 11px;
   font-weight: 800;
   color: var(--onAccentText);
@@ -2735,7 +2970,7 @@ html.website-scope .ws-chips {
 }
 html.website-scope .ws-chip {
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   font-size: 13px;
   font-weight: 600;
   color: var(--txt-soft);
@@ -2778,7 +3013,7 @@ html.website-scope .ws-rating {
   align-items: center;
   gap: 2px;
   padding: 14px 26px;
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   background: var(--ws-card);
   box-shadow: inset 0 0 0 1px var(--ws-line);
 }
@@ -2956,7 +3191,7 @@ html.website-scope .ws-footer-copy {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   VEHICLE STOCK  (the Cars block on /website, /website/available-stock and
+   @family stock — VEHICLE STOCK  (the Cars block on /website, /website/available-stock and
                    /website/stock/<reg>)
 
    Inherits the .ws-* token system (--ws-card, --ws-card-soft, --ws-line,
@@ -2973,14 +3208,13 @@ html.website-scope .ws-footer-copy {
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── Shared card surface, reused by every stock panel ─────────────────── */
-html.website-scope .ws-stock-surface,
 html.website-scope .ws-stock-filters {
   background: var(--ws-card);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   border-radius: var(--ws-radius);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--website-specular),
     0 0 0 1px var(--ws-line),
     var(--ws-shadow);
 }
@@ -3032,14 +3266,14 @@ html.website-scope a.ws-vehicle--link {
 html.website-scope a.ws-vehicle--link:hover {
   transform: translateY(-3px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--website-specular),
     0 0 0 1px rgba(var(--accentMainRgb), 0.55),
     var(--ws-shadow);
 }
 html.website-scope a.ws-vehicle--link:focus-visible {
   outline: none;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--website-specular),
     0 0 0 3px rgba(var(--accentMainRgb), 0.55),
     var(--ws-shadow);
 }
@@ -3051,13 +3285,13 @@ html.website-scope .ws-vehicle-condition {
   top: 12px;
   right: 12px;
   padding: 5px 11px;
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: #ffffff;
-  background: rgba(0, 0, 0, 0.58);
+  color: var(--website-photo-ink);
+  background: var(--website-scrim);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
@@ -3093,14 +3327,14 @@ html.website-scope .ws-tab-count {
   height: 20px;
   margin-left: 8px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   font-size: 11px;
   font-weight: 700;
   color: inherit;
   background: rgba(var(--accentMainRgb), 0.22);
 }
 html.website-scope button.ws-tab.ws-tab--active .ws-tab-count {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--website-on-accent-wash);
 }
 
 /* ── Search page — hero and layout ───────────────────────────────────── */
@@ -3197,9 +3431,10 @@ html.website-scope .ws-stock-filters-title {
   letter-spacing: -0.01em;
   color: var(--txt-bright);
 }
+/* Text-link button — keeps the 44px hit area, drops the capsule. */
 html.website-scope button.ws-stock-clear {
-  min-height: 0;
-  padding: 0;
+  min-height: var(--website-control-height);
+  padding: 0 4px;
   font-size: 13px;
   font-weight: 600;
   color: var(--accentText);
@@ -3230,22 +3465,10 @@ html.website-scope input.ws-stock-input {
 }
 
 /* ── Active filter chips ─────────────────────────────────────────────── */
+/* Removable filter chip — a raw <button>, so it is the secondary control;
+   only the inner gap for the × glyph is set. */
 html.website-scope button.ws-chip--clear {
-  min-height: 0;
   gap: 8px;
-  padding: 7px 13px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--txt-soft);
-  background: var(--ws-card-soft);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: inset 0 0 0 1px var(--ws-line);
-}
-html.website-scope button.ws-chip--clear:hover {
-  color: var(--txt-bright);
-  background: rgba(var(--accentMainRgb), 0.18);
 }
 
 /* ── Empty state ─────────────────────────────────────────────────────── */
@@ -3314,7 +3537,7 @@ html.website-scope button.ws-stock-thumb {
   padding: 0;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--website-radius-tile);
   background: var(--ws-card-soft);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -3329,6 +3552,12 @@ html.website-scope button.ws-stock-thumb:hover {
 html.website-scope button.ws-stock-thumb.ws-stock-thumb--active {
   opacity: 1;
   box-shadow: inset 0 0 0 2px rgba(var(--accentMainRgb), 0.85);
+}
+html.website-scope button.ws-stock-thumb:focus-visible {
+  opacity: 1;
+  box-shadow:
+    inset 0 0 0 2px rgba(var(--accentMainRgb), 0.85),
+    var(--focus-ring);
 }
 html.website-scope button.ws-stock-thumb img {
   width: 100%;
@@ -3393,7 +3622,7 @@ html.website-scope .ws-stock-stockno {
 }
 html.website-scope .ws-stock-stockno strong {
   color: var(--txt-soft);
-  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-family: var(--font-family-mono);
   letter-spacing: 0.4px;
 }
 
@@ -3490,7 +3719,7 @@ html.website-scope .ws-stock-spec tr:last-child td {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   PUBLIC SHOP  (/website#shop, /website/shop/cart, /website/shop/checkout)
+   @family shop — PUBLIC SHOP  (/website#shop, /website/shop/cart, /website/shop/checkout)
 
    Inherits the .ws-* token system (--ws-card, --ws-line, --ws-radius,
    --txt-bright/soft/mute, --accentMain, --accentText). Same data-website-theme
@@ -3510,36 +3739,40 @@ html.website-scope .ws-shop-filters {
   flex-wrap: wrap;
   gap: 8px;
 }
-html.website-scope .ws-shop-filter {
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: var(--ws-card);
-  color: var(--txt-soft);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 120ms, color 120ms;
-}
-html.website-scope .ws-shop-filter--active {
+/* Category filters are raw <button>s — the secondary control as-is, with the
+   same active state as .ws-tab. `button.`-qualified so they win. */
+html.website-scope button.ws-shop-filter.ws-shop-filter--active {
+  color: var(--onAccentText);
   background: var(--accentMain);
-  color: #fff;
+  box-shadow: none;
 }
-html.website-scope .ws-shop-cartbutton {
+html.website-scope button.ws-shop-filter.ws-shop-filter--active:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+/* Basket button — the primary capsule (it is the shop's one action). */
+html.website-scope button.ws-shop-cartbutton {
   position: relative;
-  padding: 10px 16px;
-  border-radius: 999px;
+  color: var(--onAccentText);
   background: var(--accentMain);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 10px 24px rgba(var(--accentMainRgb), 0.32);
+}
+html.website-scope button.ws-shop-cartbutton:hover {
+  color: var(--onAccentText);
+  background: var(--primary-hover);
+}
+html.website-scope button.ws-shop-cartbutton:focus-visible {
+  box-shadow:
+    0 10px 24px rgba(var(--accentMainRgb), 0.32),
+    var(--focus-ring);
 }
 html.website-scope .ws-shop-cartbutton-count {
   display: inline-block;
   margin-left: 6px;
   padding: 1px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.25);
+  border-radius: var(--website-radius-pill);
+  background: var(--website-on-accent-wash);
   font-size: 0.78rem;
 }
 
@@ -3600,10 +3833,10 @@ html.website-scope .ws-product-stock {
   color: var(--txt-mute);
 }
 html.website-scope .ws-product-stock--low {
-  color: #d97706;
+  color: var(--website-warning-ink);
 }
 html.website-scope .ws-product-stock--out {
-  color: #b91c1c;
+  color: var(--accentText);
 }
 html.website-scope .ws-product-add {
   margin-top: auto;
@@ -3617,8 +3850,12 @@ html.website-scope .ws-cart-drawer {
   position: fixed;
   inset: 0 0 0 auto;
   width: min(420px, 96vw);
-  background: var(--ws-card);
-  box-shadow: -18px 0 44px rgba(0, 0, 0, 0.45);
+  /* Floating panel — the dense surface tint, so the page behind the basket
+     is frosted out rather than readable through it. */
+  background: var(--ws-panel-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: var(--website-drawer-shadow);
   display: flex;
   flex-direction: column;
   z-index: 9000;
@@ -3631,7 +3868,7 @@ html.website-scope .ws-cart-drawer--open {
 html.website-scope .ws-cart-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--website-backdrop);
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms;
@@ -3653,12 +3890,12 @@ html.website-scope .ws-cart-title {
   font-weight: 800;
   color: var(--txt-bright);
 }
-html.website-scope .ws-cart-close {
-  background: transparent;
-  color: var(--txt-soft);
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 4px 10px;
+/* Close — a 44px secondary-control circle; only the shape and glyph size are
+   set, colours come from the raw-button rule. */
+html.website-scope button.ws-cart-close {
+  width: var(--website-control-height);
+  padding: 0;
+  font-size: var(--website-control-glyph);
 }
 html.website-scope .ws-cart-items {
   flex: 1;
@@ -3713,25 +3950,41 @@ html.website-scope .ws-cart-item-controls {
   align-items: center;
   gap: 6px;
 }
-html.website-scope .ws-cart-qty {
-  background: var(--ws-tint);
-  color: var(--txt-bright);
-  font-weight: 700;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  cursor: pointer;
+/* Quantity steppers — 44px secondary-control circles. */
+html.website-scope button.ws-cart-qty {
+  width: var(--website-control-height);
+  padding: 0;
+  font-size: var(--website-control-glyph);
 }
-html.website-scope .ws-cart-item-remove {
-  background: transparent;
+html.website-scope .ws-cart-qty-value {
+  min-width: 24px;
+  text-align: center;
+}
+html.website-scope .ws-cart-item-total {
+  font-weight: 700;
+  color: var(--txt-bright);
+}
+/* Remove — a text-link button with the 44px hit area. */
+html.website-scope button.ws-cart-item-remove {
+  padding: 0 4px;
   color: var(--txt-mute);
-  cursor: pointer;
-  font-size: 0.78rem;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+html.website-scope button.ws-cart-item-remove:hover {
+  color: var(--accentText);
+  background: none;
+  text-decoration: underline;
 }
 html.website-scope .ws-cart-empty {
   padding: 30px 20px;
   text-align: center;
   color: var(--txt-mute);
+}
+html.website-scope .ws-cart-empty p {
+  margin-top: 0;
 }
 html.website-scope .ws-cart-foot {
   padding: 16px 20px 20px;
@@ -3744,11 +3997,6 @@ html.website-scope .ws-cart-totals {
   justify-content: space-between;
   font-size: 0.9rem;
   color: var(--txt-soft);
-}
-html.website-scope .ws-cart-totals--total {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--txt-bright);
 }
 
 /* ── Cart + checkout pages ───────────────────────────────────────────── */
@@ -3776,19 +4024,8 @@ html.website-scope .ws-form-row label {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-html.website-scope .ws-form-row input,
-html.website-scope .ws-form-row textarea {
-  background: var(--ws-tint);
-  color: var(--txt-bright);
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  outline: none;
-}
-html.website-scope .ws-form-row input:focus,
-html.website-scope .ws-form-row textarea:focus {
-  box-shadow: 0 0 0 2px var(--accentMain);
-}
+/* Checkout fields carry no look of their own — text / email / tel inputs and
+   textareas take the shared control rule in @family controls. */
 html.website-scope .ws-form-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3800,11 +4037,73 @@ html.website-scope .ws-form-grid-2 {
   }
 }
 html.website-scope .ws-order-summary {
-  background: var(--ws-card);
+  /* Basket summary carries the same dense surface tint as the drawer, with
+     the card hairline so it separates from the page. */
+  background: var(--ws-panel-bg);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
   border-radius: var(--ws-radius);
   padding: 20px;
   position: sticky;
   top: 24px;
+}
+/* Shop status cards (empty basket, order received, checkout cancelled) and
+   the checkout form panel. */
+html.website-scope .ws-shop-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: clamp(24px, 4vw, 30px);
+  text-align: center;
+}
+html.website-scope .ws-shop-note {
+  margin: 0;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-shop-state-lead {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-shop-order-ref {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-shop-order-ref strong {
+  color: var(--accentText);
+}
+html.website-scope .ws-shop-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+html.website-scope .ws-checkout-panel {
+  padding: 20px;
+}
+html.website-scope .ws-cart-item--page {
+  padding: 14px;
+}
+html.website-scope .ws-form-error {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accentText);
+}
+html.website-scope .ws-checkout-submit,
+html.website-scope .ws-order-cta {
+  margin-top: 12px;
+}
+html.website-scope .ws-checkout-fineprint {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-order-line--first {
+  margin-top: 8px;
 }
 html.website-scope .ws-order-line {
   display: grid;
@@ -3823,7 +4122,7 @@ html.website-scope .ws-order-line--strong {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   PARTS CATALOGUE  (/website/parts-catalog, /website/parts-catalog/[partId])
+   @family parts — PARTS CATALOGUE  (/website/parts-catalog, /website/parts-catalog/[partId])
 
    The DB-backed shop over public.parts_catalog — the same stock catalogue
    the staff DMS manages at /stock-catalogue. This block EXTENDS the PUBLIC
@@ -3850,9 +4149,6 @@ html.website-scope .ws-shop-head {
   gap: 16px;
   align-items: flex-start;
   justify-content: space-between;
-}
-html.website-scope .ws-shop-head-actions {
-  flex-shrink: 0;
 }
 
 html.website-scope .ws-breadcrumb {
@@ -3908,7 +4204,7 @@ html.website-scope .ws-basket-notice {
   justify-content: space-between;
   margin-bottom: 18px;
   padding: 12px 16px;
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   background: var(--ws-tint);
   color: var(--txt-soft);
   font-size: 0.88rem;
@@ -3918,8 +4214,6 @@ html.website-scope .ws-basket-notice strong {
 }
 html.website-scope .ws-basket-notice .ws-btn {
   flex-shrink: 0;
-  padding: 8px 16px;
-  font-size: 0.85rem;
 }
 html.website-scope .ws-basket-notice--compact {
   margin: 0 20px 4px;
@@ -3967,31 +4261,8 @@ html.website-scope .ws-catalog-category,
 html.website-scope .ws-catalog-sort {
   min-width: 210px;
 }
-html.website-scope .ws-catalog-search input {
-  width: 100%;
-  min-height: 46px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--ws-card);
-  color: var(--txt-bright);
-  font-size: 0.95rem;
-  outline: none;
-}
-html.website-scope .ws-catalog-search input::placeholder {
-  color: var(--txt-mute);
-}
-html.website-scope .ws-catalog-search input:focus {
-  box-shadow: 0 0 0 2px var(--accentMain);
-}
-
-html.website-scope .ws-catalog-filters {
-  margin-bottom: 14px;
-}
-html.website-scope .ws-shop-filter-count {
-  margin-left: 7px;
-  opacity: 0.65;
-  font-size: 0.75rem;
-}
+/* The search box is a plain type="search" input — the shared control rule
+   styles it; nothing is restated here. */
 
 html.website-scope .ws-catalog-summary {
   display: flex;
@@ -4002,14 +4273,19 @@ html.website-scope .ws-catalog-summary {
   margin-bottom: 16px;
   font-size: 0.86rem;
 }
-html.website-scope .ws-catalog-clear {
-  padding: 0;
-  background: none;
+/* Text-link button — keeps the 44px hit area, drops the capsule. */
+html.website-scope button.ws-catalog-clear {
+  padding: 0 4px;
   color: var(--accentText);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
   text-decoration: underline;
+}
+html.website-scope button.ws-catalog-clear:hover {
+  color: var(--primary-hover);
+  background: none;
 }
 
 html.website-scope .ws-catalog-empty {
@@ -4167,17 +4443,12 @@ html.website-scope .ws-pdp-qty-controls {
   gap: 8px;
   align-items: center;
 }
-html.website-scope .ws-pdp-qty-controls input {
-  width: 70px;
-  min-height: 44px;
-  padding: 8px;
-  border-radius: 10px;
-  background: var(--ws-tint);
-  color: var(--txt-bright);
-  font-size: 1rem;
-  font-weight: 700;
+/* The quantity box is the shared number control, narrowed and centred.
+   Qualified to out-rank the generic input rule (0,3,2). */
+html.website-scope .ws-pdp-qty-controls input[type="number"]:not(.app-btn) {
+  width: 76px;
+  padding: 0 8px;
   text-align: center;
-  outline: none;
 }
 html.website-scope .ws-pdp-cta {
   width: 100%;
@@ -4196,7 +4467,7 @@ html.website-scope .ws-pdp-related .ws-h3 {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   LIVE PREVIEW EDITOR  (only when /website is loaded with ?preview=editor)
+   @family preview — LIVE PREVIEW EDITOR  (only when /website is loaded with ?preview=editor)
 
    Adds hover + selected outlines around every editable region of the
    marketing page so staff can click-to-edit from the staff Live Preview tab.
@@ -4212,12 +4483,12 @@ html.website-scope .ws-preview-target {
   transition: outline-color 120ms ease, background 120ms ease;
 }
 html.website-scope .ws-preview-target:hover {
-  outline-color: rgba(220, 38, 38, 0.55);
-  background: rgba(220, 38, 38, 0.04);
+  outline-color: rgba(var(--website-preview-rgb), 0.55);
+  background: rgba(var(--website-preview-rgb), 0.04);
 }
 html.website-scope .ws-preview-target--selected {
-  outline: 2px solid var(--accentMain, #dc2626);
-  background: rgba(220, 38, 38, 0.06);
+  outline: 2px solid var(--accentMain);
+  background: rgba(var(--website-preview-rgb), 0.06);
 }
 html.website-scope .ws-preview-target-label {
   position: absolute;
@@ -4226,8 +4497,8 @@ html.website-scope .ws-preview-target-label {
   z-index: 50;
   padding: 3px 8px;
   border-radius: 6px;
-  background: var(--accentMain, #dc2626);
-  color: #fff;
+  background: var(--accentMain);
+  color: var(--onAccentText);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -4237,7 +4508,7 @@ html.website-scope .ws-preview-target-label {
   transform: translateY(-2px);
   transition: opacity 120ms ease, transform 120ms ease;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--website-chip-shadow);
 }
 html.website-scope .ws-preview-target:hover > .ws-preview-target-label,
 html.website-scope .ws-preview-target--selected > .ws-preview-target-label {
@@ -4255,6 +4526,10 @@ html.website-scope .ws-preview-target .ws-preview-target:hover ~ * .ws-preview-t
    because the Website Manager editor renders in the STAFF app. They now live in
    src/styles/features/website-manager.css (imported by staffglobal.css), so this
    file can be loaded by /website routes only. See CLAUDE.md 3.0b. */
+
+/* ════════════════════════════════════════════════════════════════════════
+   @family auth — /website/login
+   ═══════════════════════════════════════════════════════════════════════ */
 
 /* /website/login layout. These classes replace the old page-scoped module
    so the login experience is styled by custglobal.css like every other
@@ -4277,6 +4552,9 @@ html.website-scope .authMain {
 }
 
 html.website-scope .authCard {
+  /* border-box so the padding sits inside min(100%, 520px) — content-box
+     pushed the card 40px past the right edge on a phone. */
+  box-sizing: border-box;
   width: min(100%, 520px);
   display: flex;
   flex-direction: column;
@@ -4284,7 +4562,11 @@ html.website-scope .authCard {
   padding: clamp(20px, 4vw, 34px);
   border-radius: 24px;
   background: var(--website-elev-2);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+  /* Card recipe — specular, hairline ring and lift, all tokens. */
+  box-shadow:
+    var(--website-specular),
+    inset 0 0 0 1px var(--ws-control-ring),
+    var(--website-overlay-shadow);
 }
 
 html.website-scope .authMain > .authCard {
@@ -4299,11 +4581,41 @@ html.website-scope .addressFieldHeader {
   gap: 12px;
 }
 
-html.website-scope .authBackLink,
+/* "Back to website" is a link, so it restates the secondary control recipe
+   (raw <button> in @family controls): same material, pill, 44px floor, type
+   and focus ring. "Enter manually" is a real <button>: it takes the secondary
+   control look as-is, and only keeps its size beside the label. */
 html.website-scope .addressManualButton {
-  color: var(--txt-soft);
-  font-size: 13px;
-  font-weight: 700;
+  flex-shrink: 0;
+}
+html.website-scope a.authBackLink {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--website-control-height);
+  padding: 0 var(--website-control-padding-x);
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ws-control-text);
+  background: var(--ws-control-bg);
+  border-radius: var(--website-radius-pill);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+html.website-scope a.authBackLink:hover {
+  background: var(--ws-control-bg-hover);
+  color: var(--ws-control-text);
+}
+html.website-scope a.authBackLink:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--ws-control-ring),
+    var(--focus-ring);
 }
 
 html.website-scope .authBrand img {
@@ -4343,9 +4655,9 @@ html.website-scope .signupHint {
 html.website-scope .authError {
   margin: 0;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   color: var(--txt-bright);
-  background: rgba(185, 28, 28, 0.22);
+  background: rgba(var(--accentMainRgb), 0.22);
   font-weight: 700;
 }
 
@@ -4360,7 +4672,7 @@ html.website-scope .signupPanel {
 html.website-scope .signupPanel {
   gap: 14px;
   padding: 16px;
-  border-radius: 18px;
+  border-radius: var(--website-radius-card);
   background: var(--website-elev-1);
 }
 
@@ -4384,14 +4696,8 @@ html.website-scope .authLabel {
   letter-spacing: 0.04em;
 }
 
-html.website-scope .authInput,
-html.website-scope .authTextarea {
+html.website-scope .authInput {
   width: 100%;
-}
-
-html.website-scope .authTextarea {
-  min-height: 96px;
-  resize: vertical;
 }
 
 html.website-scope .authSubmit,
@@ -4428,7 +4734,7 @@ html.website-scope .signupEmailSummary {
   justify-content: space-between;
   gap: 10px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   background: var(--website-elev-1);
 }
 
@@ -4470,57 +4776,13 @@ html.website-scope .authDevCard {
   }
 }
 
-/* Shared Dropdown API light-mode overrides. Kept late so they out-specify the
-   dark customer dropdown baseline and any static showcase menu variants. */
-html.website-scope[data-website-theme="light"] .dropdown-api__label,
-html.website-scope[data-website-theme="light"] .dropdown-api__helper {
-  color: rgba(20, 20, 26, 0.74);
-}
-
-html.website-scope[data-website-theme="light"] .dropdown-api__value.is-placeholder {
-  color: rgba(20, 20, 26, 0.55);
-}
-
-html.website-scope[data-website-theme="light"] .dropdown-api__menu,
-html.website-scope[data-website-theme="light"].app-dropdown-menu,
-html.website-scope[data-website-theme="light"] .app-dropdown-menu {
-  background: rgba(0, 0, 0, 0.035);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 24px 56px rgba(0, 0, 0, 0.18);
-}
-
-html.website-scope[data-website-theme="light"] button.dropdown-api__option,
-html.website-scope[data-website-theme="light"].app-dropdown-menu button.dropdown-api__option {
-  color: #14141a;
-}
-
-html.website-scope[data-website-theme="light"] button.dropdown-api__option:hover,
-html.website-scope[data-website-theme="light"] button.dropdown-api__option:focus-visible,
-html.website-scope[data-website-theme="light"].app-dropdown-menu button.dropdown-api__option:hover,
-html.website-scope[data-website-theme="light"].app-dropdown-menu button.dropdown-api__option:focus-visible {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-html.website-scope[data-website-theme="light"] button.dropdown-api__option.is-selected,
-html.website-scope[data-website-theme="light"].app-dropdown-menu button.dropdown-api__option.is-selected {
-  background: rgb(var(--accentMainRgb));
-  color: #ffffff;
-}
-
-html.website-scope[data-website-theme="light"] .dropdown-api__option-description,
-html.website-scope[data-website-theme="light"].app-dropdown-menu .dropdown-api__option-description,
-html.website-scope[data-website-theme="light"] .dropdown-api__empty {
-  color: rgba(20, 20, 26, 0.55);
-}
 
 /* ════════════════════════════════════════════════════════════════════════
-   FREE VALUATION WIZARD  (/website/valuation)
+   @family valuation — FREE VALUATION WIZARD  (/website/valuation)
 
    Inherits the .ws-* token system (--ws-card, --ws-line, --ws-radius,
-   --txt-bright/soft/mute, --accentMain, --accentText), so the light / dark
-   flip needs almost no rules of its own — only the tick controls below, whose
-   fills are alpha-over-white in light mode and alpha-over-black in dark.
+   --txt-bright/soft/mute, --accentMain, --accentText, --website-elev-*,
+   --ws-control-bg), so the light / dark flip needs no rules of its own.
    ═══════════════════════════════════════════════════════════════════════ */
 
 html.website-scope .ws-val-hero {
@@ -4554,7 +4816,7 @@ html.website-scope .ws-val-step {
   flex: 1 1 auto;
   min-width: 0;
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   font-size: 13px;
   font-weight: 600;
   color: var(--txt-mute);
@@ -4574,11 +4836,11 @@ html.website-scope .ws-val-step-n {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
-  border-radius: 999px;
+  border-radius: var(--website-radius-pill);
   font-size: 12px;
   font-weight: 700;
   color: var(--txt-soft);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--website-elev-4);
 }
 html.website-scope .ws-val-step[data-state="current"] .ws-val-step-n {
   color: var(--onAccentText);
@@ -4654,7 +4916,9 @@ html.website-scope .ws-val-reg-row {
   flex-wrap: wrap;
   gap: 10px;
 }
-html.website-scope input.ws-val-reg {
+/* Qualified to out-rank the shared text-input rule (0,3,2), which otherwise
+   resets the plate lettering to 13px / 600. */
+html.website-scope input[type="text"].ws-val-reg:not(.app-btn) {
   flex: 1 1 200px;
   min-width: 0;
   font-size: 22px;
@@ -4681,12 +4945,12 @@ html.website-scope .ws-val-plate {
   display: inline-flex;
   align-items: center;
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: var(--website-radius-chip);
   font-size: 17px;
   font-weight: 800;
   letter-spacing: 1.5px;
   color: var(--txt-bright);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--website-elev-4);
 }
 html.website-scope .ws-val-found-body {
   flex: 1 1 160px;
@@ -4725,11 +4989,12 @@ html.website-scope .ws-val-blocked {
 }
 
 /* A text button that is not a capsule — "Not your car?", "Value another". */
+/* Text-link button — keeps the 44px hit area, drops the capsule. */
 html.website-scope button.ws-val-link {
-  min-height: 0;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 600;
+  min-height: var(--website-control-height);
+  padding: 0 4px;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
   color: var(--accentText);
   background: none;
   -webkit-backdrop-filter: none;
@@ -4776,7 +5041,7 @@ html.website-scope .ws-val-option {
   gap: 12px;
   min-height: 52px;
   padding: 13px 16px;
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   cursor: pointer;
   background: var(--ws-tint);
   box-shadow: inset 0 0 0 1px var(--ws-line);
@@ -4833,7 +5098,8 @@ html.website-scope .ws-val-option input[type="checkbox"]:not(.app-btn) {
   height: 18px;
   border: var(--checkbox-ring);
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.06);
+  /* Same well as the radio — the control material, which flips per theme. */
+  background: var(--ws-control-bg);
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -4852,7 +5118,7 @@ html.website-scope .ws-val-option input[type="checkbox"]:not(.app-btn):checked::
   height: 10px;
   border-radius: 1px;
   transform: rotate(45deg);
-  box-shadow: inset -2px -2px 0 0 #ffffff;
+  box-shadow: inset -2px -2px 0 0 var(--onAccentText);
 }
 
 /* ── Step navigation ─────────────────────────────────────────────────── */
@@ -4951,7 +5217,7 @@ html.website-scope .ws-val-working-effect {
   font-variant-numeric: tabular-nums;
 }
 html.website-scope .ws-val-working-list li[data-direction="up"] .ws-val-working-effect {
-  color: var(--success-base);
+  color: var(--website-success-ink);
 }
 html.website-scope .ws-val-working-list li[data-direction="down"] .ws-val-working-effect {
   color: var(--accentText);
@@ -5017,18 +5283,9 @@ html.website-scope .ws-val-smallprint {
 }
 
 /* Light mode — only the fills that were alpha-over-black need restating. */
-html.website-scope[data-website-theme="light"] .ws-val-step-n {
-  background: rgba(15, 23, 42, 0.08);
-}
-html.website-scope[data-website-theme="light"] .ws-val-plate {
-  background: rgba(15, 23, 42, 0.08);
-}
-html.website-scope[data-website-theme="light"] .ws-val-option input[type="checkbox"]:not(.app-btn) {
-  background: rgba(15, 23, 42, 0.04);
-}
 
 /* ════════════════════════════════════════════════════════════════════════
-   HELP & ADVICE  (/website#blog — the cards plus their "More info" popup)
+   @family help — HELP & ADVICE  (/website#blog — the cards plus their "More info" popup)
    ------------------------------------------------------------------------
    Markup: the `blog` renderer in src/features/website/WebsitePage.js for the
    cards, src/features/website/components/HelpArticleModal.js for the popup.
@@ -5131,10 +5388,10 @@ html.website-scope .ws-article-scrim {
   background:
     linear-gradient(
       0deg,
-      rgba(var(--accentMainRgb), 0.34) 0%,
-      rgba(var(--accentMainRgb), 0.34) 100%
+      var(--website-popup-scrim-tint) 0%,
+      var(--website-popup-scrim-tint) 100%
     ),
-    rgba(0, 0, 0, 0.58);
+    var(--website-popup-scrim-base);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   backdrop-filter: blur(16px) saturate(150%);
 }
@@ -5159,9 +5416,9 @@ html.website-scope .ws-article-card {
   color: var(--txt-bright);
   background: var(--surface);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--website-specular),
     0 0 0 1px var(--ws-line),
-    0 30px 70px rgba(0, 0, 0, 0.55);
+    var(--website-popup-shadow);
 }
 html.website-scope .ws-article-card:focus {
   outline: none;
@@ -5199,40 +5456,20 @@ html.website-scope .ws-article-header-actions {
   margin-left: auto;
 }
 
-/* Locked to the 44px circle, top right — the staff close convention.
-   Selector is `button.ws-article-close` to match the specificity of the
-   `button.app-btn` capsule higher up this file; declared last, so these win.
-   `padding` and `white-space` are reset because that capsule sets them for a
-   text button. */
+/* Locked to the 44px circle, top right — the staff close convention. It is a
+   raw <button>, so colours, ring, hover and focus come from the secondary
+   control rule; only the circle geometry and glyph size are set here. */
 html.website-scope button.ws-article-close {
   order: 2;
-  width: 44px;
-  min-width: 44px;
-  max-width: 44px;
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
+  width: var(--website-control-height);
+  min-width: var(--website-control-height);
+  height: var(--website-control-height);
   aspect-ratio: 1 / 1;
   padding: 0;
   gap: 0;
-  white-space: normal;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--txt-bright);
-  background: var(--ws-card-soft);
+  font-size: var(--website-control-glyph);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: inset 0 0 0 1px var(--ws-line);
-  transition: background 0.2s ease, color 0.2s ease;
-}
-html.website-scope button.ws-article-close:hover {
-  color: var(--onAccentText);
-  background: var(--accentMain);
 }
 
 /* The only scrolling region — header and footer stay put. */
@@ -5253,7 +5490,7 @@ html.website-scope .ws-article-media {
   flex: 0 0 auto;
   aspect-ratio: 16 / 7;
   max-width: 100%;
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   overflow: hidden;
   background: var(--ws-card-soft);
 }
@@ -5310,7 +5547,7 @@ html.website-scope .ws-article-section .ws-muted:last-child {
 html.website-scope .ws-article-checklist {
   margin-top: 28px;
   padding: 20px;
-  border-radius: 14px;
+  border-radius: var(--website-radius-panel);
   background: var(--ws-card-soft);
 }
 html.website-scope .ws-article-checklist .ws-article-h3 {
@@ -5367,34 +5604,1018 @@ html.website-scope .ws-article-note {
   }
 }
 
-/* ── Light mode ───────────────────────────────────────────────────────── */
-/* Only the fills that were alpha-over-black need restating; --ws-nav-bg,
-   --ws-card-soft and --ws-line flip on their own. */
-/* Same red frosting, lighter underneath — a 58% black base would crush the
-   pale page into near-darkness and lose the frosted-glass read entirely. */
-html.website-scope[data-website-theme="light"] .ws-article-scrim {
-  background:
-    linear-gradient(
-      0deg,
-      rgba(var(--accentMainRgb), 0.24) 0%,
-      rgba(var(--accentMainRgb), 0.24) 100%
-    ),
-    rgba(15, 23, 42, 0.28);
-}
-/* The light `button.app-btn` rule above is [data-website-theme]-qualified, so
-   it outranks the close button's own rule — restate it at that specificity or
-   the close reads as a solid red action rather than quiet chrome. */
-html.website-scope[data-website-theme="light"] button.ws-article-close {
+/* Light mode needs no rules: the scrim tint / base and the popup shadow are
+   token re-points (--website-popup-*), and the close button is the raw-button
+   control, which already flips. */
+
+/* @family portal — /website/profile customer portal */
+/* ════════════════════════════════════════════════════════════════════════
+   Customer portal (src/pages/website/profile.js), rendered on /website/dev by
+   src/features/website/showcase/sections/PortalShowcase.js.
+
+   Replaces the inline style objects the page used to carry. Every colour is a
+   token, so the theme cycle button on the page (data-website-theme) repaints
+   the portal from the token blocks alone — there are no light rules here.
+
+   State is carried by attributes, never by a second class or inline paint:
+     data-tone    badges / tags / VHC lights / ledger amounts
+     data-state   tracker steps (done | active | todo)
+     data-author  message bubbles (customer | staff)
+     data-enabled notification dots
+     aria-pressed service tiles        aria-checked  the settings switch
+   Measured values are runtime custom properties set inline by the page:
+     --ws-portal-pct (bar fills) · --ws-portal-score (score ring, deg)
+     --ws-portal-steps (tracker column count)
+
+   Placement: this block must sit AFTER @family controls and @family banner.
+   `button.ws-portal-service` ties the generic `button:not(.app-btn)` rules on
+   specificity and wins on order; `.ws-portal-banner` does the same against
+   `.website-banner`.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Page shell ────────────────────────────────────────────────────────── */
+html.website-scope .ws-portal-shell {
+  min-height: 100vh;
+  padding: clamp(16px, 3vw, 32px) clamp(16px, 4vw, 48px) 96px;
   color: var(--txt-bright);
-  background: var(--ws-card-soft);
-  box-shadow: inset 0 0 0 1px var(--ws-line);
 }
-html.website-scope[data-website-theme="light"] button.ws-article-close:hover {
-  color: var(--onAccentText);
-  background: var(--accentMain);
+html.website-scope .ws-portal-main {
+  max-width: 1280px;
+  margin: 0 auto;
 }
-html.website-scope[data-website-theme="light"] .ws-article-card {
+html.website-scope .ws-portal-status {
+  font-size: 14px;
+  color: var(--txt-soft);
+}
+html.website-scope a.ws-portal-link {
+  color: var(--accentText);
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+html.website-scope .ws-portal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+html.website-scope .ws-portal-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accentText);
+}
+html.website-scope .ws-portal-title {
+  margin: 6px 0 4px;
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 800;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-subtitle {
+  margin: 0;
+  max-width: 520px;
+  font-size: 14px;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-portal-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Layout: jump-to rail + content stack ──────────────────────────────── */
+html.website-scope .ws-portal-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+html.website-scope .ws-portal-nav {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: var(--website-radius-panel);
+  background: var(--website-elev-1);
+}
+html.website-scope .ws-portal-nav__heading {
+  padding: 4px 10px 8px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+}
+html.website-scope a.ws-portal-nav__link {
+  display: block;
+  padding: 8px 12px;
+  border-radius: var(--website-radius-chip);
+  font-size: 13px;
+  color: var(--txt-soft);
+  text-decoration: none;
+}
+html.website-scope .ws-portal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+html.website-scope .ws-portal-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+html.website-scope .ws-portal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(16px, 3vw, 24px);
+  border-radius: var(--website-radius-card);
+  background: var(--website-elev-1);
+}
+html.website-scope .ws-portal-card--wide {
+  grid-column: 1 / -1;
+}
+/* Card header and settings-row header share one bar. */
+html.website-scope .ws-portal-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+html.website-scope .ws-portal-card__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+html.website-scope .ws-portal-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--website-radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--txt-soft);
+  background: var(--website-elev-4);
+}
+html.website-scope .ws-portal-todo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--website-radius-tile);
+  background: var(--website-elev-2);
+}
+/* Accent sub-heading inside a card (also the TODO label). */
+html.website-scope .ws-portal-subhead {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--accentText);
+}
+html.website-scope .ws-portal-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--website-radius-tile);
+  background: var(--website-elev-2);
+}
+
+/* ── Copy ──────────────────────────────────────────────────────────────── */
+html.website-scope .ws-portal-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-portal-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-portal-lead {
+  margin: 0;
+  font-size: 13px;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-portal-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-flash {
+  margin: 0;
+  font-size: 12px;
+  color: var(--website-success-ink);
+}
+html.website-scope .ws-portal-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--website-danger-ink);
+}
+
+/* ── Badges and tags ───────────────────────────────────────────────────── */
+html.website-scope .ws-portal-badge,
+html.website-scope .ws-portal-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--website-radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--txt-soft);
+  background: var(--website-elev-3);
+}
+html.website-scope .ws-portal-badge {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+html.website-scope .ws-portal-badge[data-tone="ok"],
+html.website-scope .ws-portal-tag[data-tone="ok"] {
+  color: var(--website-success-ink);
+  background: rgba(var(--website-success-rgb), 0.18);
+}
+html.website-scope .ws-portal-badge[data-tone="open"],
+html.website-scope .ws-portal-tag[data-tone="accent"] {
+  color: var(--website-danger-ink);
+  background: rgba(var(--accentMainRgb), 0.22);
+}
+
+/* ── Item lists ────────────────────────────────────────────────────────── */
+html.website-scope .ws-portal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+html.website-scope .ws-portal-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--website-radius-tile);
+  background: var(--website-elev-2);
+}
+html.website-scope .ws-portal-row--single {
+  grid-template-columns: 1fr;
+}
+html.website-scope .ws-portal-item-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-item-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-portal-item-meta--spaced {
+  margin-top: 6px;
+}
+html.website-scope .ws-portal-when {
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--txt-mute);
+}
+
+/* ── Forms and settings rows ───────────────────────────────────────────── */
+html.website-scope .ws-portal-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--website-field-gap);
+}
+html.website-scope .ws-portal-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--website-field-gap);
+}
+html.website-scope .ws-portal-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--website-field-gap);
+  min-width: 0;
+}
+/* Field label and read-only detail label are the same caption. */
+html.website-scope .ws-portal-label {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-portal-settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 14px;
+}
+/* Registration field: layout plus the uppercase transform. The generic text
+   input rule sets neither property, so a class rule is enough. */
+html.website-scope input.ws-portal-reg-input {
+  flex: 1;
+  text-transform: uppercase;
+}
+
+/* ── Balances and detail fields ────────────────────────────────────────── */
+html.website-scope .ws-portal-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: var(--website-radius-panel);
+  background: var(--website-elev-2);
+}
+html.website-scope .ws-portal-balance__figure {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+/* Detail field — also the saved-payment-card chip. */
+html.website-scope .ws-portal-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--website-radius-tile);
+  background: var(--website-elev-2);
+}
+html.website-scope .ws-portal-detail__value {
+  font-size: 14px;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-chip__brand {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-chip__line {
+  font-size: 12px;
+  color: var(--txt-soft);
+}
+
+/* ── Summary banners (on top of .website-banner) ───────────────────────── */
+html.website-scope .ws-portal-banner {
+  grid-column: 1 / -1;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 0;
+  padding: 16px;
+}
+html.website-scope .ws-portal-banner__title {
+  font-size: 14px;
+  font-weight: 700;
+}
+html.website-scope .ws-portal-banner__meta {
+  font-size: 12px;
+  color: var(--txt-soft);
+}
+
+/* ── Progress, tracker and score ring ──────────────────────────────────── */
+html.website-scope .ws-portal-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--website-radius-pill);
+  background: var(--website-elev-4);
+}
+html.website-scope .ws-portal-progress__fill {
+  width: var(--ws-portal-pct);
+  height: 100%;
+  background: linear-gradient(90deg, rgba(var(--accentMainRgb), 0.7), var(--accentText));
+}
+html.website-scope .ws-portal-tracker {
+  display: grid;
+  grid-template-columns: repeat(var(--ws-portal-steps), 1fr);
+  gap: 12px;
+}
+html.website-scope .ws-portal-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--txt-faint);
+}
+html.website-scope .ws-portal-step[data-state="done"] {
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-step[data-state="active"] {
+  color: var(--accentText);
+}
+html.website-scope .ws-portal-step__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--website-radius-pill);
+  background: var(--website-elev-4);
+}
+html.website-scope .ws-portal-step[data-state="done"] .ws-portal-step__dot {
+  background: linear-gradient(180deg, var(--website-accent-highlight), var(--accentText));
+}
+html.website-scope .ws-portal-step[data-state="active"] .ws-portal-step__dot {
+  background: var(--accentText);
+}
+html.website-scope .ws-portal-score {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accentText) var(--ws-portal-score), var(--website-elev-4) 0deg);
+}
+html.website-scope .ws-portal-score__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: var(--website-elev-1);
+}
+html.website-scope .ws-portal-score__value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-score__label {
+  font-size: 9px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-portal-notify {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-portal-notify[data-enabled="true"] {
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-notify__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--website-elev-4);
+}
+html.website-scope .ws-portal-notify[data-enabled="true"] .ws-portal-notify__dot {
+  background: var(--accentText);
+}
+
+/* ── Mileage history ───────────────────────────────────────────────────── */
+html.website-scope .ws-portal-mileage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+html.website-scope .ws-portal-mileage__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-portal-mileage__bar {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--website-radius-pill);
+  background: var(--website-elev-4);
+}
+html.website-scope .ws-portal-mileage__fill {
+  display: block;
+  width: var(--ws-portal-pct);
+  height: 100%;
+  background: linear-gradient(90deg, var(--website-accent-highlight), var(--accentText));
+}
+html.website-scope .ws-portal-mileage__value {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--txt-bright);
+}
+
+/* ── VHC traffic lights ────────────────────────────────────────────────── */
+html.website-scope .ws-portal-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--website-radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--website-success-ink);
+  background: rgba(var(--website-success-rgb), 0.18);
+}
+html.website-scope .ws-portal-light[data-tone="amber"] {
+  color: var(--website-warning-ink);
+  background: rgba(var(--website-warning-rgb), 0.18);
+}
+html.website-scope .ws-portal-light[data-tone="red"] {
+  color: var(--website-danger-ink);
+  background: rgba(var(--website-danger-rgb), 0.18);
+}
+html.website-scope .ws-portal-light__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--website-radius-pill);
+  background: rgb(var(--website-success-rgb));
+}
+html.website-scope .ws-portal-light[data-tone="amber"] .ws-portal-light__dot {
+  background: rgb(var(--website-warning-rgb));
+}
+html.website-scope .ws-portal-light[data-tone="red"] .ws-portal-light__dot {
+  background: rgb(var(--website-danger-rgb));
+}
+
+/* ── Media (inspection photos / video) ─────────────────────────────────── */
+html.website-scope .ws-portal-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+html.website-scope .ws-portal-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--website-radius-tile);
+  background: var(--website-elev-2);
+}
+html.website-scope .ws-portal-media__fill {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Tag and caption sit on a photograph, so they use the fixed photo ink. */
+html.website-scope .ws-portal-media__tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: var(--website-radius-pill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--website-photo-ink);
+  background: var(--website-scrim);
+}
+html.website-scope .ws-portal-media__caption {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  left: 8px;
+  font-size: 11px;
+  color: var(--website-photo-ink);
+  text-shadow: var(--website-photo-shadow);
+}
+html.website-scope .ws-portal-thumb {
+  flex-shrink: 0;
+  width: 96px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--website-elev-3);
+}
+html.website-scope .ws-portal-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 110px;
+  padding: 0 8px;
+  border-radius: var(--website-radius-tile);
+  font-size: 11px;
+  text-align: center;
+  color: var(--txt-mute);
+  background: var(--website-elev-3);
+}
+html.website-scope .ws-portal-upload--auto {
+  height: auto;
+  min-height: 88px;
+}
+
+/* ── Timeline and ledger ───────────────────────────────────────────────── */
+html.website-scope .ws-portal-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+html.website-scope .ws-portal-timeline__row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--website-elev-1);
+}
+html.website-scope .ws-portal-timeline__what {
+  font-size: 13px;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+html.website-scope .ws-portal-ledger__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 14px;
+  padding: 8px 10px;
+  border-radius: var(--website-radius-chip);
+  font-size: 13px;
+  background: var(--website-elev-1);
+}
+html.website-scope .ws-portal-ledger__meta {
+  font-size: 11px;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-portal-ledger__amount {
+  font-weight: 700;
+  color: var(--website-danger-ink);
+}
+html.website-scope .ws-portal-ledger__amount[data-tone="credit"] {
+  color: var(--website-success-ink);
+}
+
+/* ── Messages ──────────────────────────────────────────────────────────── */
+html.website-scope .ws-portal-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  padding: 4px;
+  overflow-y: auto;
+}
+html.website-scope .ws-portal-bubble {
+  display: flex;
+  flex-direction: column;
+  align-self: flex-start;
+  gap: 4px;
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: var(--website-radius-panel);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--txt-bright);
+  background: var(--website-elev-3);
+}
+html.website-scope .ws-portal-bubble[data-author="customer"] {
+  align-self: flex-end;
+  background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.32) 0%, rgba(var(--accentMainRgb), 0.18) 100%);
+}
+html.website-scope .ws-portal-bubble__meta {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+/* ── Service tiles — multi-line, left-aligned <button>s ────────────────────
+   Opt out of the capsule chrome of `button:not(.app-btn)`. Written as
+   button.ws-portal-service so each state ties the generic rule's specificity
+   and wins on order: base (0,2,2), :hover (0,3,2), pressed (0,3,2) and
+   pressed:hover (0,4,2), then the focus rings. */
+html.website-scope .ws-portal-services {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+html.website-scope button.ws-portal-service {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 0;
+  padding: 14px 16px;
+  border-radius: var(--website-radius-panel);
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  color: var(--txt-bright);
+  background: var(--website-elev-2);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--website-elev-3);
+  transition: background 0.2s ease;
+}
+html.website-scope button.ws-portal-service:hover {
+  color: var(--txt-bright);
+  background: var(--website-elev-2);
+}
+html.website-scope button.ws-portal-service[aria-pressed="true"],
+html.website-scope button.ws-portal-service[aria-pressed="true"]:hover {
+  background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.32) 0%, rgba(var(--accentMainRgb), 0.18) 100%);
+  box-shadow: inset 0 0 0 1px rgba(var(--accentMainRgb), 0.5);
+}
+html.website-scope button.ws-portal-service:focus-visible {
   box-shadow:
-    0 0 0 1px var(--ws-line),
-    0 24px 56px rgba(15, 23, 42, 0.22);
+    inset 0 0 0 1px var(--website-elev-3),
+    var(--focus-ring);
+}
+html.website-scope button.ws-portal-service[aria-pressed="true"]:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--accentMainRgb), 0.5),
+    var(--focus-ring);
+}
+html.website-scope .ws-portal-service__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-portal-service__hint {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--txt-mute);
+}
+
+/* ── Settings switch (role="switch", state on aria-checked) ────────────── */
+html.website-scope .ws-portal-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--website-radius-tile);
+  background: var(--website-elev-2);
+  cursor: pointer;
+}
+html.website-scope .ws-portal-toggle__label {
+  font-size: 13px;
+}
+html.website-scope .ws-portal-toggle__track {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  border-radius: var(--website-radius-pill);
+  background: var(--website-elev-4);
+  transition: background 0.2s ease;
+}
+html.website-scope .ws-portal-toggle[aria-checked="true"] .ws-portal-toggle__track {
+  background: linear-gradient(180deg, var(--website-accent-highlight) 0%, var(--accentText) 100%);
+}
+html.website-scope .ws-portal-toggle__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--website-radius-pill);
+  background: var(--onAccentText);
+  transition: left 0.2s ease;
+}
+html.website-scope .ws-portal-toggle[aria-checked="true"] .ws-portal-toggle__knob {
+  left: 20px;
+}
+
+/* @family dev-overlay — staff dev layout overlay, re-skinned for /website */
+/* ─── Dev layout overlay — website skin ───────────────────────────────────
+   The staff dev layout overlay (src/components/dev-layout-overlay/) also runs
+   on every /website route for signed-in developers. It is switched on by
+   TYPING "/website-dev" on any website page, or by visiting /website-dev —
+   there is deliberately no launcher button in the customer UI.
+
+   Its controls are authored against the staff button families, which are
+   gated on html.staff-scope and do not exist here — while the raw <button>,
+   [role="button"] and .app-btn rules at the top of this file DO match them and
+   would turn every switch, category pill and section label into a 44px
+   capsule. This block re-skins those controls in the customer dark material.
+
+   Every selector is anchored on the overlay's own attributes
+   ([data-dev-overlay-internal] + [data-dev-overlay-surface="website"]), which
+   no customer UI renders, so nothing here can reach a customer page. The
+   selectors carry enough attributes to outrank the light-theme button rules
+   above, and this block must stay LAST in the file for the ties. Rings are
+   inset box-shadows (§3.0a — no border declarations). */
+/* The website overlay layer lets clicks through (so the top bar's Overlay
+   toggle stays reachable), so the inspect cursor is set on the page instead. */
+html.website-scope[data-dev-overlay-enabled="true"][data-dev-overlay-surface="website"] body {
+  cursor: crosshair;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] {
+  color-scheme: dark;
+  --surface-rgb: 22, 22, 26;
+  --text-1-rgb: 248, 247, 255;
+  --text-1: #f8f7ff;
+  --text-2: #0a0a0c;
+  --theme: rgba(255, 255, 255, 0.06);
+  --accent-base: var(--accentMain);
+  --accent-base-rgb: var(--accentMainRgb);
+  --accent-strong: var(--scrollbar-thumb-hover);
+  --checkbox-ring-color: rgba(255, 255, 255, 0.32);
+  --dev-overlay-control-bg: rgba(255, 255, 255, 0.06);
+  --dev-overlay-control-bg-hover: rgba(255, 255, 255, 0.12);
+  --dev-overlay-control-ring: rgba(255, 255, 255, 0.12);
+  /* Every colour the overlay skin paints is named here once. */
+  --dev-overlay-on-accent: var(--onAccentText);
+  --dev-overlay-focus: 0 0 0 3px rgba(var(--accentMainRgb), 0.55);
+  --dev-overlay-label-bg: rgba(248, 247, 255, 0.94);
+  --dev-overlay-label-bg-hover: #ffffff;
+  --dev-overlay-label-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --dev-overlay-switch-bg: rgba(255, 255, 255, 0.16);
+  --dev-overlay-switch-bg-hover: rgba(255, 255, 255, 0.22);
+  --dev-overlay-pill-bg: rgba(22, 22, 26, 0.4);
+  --dev-overlay-pill-bg-hover: rgba(255, 255, 255, 0.08);
+  --dev-overlay-pill-ring: rgba(255, 255, 255, 0.05);
+  --dev-overlay-pill-selected: rgba(var(--accentMainRgb), 0.2);
+  font-family: var(--font-family);
+}
+
+/* Shared reset — strip the customer capsule chrome from every overlay control. */
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control],
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button.app-btn,
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] div[role="button"][data-dev-overlay-label="1"] {
+  appearance: none;
+  box-sizing: border-box;
+  min-height: 0;
+  letter-spacing: 0;
+  line-height: 1.2;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transform: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Section labels — the floating number / preview chips drawn on each box. */
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] div[role="button"][data-dev-overlay-label="1"] {
+  display: block;
+  gap: 0;
+  padding: 3px 8px;
+  border-radius: var(--website-radius-pill);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  color: var(--text-2);
+  background: var(--dev-overlay-label-bg);
+  box-shadow: var(--dev-overlay-label-shadow);
+  cursor: copy;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] div[role="button"][data-dev-overlay-label="1"]:hover {
+  color: var(--text-2);
+  background: var(--dev-overlay-label-bg-hover);
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] div[role="button"][data-dev-overlay-label="1"][data-dev-overlay-selected="1"],
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] div[role="button"][data-dev-overlay-label="1"][data-dev-overlay-selected="1"]:hover {
+  color: var(--dev-overlay-on-accent);
+  background: var(--accent-base);
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] div[role="button"][data-dev-overlay-label="1"]:focus-visible {
+  outline: none;
+  box-shadow: var(--dev-overlay-focus);
+}
+
+/* Compact panel buttons — Minimise, mode picker, Copy locator, All / None / Reset. */
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button.app-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: var(--website-radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-1);
+  background: var(--dev-overlay-control-bg);
+  box-shadow: inset 0 0 0 1px var(--dev-overlay-control-ring);
+  cursor: pointer;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button.app-btn[aria-pressed] {
+  text-transform: capitalize;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button.app-btn:hover:not(:disabled) {
+  color: var(--text-1);
+  background: var(--dev-overlay-control-bg-hover);
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button.app-btn.is-active,
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button.app-btn.is-active:hover:not(:disabled) {
+  color: var(--dev-overlay-on-accent);
+  background: var(--accent-base);
+  box-shadow: none;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button.app-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button.app-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--dev-overlay-control-ring),
+    var(--dev-overlay-focus);
+}
+
+/* Switches — master, full-screen, dotted markers. */
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"] {
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  padding: 0;
+  border-radius: var(--website-radius-pill);
+  background: var(--dev-overlay-switch-bg);
+  box-shadow: inset 0 0 0 1px var(--checkbox-ring-color);
+  cursor: pointer;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"]:hover:not(:disabled) {
+  background: var(--dev-overlay-switch-bg-hover);
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"][aria-checked="true"],
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"][aria-checked="true"]:hover:not(:disabled) {
+  background: var(--accent-base);
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"]::after {
+  top: 3px;
+  left: 3px;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"][aria-checked="true"]::after {
+  transform: translateX(24px);
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"]:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--checkbox-ring-color),
+    var(--dev-overlay-focus);
+}
+
+/* Category pills — the family filter grid. */
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="category"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--text-1);
+  background: var(--dev-overlay-pill-bg);
+  box-shadow: inset 0 0 0 1px var(--dev-overlay-pill-ring);
+  cursor: pointer;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="category"]:hover:not(:disabled) {
+  color: var(--text-1);
+  background: var(--dev-overlay-pill-bg-hover);
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="category"][aria-checked="true"],
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="category"][aria-checked="true"]:hover:not(:disabled) {
+  background: var(--dev-overlay-pill-selected);
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="category"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="category"]:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--dev-overlay-pill-ring),
+    var(--dev-overlay-focus);
 }
