@@ -114,6 +114,10 @@ html.website-scope {
   --website-radius-panel: 14px !important;
   --website-radius-tile: 12px !important;
   --website-radius-chip: 8px !important;
+  --website-radius-dialog: 20px !important;
+  --website-radius-check: 5px !important;
+  /* Radio / checkbox box size. */
+  --website-check-size: 18px !important;
 
   /* Dark scrollbar with a brand-red thumb on /website. */
   --scrollbar-thumb: var(--accentMain) !important;
@@ -770,7 +774,7 @@ html.website-scope.app-dropdown-menu button.dropdown-api__option {
      WebsiteNativeSelect option rows. */
   box-shadow: none;
   color: var(--ws-control-text);
-  font-size: 13px;
+  font-size: var(--website-control-font-size);
   line-height: 1.3;
   text-align: left;
   cursor: pointer;
@@ -972,8 +976,8 @@ html.website-scope input[type="time"]::-webkit-datetime-edit-ampm-field:focus {
 html.website-scope input[type="radio"]:not(.app-btn) {
   appearance: none;
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: var(--website-check-size);
+  height: var(--website-check-size);
   border: var(--checkbox-ring);
   border-radius: var(--website-radius-pill);
   background: var(--ws-control-bg);
@@ -995,14 +999,14 @@ html.website-scope input[type="radio"]:not(.app-btn):checked::after {
 }
 html.website-scope input[type="radio"]:not(.app-btn):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.35);
+  box-shadow: var(--focus-ring);
 }
 
 /* File input — the picker button reuses the secondary control surface so
    "Choose file" lines up with the sibling buttons / inputs. */
 html.website-scope input[type="file"]:not(.app-btn) {
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--website-control-font-size);
   color: var(--txt-soft);
   min-height: var(--website-control-height);
   display: inline-flex;
@@ -1066,7 +1070,7 @@ html.website-scope .website-calendar {
   width: 304px;
   max-width: calc(100vw - 24px);
   padding: 14px;
-  border-radius: 16px;
+  border-radius: var(--website-radius-panel);
   /* Theme-aware default text colour for the whole calendar surface —
      --txt-bright resolves to white in dark mode and to near-black in
      light mode, so the title and any uncoloured text always reads
@@ -1338,11 +1342,11 @@ html.website-scope .ws-consent-option input[type="checkbox"]:not(.app-btn) {
   -webkit-appearance: none;
   position: relative;
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: var(--website-check-size);
+  height: var(--website-check-size);
   margin: 2px 0 0;
   border: var(--checkbox-ring);
-  border-radius: 5px;
+  border-radius: var(--website-radius-check);
   background: var(--ws-control-bg);
   cursor: pointer;
 }
@@ -1353,7 +1357,7 @@ html.website-scope .ws-consent-option input[type="checkbox"]:not(.app-btn):check
   content: "";
   position: absolute;
   inset: 4px;
-  border-radius: 2px;
+  border-radius: var(--website-radius-check);
   background: var(--onAccentText);
 }
 html.website-scope .ws-consent-option input[type="checkbox"]:not(.app-btn):disabled {
@@ -1633,7 +1637,7 @@ html.website-scope .website-dev-swatch__chip {
   flex-shrink: 0;
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--website-radius-tile);
   background: var(--website-dev-swatch);
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
 }
@@ -2362,7 +2366,7 @@ html.website-scope .ws-nav-link {
   padding: 0 clamp(6px, 0.65vw, 12px);
   border-radius: var(--website-radius-pill);
   font-size: var(--website-control-font-size);
-  font-weight: 600;
+  font-weight: var(--website-control-font-weight);
   line-height: 1;
   color: var(--txt-soft);
   white-space: nowrap;
@@ -2503,7 +2507,7 @@ html.website-scope button.ws-nav-toggle {
   html.website-scope .ws-nav-links--open .ws-nav-link {
     width: 100%;
     padding: 0 16px;
-    font-size: 15px;
+    font-size: var(--website-control-font-size);
     line-height: 1.2;
   }
   html.website-scope .ws-nav-links--open .ws-nav-phone {
@@ -2816,8 +2820,8 @@ html.website-scope button.ws-tab {
   padding: 0 20px;
   border: none;
   border-radius: var(--website-radius-pill);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
   cursor: pointer;
   color: var(--txt-soft);
   background: var(--ws-control-bg);
@@ -2971,8 +2975,8 @@ html.website-scope .ws-chips {
 html.website-scope .ws-chip {
   padding: 6px 12px;
   border-radius: var(--website-radius-pill);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
   color: var(--txt-soft);
   background: var(--ws-card-soft);
 }
@@ -3435,8 +3439,8 @@ html.website-scope .ws-stock-filters-title {
 html.website-scope button.ws-stock-clear {
   min-height: var(--website-control-height);
   padding: 0 4px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
   color: var(--accentText);
   background: none;
   -webkit-backdrop-filter: none;
@@ -3918,7 +3922,7 @@ html.website-scope .ws-cart-item:last-child {
 html.website-scope .ws-cart-item-media {
   width: 64px;
   height: 64px;
-  border-radius: 10px;
+  border-radius: var(--website-radius-tile);
   background: var(--ws-tint);
   overflow: hidden;
 }
@@ -4496,7 +4500,7 @@ html.website-scope .ws-preview-target-label {
   left: 6px;
   z-index: 50;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--website-radius-chip);
   background: var(--accentMain);
   color: var(--onAccentText);
   font-size: 0.7rem;
@@ -4560,7 +4564,7 @@ html.website-scope .authCard {
   flex-direction: column;
   gap: 18px;
   padding: clamp(20px, 4vw, 34px);
-  border-radius: 24px;
+  border-radius: var(--website-radius-dialog);
   background: var(--website-elev-2);
   /* Card recipe — specular, hairline ring and lift, all tokens. */
   box-shadow:
@@ -5094,10 +5098,10 @@ html.website-scope .ws-val-option input[type="checkbox"]:not(.app-btn) {
   -webkit-appearance: none;
   position: relative;
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: var(--website-check-size);
+  height: var(--website-check-size);
   border: var(--checkbox-ring);
-  border-radius: 5px;
+  border-radius: var(--website-radius-check);
   /* Same well as the radio — the control material, which flips per theme. */
   background: var(--ws-control-bg);
   cursor: pointer;
@@ -5412,7 +5416,7 @@ html.website-scope .ws-article-card {
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: contain;
-  border-radius: 20px;
+  border-radius: var(--website-radius-dialog);
   color: var(--txt-bright);
   background: var(--surface);
   box-shadow:
@@ -6209,7 +6213,7 @@ html.website-scope .ws-portal-thumb {
   width: 96px;
   height: 72px;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: var(--website-radius-tile);
   background: var(--website-elev-3);
 }
 html.website-scope .ws-portal-upload {
@@ -6241,7 +6245,7 @@ html.website-scope .ws-portal-timeline__row {
   align-items: baseline;
   gap: 14px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--website-radius-tile);
   background: var(--website-elev-1);
 }
 html.website-scope .ws-portal-timeline__what {
@@ -6591,7 +6595,7 @@ html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="web
   gap: 8px;
   min-height: 44px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--website-radius-tile);
   font-size: 0.76rem;
   font-weight: 700;
   text-align: left;

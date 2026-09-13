@@ -4,7 +4,7 @@
     "rules": 872,
     "classes": 590,
     "coveredClasses": 590,
-    "tokens": 120,
+    "tokens": 123,
     "families": 18,
     "sections": 13
   },
@@ -1264,6 +1264,30 @@
       "purpose": "Tiny non-interactive marks (code, tags, plates).",
       "scope": "root",
       "dark": "8px",
+      "light": null
+    },
+    {
+      "name": "--website-radius-dialog",
+      "group": "radius",
+      "purpose": "Dialog-scale cards: the Help popup and the sign-in card.",
+      "scope": "root",
+      "dark": "20px",
+      "light": null
+    },
+    {
+      "name": "--website-radius-check",
+      "group": "radius",
+      "purpose": "Checkbox corner (radios are pills).",
+      "scope": "root",
+      "dark": "5px",
+      "light": null
+    },
+    {
+      "name": "--website-check-size",
+      "group": "control-system",
+      "purpose": "Radio and checkbox box size.",
+      "scope": "root",
+      "dark": "18px",
       "light": null
     },
     {

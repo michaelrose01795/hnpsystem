@@ -17,24 +17,16 @@ export default function PickersShowcase({ section }) {
 
   return (
     <ShowcaseSection id="pickers" section={section}>
-      <Row label="Triggers" note="live · value · placeholder · time · disabled">
-        <div className="website-dev-cluster">
-          <div className="website-dev-control-width">
-            <WebsiteNativeDateTimeInput type="date" value={date} onChange={setDate} />
-          </div>
-          <div className="website-dev-control-width">
-            <WebsiteNativeDateTimeInput type="date" value={emptyDate} onChange={setEmptyDate} placeholder="Pick a preferred date" />
-          </div>
-          <div className="website-dev-control-width">
-            <WebsiteNativeDateTimeInput type="time" value={time} onChange={setTime} />
-          </div>
-          <div className="website-dev-control-width">
-            <WebsiteNativeDateTimeInput type="date" value="" onChange={() => {}} placeholder="Disabled" disabled />
-          </div>
+      <Row label="Triggers" hint="WebsiteNativeDateTimeInput">
+        <div className="website-dev-field">
+          <WebsiteNativeDateTimeInput type="date" value={date} onChange={setDate} />
+          <WebsiteNativeDateTimeInput type="date" value={emptyDate} onChange={setEmptyDate} placeholder="Pick a date" />
+          <WebsiteNativeDateTimeInput type="time" value={time} onChange={setTime} />
+          <WebsiteNativeDateTimeInput type="date" value="" onChange={() => {}} placeholder="Disabled" disabled />
         </div>
       </Row>
 
-      <Row label="Calendar" note="today · selected · muted · weekend-disabled">
+      <Row label="Calendar" hint="today · selected · disabled">
         <div className="website-dev-menu-frame">
           <div className="website-calendar website-dev-calendar-static" role="dialog" aria-label="Calendar preview">
             <div className="website-calendar__header">
@@ -72,15 +64,13 @@ export default function PickersShowcase({ section }) {
             </div>
             <div className="website-calendar__footer">
               <button type="button">Clear</button>
-              <button type="button">
-                Today
-              </button>
+              <button type="button">Today</button>
             </div>
           </div>
         </div>
       </Row>
 
-      <Row label="Time picker" note=".website-time-picker">
+      <Row label="Time picker">
         <div className="website-dev-menu-frame">
           <div className="website-calendar website-time-picker website-dev-calendar-static" role="dialog" aria-label="Time preview">
             <div className="website-calendar__header">
@@ -105,7 +95,7 @@ export default function PickersShowcase({ section }) {
         </div>
       </Row>
 
-      <Row label="Calendar API opt-outs" note="staff Calendar classes, sized by their cell under the customer scope">
+      <Row label="Calendar API cells" hint="staff Calendar under the customer scope">
         <div className="website-dev-cluster">
           <button type="button" className="calendar-api__nav-button" aria-label="Previous">
             ‹

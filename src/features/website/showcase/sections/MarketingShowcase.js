@@ -4,7 +4,9 @@
 // @family preview (the Live Preview editor outlines). Markup mirrors
 // src/features/website/WebsitePage.js; VehicleCard and BrandLogo are the real
 // shared components. Every preview sits inside .ws-page, which owns the page
-// tokens (--ws-card, --ws-line, --ws-radius, ...).
+// tokens (--ws-card, --ws-line, --ws-radius, ...). Page CTAs live in Buttons.
+
+/* eslint-disable @next/next/no-img-element */
 
 import BrandLogo from "@/components/BrandLogo";
 import VehicleCard from "@/features/website/components/VehicleCard";
@@ -51,56 +53,86 @@ function HoursTable({ caption }) {
 }
 
 export default function MarketingShowcase({ section }) {
-  const [firstVehicle, secondVehicle] = vehicles;
+  const staticVehicle = vehicles[1] || vehicles[0];
 
   return (
     <ShowcaseSection id="marketing" section={section}>
-      <Row label="Navigation" note=".ws-nav · links · phone · account · menu toggle (≤640px)">
-        <Frame>
-          <div className="ws-page">
-            <header className="ws-nav">
-              <div className="ws-nav-inner">
-                <a href="#marketing" className="ws-brand">
-                  <BrandLogo className="ws-logo" alt="Humphries and Parks" />
-                </a>
-                <nav className="ws-nav-links" aria-label="Showcase primary">
-                  <a href="#marketing" className="ws-nav-link ws-nav-link--active">
-                    Home
+      <Row label="Navigation" hint="site · shop" size="wide">
+        <div className="website-dev-stack">
+          <Frame>
+            <div className="ws-page">
+              <header className="ws-nav">
+                <div className="ws-nav-inner">
+                  <a href="#marketing" className="ws-brand">
+                    <BrandLogo className="ws-logo" alt="Humphries and Parks" />
                   </a>
-                  <a href="#stock" className="ws-nav-link">
-                    Cars
-                  </a>
-                  <a href="#parts" className="ws-nav-link">
-                    Parts
-                  </a>
-                  <a href="#valuation" className="ws-nav-link">
-                    Sell your car
-                  </a>
-                </nav>
-                <button type="button" className="ws-nav-toggle">
-                  Menu
-                </button>
-                <div className="ws-nav-actions">
-                  <button type="button" className="ws-nav-account ws-nav-dev">
-                    Dev
+                  <nav className="ws-nav-links" aria-label="Showcase primary">
+                    <a href="#marketing" className="ws-nav-link ws-nav-link--active">
+                      Home
+                    </a>
+                    <a href="#stock" className="ws-nav-link">
+                      Cars
+                    </a>
+                    <a href="#parts" className="ws-nav-link">
+                      Parts
+                    </a>
+                    <a href="#valuation" className="ws-nav-link">
+                      Sell your car
+                    </a>
+                  </nav>
+                  <button type="button" className="ws-nav-toggle">
+                    Menu
                   </button>
-                  <button type="button" className="ws-nav-account ws-nav-dev ws-nav-dev--on" aria-pressed="true">
-                    Overlay
-                  </button>
-                  <a href="tel:01732870711" className="ws-nav-phone">
-                    01732 870711
-                  </a>
-                  <a href="#auth" className="ws-nav-account ws-nav-account--profile">
-                    Account
-                  </a>
+                  <div className="ws-nav-actions">
+                    <button type="button" className="ws-nav-account ws-nav-dev">
+                      Dev
+                    </button>
+                    <button type="button" className="ws-nav-account ws-nav-dev ws-nav-dev--on" aria-pressed="true">
+                      Overlay
+                    </button>
+                    <a href="tel:01732870711" className="ws-nav-phone">
+                      01732 870711
+                    </a>
+                    <a href="#auth" className="ws-nav-account ws-nav-account--profile">
+                      Account
+                    </a>
+                  </div>
                 </div>
-              </div>
-            </header>
-          </div>
-        </Frame>
+              </header>
+            </div>
+          </Frame>
+          <Frame>
+            <div className="ws-page">
+              <header className="ws-nav ws-nav--shop">
+                <div className="ws-nav-inner">
+                  <a href="#shop" className="ws-brand">
+                    <BrandLogo className="ws-logo" alt="Humphries and Parks" />
+                  </a>
+                  <nav className="ws-nav-links" aria-label="Showcase shop">
+                    <a href="#parts" className="ws-nav-link ws-nav-link--active">
+                      Parts catalogue
+                    </a>
+                    <a href="#shop" className="ws-nav-link">
+                      Accessories
+                    </a>
+                  </nav>
+                  <div className="ws-nav-actions">
+                    <button type="button" className="ws-shop-cartbutton">
+                      Basket
+                      <span className="ws-shop-cartbutton-count">2</span>
+                    </button>
+                    <a href="#auth" className="ws-nav-account">
+                      Sign in
+                    </a>
+                  </div>
+                </div>
+              </header>
+            </div>
+          </Frame>
+        </div>
       </Row>
 
-      <Row label="Mobile menu, open" note=".ws-nav-links--open (drops down at ≤640px)">
+      <Row label="Mobile menu" hint="open" size="md">
         <Frame>
           <div className="ws-page">
             <header className="ws-nav">
@@ -127,48 +159,46 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Shop navigation" note=".ws-nav--shop · .ws-nav-actions">
-        <Frame>
-          <div className="ws-page">
-            <header className="ws-nav ws-nav--shop">
-              <div className="ws-nav-inner">
-                <a href="#shop" className="ws-brand">
-                  <BrandLogo className="ws-logo" alt="Humphries and Parks" />
-                </a>
-                <nav className="ws-nav-links" aria-label="Showcase shop">
-                  <a href="#parts" className="ws-nav-link ws-nav-link--active">
-                    Parts catalogue
-                  </a>
-                  <a href="#shop" className="ws-nav-link">
-                    Accessories
-                  </a>
-                </nav>
-                <div className="ws-nav-actions">
-                  <button type="button" className="ws-shop-cartbutton">
-                    Basket
-                    <span className="ws-shop-cartbutton-count">2</span>
-                  </button>
-                  <a href="#auth" className="ws-nav-account">
-                    Sign in
-                  </a>
-                </div>
-              </div>
-            </header>
-          </div>
-        </Frame>
-      </Row>
-
-      <Row label="Logo" note="BrandLogo follows data-website-theme — its wordmark text turns white on the dark theme">
+      <Row label="Tabs" hint=".ws-tabs">
         <Frame padded>
           <div className="ws-page">
-            <div className="website-dev-cluster">
-              <BrandLogo className="ws-logo" alt="Humphries and Parks" />
+            <div className="ws-tabs" role="tablist" aria-label="Showcase tabs">
+              <button type="button" role="tab" aria-selected="true" className="ws-tab ws-tab--active">
+                All cars
+              </button>
+              <button type="button" role="tab" aria-selected="false" className="ws-tab">
+                New
+              </button>
+              <button type="button" role="tab" aria-selected="false" className="ws-tab">
+                Used
+              </button>
             </div>
           </div>
         </Frame>
       </Row>
 
-      <Row label="Hero and trust bar" note=".ws-hero · .ws-trust">
+      <Row label="Live Preview" hint="editor iframe only">
+        <Frame padded>
+          <div className="ws-page">
+            <div className="website-dev-stack">
+              <div className="ws-preview-target">
+                <span className="ws-preview-target-label" aria-hidden="true">
+                  Hero
+                </span>
+                <p className="ws-muted">Hover for the outline.</p>
+              </div>
+              <div className="ws-preview-target ws-preview-target--selected">
+                <span className="ws-preview-target-label" aria-hidden="true">
+                  Contact
+                </span>
+                <p className="ws-muted">Selected.</p>
+              </div>
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Hero & trust bar" size="wide">
         <Frame>
           <div className="ws-page">
             <section className="ws-hero">
@@ -213,20 +243,20 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Sections and headings" note=".ws-section · --tint · .ws-head · --center · .ws-subhead">
+      <Row label="Headings" hint="tinted section" size="md">
         <Frame>
           <div className="ws-page">
             <section className="ws-section ws-section--tint">
               <div className="ws-container">
                 <header className="ws-head ws-head--center">
-                  <span className="ws-eyebrow">Centred head</span>
+                  <span className="ws-eyebrow">Centred</span>
                   <h3 className="ws-h2">A section heading</h3>
-                  <p className="ws-lead">A lead paragraph under the heading, held to a readable measure.</p>
+                  <p className="ws-lead">A lead paragraph under the heading.</p>
                 </header>
                 <header className="ws-head">
-                  <span className="ws-eyebrow">Left head</span>
+                  <span className="ws-eyebrow">Left</span>
                   <h3 className="ws-h2">Left-aligned heading</h3>
-                  <p className="ws-muted">Muted body copy for supporting detail.</p>
+                  <p className="ws-muted">Muted body copy.</p>
                 </header>
                 <div className="ws-subhead">
                   <h4 className="ws-h3">A sub-heading</h4>
@@ -237,7 +267,7 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Brand strip" note=".ws-brands-inner · -label · -list">
+      <Row label="Brand strip" size="md">
         <Frame>
           <div className="ws-page">
             <section className="ws-section">
@@ -256,38 +286,11 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Buttons and tabs" note=".ws-btn--primary · --ghost · .ws-tabs">
-        <Frame padded>
-          <div className="ws-page">
-            <div className="ws-hero-ctas">
-              <a href="#marketing" className="ws-btn ws-btn--primary">
-                Primary CTA
-              </a>
-              <a href="#marketing" className="ws-btn ws-btn--ghost">
-                Ghost CTA
-              </a>
-            </div>
-            <div className="ws-tabs" role="tablist" aria-label="Showcase tabs">
-              <button type="button" role="tab" aria-selected="true" className="ws-tab ws-tab--active">
-                All cars
-              </button>
-              <button type="button" role="tab" aria-selected="false" className="ws-tab">
-                New
-              </button>
-              <button type="button" role="tab" aria-selected="false" className="ws-tab">
-                Used
-              </button>
-            </div>
-          </div>
-        </Frame>
-      </Row>
-
-      <Row label="Card grid" note="VehicleCard (linked and static) · offer · legacy blog media · .ws-badge">
+      <Row label="Card grid" hint="VehicleCard · offer · blog" size="wide">
         <Frame padded>
           <div className="ws-page">
             <div className="ws-grid ws-grid--cards">
-              {firstVehicle ? <VehicleCard vehicle={firstVehicle} /> : null}
-              {secondVehicle ? <VehicleCard vehicle={{ ...secondVehicle, href: null, badge: "Reduced" }} /> : null}
+              {staticVehicle ? <VehicleCard vehicle={{ ...staticVehicle, href: null, badge: "Reduced" }} /> : null}
               <article className="ws-card">
                 <div className="ws-offer-media">
                   {PHOTO ? <img src={PHOTO} alt="Offer" /> : null}
@@ -302,8 +305,8 @@ export default function MarketingShowcase({ section }) {
               <article className="ws-card">
                 <div className="ws-blog-media">{PHOTO ? <img src={PHOTO} alt="Blog" /> : null}</div>
                 <div className="ws-card-body">
-                  <h3 className="ws-card-title">Legacy blog media</h3>
-                  <p className="ws-muted">.ws-blog-media is still read by the single-scroll page.</p>
+                  <h3 className="ws-card-title">Legacy blog card</h3>
+                  <p className="ws-muted">Still read by the single-scroll page.</p>
                 </div>
               </article>
             </div>
@@ -311,7 +314,7 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Steps and sell panel" note=".ws-grid--steps · .ws-step · .ws-panel · .ws-sell-panel · .ws-ticks">
+      <Row label="Steps & sell panel" size="md">
         <Frame padded>
           <div className="ws-page">
             <div className="ws-grid ws-grid--steps">
@@ -319,14 +322,13 @@ export default function MarketingShowcase({ section }) {
                 <article key={title} className="ws-card ws-step">
                   <span className="ws-step-n">{`0${index + 1}`}</span>
                   <h3 className="ws-card-title">{title}</h3>
-                  <p className="ws-muted">A short line explaining this step.</p>
+                  <p className="ws-muted">One short line.</p>
                 </article>
               ))}
             </div>
             <div className="ws-card ws-panel ws-sell-panel">
               <ul className="ws-ticks">
                 <li>Same-day payment</li>
-                <li>Settlement handled for you</li>
                 <li>No admin fees</li>
               </ul>
               <a href="#valuation" className="ws-btn ws-btn--primary">
@@ -337,16 +339,16 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Split layouts and range" note=".ws-split · --reverse · .ws-split-side · .ws-range · .ws-chips · .ws-price-line">
+      <Row label="Split & range" size="md">
         <Frame padded>
           <div className="ws-page">
             <div className="ws-split">
               <div className="ws-split-media">{PHOTO ? <img src={PHOTO} alt="Workshop" /> : null}</div>
               <div className="ws-split-text">
                 <span className="ws-eyebrow">About us</span>
-                <h3 className="ws-h2">Four generations on the same forecourt</h3>
-                <p className="ws-muted">The first muted paragraph gets extra top spacing.</p>
-                <p className="ws-muted">Following paragraphs keep the standard rhythm.</p>
+                <h3 className="ws-h2">Four generations</h3>
+                <p className="ws-muted">The first paragraph gets extra top spacing.</p>
+                <p className="ws-muted">Later paragraphs keep the rhythm.</p>
               </div>
             </div>
             <div className="ws-split ws-split--reverse">
@@ -361,7 +363,6 @@ export default function MarketingShowcase({ section }) {
                   <ul className="ws-chips">
                     <li className="ws-chip">Swift</li>
                     <li className="ws-chip">Vitara</li>
-                    <li className="ws-chip">S-Cross</li>
                   </ul>
                 </div>
               </div>
@@ -370,7 +371,7 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Timeline" note=".ws-timeline · .ws-milestone">
+      <Row label="Timeline" size="md">
         <Frame padded>
           <div className="ws-page">
             <ol className="ws-timeline">
@@ -390,7 +391,7 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Reviews" note=".ws-ratings · .ws-rating · .ws-stars · .ws-grid--reviews · .ws-review">
+      <Row label="Reviews" size="md">
         <Frame padded>
           <div className="ws-page">
             <ul className="ws-ratings">
@@ -408,7 +409,7 @@ export default function MarketingShowcase({ section }) {
             <div className="ws-grid ws-grid--reviews">
               <article className="ws-card ws-review">
                 <Stars rating={5} />
-                <p className="ws-review-quote">“Friendly, honest and the car was spotless on collection.”</p>
+                <p className="ws-review-quote">“Friendly, honest and the car was spotless.”</p>
                 <div className="ws-review-meta">
                   <span className="ws-review-name">Sarah K.</span>
                   <span className="ws-muted">Swift Hybrid · Google</span>
@@ -419,7 +420,7 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Team" note=".ws-team-group · .ws-grid--team · .ws-member · .ws-member-photo">
+      <Row label="Team" size="md">
         <Frame padded>
           <div className="ws-page">
             <div className="ws-team-group">
@@ -440,7 +441,31 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Contact and hours" note=".ws-contact · .ws-contact-* · .ws-hours · .ws-socials">
+      <Row label="Footer" size="md">
+        <Frame>
+          <div className="ws-page">
+            <footer className="ws-footer">
+              <div className="ws-container ws-footer-inner">
+                <div className="ws-footer-top">
+                  <BrandLogo className="ws-logo" alt="Humphries and Parks" />
+                  <ul className="ws-footer-links">
+                    <li>
+                      <a href="#marketing">Privacy</a>
+                    </li>
+                    <li>
+                      <a href="#marketing">Cookies</a>
+                    </li>
+                  </ul>
+                </div>
+                <p className="ws-footer-legal">Authorised and regulated by the Financial Conduct Authority.</p>
+                <p className="ws-footer-copy">© 2026 Humphries and Parks</p>
+              </div>
+            </footer>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Contact & hours" size="wide">
         <Frame padded>
           <div className="ws-page">
             <div className="ws-contact">
@@ -476,53 +501,8 @@ export default function MarketingShowcase({ section }) {
               </div>
               <div className="ws-card ws-contact-map">
                 <div className="ws-card-body">
-                  <p className="ws-muted">The live page embeds a map iframe here.</p>
+                  <p className="ws-muted">The live page embeds a map here.</p>
                 </div>
-              </div>
-            </div>
-          </div>
-        </Frame>
-      </Row>
-
-      <Row label="Footer" note=".ws-footer · -inner · -top · -links · -legal · -copy">
-        <Frame>
-          <div className="ws-page">
-            <footer className="ws-footer">
-              <div className="ws-container ws-footer-inner">
-                <div className="ws-footer-top">
-                  <BrandLogo className="ws-logo" alt="Humphries and Parks" />
-                  <ul className="ws-footer-links">
-                    <li>
-                      <a href="#marketing">Privacy</a>
-                    </li>
-                    <li>
-                      <a href="#marketing">Cookies</a>
-                    </li>
-                  </ul>
-                </div>
-                <p className="ws-footer-legal">Authorised and regulated by the Financial Conduct Authority.</p>
-                <p className="ws-footer-copy">© 2026 Humphries and Parks</p>
-              </div>
-            </footer>
-          </div>
-        </Frame>
-      </Row>
-
-      <Row label="Live Preview editor" note="@family preview · staff editor iframe only">
-        <Frame padded>
-          <div className="ws-page">
-            <div className="website-dev-choice-list">
-              <div className="ws-preview-target">
-                <span className="ws-preview-target-label" aria-hidden="true">
-                  Hero (hover)
-                </span>
-                <p className="ws-muted">Hover to see the dashed outline and label.</p>
-              </div>
-              <div className="ws-preview-target ws-preview-target--selected">
-                <span className="ws-preview-target-label" aria-hidden="true">
-                  Contact · selected
-                </span>
-                <p className="ws-muted">The selected region keeps a solid outline.</p>
               </div>
             </div>
           </div>

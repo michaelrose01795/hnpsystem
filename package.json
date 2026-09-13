@@ -9,7 +9,7 @@
     "presentation:sync": "node tools/scripts/sync-presentation-ui.js",
     "predev": "npm run presentation:sync && npm run css:route-scoped && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:symbols && npm run audit:non-global && npm run check:borders && npm run check:colours && npm run check:layers && npm run check:design && npm run check:website && node tools/scripts/use-local-next-cache.js",
     "prebuild": "npm run presentation:sync && npm run css:route-scoped && npm run check:dropdowns && npm run check:staff-controls && npm run check:text-contrast && npm run check:symbols && npm run audit:non-global && npm run check:borders && npm run check:colours && npm run check:layers && npm run check:design && npm run check:website",
-    "dev": "next dev",
+    "dev": "node tools/scripts/dev-with-route-css.js",
     "vercel:dev": "node tools/scripts/vercel-dev.js",
     "lint": "eslint .",
     "uk:check": "node tools/scripts/enforce-uk-english.js",
