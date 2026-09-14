@@ -1036,19 +1036,37 @@ export const MILEAGE_BANDS = [
   { value: "0-60000", label: "Under 60,000", min: 0, max: 60000 },
 ];
 
+// Representative monthly finance, as carried on each record's `monthly`.
+export const MONTHLY_BANDS = [
+  { value: "0-200", label: "Under £200 a month", min: 0, max: 200 },
+  { value: "200-300", label: "£200 – £300 a month", min: 200, max: 300 },
+  { value: "300-400", label: "£300 – £400 a month", min: 300, max: 400 },
+  { value: "400-", label: "£400 a month and above", min: 400, max: Infinity },
+];
+
 export const SORT_OPTIONS = [
   { value: "newest", label: "Latest arrivals" },
   { value: "price-asc", label: "Price: low to high" },
   { value: "price-desc", label: "Price: high to low" },
+  { value: "monthly-asc", label: "Monthly: low to high" },
   { value: "mileage-asc", label: "Mileage: lowest first" },
   { value: "year-desc", label: "Year: newest first" },
 ];
 
 const uniqueSorted = (values) => Array.from(new Set(values.filter(Boolean))).sort();
 
-/** Option lists for the search filters, derived from what is actually in stock. */
-export const stockFacets = (list = listStock()) => ({
-  models: uniqueSorted(list.map((v) => v.model)),
+/** Electric, hybrid and plug-in hybrid all count for the "Electric / hybrid" filter. */
+export const isElectrified = (vehicle) => /electric|hybrid/i.test(String(vehicle?.fuel || ""));
+
+export const isAutomatic = (vehicle) => /automatic/i.test(String(vehicle?.transmission || ""));
+
+/**
+ * Option lists for the search filters, derived from what is actually in stock.
+ * Pass `make` to narrow the model list to that manufacturer's range.
+ */
+export const stockFacets = (list = listStock(), { make } = {}) => ({
+  makes: uniqueSorted(list.map((v) => v.make)),
+  models: uniqueSorted(list.filter((v) => !make || v.make === make).map((v) => v.model)),
   fuels: uniqueSorted(list.map((v) => v.fuel)),
   transmissions: uniqueSorted(list.map((v) => v.transmission)),
   bodyStyles: uniqueSorted(list.map((v) => v.bodyStyle)),
@@ -1088,14 +1106,33 @@ const matchesText = (vehicle, query) => {
  * `condition` accepts "all" (or an empty value) to mean no condition filter.
  */
 export const filterStock = (list, filters = {}) => {
-  const { condition, query, model, fuel, transmission, bodyStyle, priceBand, mileageBand } = filters;
+  const {
+    condition,
+    query,
+    make,
+    model,
+    fuel,
+    transmission,
+    bodyStyle,
+    priceBand,
+    monthlyBand,
+    mileageBand,
+    photosOnly,
+    electrified,
+    automatic,
+  } = filters;
   return list.filter((v) => {
     if (condition && condition !== "all" && v.condition !== condition) return false;
+    if (make && v.make !== make) return false;
     if (model && v.model !== model) return false;
     if (fuel && v.fuel !== fuel) return false;
     if (transmission && v.transmission !== transmission) return false;
     if (bodyStyle && v.bodyStyle !== bodyStyle) return false;
+    if (photosOnly && !(Array.isArray(v.images) && v.images.length)) return false;
+    if (electrified && !isElectrified(v)) return false;
+    if (automatic && !isAutomatic(v)) return false;
     if (!withinBand(PRICE_BANDS, v.price, priceBand)) return false;
+    if (!withinBand(MONTHLY_BANDS, v.monthly, monthlyBand)) return false;
     if (!withinBand(MILEAGE_BANDS, v.mileage, mileageBand)) return false;
     return matchesText(v, query);
   });
@@ -1108,6 +1145,9 @@ export const sortStock = (list, sort = "newest") => {
       return out.sort((a, b) => a.price - b.price);
     case "price-desc":
       return out.sort((a, b) => b.price - a.price);
+    case "monthly-asc":
+      // A car with no finance quote sorts last rather than first.
+      return out.sort((a, b) => (a.monthly ?? Infinity) - (b.monthly ?? Infinity));
     case "mileage-asc":
       return out.sort((a, b) => a.mileage - b.mileage);
     case "year-desc":
@@ -1144,6 +1184,40 @@ export const mileageLabel = (vehicle) => {
   if (!Number.isFinite(Number(vehicle?.mileage))) return "—";
   if (vehicle.condition === "new" && Number(vehicle.mileage) <= 100) return "Delivery mileage";
   return formatMileage(vehicle.mileage);
+};
+
+// A car stocked within this many days reads as a "New arrival". Kept short so
+// the badge still means something on a newest-first list.
+export const NEW_ARRIVAL_DAYS = 7;
+// Used stock under this mileage reads as "Low mileage".
+export const LOW_MILEAGE_MAX = 15000;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The badges a listing card shows, most specific first, at most `limit`.
+ * The sales team's own `badge` always leads; the rest are derived from the
+ * record so they can never contradict it (an "Electric" badge on a petrol car).
+ */
+export const stockBadges = (vehicle, { now = Date.now(), limit = 2 } = {}) => {
+  if (!vehicle) return [];
+  const badges = [];
+  if (vehicle.badge) badges.push(vehicle.badge);
+  if (vehicle.fuel === "Electric") badges.push("Electric");
+  const stocked = Date.parse(vehicle.stockedAt);
+  if (Number.isFinite(stocked) && now - stocked >= 0 && now - stocked <= NEW_ARRIVAL_DAYS * DAY_MS) {
+    badges.push("New arrival");
+  }
+  if (vehicle.condition === "used" && Number(vehicle.mileage) < LOW_MILEAGE_MAX) badges.push("Low mileage");
+  const seen = new Set();
+  return badges
+    .filter((b) => {
+      const key = b.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit);
 };
 
 /** The customer-site URL for a stock record. */

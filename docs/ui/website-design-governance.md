@@ -72,6 +72,7 @@ down the file: the dropdown light fills sit late on purpose, for specificity.
 | `auth` | Sign-in & Account Forms | `/website/login` |
 | `valuation` | Valuation Wizard | `/website/valuation` |
 | `help` | Help & Advice | Help cards and the More info popup |
+| `help-chat` | Help & Advice | The bottom-right help chat on every /website page: launcher, window, bubbles, queue, history |
 | `dev-overlay` | Reference | Website skin for the staff dev layout overlay (tooling) |
 
 ---
@@ -180,6 +181,16 @@ or grab focus (the Help popup) are rendered as static markup, and
 **New family.** Register it (with a `section`), open an `@family` block, and
 either add it to an existing section or add a section with its own
 `<ShowcaseSection id>` and an entry in `SECTION_COMPONENTS` in `dev.js`.
+
+**New page / page width.** Every /website page is full viewport width. The
+only side space is `--ws-gutter` (max 20px, 16px on a phone), declared once in
+the foundation token block. Wrap page content in `.ws-container` (inside a
+`.ws-section`), or use one of the existing page shells (`.website-dev-shell`,
+`.authShell`, `.ws-portal-shell`), all of which pad with `--ws-gutter`. Never
+give a page wrapper a `max-width` or its own side padding. To change the edges
+of every page, change the token. Reading measures on text (`.ws-lead`
+`60ch`, `.ws-head`) and form cards (`.authCard`) are component widths, not page
+widths, and stay.
 
 **Focus.** The focus ring (`--focus-ring`) is only for keyboard focus on
 things you press: buttons, links, tabs, chips, day cells, checkboxes and

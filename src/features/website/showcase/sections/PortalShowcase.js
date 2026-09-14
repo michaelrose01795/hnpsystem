@@ -439,7 +439,7 @@ export default function PortalShowcase({ section }) {
                       Registration
                     </label>
                     <div className="ws-portal-action-row">
-                      <input id="dev-portal-reg" type="text" placeholder="e.g. AB12 CDE" className="ws-portal-reg-input" />
+                      <input id="dev-portal-reg" type="text" placeholder="e.g. AB12 CDE" className="ws-reg-input" />
                       <button type="button">Search</button>
                     </div>
                   </div>

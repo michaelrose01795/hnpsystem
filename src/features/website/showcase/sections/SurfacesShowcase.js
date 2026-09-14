@@ -14,6 +14,7 @@
 
 import { useState } from "react";
 import CartDrawer from "@/features/website/shop/CartDrawer";
+import BasketSummary from "@/features/website/shop/BasketSummary";
 import { formatGbp } from "@/features/website/hooks/useShopCart";
 import { shopProducts } from "@/features/website/data/shopProducts";
 import { blogPosts } from "@/features/website/data/blogPosts";
@@ -87,17 +88,7 @@ export default function SurfacesShowcase({ section }) {
       <Row label="Basket drawer" hint="CartDrawer · opens from the Basket button" size="md">
         <Frame padded>
           <div className="ws-page">
-            <button
-              type="button"
-              className="ws-shop-cartbutton"
-              onClick={() => setBasketOpen(true)}
-              aria-haspopup="dialog"
-              aria-expanded={basketOpen}
-              aria-label="Basket"
-            >
-              <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
-              <span className="ws-shop-cartbutton-count">{mockCart.totals.count}</span>
-            </button>
+            <BasketSummary cart={mockCart} onOpen={() => setBasketOpen(true)} />
             <CartDrawer open={basketOpen} cart={mockCart} onClose={() => setBasketOpen(false)} />
           </div>
         </Frame>

@@ -6,9 +6,76 @@
 
 import { useState } from "react";
 import VehicleCard from "@/features/website/components/VehicleCard";
+import VehicleSearchFilters from "@/features/website/components/VehicleSearchFilters";
+import VehicleCompareBar from "@/features/website/components/VehicleCompareBar";
 import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
+import useStockSearch, { CONDITION_TABS } from "@/features/website/hooks/useStockSearch";
 import { vehicles } from "@/features/website/data/vehicles";
-import { Frame, Row, ShowcaseSection } from "../ShowcasePrimitives";
+import { Frame, Row, ShowcaseSection, Stage } from "../ShowcasePrimitives";
+
+// Mirrors the Our Cars block in src/features/website/WebsitePage.js, driven by
+// the real search hook so the counts, chips and toggles behave as on the page.
+function OurCarsSearch() {
+  const search = useStockSearch({ pageSize: 2 });
+  return (
+    <div className="ws-page">
+      <div className="ws-cars-search">
+        <div className="ws-cars-search-head">
+          <div className="ws-tabs" role="tablist" aria-label="New or used">
+            {CONDITION_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={search.filters.condition === tab.id}
+                className={search.filters.condition === tab.id ? "ws-tab ws-tab--active" : "ws-tab"}
+                onClick={() => search.update({ condition: tab.id })}
+              >
+                {tab.label}
+                <span className="ws-tab-count">{search.tabCounts[tab.id]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="ws-cars-filters" data-open="true">
+          <VehicleSearchFilters search={search} idPrefix="dev-cars" />
+        </div>
+      </div>
+      <div className="ws-stock-toolbar ws-cars-toolbar">
+        <p className="ws-stock-count">
+          <strong>{search.total}</strong> vehicles found
+        </p>
+      </div>
+      <div className="ws-grid ws-grid--cards">
+        {search.shownCards.map((card) => (
+          <VehicleCard key={card.id} vehicle={card} />
+        ))}
+      </div>
+      <div className="ws-cars-end">
+        <p className="ws-section-more-note">
+          Showing {search.shownCards.length} of {search.total} vehicles
+        </p>
+        <div className="ws-cars-end-actions">
+          <button type="button" onClick={search.loadMore}>
+            Load more vehicles
+          </button>
+          <a href="#stock" className="ws-btn ws-btn--primary">
+            View all cars
+          </a>
+        </div>
+      </div>
+      <div className="ws-card ws-cars-enquiry">
+        <div>
+          <h3 className="ws-h3">Can’t find the right car?</h3>
+          <p className="ws-muted">Tell us what you are after and we will find it.</p>
+        </div>
+        <a href="#stock" className="ws-btn ws-btn--ghost">
+          Make an enquiry
+        </a>
+      </div>
+    </div>
+  );
+}
 
 const SORTS = [
   { value: "price-asc", label: "Price, low to high" },
@@ -23,9 +90,23 @@ export default function StockShowcase({ section }) {
 
   return (
     <ShowcaseSection id="stock" section={section}>
+      <Row label="Our Cars search" hint="filters · toggles · count · VehicleCard · list end · enquiry" size="wide">
+        <Frame padded>
+          <OurCarsSearch />
+        </Frame>
+      </Row>
+
+      <Row label="Compare tray" hint="VehicleCompareBar · pinned to the viewport on the site" size="wide">
+        <Stage>
+          <div className="ws-page">
+            <VehicleCompareBar previewIds={vehicles.slice(0, 3).map((v) => v.id)} defaultOpen />
+          </div>
+        </Stage>
+      </Row>
+
       <Row label="Search page" note="hero · tabs with counts · toolbar · sort · active chips">
         <Frame>
-          <div className="ws-page ws-page--stock">
+          <div className="ws-page">
             <section className="ws-section ws-stock-hero">
               <div className="ws-container">
                 <span className="ws-eyebrow">Available stock</span>
@@ -80,7 +161,7 @@ export default function StockShowcase({ section }) {
 
       <Row label="Filter rail and results" note=".ws-stock-layout · .ws-stock-filters · VehicleCard">
         <Frame padded>
-          <div className="ws-page ws-page--stock">
+          <div className="ws-page">
             <div className="ws-stock-layout">
               <aside className="ws-stock-filters" data-open="true" aria-label="Filters">
                 <div className="ws-stock-filters-head">
@@ -115,7 +196,7 @@ export default function StockShowcase({ section }) {
 
       <Row label="Similar vehicles" note=".ws-stock-similar · VehicleCard · .ws-section-more">
         <Frame padded>
-          <div className="ws-page ws-page--stock">
+          <div className="ws-page">
             <div className="ws-stock-similar">
               <h3 className="ws-h2">Similar vehicles</h3>
               <div className="ws-grid ws-grid--cards">
@@ -134,7 +215,7 @@ export default function StockShowcase({ section }) {
 
       <Row label="Empty state and show more" note=".ws-stock-empty · .ws-section-more">
         <Frame padded>
-          <div className="ws-page ws-page--stock">
+          <div className="ws-page">
             <div className="ws-card ws-stock-empty">
               <h3 className="ws-h3">Nothing matches those filters</h3>
               <p className="ws-muted">Try removing a filter or call the sales team.</p>
@@ -157,7 +238,7 @@ export default function StockShowcase({ section }) {
 
       <Row label="Detail page" note="breadcrumb · gallery · thumbs · buying panel · facts">
         <Frame padded>
-          <div className="ws-page ws-page--stock">
+          <div className="ws-page">
             <nav className="ws-stock-breadcrumb" aria-label="Breadcrumb">
               <a href="#stock">Available stock</a>
               <span aria-hidden="true">/</span>

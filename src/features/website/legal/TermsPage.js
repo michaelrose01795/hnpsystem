@@ -5,7 +5,8 @@
 //
 // SHAPE
 // -----
-// Mirrors PrivacyPolicyPage: a contents list, then one section per topic.
+// Mirrors PrivacyPolicyPage (LegalPageBody): an "at a glance" card, then one
+// card per topic packed across the full width, with a side column.
 // Company, contact, FCA and credit-broker details are read from siteContent so
 // they never drift from the footer.
 //
@@ -18,9 +19,8 @@
 // Styling is existing custglobal.css classes only - the same set the privacy
 // page uses. No inline visual styling.
 
-import Link from "next/link";
-
 import StockShell from "../stock/StockShell";
+import LegalPageBody from "./LegalPageBody";
 import useWebsiteContent from "../hooks/useWebsiteContent";
 
 const LAST_UPDATED = "14 September 2026";
@@ -142,48 +142,32 @@ export default function TermsPage() {
         </div>
       </section>
 
-      <section className="ws-section ws-val-body">
-        <div className="ws-container ws-val-container">
-          <nav className="ws-card ws-panel" aria-label="On this page">
-            <h2 className="ws-h3">On this page</h2>
-            <ul className="ws-footer-links">
-              {sections.map((s) => (
-                <li key={s.id}>
-                  <a href={`#${s.id}`}>{s.heading}</a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div className="ws-article-prose">
-            {sections.map((s) => (
-              <section key={s.id} id={s.id} className="ws-article-section">
-                <h2 className="ws-article-h3">{s.heading}</h2>
-                {s.body.map((text) => (
-                  <p key={text} className="ws-muted">
-                    {text}
-                  </p>
-                ))}
-                {s.details?.length ? (
-                  <div className="ws-article-checklist">
-                    {s.details.map(([label, value, href]) => (
-                      <p key={label} className="ws-muted">
-                        <strong>{label}:</strong>{" "}
-                        {href ? <a href={href}>{value}</a> : value}
-                      </p>
-                    ))}
-                  </div>
-                ) : null}
-              </section>
-            ))}
-          </div>
-
-          <p className="ws-muted">
-            <Link href="/website/privacy">Read our privacy policy</Link> ·{" "}
-            <Link href="/website">Back to {name}</Link>
-          </p>
-        </div>
-      </section>
+      <LegalPageBody
+        glance={{
+          title: "Your key rights",
+          items: [
+            ["Faulty vehicle", "Reject within 30 days of delivery for a full refund"],
+            ["Online parts orders", "Cancel within 14 days of delivery"],
+            ["Finance agreements", "Withdraw within 14 days of signing"],
+            ["Governing law", "England and Wales"],
+          ],
+        }}
+        sections={sections}
+        contact={{
+          title: "Something not right?",
+          note: "Tell us first so we can put it right.",
+          items: [
+            contact?.phone ? ["Phone", contact.phone, contact.phoneHref] : null,
+            Array.isArray(contact?.address) && contact.address.length
+              ? ["Address", contact.address.join(", ")]
+              : null,
+          ],
+        }}
+        links={[
+          { href: "/website/privacy", label: "Privacy policy" },
+          { href: "/website", label: `Back to ${name}` },
+        ]}
+      />
     </StockShell>
   );
 }

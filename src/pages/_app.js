@@ -75,7 +75,11 @@ const DevLayoutOverlayRoot = dynamic(() => import("@/components/dev-layout-overl
 const StaffStyleReviewHighlighter = dynamic(() => import("@/components/dev-platform/StaffStyleReviewHighlighter"), { ssr: false });
 const GlobalTooltip = dynamic(() => import("@/components/ui/GlobalTooltip"), { ssr: false });
 const GlobalContextMenu = dynamic(() => import("@/components/ui/GlobalContextMenu"), { ssr: false });
+// UK English spelling / grammar underlines + Tab word prediction on every prose field.
+const GlobalTypingAssist = dynamic(() => import("@/components/ui/typingAssist/GlobalTypingAssist"), { ssr: false });
 const ActivityTracker = dynamic(() => import("@/components/activity/ActivityTracker"), { ssr: false });
+// Customer help chat (bottom-right on /website). Its own chunk, requested only on website routes.
+const WebsiteHelpChat = dynamic(() => import("@/features/website/components/WebsiteHelpChat"), { ssr: false });
 // StaffProviders and Layout are imported STATICALLY (at the top of this file) and
 // must stay that way.
 //
@@ -181,6 +185,9 @@ function AppWrapper({ Component, pageProps }) {
   const isWebsiteRoute =
     isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery) || isWebsitePath(errorRouteBrowserPath);
   const isTrackingRoute = isTrackingPath(pathname) || isTrackingPath(asPathWithoutQuery);
+  // /website-manager embeds website pages in an iframe with ?preview=…; the help
+  // chat stays off those previews.
+  const isWebsitePreviewEmbed = isWebsiteRoute && /[?&]preview=/.test(asPath);
   const isDevRoute = pathname === "/dev" || pathname.startsWith("/dev/") || asPathWithoutQuery === "/dev" || asPathWithoutQuery.startsWith("/dev/");
   // Login routes get their own body class. The login page's viewport rules used
   // to hang off `body:has(.login-page-wrapper)`; a `:has()` whose subject is the
@@ -743,9 +750,12 @@ function AppWrapper({ Component, pageProps }) {
       {getLayout(pageElement)}
       {!hideNotesWidget && <GlobalNotesWidget />}
       <CookieBanner />
+      {isWebsiteRoute && !isWebsitePreviewEmbed && <WebsiteHelpChat />}
       <GlobalTooltip />
       {/* In-app right-click menu — replaces the browser native context menu app-wide. */}
       <GlobalContextMenu />
+      {/* Spelling, grammar and Tab prediction on text boxes. Off in the Website Manager preview iframe. */}
+      {!isWebsitePreviewEmbed && <GlobalTypingAssist />}
       {showDevLayoutOverlay && <DevLayoutOverlayRoot />}
       {/* Renders nothing unless a Staff Style Review "Search" link put
           ?styleReviewHighlight= on the URL. */}

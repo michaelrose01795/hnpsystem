@@ -1,6 +1,11 @@
 npm i next@latest
 
+--------
 
+TODO
+make sure the spelling, grammer etc works within all popups text boxes abosultely everythign wtihin the whole repo where the user has to type soemthign etc. 
+
+--------
 
 TODO
 Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.css setting for popup style etc. it needs to be having the theme colour background blur as well as all the button in the top right corner etc the "Review Media" popup content also needs to a deep dive to fix as well as something is correct etc. 
@@ -57,8 +62,8 @@ CHECK
 CHECK
 error pages not using staffglobal.css setting side etc
 
-TODO
-*fix the "privacy, Terms" button at the bottom of the /website pages, this takes the user tot he staffglobal.css setting side, so the "/profile/privacy" page opens or page not found for the terms button etc Make sure those button takes users to the /website pricay or terms page for customer facing details following the goverment law etc.*
+CHECK
+fix the "privacy, Terms" button at the bottom of the /website pages, this takes the user tot he staffglobal.css setting side, so the "/profile/privacy" page opens or page not found for the terms button etc Make sure those button takes users to the /website pricay or terms page for customer facing details following the goverment law etc.
 
 -------
 

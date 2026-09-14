@@ -19,6 +19,8 @@
 import { supabase } from "@/lib/database/supabaseClient";
 import { logFailure } from "@/lib/utils/logFailure";
 import { partImageFor } from "@/lib/parts/partTypeImages";
+import { fitmentFor, fitmentSearchTerms } from "@/lib/parts/vehicleFitment";
+import { availabilityFor, priceBandFor } from "@/lib/parts/shopFilters";
 
 // Explicit allowlist — never `select("*")` on this table for public reads.
 const PUBLIC_COLUMNS = [
@@ -68,6 +70,9 @@ export const toPublicProduct = (row) => {
     // parts_catalog holds no imagery, so every part shows the generic picture
     // for its TYPE — all alternators share one image, whatever the part number.
     image_url: partImageFor(row.name, row.category),
+    // No fitment columns exist; compatibility is read from the part's own
+    // name / description / OE reference (src/lib/parts/vehicleFitment.js).
+    fitment: fitmentFor(row),
     updated_at: row.updated_at || null,
   };
 };
@@ -93,6 +98,10 @@ const escapeForOr = (value) =>
  * @param {string}  opts.search    free text over name / part_number / description
  * @param {string}  opts.category  category slug from categoryId()
  * @param {string}  opts.sort      name | price_asc | price_desc | newest
+ * @param {string}  opts.make      manufacturer from vehicleFitment PARTS_MAKES
+ * @param {string}  opts.model     model of that manufacturer
+ * @param {string}  opts.stock     "" | in | order   (shopFilters AVAILABILITY_OPTIONS)
+ * @param {string}  opts.price     price band value  (shopFilters PRICE_BANDS)
  * @param {number}  opts.limit
  * @param {number}  opts.offset
  * @returns {Promise<{ items: object[], total: number }>}
@@ -101,6 +110,10 @@ export const listPublicParts = async ({
   search = "",
   category = "",
   sort = "name",
+  make = "",
+  model = "",
+  stock = "",
+  price = "",
   limit = 24,
   offset = 0,
 } = {}) => {
@@ -137,6 +150,30 @@ export const listPublicParts = async ({
       ].join(",")
     );
   }
+
+  // Manufacturer / model. A second .or() is ANDed with the search above.
+  // A make we do not carry matches nothing rather than everything.
+  if (make || model) {
+    const fitTerms = fitmentSearchTerms({ make, model }).map(escapeForOr).filter(Boolean);
+    if (fitTerms.length === 0) return { items: [], total: 0 };
+    query = query.or(
+      fitTerms
+        .flatMap((t) => [`name.ilike.%${t}%`, `description.ilike.%${t}%`, `oem_reference.ilike.%${t}%`])
+        .join(",")
+    );
+  }
+
+  // Availability. Free stock is qty_in_stock - qty_reserved, and PostgREST
+  // cannot compare two columns, so the shelf count is the nearest filter that
+  // still pages and counts in Postgres. A part whose whole shelf is reserved
+  // can therefore list under "In stock only" and read "Available to order".
+  const availability = availabilityFor(stock);
+  if (availability === "in") query = query.gt("qty_in_stock", 0);
+  else if (availability === "order") query = query.lte("qty_in_stock", 0);
+
+  const band = priceBandFor(price);
+  if (band?.min != null) query = query.gte("unit_price", band.min);
+  if (band?.max != null) query = query.lt("unit_price", band.max);
 
   if (sort === "price_asc") query = query.order("unit_price", { ascending: true });
   else if (sort === "price_desc") query = query.order("unit_price", { ascending: false });

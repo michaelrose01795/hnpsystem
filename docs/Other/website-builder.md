@@ -69,9 +69,13 @@ published while drawing nothing.
 
 `designToCssVars()` (`src/features/website/data/siteDesign.js`) turns a
 `website_design` row into the tokens `custglobal.css` already reads:
-`--accentMain`, `--primary`, `--accentMainRgb`, `--ws-maxw`, `--ws-radius`,
+`--accentMain`, `--primary`, `--accentMainRgb`, `--ws-radius`,
 `--ws-btn-radius`, `--ws-nav-h`, `--ws-logo-h`, `--ws-section-pad`,
 `--ws-nav-position`, `--ws-heading-font`.
+
+Page width is not a design setting. Every /website page is full width with a
+max 20px gutter (`--ws-gutter` in `custglobal.css`); the old `container_width`
+column is kept but no longer read.
 
 They are set inline on `.ws-page`. `custglobal.css` declares the same tokens
 with `!important` on `html.website-scope`, but that only binds the value *on

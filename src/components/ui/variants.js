@@ -699,6 +699,52 @@ export const UI_FAMILIES = [
       },
     ],
   },
+  {
+    id: "typing-assist",
+    label: "Typing assistant",
+    cssFile: "src/styles/families/typing-assist.css",
+    component: "src/components/ui/typingAssist/GlobalTypingAssist.js",
+    traceColor: "#2563eb",
+    description:
+      "UK English spelling and grammar underlines, Tab-to-accept word prediction and the suggestion popover, drawn over any prose text box or textarea. Mounted once from _app.js; fields opt out with data-typing-assist=\"off\".",
+    variants: [
+      {
+        id: "overlay",
+        className: "app-typing-assist",
+        description: "Transparent mirror laid exactly over the focused field. Paints only underlines and the ghost word.",
+        usage: "Rendered by GlobalTypingAssist. Never instantiate it directly.",
+        status: "approved",
+      },
+      {
+        id: "mark-spelling",
+        className: "app-typing-assist__mark app-typing-assist__mark--spelling",
+        description: "Straight 2px red rule under a misspelt word or an American spelling.",
+        usage: "Click the word (or Ctrl+.) to open its suggestions.",
+        status: "approved",
+      },
+      {
+        id: "mark-grammar",
+        className: "app-typing-assist__mark app-typing-assist__mark--grammar",
+        description: "Straight 2px blue rule under a grammar, punctuation or UK-usage issue.",
+        usage: "Click the words (or Ctrl+.) to open the fix.",
+        status: "approved",
+      },
+      {
+        id: "ghost",
+        className: "app-typing-assist__ghost",
+        description: "Muted predicted text after the caret, with a Tab key cap (.app-typing-assist__hint).",
+        usage: "Tab accepts, Esc dismisses. Hidden on touch-only devices.",
+        status: "approved",
+      },
+      {
+        id: "popover",
+        className: "app-typing-assist-popover",
+        description: "LayerSurface panel under the clicked word: kind label, message, Secondary suggestion rows and Secondary Ignore / Add to dictionary actions.",
+        usage: "Opened by clicking an underlined word. Arrow keys + Enter choose, Esc closes.",
+        status: "approved",
+      },
+    ],
+  },
 ];
 
 export const UI_FAMILY_IDS = UI_FAMILIES.map((family) => family.id);

@@ -20,7 +20,10 @@ import ShopShell from "./ShopShell";
 import ProductCard, { ProductMedia, StockLine } from "./ProductCard";
 import CartDrawer from "./CartDrawer";
 import BasketAccountNotice from "./BasketAccountNotice";
+import BasketSummary from "./BasketSummary";
+import ShopServiceInfo from "./ShopServiceInfo";
 import useShopCart, { formatGbp } from "../hooks/useShopCart";
+import { fitmentFor } from "@/lib/parts/vehicleFitment";
 import { siteContent } from "../data/siteContent";
 
 const PARTS_PHONE = "01732 870711";
@@ -81,18 +84,6 @@ export default function PartDetailPage() {
     </>
   );
 
-  const basketButton = (
-    <button
-      type="button"
-      className="ws-shop-cartbutton"
-      onClick={() => setDrawerOpen(true)}
-      aria-label="Basket"
-    >
-      <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
-      <span className="ws-shop-cartbutton-count">{cart.totals.count}</span>
-    </button>
-  );
-
   if (loading) {
     return (
       <ShopShell title="Loading part…" eyebrow="Parts & Accessories" breadcrumb={breadcrumb}>
@@ -129,6 +120,7 @@ export default function PartDetailPage() {
   const out = available <= 0;
   const maxQty = out ? 1 : Math.min(available, 20);
   const inBasket = cart.qtyFor(product.id);
+  const fitLabel = (product.fitment || fitmentFor(product)).label;
 
   return (
     <>
@@ -146,8 +138,9 @@ export default function PartDetailPage() {
         eyebrow="Parts & Accessories"
         title={product.name}
         breadcrumb={breadcrumb}
-        navActions={basketButton}
       >
+        <BasketSummary cart={cart} onOpen={() => setDrawerOpen(true)} />
+
         <div className="ws-pdp" data-presentation="website-part-detail">
           <div className="ws-pdp-media">
             <ProductMedia product={product} />
@@ -167,6 +160,10 @@ export default function PartDetailPage() {
                   <dd>{product.oem_reference}</dd>
                 </div>
               ) : null}
+              <div className="ws-pdp-spec">
+                <dt>Compatibility</dt>
+                <dd>{fitLabel || "Check fitment with our parts team"}</dd>
+              </div>
               {product.category_name ? (
                 <div className="ws-pdp-spec">
                   <dt>Category</dt>
@@ -298,6 +295,8 @@ export default function PartDetailPage() {
             </div>
           </section>
         ) : null}
+
+        <ShopServiceInfo />
 
         <CartDrawer
           open={drawerOpen}

@@ -6,22 +6,17 @@
 // ProductMedia are the real components.
 
 import { useState } from "react";
-import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
 import ProductCard, { ProductMedia } from "@/features/website/shop/ProductCard";
+import ShopFilters from "@/features/website/shop/ShopFilters";
 import { shopCategories, shopProducts } from "@/features/website/data/shopProducts";
 import { formatGbp } from "@/features/website/hooks/useShopCart";
 import { Frame, Row, ShowcaseSection } from "../ShowcasePrimitives";
 
-const SORTS = [
-  { value: "relevance", label: "Most relevant" },
-  { value: "price-asc", label: "Price, low to high" },
-];
-
 export default function PartsShowcase({ section }) {
-  const [category, setCategory] = useState("");
-  const [sort, setSort] = useState("relevance");
+  const [filters, setFilters] = useState({ sort: "name" });
+  const [searchDraft, setSearchDraft] = useState("");
   const product = shopProducts[0] || { id: "demo", sku: "SZ-DEMO", name: "Demo part", price_pence: 1000, stock_qty: 4 };
-  const categoryOptions = shopCategories.map((c) => ({ value: c.id, label: c.name }));
+  const categories = shopCategories.map((c) => ({ ...c, count: 12 }));
 
   return (
     <ShowcaseSection id="parts" section={section}>
@@ -62,23 +57,17 @@ export default function PartsShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Catalogue controls" note=".ws-catalog-controls · -search · -category · -sort · -summary · button.ws-catalog-clear">
+      <Row label="Catalogue controls" note="ShopFilters · .ws-catalog-controls · -search · category / manufacturer / availability / price / sort · -summary · button.ws-catalog-clear">
         <Frame padded>
           <div className="ws-page">
-            <div className="ws-catalog-controls">
-              <div className="ws-catalog-search">
-                <label className="ws-sr-only" htmlFor="dev-catalog-search">
-                  Search parts
-                </label>
-                <input id="dev-catalog-search" type="search" placeholder="Search by part name or number" />
-              </div>
-              <div className="ws-catalog-category">
-                <WebsiteNativeSelect value={category} onChange={setCategory} options={categoryOptions} placeholder="All categories" />
-              </div>
-              <div className="ws-catalog-sort">
-                <WebsiteNativeSelect value={sort} onChange={setSort} options={SORTS} />
-              </div>
-            </div>
+            <ShopFilters
+              idPrefix="dev-catalog"
+              filters={filters}
+              searchDraft={searchDraft}
+              onSearchDraft={setSearchDraft}
+              onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))}
+              categories={categories}
+            />
             <div className="ws-catalog-summary">
               <span className="ws-muted">Showing 24 of 124 parts</span>
               <button type="button" className="ws-catalog-clear">

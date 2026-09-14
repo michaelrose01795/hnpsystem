@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const PAGE_SIZE = 24;
 
-export default function usePartsCatalog({ search, category, sort }) {
+export default function usePartsCatalog({ search, category, sort, make, model, stock, price }) {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [total, setTotal] = useState(0);
@@ -36,6 +36,10 @@ export default function usePartsCatalog({ search, category, sort }) {
         });
         if (search) params.set("search", search);
         if (category) params.set("category", category);
+        if (make) params.set("make", make);
+        if (model) params.set("model", model);
+        if (stock) params.set("stock", stock);
+        if (price) params.set("price", price);
         // Category chips only need fetching once — they describe the whole
         // catalogue, not the current filter.
         if (!gotCategories.current) params.set("categories", "1");
@@ -62,7 +66,7 @@ export default function usePartsCatalog({ search, category, sort }) {
         }
       }
     },
-    [search, category, sort]
+    [search, category, sort, make, model, stock, price]
   );
 
   useEffect(() => {

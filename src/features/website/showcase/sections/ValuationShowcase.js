@@ -57,7 +57,7 @@ export default function ValuationShowcase({ section }) {
                   Registration
                 </label>
                 <div className="ws-val-reg-row">
-                  <input id="dev-val-reg" type="text" className="ws-val-reg" defaultValue="AB12 CDE" />
+                  <input id="dev-val-reg" type="text" className="ws-reg-input" defaultValue="AB12 CDE" />
                   <button type="button" className="ws-btn ws-btn--primary">
                     Look up
                   </button>

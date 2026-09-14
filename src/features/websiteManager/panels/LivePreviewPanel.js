@@ -71,8 +71,8 @@ const SECTION_TABS = [
   {
     key: "home",
     name: "Homepage",
-    blocks: ["hero", "brands"],
-    sections: ["hero", "trust-points", "partner-brands"],
+    blocks: ["hero"],
+    sections: ["hero", "trust-points"],
   },
   // Cars are the DMS stock, reached through src/lib/stock/vehicleStock.js — a
   // car is added, priced, photographed or withdrawn in the DMS, never here.

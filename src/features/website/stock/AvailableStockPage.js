@@ -2,218 +2,76 @@
 // /website/available-stock — the full vehicle search.
 //
 // Every car comes from the DMS vehicle stock (src/lib/stock/vehicleStock.js);
-// this page only filters, sorts and presents it. The filter work itself lives
-// in that module so the home page teaser, this search and any future stock
-// feed all agree on what "used, under £20,000, automatic" means.
+// this page only filters, sorts and presents it. Filter state, counts, chips
+// and paging live in useStockSearch, which the Our Cars block on /website
+// also uses, so both agree on what "used, under £300 a month, automatic"
+// means. The fields are the shared VehicleSearchFilters.
 //
 // ENTRY FILTER
 // ------------
-// The Cars block on /website links here with ?filter=new | used | all, taken
-// from whichever tab the visitor had open. That choice is applied before the
-// first paint of the results, so the page opens on the stock they were already
-// looking at rather than resetting them to everything.
+// The Cars block on /website links here with its whole search in the query
+// string ("View all cars"). getServerSideProps hands that over, so it is
+// applied before the first paint of the results rather than resetting the
+// visitor to everything.
 //
 // Styling is entirely custglobal.css: the shared .ws-* families plus the
-// .ws-stock-* rules added for this page. No inline visual styling.
+// .ws-stock-* rules for this page. No inline visual styling.
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
 import StockShell from "./StockShell";
 import VehicleCard from "../components/VehicleCard";
+import VehicleSearchFilters from "../components/VehicleSearchFilters";
 import WebsiteNativeSelect from "../components/WebsiteNativeSelect";
-import { FEATURED_VEHICLE_LIMIT } from "../data/vehicles";
-import {
-  listStock,
-  filterStock,
-  sortStock,
-  stockFacets,
-  priceLabel,
-  mileageLabel,
-  stockHref,
-  PRICE_BANDS,
-  MILEAGE_BANDS,
-  SORT_OPTIONS,
-} from "@/lib/stock/vehicleStock";
+import useStockSearch, {
+  CONDITION_TABS,
+  filtersFromQuery,
+  filtersToQuery,
+  sortFromQuery,
+} from "../hooks/useStockSearch";
+import { SORT_OPTIONS } from "@/lib/stock/vehicleStock";
 
-const CONDITION_TABS = [
-  { id: "all", label: "All cars" },
-  { id: "new", label: "New" },
-  { id: "used", label: "Used" },
-];
-
-const EMPTY_FILTERS = {
-  condition: "all",
-  query: "",
-  model: "",
-  fuel: "",
-  transmission: "",
-  bodyStyle: "",
-  priceBand: "",
-  mileageBand: "",
-};
-
-// ?filter= accepts only the three tab ids; anything else means "all" rather
-// than an empty result set the visitor cannot explain.
-const readCondition = (value) => {
-  const v = Array.isArray(value) ? value[0] : value;
-  return CONDITION_TABS.some((t) => t.id === v) ? v : "all";
-};
-
-const first = (value) => (Array.isArray(value) ? value[0] : value) || "";
-
-// Turns the query string handed over by getServerSideProps into filter state.
-// The inverse lives in syncUrl below — keep the two in step.
-const filtersFromQuery = (q = {}) => ({
-  condition: readCondition(q.filter ?? q.condition),
-  query: first(q.q),
-  model: first(q.model),
-  fuel: first(q.fuel),
-  transmission: first(q.transmission),
-  bodyStyle: first(q.body),
-  priceBand: first(q.price),
-  mileageBand: first(q.mileage),
-});
-
-const sortFromQuery = (q = {}) => {
-  const value = first(q.sort);
-  return SORT_OPTIONS.some((o) => o.value === value) ? value : "newest";
-};
-
-const asOptions = (values, placeholder) => [
-  { value: "", label: placeholder },
-  ...values.map((v) => ({ value: v, label: v })),
-];
-
-const bandOptions = (bands, placeholder) => [
-  { value: "", label: placeholder },
-  ...bands.map((b) => ({ value: b.value, label: b.label })),
-];
+// Cards per "Load more vehicles" step: three rows on a wide screen.
+const STOCK_PAGE_SIZE = 24;
 
 export default function AvailableStockPage({ initialQuery = {} }) {
   const router = useRouter();
-
-  const allStock = useMemo(() => listStock(), []);
-  const facets = useMemo(() => stockFacets(allStock), [allStock]);
-
-  // Seeded from the server-rendered query so the New / Used tab the visitor
-  // chose on the home page is already applied in the first paint.
-  const [filters, setFilters] = useState(() => filtersFromQuery(initialQuery));
-  const [sort, setSort] = useState(() => sortFromQuery(initialQuery));
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // There is deliberately no effect re-reading router.query. Every arrival at
-  // this route — a fresh load, a <Link> from the Cars block, an edited URL —
-  // re-runs getServerSideProps and remounts this component, so `initialQuery`
-  // above is always current. The only other query changes are the shallow
-  // writes syncUrl makes below; adopting those back into state would fight the
+  // this route re-runs getServerSideProps and remounts this component, so
+  // `initialQuery` is always current. The only other query changes are the
+  // shallow writes below; adopting those back into state would fight the
   // search box, because router.replace resolves a keystroke behind the input.
-
+  //
   // Keep the URL in step so a filtered view can be shared or bookmarked.
   // Shallow so Next does not re-run data fetching for a filter change.
   const syncUrl = useCallback(
-    (nextFilters, nextSort) => {
+    (filters, sort) => {
       if (!router.isReady) return;
-      const query = {};
-      if (nextFilters.condition && nextFilters.condition !== "all") query.filter = nextFilters.condition;
-      if (nextFilters.query) query.q = nextFilters.query;
-      if (nextFilters.model) query.model = nextFilters.model;
-      if (nextFilters.fuel) query.fuel = nextFilters.fuel;
-      if (nextFilters.transmission) query.transmission = nextFilters.transmission;
-      if (nextFilters.bodyStyle) query.body = nextFilters.bodyStyle;
-      if (nextFilters.priceBand) query.price = nextFilters.priceBand;
-      if (nextFilters.mileageBand) query.mileage = nextFilters.mileageBand;
-      if (nextSort && nextSort !== "newest") query.sort = nextSort;
-      router.replace({ pathname: "/website/available-stock", query }, undefined, {
-        shallow: true,
-        scroll: false,
-      });
+      router.replace(
+        { pathname: "/website/available-stock", query: filtersToQuery(filters, sort) },
+        undefined,
+        { shallow: true, scroll: false },
+      );
     },
     [router],
   );
 
-  const update = useCallback(
-    (patch) => {
-      setFilters((prev) => {
-        const next = { ...prev, ...patch };
-        syncUrl(next, sort);
-        return next;
-      });
-    },
-    [sort, syncUrl],
-  );
-
-  const changeSort = useCallback(
-    (value) => {
-      setSort(value);
-      syncUrl(filters, value);
-    },
-    [filters, syncUrl],
-  );
-
-  const clearAll = useCallback(() => {
-    setFilters(EMPTY_FILTERS);
-    setSort("newest");
-    syncUrl(EMPTY_FILTERS, "newest");
-  }, [syncUrl]);
-
-  const results = useMemo(
-    () => sortStock(filterStock(allStock, filters), sort),
-    [allStock, filters, sort],
-  );
-
-  // Counts on the tabs ignore the condition filter but respect everything
-  // else, so switching tab shows the number the visitor is about to get.
-  const tabCounts = useMemo(() => {
-    const withoutCondition = filterStock(allStock, { ...filters, condition: "all" });
-    return {
-      all: withoutCondition.length,
-      new: withoutCondition.filter((v) => v.condition === "new").length,
-      used: withoutCondition.filter((v) => v.condition === "used").length,
-    };
-  }, [allStock, filters]);
-
-  // The chips are the only honest summary of an eight-control filter panel on
-  // a phone, where the panel itself is collapsed.
-  const activeChips = useMemo(() => {
-    const chips = [];
-    if (filters.query) chips.push({ key: "query", label: `“${filters.query}”`, patch: { query: "" } });
-    if (filters.model) chips.push({ key: "model", label: filters.model, patch: { model: "" } });
-    if (filters.priceBand) {
-      const band = PRICE_BANDS.find((b) => b.value === filters.priceBand);
-      chips.push({ key: "priceBand", label: band?.label || "Price", patch: { priceBand: "" } });
-    }
-    if (filters.mileageBand) {
-      const band = MILEAGE_BANDS.find((b) => b.value === filters.mileageBand);
-      chips.push({ key: "mileageBand", label: band?.label || "Mileage", patch: { mileageBand: "" } });
-    }
-    if (filters.fuel) chips.push({ key: "fuel", label: filters.fuel, patch: { fuel: "" } });
-    if (filters.transmission)
-      chips.push({ key: "transmission", label: filters.transmission, patch: { transmission: "" } });
-    if (filters.bodyStyle) chips.push({ key: "bodyStyle", label: filters.bodyStyle, patch: { bodyStyle: "" } });
-    return chips;
-  }, [filters]);
-
-  const cards = results.map((v) => ({
-    id: v.stockNumber,
-    type: v.condition,
-    brand: v.make,
-    model: `${v.model} ${v.derivative}`,
-    year: v.year,
-    price: priceLabel(v),
-    miles: mileageLabel(v),
-    badge: v.badge || null,
-    image: v.images?.[0] || null,
-    reg: v.reg,
-    stockNumber: v.stockNumber,
-    href: stockHref(v),
-  }));
+  const search = useStockSearch({
+    initialFilters: filtersFromQuery(initialQuery),
+    initialSort: sortFromQuery(initialQuery),
+    pageSize: STOCK_PAGE_SIZE,
+    onChange: syncUrl,
+  });
+  const { filters, total, shownCards, activeChips } = search;
 
   return (
     <StockShell
       title="Available stock — Humphries & Parks"
-      description="Search every new and used car in stock at Humphries & Parks in West Malling, Kent. Filter by price, mileage, fuel, transmission and body style."
+      description="Search every new and used car in stock at Humphries & Parks in West Malling, Kent. Filter by manufacturer, price, monthly payment, mileage, fuel and transmission."
     >
       <section className="ws-section ws-stock-hero">
         <div className="ws-container">
@@ -241,17 +99,17 @@ export default function AvailableStockPage({ initialQuery = {} }) {
                   role="tab"
                   aria-selected={filters.condition === tab.id}
                   className={filters.condition === tab.id ? "ws-tab ws-tab--active" : "ws-tab"}
-                  onClick={() => update({ condition: tab.id })}
+                  onClick={() => search.update({ condition: tab.id })}
                 >
                   {tab.label}
-                  <span className="ws-tab-count">{tabCounts[tab.id]}</span>
+                  <span className="ws-tab-count">{search.tabCounts[tab.id]}</span>
                 </button>
               ))}
             </div>
 
             <div className="ws-stock-toolbar">
-              <p className="ws-stock-count">
-                <strong>{results.length}</strong> {results.length === 1 ? "car" : "cars"} in stock
+              <p className="ws-stock-count" aria-live="polite">
+                <strong>{total}</strong> {total === 1 ? "car" : "cars"} in stock
               </p>
               <div className="ws-stock-toolbar-controls">
                 <button
@@ -265,14 +123,15 @@ export default function AvailableStockPage({ initialQuery = {} }) {
                   {activeChips.length ? <span className="ws-tab-count">{activeChips.length}</span> : null}
                 </button>
                 <div className="ws-stock-sort">
-                  <span className="ws-stock-label" id="stock-sort-label">
+                  <span className="ws-stock-label" aria-hidden="true">
                     Sort by
                   </span>
                   <WebsiteNativeSelect
-                    value={sort}
-                    onChange={changeSort}
+                    value={search.sort}
+                    onChange={search.setSort}
                     options={SORT_OPTIONS}
                     placeholder=""
+                    aria-label="Sort vehicles"
                   />
                 </div>
               </div>
@@ -285,14 +144,14 @@ export default function AvailableStockPage({ initialQuery = {} }) {
                     key={chip.key}
                     type="button"
                     className="ws-chip ws-chip--clear"
-                    onClick={() => update(chip.patch)}
+                    onClick={() => search.update(chip.patch)}
                   >
                     {chip.label}
                     <span aria-hidden="true">×</span>
                     <span className="ws-sr-only">Remove filter</span>
                   </button>
                 ))}
-                <button type="button" className="ws-chip ws-chip--clear" onClick={clearAll}>
+                <button type="button" className="ws-chip ws-chip--clear" onClick={search.clearAll}>
                   Clear all
                 </button>
               </div>
@@ -300,131 +159,89 @@ export default function AvailableStockPage({ initialQuery = {} }) {
           </div>
 
           <div className="ws-stock-layout">
-          {/* ---------------- Filter rail ---------------- */}
-          <aside
-            id="stock-filters"
-            className="ws-stock-filters"
-            data-open={filtersOpen ? "true" : "false"}
-            aria-label="Filter stock"
-          >
-            <div className="ws-stock-filters-head">
-              <h2 className="ws-stock-filters-title">Filters</h2>
-              {activeChips.length ? (
-                <button type="button" className="ws-stock-clear" onClick={clearAll}>
-                  Clear all
-                </button>
-              ) : null}
-            </div>
-
-            <div className="ws-stock-field">
-              <label className="ws-stock-label" htmlFor="stock-search">
-                Search
-              </label>
-              <input
-                id="stock-search"
-                type="search"
-                className="ws-stock-input"
-                placeholder="Model, colour, registration…"
-                value={filters.query}
-                onChange={(e) => update({ query: e.target.value })}
-              />
-            </div>
-
-            <div className="ws-stock-field">
-              <span className="ws-stock-label">Model</span>
-              <WebsiteNativeSelect
-                value={filters.model}
-                onChange={(value) => update({ model: value })}
-                options={asOptions(facets.models, "Any model")}
-                placeholder=""
-              />
-            </div>
-
-            <div className="ws-stock-field">
-              <span className="ws-stock-label">Price</span>
-              <WebsiteNativeSelect
-                value={filters.priceBand}
-                onChange={(value) => update({ priceBand: value })}
-                options={bandOptions(PRICE_BANDS, "Any price")}
-                placeholder=""
-              />
-            </div>
-
-            <div className="ws-stock-field">
-              <span className="ws-stock-label">Mileage</span>
-              <WebsiteNativeSelect
-                value={filters.mileageBand}
-                onChange={(value) => update({ mileageBand: value })}
-                options={bandOptions(MILEAGE_BANDS, "Any mileage")}
-                placeholder=""
-              />
-            </div>
-
-            <div className="ws-stock-field">
-              <span className="ws-stock-label">Fuel</span>
-              <WebsiteNativeSelect
-                value={filters.fuel}
-                onChange={(value) => update({ fuel: value })}
-                options={asOptions(facets.fuels, "Any fuel")}
-                placeholder=""
-              />
-            </div>
-
-            <div className="ws-stock-field">
-              <span className="ws-stock-label">Transmission</span>
-              <WebsiteNativeSelect
-                value={filters.transmission}
-                onChange={(value) => update({ transmission: value })}
-                options={asOptions(facets.transmissions, "Any transmission")}
-                placeholder=""
-              />
-            </div>
-
-            <div className="ws-stock-field">
-              <span className="ws-stock-label">Body style</span>
-              <WebsiteNativeSelect
-                value={filters.bodyStyle}
-                onChange={(value) => update({ bodyStyle: value })}
-                options={asOptions(facets.bodyStyles, "Any body style")}
-                placeholder=""
-              />
-            </div>
-
-            <button
-              type="button"
-              className="ws-stock-filters-done"
-              onClick={() => setFiltersOpen(false)}
+            {/* ---------------- Filter rail ---------------- */}
+            <aside
+              id="stock-filters"
+              className="ws-stock-filters"
+              data-open={filtersOpen ? "true" : "false"}
+              aria-label="Filter stock"
             >
-              Show {results.length} {results.length === 1 ? "car" : "cars"}
-            </button>
-          </aside>
-
-          {/* ---------------- Results ---------------- */}
-          <div>
-            {results.length ? (
-              <div className="ws-grid ws-grid--cards">
-                {cards.map((card, idx) => (
-                  <VehicleCard key={card.id} vehicle={card} priority={idx < FEATURED_VEHICLE_LIMIT} />
-                ))}
-              </div>
-            ) : (
-              <div className="ws-card ws-stock-empty">
-                <h2 className="ws-h3">Nothing matches those filters</h2>
-                <p className="ws-muted">
-                  We move around 30 cars a month, so it is worth telling us what you are after — we
-                  will call you when the right one lands.
-                </p>
-                <div className="ws-stock-empty-actions">
-                  <button type="button" onClick={clearAll}>
-                    Clear filters
+              <div className="ws-stock-filters-head">
+                <h2 className="ws-stock-filters-title">Filters</h2>
+                {activeChips.length ? (
+                  <button type="button" className="ws-stock-clear" onClick={search.clearAll}>
+                    Clear all
                   </button>
+                ) : null}
+              </div>
+
+              <VehicleSearchFilters search={search} idPrefix="stock" showBodyStyle />
+
+              <button
+                type="button"
+                className="ws-stock-filters-done"
+                onClick={() => setFiltersOpen(false)}
+              >
+                Show {total} {total === 1 ? "car" : "cars"}
+              </button>
+            </aside>
+
+            {/* ---------------- Results ---------------- */}
+            <div>
+              {total ? (
+                <div className="ws-grid ws-grid--cards">
+                  {shownCards.map((card, idx) => (
+                    <VehicleCard key={card.id} vehicle={card} priority={idx < 8} />
+                  ))}
+                </div>
+              ) : (
+                <div className="ws-card ws-stock-empty">
+                  <h2 className="ws-h3">Nothing matches those filters</h2>
+                  <p className="ws-muted">
+                    We move around 30 cars a month, so it is worth telling us what you are after — we
+                    will call you when the right one lands.
+                  </p>
+                  <div className="ws-stock-empty-actions">
+                    <button type="button" onClick={search.clearAll}>
+                      Clear filters
+                    </button>
+                    <Link href="/website#contact" className="ws-btn ws-btn--ghost">
+                      Tell us what you want
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {total ? (
+                <div className="ws-cars-end">
+                  <p className="ws-section-more-note">
+                    Showing {shownCards.length} of {total} {total === 1 ? "vehicle" : "vehicles"}
+                  </p>
+                  {search.hasMore ? (
+                    <div className="ws-cars-end-actions">
+                      <button type="button" onClick={search.loadMore}>
+                        Load more vehicles
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {total ? (
+                <div className="ws-card ws-cars-enquiry">
+                  <div>
+                    <h2 className="ws-h3">Can’t find the right car?</h2>
+                    <p className="ws-muted">
+                      Tell us the model, budget and must-haves, and our sales team will look through
+                      new arrivals and part-exchanges for you.
+                    </p>
+                  </div>
                   <Link href="/website#contact" className="ws-btn ws-btn--ghost">
-                    Tell us what you want
+                    Make an enquiry
                   </Link>
                 </div>
-              </div>
-            )}
-          </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>

@@ -20,7 +20,61 @@ export default function ControlsShowcase({ section }) {
         <div className="website-dev-field">
           <label htmlFor="dev-text">Name</label>
           <input id="dev-text" type="text" value={text} onChange={(event) => setText(event.target.value)} />
-          <input type="text" placeholder="Registration" aria-label="Registration" />
+        </div>
+      </Row>
+
+      <Row
+        label="Typing assistant"
+        hint="GlobalTypingAssist · click into the Textarea below and type to try it"
+        note=".website-typing-assist · __mark--spelling · __mark--grammar · __ghost · __hint · -popover"
+        size="wide"
+      >
+        <div className="website-dev-context-pair">
+          <div className="website-typing-assist website-dev-typing-static" aria-hidden="true">
+            {"Please "}
+            <span className="website-typing-assist__mark website-typing-assist__mark--spelling">recieve</span>
+            {" the "}
+            <span className="website-typing-assist__mark website-typing-assist__mark--spelling is-active">color</span>
+            {" samples for "}
+            <span className="website-typing-assist__mark website-typing-assist__mark--grammar">a MOT</span>
+            {". Kind "}
+            <span className="website-typing-assist__ghost">regards</span>
+            <kbd className="website-typing-assist__hint">Tab</kbd>
+          </div>
+          <div
+            role="dialog"
+            aria-label="Spelling suggestions"
+            className="website-typing-assist-popover website-dev-typing-static is-visible"
+          >
+            <div className="website-typing-assist-popover__head">
+              <span className="website-typing-assist-popover__kind website-typing-assist-popover__kind--spelling">UK spelling</span>
+              <span className="website-typing-assist-popover__message">Use the UK English spelling.</span>
+            </div>
+            <div className="website-typing-assist-popover__suggestions" role="listbox" aria-label="Suggestions">
+              <button type="button" role="option" aria-selected="true" className="website-typing-assist-popover__suggestion is-highlighted">
+                colour
+              </button>
+              <button type="button" role="option" aria-selected="false" className="website-typing-assist-popover__suggestion">
+                colours
+              </button>
+            </div>
+            <span className="website-typing-assist-popover__empty">No suggestions</span>
+            <div className="website-typing-assist-popover__actions">
+              <button type="button" className="website-typing-assist-popover__action">
+                Ignore
+              </button>
+              <button type="button" className="website-typing-assist-popover__action">
+                Add to dictionary
+              </button>
+            </div>
+          </div>
+        </div>
+      </Row>
+
+      <Row label="Registration box" hint=".ws-reg-input · text box + plate lettering">
+        <div className="website-dev-field">
+          <label htmlFor="dev-reg">Registration</label>
+          <input id="dev-reg" type="text" className="ws-reg-input" placeholder="AB12 CDE" defaultValue="ab12 cde" />
         </div>
       </Row>
 
@@ -31,6 +85,15 @@ export default function ControlsShowcase({ section }) {
           placeholder="Tell us about your enquiry"
           aria-label="Enquiry"
           rows={1}
+        />
+      </Row>
+
+      <Row label="Textarea — one line" hint={'wrap="off" · 44px · scrolls sideways'}>
+        <textarea
+          rows={1}
+          wrap="off"
+          defaultValue="Service, MOT, a warning light, a noise from the front when braking at low speed"
+          aria-label="What do you need?"
         />
       </Row>
 

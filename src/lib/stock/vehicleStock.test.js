@@ -16,7 +16,55 @@ import {
   sortStock,
   regToSlug,
   stockHref,
+  stockFacets,
+  stockBadges,
+  isElectrified,
 } from "./vehicleStock";
+
+describe("customer search filters", () => {
+  const stock = listStock();
+
+  it("filters by manufacturer and narrows the model facet to it", () => {
+    expect(filterStock(stock, { make: "Suzuki" })).toHaveLength(stock.length);
+    expect(filterStock(stock, { make: "Nobody" })).toHaveLength(0);
+    expect(stockFacets(stock, { make: "Nobody" }).models).toEqual([]);
+  });
+
+  it("filters by monthly payment band", () => {
+    const cheap = filterStock(stock, { monthlyBand: "0-200" });
+    expect(cheap.length).toBeGreaterThan(0);
+    expect(cheap.every((v) => v.monthly <= 200)).toBe(true);
+  });
+
+  it("applies the electric / hybrid, automatic and photos-only toggles", () => {
+    expect(filterStock(stock, { electrified: true }).every(isElectrified)).toBe(true);
+    expect(filterStock(stock, { electrified: true }).some((v) => v.fuel === "Petrol")).toBe(false);
+    expect(filterStock(stock, { automatic: true }).every((v) => v.transmission === "Automatic")).toBe(true);
+    expect(filterStock([{ ...stock[0], images: [] }], { photosOnly: true })).toHaveLength(0);
+  });
+
+  it("sorts by monthly payment, lowest first", () => {
+    const sorted = sortStock(stock, "monthly-asc");
+    expect(sorted[0].monthly).toBe(Math.min(...stock.map((v) => v.monthly)));
+  });
+});
+
+describe("listing badges", () => {
+  const base = { condition: "used", mileage: 40000, fuel: "Petrol", stockedAt: "2026-01-01", badge: null };
+  const now = Date.parse("2026-09-14");
+
+  it("derives Electric, New arrival and Low mileage", () => {
+    expect(stockBadges({ ...base, fuel: "Electric" }, { now })).toEqual(["Electric"]);
+    expect(stockBadges({ ...base, stockedAt: "2026-09-10" }, { now })).toEqual(["New arrival"]);
+    expect(stockBadges({ ...base, mileage: 9000 }, { now })).toEqual(["Low mileage"]);
+  });
+
+  it("leads with the sales badge, de-duplicates and caps the list", () => {
+    const car = { ...base, badge: "Low mileage", mileage: 9000, fuel: "Electric", stockedAt: "2026-09-10" };
+    expect(stockBadges(car, { now })).toEqual(["Low mileage", "Electric"]);
+    expect(stockBadges({ ...base, badge: "Ex-demonstrator" }, { now })).toEqual(["Ex-demonstrator"]);
+  });
+});
 
 describe("stock number issuing", () => {
   it("never reuses a number that retired stock still holds", () => {

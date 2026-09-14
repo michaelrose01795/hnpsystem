@@ -50,6 +50,15 @@ const COPY = {
   },
 };
 
+const POPULAR_LINKS = [
+  { href: "/website", label: "Homepage" },
+  { href: "/website/available-stock", label: "Available stock" },
+  { href: "/website/valuation", label: "Value my car" },
+  { href: "/website/request-appointment", label: "Book the workshop" },
+  { href: "/website/shop", label: "Shop" },
+  { href: "/website#contact", label: "Contact us" },
+];
+
 /**
  * @param {object} props
  * @param {number|null} [props.statusCode]  404, 500, or null for a render crash.
@@ -107,7 +116,8 @@ export default function WebsiteErrorPage({ statusCode = 404, error = null, refer
       </section>
 
       <section className="ws-section ws-val-body">
-        <div className="ws-container ws-val-container">
+        <div className="ws-container">
+          <div className="ws-page-split">
           <div className="ws-card ws-stock-empty" role="alert">
             <p className="ws-muted">{copy.message}</p>
             <div className="ws-stock-empty-actions">
@@ -129,6 +139,21 @@ export default function WebsiteErrorPage({ statusCode = 404, error = null, refer
               </button>
             </div>
             {reference ? <p className="ws-muted">Reference: {reference}</p> : null}
+          </div>
+
+          {/* The rest of the site, one click away, beside the message. */}
+          <nav className="ws-card ws-panel ws-info-card" aria-label="Popular pages">
+            <h2 className="ws-card-title">Popular pages</h2>
+            <ul className="ws-jump-links">
+              {POPULAR_LINKS.map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} className="ws-jump-link">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
           </div>
         </div>
       </section>

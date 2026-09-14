@@ -5,9 +5,10 @@
 //
 // SHAPE
 // -----
-// A contents list first so every topic is one click away, then one panel per
-// topic. Company, contact, FCA and credit-broker details are read from
-// siteContent so they never drift from the footer.
+// Full width (LegalPageBody): an "at a glance" card, then one card per topic
+// packed across the page, with the contents list, contact details and related
+// pages in a side column. Company, contact, FCA and credit-broker details are
+// read from siteContent so they never drift from the footer.
 //
 // CONTENT OWNERSHIP
 // -----------------
@@ -15,12 +16,11 @@
 // registered company number and ICO registration number (LEGAL_IDS below) -
 // those rows are hidden until they have a value rather than showing a guess.
 //
-// Styling is existing custglobal.css classes only (.ws-section, .ws-val-container,
-// .ws-panel, .ws-article-*). No inline visual styling.
-
-import Link from "next/link";
+// Styling is custglobal.css classes only (.ws-section, .ws-page-split,
+// .ws-info-*). No inline visual styling.
 
 import StockShell from "../stock/StockShell";
+import LegalPageBody from "./LegalPageBody";
 import useWebsiteContent from "../hooks/useWebsiteContent";
 
 const LAST_UPDATED = "14 September 2026";
@@ -151,47 +151,32 @@ export default function PrivacyPolicyPage() {
         </div>
       </section>
 
-      <section className="ws-section ws-val-body">
-        <div className="ws-container ws-val-container">
-          <nav className="ws-card ws-panel" aria-label="On this page">
-            <h2 className="ws-h3">On this page</h2>
-            <ul className="ws-footer-links">
-              {sections.map((s) => (
-                <li key={s.id}>
-                  <a href={`#${s.id}`}>{s.heading}</a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div className="ws-article-prose">
-            {sections.map((s) => (
-              <section key={s.id} id={s.id} className="ws-article-section">
-                <h2 className="ws-article-h3">{s.heading}</h2>
-                {s.body.map((text) => (
-                  <p key={text} className="ws-muted">
-                    {text}
-                  </p>
-                ))}
-                {s.details?.length ? (
-                  <div className="ws-article-checklist">
-                    {s.details.map(([label, value, href]) => (
-                      <p key={label} className="ws-muted">
-                        <strong>{label}:</strong>{" "}
-                        {href ? <a href={href}>{value}</a> : value}
-                      </p>
-                    ))}
-                  </div>
-                ) : null}
-              </section>
-            ))}
-          </div>
-
-          <p className="ws-muted">
-            <Link href="/website">Back to {name}</Link>
-          </p>
-        </div>
-      </section>
+      <LegalPageBody
+        glance={{
+          title: "At a glance",
+          items: [
+            ["Data controller", `${name} Limited`],
+            ["Do we sell your data?", "Never"],
+            ["Rights requests", "Answered within one month, normally free"],
+            ["Data complaints", "Information Commissioner's Office"],
+          ],
+        }}
+        sections={sections}
+        contact={{
+          title: "Questions about your data?",
+          note: "Contact us and we will help.",
+          items: [
+            contact?.phone ? ["Phone", contact.phone, contact.phoneHref] : null,
+            Array.isArray(contact?.address) && contact.address.length
+              ? ["Address", contact.address.join(", ")]
+              : null,
+          ],
+        }}
+        links={[
+          { href: "/website/terms", label: "Terms and conditions" },
+          { href: "/website", label: `Back to ${name}` },
+        ]}
+      />
     </StockShell>
   );
 }

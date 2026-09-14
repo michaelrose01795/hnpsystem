@@ -163,5 +163,7 @@ export const CODE_OWNED_SITE_CONTENT = [
   "motability",
   "partsContent",
   "contact",
+  "promise",
+  "customerLinks",
 ];
 

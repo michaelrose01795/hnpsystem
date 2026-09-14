@@ -42,20 +42,35 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 
-import BrandLogo from "@/components/BrandLogo";
 import useWebsiteScope from "./hooks/useWebsiteScope";
 import useWebsiteTheme from "./hooks/useWebsiteTheme";
 import useWebsiteContent from "./hooks/useWebsiteContent";
 import useWebsitePreviewMode from "./hooks/useWebsitePreviewMode";
 import PreviewClickTarget from "./components/PreviewClickTarget";
-import WebsiteTopBar from "./components/WebsiteTopBar";
+import WebsiteTopBar, { WebsiteNavGroup } from "./components/WebsiteTopBar";
 import ShopSection from "./components/ShopSection";
+import OffersSection, { liveOffers } from "./components/OffersSection";
 import QuickActions from "./components/QuickActions";
 import VehicleCard from "./components/VehicleCard";
 import HelpArticleModal from "./components/HelpArticleModal";
-import { designToCssVars } from "./data/siteDesign";
+import BenefitCards from "./components/BenefitCards";
+import SellValuationPanel from "./components/SellValuationPanel";
+import WorkshopBookingPanel from "./components/WorkshopBookingPanel";
+import MotabilityModelCard from "./components/MotabilityModelCard";
+import WebsiteIcon from "./components/WebsiteIcon";
+import VehicleSearchFilters from "./components/VehicleSearchFilters";
+import VehicleCompareBar from "./components/VehicleCompareBar";
+import WebsiteNativeSelect from "./components/WebsiteNativeSelect";
+import useStockSearch, { CONDITION_TABS } from "./hooks/useStockSearch";
+import { designToCssVars, groupNavLinks, HOME_NAV_LINK } from "./data/siteDesign";
 import { FEATURED_VEHICLE_LIMIT } from "./data/vehicles";
-import { resolveLegalLinks } from "./legal/legalLinks";
+import { SORT_OPTIONS } from "@/lib/stock/vehicleStock";
+import Stars from "./components/Stars";
+import ReviewsPanel from "./components/ReviewsPanel";
+import HistoryTimeline from "./components/HistoryTimeline";
+import VisitCta from "./components/VisitCta";
+import WebsiteFooter from "./components/WebsiteFooter";
+import { FEATURED_REVIEW_LIMIT, reviewTopics } from "./data/reviews";
 
 /* ------------------------------------------------------------------ */
 /* Small presentational helpers                                        */
@@ -102,9 +117,8 @@ const rangeBrandsOut = (rangeBrands) =>
       : { brand: rb?.brand || "", models: Array.isArray(rb?.models) ? rb.models : [] },
   );
 
-// Both shapes normalise through resolveLegalLinks, which also keeps every link on
-// the customer site (stored hrefs used to point at staff /profile/privacy, /terms).
-const legalLinksOut = (legal) => resolveLegalLinks(legal);
+// footer.legal is normalised inside components/WebsiteFooter.js (resolveLegalLinks),
+// which also keeps every link on the customer site.
 
 /* ------------------------------------------------------------------ */
 /* Removable-content guards                                            */
@@ -128,18 +142,6 @@ const isBlank = (slot) =>
   Object.values(slot).every(
     (v) => v == null || v === "" || (Array.isArray(v) && v.length === 0)
   );
-
-function Stars({ rating }) {
-  return (
-    <span className="ws-stars" aria-label={`${rating} out of 5`}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} className={i < rating ? "ws-star ws-star--on" : "ws-star"}>
-          ★
-        </span>
-      ))}
-    </span>
-  );
-}
 
 function HoursTable({ caption, rows }) {
   const hours = asList(rows);
@@ -192,14 +194,13 @@ export default function WebsitePage() {
   });
   const {
     siteContent,
-    vehicles,
     offers,
     reviews,
     team,
     teamDepartments,
     timeline,
-    brands,
     blogPosts,
+    brands: brandLogos,
     navLinks,
     sectionLayout,
     design,
@@ -219,6 +220,8 @@ export default function WebsitePage() {
     motability = {},
     sellYourCar = {},
     contact = {},
+    promise = {},
+    customerLinks,
     footer = {},
   } = siteContent;
 
@@ -230,11 +233,53 @@ export default function WebsitePage() {
   // right, so this stays clear of the inline-styling ban (CLAUDE.md §3.0b).
   const designVars = useMemo(() => designToCssVars(design), [design]);
 
+  // The top bar always opens with "Home" (the hero). The live website_nav rows
+  // predate it, so it is prepended unless a "#top" link is already present.
+  const topBarLinks = useMemo(() => {
+    const list = Array.isArray(navLinks) ? navLinks : [];
+    return list.some((link) => link?.href === HOME_NAV_LINK.href) ? list : [HOME_NAV_LINK, ...list];
+  }, [navLinks]);
+  // The same links folded into the Buy / Servicing / About dropdowns
+  // (NAV_GROUPS in data/siteDesign.js). Unlisted links stay top-level.
+  const navItems = useMemo(() => groupNavLinks(topBarLinks), [topBarLinks]);
+  // Which top-bar dropdown is open (a NAV_GROUPS id), or null. A press outside
+  // the open group or Escape closes it; Escape hands focus back to its trigger.
+  const [openNavGroup, setOpenNavGroup] = useState(null);
+  useEffect(() => {
+    if (!openNavGroup) return undefined;
+    const selector = `[data-nav-group="${openNavGroup}"]`;
+    const onPointerDown = (event) => {
+      if (!event.target.closest?.(selector)) setOpenNavGroup(null);
+    };
+    const onKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      setOpenNavGroup(null);
+      document.querySelector(`${selector} > button`)?.focus();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [openNavGroup]);
+
   const [menuOpen, setMenuOpen] = useState(false);
-  // A section embed can pin the Cars filter up front (the manager's New and
-  // Used tabs are the same block with a different starting filter).
-  const [carFilter, setCarFilter] = useState(sectionPreview?.carFilter || "all");
+  // Our Cars search. Reads the DMS stock directly (src/lib/stock/vehicleStock.js)
+  // through the same hook as /website/available-stock, so a filter means the
+  // same thing on both. A section embed can pin the condition up front (the
+  // manager's New and Used tabs are the same block with a different start).
+  // The block is a teaser: FEATURED_VEHICLE_LIMIT cards, more on "Load more
+  // vehicles", and "View all cars" hands the current filters to the search page.
+  const carSearch = useStockSearch({
+    initialFilters: { condition: sectionPreview?.carFilter || "all" },
+    pageSize: FEATURED_VEHICLE_LIMIT,
+  });
+  // The filter grid is collapsed behind a toggle on narrow screens only.
+  const [carFiltersOpen, setCarFiltersOpen] = useState(false);
   const [activeId, setActiveId] = useState("top");
+  // Brand filter over the Motability vehicle cards ("all" or a brand name).
+  const [motabilityBrand, setMotabilityBrand] = useState("all");
   // Which Help & Advice card has its "More info" popup open. Held as an id
   // rather than the article object so a content refresh cannot leave a stale
   // copy of an article on screen.
@@ -255,21 +300,6 @@ export default function WebsitePage() {
     [team, teamDepartments],
   );
 
-  // The Cars block is a teaser, not the stock list: at most
-  // FEATURED_VEHICLE_LIMIT cards on any tab, with "Show more" handing off to
-  // the full /website/available-stock search carrying the same filter.
-  const matchingVehicles = useMemo(
-    () =>
-      carFilter === "all"
-        ? asList(vehicles)
-        : asList(vehicles).filter((v) => v.type === carFilter),
-    [carFilter, vehicles],
-  );
-  const shownVehicles = useMemo(
-    () => matchingVehicles.slice(0, FEATURED_VEHICLE_LIMIT),
-    [matchingVehicles],
-  );
-
   // The Help & Advice article whose popup is open, resolved fresh from the
   // current content. An id that no longer exists reads as nothing open.
   const openArticle = useMemo(
@@ -277,20 +307,18 @@ export default function WebsitePage() {
     [blogPosts, openArticleId],
   );
 
-  // Only blocks that both have a layout row AND a renderer are drawn. The
-  // brand strip carries an extra design switch on top of its layout status.
+  // Only blocks that both have a layout row AND a renderer are drawn.
   const visibleBlocks = useMemo(
     () =>
       (Array.isArray(sectionLayout) ? sectionLayout : []).filter((row) => {
         if (!row || !BLOCK_KEYS.has(row.id)) return false;
-        if (row.id === "brands" && design?.showBrandStrip === false) return false;
         // A section embed draws its named blocks only. The brand-strip and
         // layout rules above still apply, so a block hidden on the live site
         // stays hidden in the manager too.
         if (sectionPreview && !sectionPreview.blocks.includes(row.id)) return false;
         return true;
       }),
-    [sectionLayout, design?.showBrandStrip, sectionPreview],
+    [sectionLayout, sectionPreview],
   );
 
   // Scroll-spy — highlight the nav entry for the section in view. Derived from
@@ -336,15 +364,34 @@ export default function WebsitePage() {
     };
   }, []);
 
-  const closeMenu = () => setMenuOpen(false);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setOpenNavGroup(null);
+  };
+
+  // Top-bar link: accent pill + aria-current while its section is in view.
+  // Called at render, after handleNavClick below is defined.
+  const isActiveNavLink = (link) => Boolean(activeId) && link?.href === `#${activeId}`;
+  const renderNavLink = (link) => (
+    <a
+      key={link.id}
+      href={link.href}
+      className={isActiveNavLink(link) ? "ws-nav-link ws-nav-link--active" : "ws-nav-link"}
+      aria-current={isActiveNavLink(link) ? "location" : undefined}
+      onClick={handleNavClick(link)}
+    >
+      {link.label}
+    </a>
+  );
 
   const handleNavClick = (link) => () => {
-    if (link.filter) setCarFilter(link.filter);
+    if (link.filter) carSearch.update({ condition: link.filter });
     closeMenu();
   };
 
-
-  const year = new Date().getFullYear();
+  // Staff names in review quotes link to their Meet the Team card — only while
+  // that block is actually on the page to link to.
+  const staffLinksOn = departments.length > 0 && visibleBlocks.some((row) => row.id === "team");
 
   /* ---------------------------------------------------------------- */
   /* Block renderers — one per layout row id.                          */
@@ -352,162 +399,257 @@ export default function WebsitePage() {
   /* row leaves empty falls back to the section's own content record.   */
   /* ---------------------------------------------------------------- */
   const BLOCK_RENDERERS = {
-    hero: (row) => (
-      <PreviewClickTarget key={row.id} {...click("hero", "Hero banner")}>
-        <section id={row.anchor || "top"} data-presentation="website-hero" className="ws-hero">
-          <div className="ws-container ws-hero-inner">
-            <div>
-              {hero.eyebrow ? <span className="ws-eyebrow">{hero.eyebrow}</span> : null}
-              {hero.headline ? <h1 className="ws-h1">{hero.headline}</h1> : null}
-              {hero.subhead ? <p className="ws-lead">{hero.subhead}</p> : null}
-              {/* Remove a button from siteContent.hero.ctas and it goes; remove
-                  them all and the row goes with them. */}
-              {asList(hero.ctas).length ? (
-                <div className="ws-hero-ctas">
-                  {asList(hero.ctas).map((cta) => (
-                    <a
-                      key={cta.label}
-                      href={cta.href}
-                      className={cta.variant === "primary" ? "ws-btn ws-btn--primary" : "ws-btn ws-btn--ghost"}
-                    >
-                      {cta.label}
-                    </a>
-                  ))}
+    hero: (row) => {
+      const rating = hero.rating || {};
+      const location = hero.location || {};
+      // The compact trust card: review score and where to find us. Laid over
+      // the dealership photo, or under the intro copy when there is no photo.
+      // Delete siteContent.hero.rating / .location and each item goes.
+      const proof =
+        rating.score || location.title ? (
+          <div className={hero.backgroundUrl ? "ws-hero-proof" : "ws-hero-proof ws-hero-proof--inline"}>
+            {rating.score ? (
+              <a href={rating.href || "#reviews"} className="ws-hero-proof-item">
+                <span className="ws-icon-badge">
+                  <WebsiteIcon name="star" />
+                </span>
+                <span className="ws-hero-proof-text">
+                  <span className="ws-hero-proof-title">
+                    {rating.score}
+                    <Stars rating={Math.round(Number(rating.score)) || 5} />
+                  </span>
+                  {rating.note ? <span className="ws-hero-proof-note">{rating.note}</span> : null}
+                </span>
+              </a>
+            ) : null}
+            {location.title ? (
+              <a href={location.href || "#contact"} className="ws-hero-proof-item">
+                <span className="ws-icon-badge">
+                  <WebsiteIcon name="pin" />
+                </span>
+                <span className="ws-hero-proof-text">
+                  <span className="ws-hero-proof-title">{location.title}</span>
+                  {location.note ? <span className="ws-hero-proof-note">{location.note}</span> : null}
+                </span>
+              </a>
+            ) : null}
+          </div>
+        ) : null;
+      return (
+        <PreviewClickTarget key={row.id} {...click("hero", "Hero banner")}>
+          <section id={row.anchor || "top"} data-presentation="website-hero" className="ws-hero">
+            <div className="ws-container ws-hero-inner">
+              {/* Intro copy sits level with the top of the photo; the three
+                  customer actions (find a car / book workshop / value my car)
+                  fill the column beneath it. */}
+              <div className="ws-hero-copy">
+                <div className="ws-hero-intro">
+                  {hero.eyebrow ? <span className="ws-eyebrow">{hero.eyebrow}</span> : null}
+                  {hero.headline ? <h1 className="ws-h1">{hero.headline}</h1> : null}
+                  {hero.subhead ? <p className="ws-lead">{hero.subhead}</p> : null}
+                  {/* Remove a button from siteContent.hero.ctas and it goes; remove
+                      them all and the row goes with them. */}
+                  {asList(hero.ctas).length ? (
+                    <div className="ws-hero-ctas">
+                      {asList(hero.ctas).map((cta) => (
+                        <a
+                          key={cta.label}
+                          href={cta.href}
+                          className={cta.variant === "primary" ? "ws-btn ws-btn--primary" : "ws-btn ws-btn--ghost"}
+                        >
+                          {cta.label}
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
+                  {hero.backgroundUrl ? null : proof}
+                </div>
+                <QuickActions />
+              </div>
+              {hero.backgroundUrl ? (
+                <div className="ws-hero-media">
+                  <img src={hero.backgroundUrl} alt={`${brand.name || "Dealership"} showroom`} loading="eager" />
+                  {proof}
                 </div>
               ) : null}
             </div>
-            {hero.backgroundUrl ? (
-              <div className="ws-hero-media">
-                <img src={hero.backgroundUrl} alt={`${brand.name || "Dealership"} showroom`} loading="eager" />
-              </div>
-            ) : null}
-          </div>
 
-          {asList(trustPoints).length ? (
-            <PreviewClickTarget {...click("trust-points", "Trust highlights")}>
-              <div className="ws-container">
-                <ul className="ws-trust">
-                  {asList(trustPoints).map((t) => (
-                    <li key={t.label} className="ws-trust-item">
-                      <span className="ws-trust-value">{t.value}</span>
-                      <span className="ws-trust-label">{t.label}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </PreviewClickTarget>
-          ) : null}
-        </section>
-      </PreviewClickTarget>
-    ),
-
-    // Quick actions (find a car / book workshop / value my car) on the left,
-    // the brand strip on the right. Remove every logo from data/brands.js and
-    // only the brand side goes — the quick actions stay.
-    brands: (row) => (
-      <PreviewClickTarget key={row.id} {...click("partner-brands", "Partner brand strip")}>
-        <section
-          id={row.anchor || "brands"}
-          className={row.tint ? "ws-section ws-section--tint" : "ws-section"}
-        >
-          <div className="ws-container ws-quick">
-            <QuickActions />
-            {asList(brands).length ? (
-              <div className="ws-brands-inner">
-                <span className="ws-brands-label">{row.title || "Authorised retailer for"}</span>
-                <ul className="ws-brands-list">
-                  {asList(brands).map((b) => (
-                    <li key={b.name}>
-                      <img src={b.logo} alt={b.name} loading="lazy" />
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            {asList(trustPoints).length ? (
+              <PreviewClickTarget {...click("trust-points", "Trust highlights")}>
+                <div className="ws-container">
+                  <ul className="ws-trust">
+                    {asList(trustPoints).map((t) => (
+                      <li key={t.label} className="ws-trust-item">
+                        {t.icon ? (
+                          <span className="ws-icon-badge">
+                            <WebsiteIcon name={t.icon} />
+                          </span>
+                        ) : null}
+                        <span className="ws-trust-text">
+                          <span className="ws-trust-value">{t.value}</span>
+                          <span className="ws-trust-label">{t.label}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </PreviewClickTarget>
             ) : null}
-          </div>
-        </section>
-      </PreviewClickTarget>
-    ),
+          </section>
+        </PreviewClickTarget>
+      );
+    },
 
     cars: (row) => (
       <PreviewClickTarget key={row.id} {...click("vehicles", "Featured vehicles")}>
         <Section id={row.anchor || "cars"} tint={row.tint}>
           <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} />
-          <div className="ws-tabs" role="tablist" aria-label="Filter cars">
-            {[
-              { id: "all", label: "All cars" },
-              { id: "new", label: "New" },
-              { id: "used", label: "Used" },
-            ].map((tab) => (
+
+          {/* ---- Search and filter panel ---- */}
+          <div className="ws-cars-search">
+            <div className="ws-cars-search-head">
+              <div className="ws-tabs" role="tablist" aria-label="New or used">
+                {CONDITION_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={carSearch.filters.condition === tab.id}
+                    className={carSearch.filters.condition === tab.id ? "ws-tab ws-tab--active" : "ws-tab"}
+                    onClick={() => carSearch.update({ condition: tab.id })}
+                  >
+                    {tab.label}
+                    <span className="ws-tab-count">{carSearch.tabCounts[tab.id]}</span>
+                  </button>
+                ))}
+              </div>
               <button
-                key={tab.id}
                 type="button"
-                role="tab"
-                aria-selected={carFilter === tab.id}
-                className={carFilter === tab.id ? "ws-tab ws-tab--active" : "ws-tab"}
-                onClick={() => setCarFilter(tab.id)}
+                className="ws-stock-filters-toggle"
+                onClick={() => setCarFiltersOpen((v) => !v)}
+                aria-expanded={carFiltersOpen}
+                aria-controls="cars-filters"
               >
-                {tab.label}
+                {carFiltersOpen ? "Hide filters" : "Filters"}
+                {carSearch.activeChips.length ? (
+                  <span className="ws-tab-count">{carSearch.activeChips.length}</span>
+                ) : null}
               </button>
-            ))}
+            </div>
+
+            <div id="cars-filters" className="ws-cars-filters" data-open={carFiltersOpen ? "true" : "false"}>
+              <VehicleSearchFilters search={carSearch} idPrefix="cars" />
+            </div>
+
+            {carSearch.activeChips.length ? (
+              <div className="ws-chips">
+                {carSearch.activeChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    className="ws-chip ws-chip--clear"
+                    onClick={() => carSearch.update(chip.patch)}
+                  >
+                    {chip.label}
+                    <span aria-hidden="true">×</span>
+                    <span className="ws-sr-only">Remove filter</span>
+                  </button>
+                ))}
+                <button type="button" className="ws-chip ws-chip--clear" onClick={carSearch.clearAll}>
+                  Clear all
+                </button>
+              </div>
+            ) : null}
           </div>
-          {shownVehicles.length ? (
+
+          {/* ---- Live count and sort ---- */}
+          <div className="ws-stock-toolbar ws-cars-toolbar">
+            <p className="ws-stock-count" aria-live="polite">
+              <strong>{carSearch.total}</strong> {carSearch.total === 1 ? "vehicle" : "vehicles"} found
+            </p>
+            <div className="ws-stock-sort">
+              <span className="ws-stock-label" aria-hidden="true">
+                Sort by
+              </span>
+              <WebsiteNativeSelect
+                value={carSearch.sort}
+                onChange={carSearch.setSort}
+                options={SORT_OPTIONS}
+                placeholder=""
+                aria-label="Sort vehicles"
+              />
+            </div>
+          </div>
+
+          {carSearch.shownCards.length ? (
             <div className="ws-grid ws-grid--cards">
-              {shownVehicles.map((v) => (
+              {carSearch.shownCards.map((v) => (
                 <VehicleCard key={v.id} vehicle={v} />
               ))}
             </div>
           ) : (
-            // Stock comes from the DMS, so "none" is a real answer — on the
-            // New / Used tabs especially. Say so rather than show an empty grid.
-            <p className="ws-muted">
-              {carFilter === "all"
-                ? "There are no vehicles in stock right now. Please check back soon or call us."
-                : `No ${carFilter} vehicles in stock right now — try the other tabs, or call us.`}
-            </p>
+            // Stock comes from the DMS, so "none" is a real answer. Say so and
+            // offer the way out rather than show an empty grid.
+            <div className="ws-card ws-stock-empty">
+              <h3 className="ws-h3">No cars match those filters</h3>
+              <p className="ws-muted">Try removing a filter, or tell us what you are after below.</p>
+              <div className="ws-stock-empty-actions">
+                <button type="button" onClick={carSearch.clearAll}>
+                  Clear filters
+                </button>
+              </div>
+            </div>
           )}
-          {/* Hands the visitor's current tab to the search page so the New /
-              Used choice they made here is already applied when it opens. */}
-          <div className="ws-section-more">
-            <Link
-              href={{ pathname: "/website/available-stock", query: { filter: carFilter } }}
-              className="ws-btn ws-btn--primary"
-            >
-              Show more
-            </Link>
-            <span className="ws-section-more-note">
-              {matchingVehicles.length > shownVehicles.length
-                ? `Showing ${shownVehicles.length} of ${matchingVehicles.length} vehicles in stock`
-                : `${matchingVehicles.length} vehicle${matchingVehicles.length === 1 ? "" : "s"} in stock`}
-            </span>
+
+          {/* ---- End of the stock list ---- */}
+          {carSearch.total ? (
+            <div className="ws-cars-end">
+              <p className="ws-section-more-note">
+                Showing {carSearch.shownCards.length} of {carSearch.total}{" "}
+                {carSearch.total === 1 ? "vehicle" : "vehicles"}
+              </p>
+              <div className="ws-cars-end-actions">
+                {carSearch.hasMore ? (
+                  <button type="button" onClick={carSearch.loadMore}>
+                    Load more vehicles
+                  </button>
+                ) : null}
+                {/* Carries every filter and the sort to the full search. */}
+                <Link
+                  href={{ pathname: "/website/available-stock", query: carSearch.query }}
+                  className="ws-btn ws-btn--primary"
+                >
+                  View all cars
+                </Link>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="ws-card ws-cars-enquiry">
+            <div>
+              <h3 className="ws-h3">Can’t find the right car?</h3>
+              <p className="ws-muted">
+                Tell us the model, budget and must-haves, and our sales team will look through new
+                arrivals and part-exchanges for you.
+              </p>
+            </div>
+            <a href="#contact" className="ws-btn ws-btn--ghost">
+              Make an enquiry
+            </a>
           </div>
         </Section>
       </PreviewClickTarget>
     ),
 
-    // Delete the last card from data/offers.js and the whole Offers section
-    // comes off the page — no heading over an empty grid.
+    // Delete the last card from data/offers.js (or let them all expire) and
+    // the whole Offers section comes off the page — no heading over an empty
+    // grid. Filters and cards live in components/OffersSection.js.
     offers: (row) =>
-      asList(offers).length ? (
+      liveOffers(offers).length ? (
         <PreviewClickTarget key={row.id} {...click("offers", "Manufacturer offers")}>
           <Section id={row.anchor || "offers"} tint={row.tint}>
             <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} />
-            <div className="ws-grid ws-grid--cards">
-              {asList(offers).map((o) => (
-                <article key={o.id} className="ws-card">
-                  {o.image ? (
-                    <div className="ws-offer-media">
-                      <img src={o.image} alt={o.title} loading="lazy" />
-                    </div>
-                  ) : null}
-                  <div className="ws-card-body">
-                    {o.title ? <span className="ws-eyebrow">{o.title}</span> : null}
-                    {o.headline ? <h3 className="ws-card-title">{o.headline}</h3> : null}
-                    {o.body ? <p className="ws-muted">{o.body}</p> : null}
-                  </div>
-                </article>
-              ))}
-            </div>
+            <OffersSection offers={offers} />
           </Section>
         </PreviewClickTarget>
       ) : null,
@@ -519,194 +661,249 @@ export default function WebsitePage() {
       </Section>
     ),
 
+    // Lead-focused: the heading and a compact three-step list sit beside the
+    // valuation form, with the benefit cards underneath. Every part is its own
+    // entry in siteContent.sellYourCar and drops out on its own when removed.
     sell: (row) => {
       if (isBlank(sellYourCar)) return null;
       const steps = asList(sellYourCar.steps);
-      const benefits = asList(sellYourCar.benefits);
       const cta = sellYourCar.cta;
+      // The form hands its answers to an internal route (the valuation wizard).
+      // If the CTA has been pointed at a tel: link or an anchor instead, a
+      // plain button is the honest control.
+      const internalCta = String(cta?.href || "").startsWith("/");
       return (
         <PreviewClickTarget key={row.id} {...click("sell-your-car", "Sell Your Car")}>
           <Section id={row.anchor || "sell"} tint={row.tint}>
-            <SectionHead
-              eyebrow={row.eyebrow || sellYourCar.eyebrow}
-              title={row.title || sellYourCar.title}
-              lead={row.lead}
-            />
-            {steps.length ? (
-              <div className="ws-grid ws-grid--steps">
-                {steps.map((s) => (
-                  <article key={s.n} className="ws-card ws-step">
-                    {s.n ? <span className="ws-step-n">{s.n}</span> : null}
-                    {s.title ? <h3 className="ws-card-title">{s.title}</h3> : null}
-                    {s.body ? <p className="ws-muted">{s.body}</p> : null}
-                  </article>
-                ))}
-              </div>
-            ) : null}
-            {/* The tick list and the valuation button share one panel, so the
-                panel itself only appears while at least one of them is left in
-                siteContent.sellYourCar. */}
-            {benefits.length || cta?.label ? (
-              <div className="ws-card ws-panel ws-sell-panel">
-                {benefits.length ? (
-                  <ul className="ws-ticks">
-                    {benefits.map((b) => (
-                      <li key={b}>{b}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                {/* The CTA points at /website/valuation, but the href is set in
-                    siteContent.sellYourCar.cta and may equally be an on-page
-                    anchor or a tel: link. Route it through <Link> only when it
-                    is an internal path, so the valuation wizard opens as a
-                    client navigation rather than a full reload. */}
-                {cta?.label ? (
-                  String(cta.href || "").startsWith("/") ? (
-                    <Link href={cta.href} className="ws-btn ws-btn--primary">
-                      {cta.label}
-                    </Link>
-                  ) : (
-                    <a href={cta.href || "#top"} className="ws-btn ws-btn--primary">
-                      {cta.label}
-                    </a>
-                  )
-                ) : null}
-              </div>
-            ) : null}
-          </Section>
-        </PreviewClickTarget>
-      );
-    },
-
-    service: (row) => {
-      if (isBlank(serviceAndParts)) return null;
-      return (
-        <PreviewClickTarget key={row.id} {...click("service-parts", "Service & Parts")}>
-          <Section id={row.anchor || "service"} tint={row.tint}>
-            {/* Drop the image and the text column takes the full width — the
-                split only splits while there are two halves to split. */}
-            <div className="ws-split">
-              {serviceAndParts.imageUrl ? (
-                <div className="ws-split-media">
-                  <img src={serviceAndParts.imageUrl} alt="Service workshop and waiting area" loading="lazy" />
-                </div>
-              ) : null}
-              <div className="ws-split-text">
+            <div className="ws-sell-layout">
+              <div className="ws-sell-intro">
                 <SectionHead
-                  eyebrow={row.eyebrow || serviceAndParts.eyebrow}
-                  title={row.title || serviceAndParts.title}
-                  lead={row.lead}
+                  eyebrow={row.eyebrow || sellYourCar.eyebrow}
+                  title={row.title || sellYourCar.title}
+                  lead={row.lead || sellYourCar.lead}
                 />
-                {asList(serviceAndParts.body).map((p) => (
-                  <p key={p} className="ws-muted">
-                    {p}
-                  </p>
-                ))}
-                <HoursTable caption="Service hours" rows={serviceAndParts.hours} />
+                {steps.length ? (
+                  <ol className="ws-steps-compact">
+                    {steps.map((s) => (
+                      <li key={s.n || s.title} className="ws-step-compact">
+                        {s.n ? (
+                          <span className="ws-step-compact-n" aria-hidden="true">
+                            {s.n}
+                          </span>
+                        ) : null}
+                        <div>
+                          {s.title ? <h3 className="ws-card-title">{s.title}</h3> : null}
+                          {s.body ? <p className="ws-muted">{s.body}</p> : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
               </div>
+              {cta?.label && internalCta ? (
+                <SellValuationPanel ctaLabel={cta.label} href={cta.href} />
+              ) : cta?.label ? (
+                <a href={cta.href || "#contact"} className="ws-btn ws-btn--primary">
+                  {cta.label}
+                </a>
+              ) : null}
+            </div>
+            <div className="ws-section-block">
+              <BenefitCards items={sellYourCar.benefitCards} compact />
             </div>
           </Section>
         </PreviewClickTarget>
       );
     },
 
+    // Action cards for each workshop and parts service beside the booking
+    // panel, then the workshop photo with the technician / courtesy-car cards.
+    service: (row) => {
+      if (isBlank(serviceAndParts)) return null;
+      // A service that books through the workshop links to the appointment
+      // page with its request prefilled; one with its own href goes there.
+      const services = asList(serviceAndParts.services).map((s) => ({
+        ...s,
+        href:
+          s.href ||
+          (s.request ? `/website/request-appointment?request=${encodeURIComponent(s.request)}` : null),
+      }));
+      const highlights = asList(serviceAndParts.highlights);
+      const booking = serviceAndParts.booking || {};
+      return (
+        <PreviewClickTarget key={row.id} {...click("service-parts", "Service & Parts")}>
+          <Section id={row.anchor || "service"} tint={row.tint}>
+            <SectionHead
+              eyebrow={row.eyebrow || serviceAndParts.eyebrow}
+              title={row.title || serviceAndParts.title}
+              lead={row.lead || asList(serviceAndParts.body)[0]}
+            />
+            <div className="ws-service-layout">
+              <BenefitCards items={services} />
+              <WorkshopBookingPanel
+                services={services}
+                title={booking.title}
+                body={booking.body}
+                ctaLabel={booking.cta}
+              >
+                <HoursTable caption="Service hours" rows={serviceAndParts.hours} />
+              </WorkshopBookingPanel>
+            </div>
+            {serviceAndParts.imageUrl || highlights.length ? (
+              <div className="ws-section-block ws-service-highlights">
+                {serviceAndParts.imageUrl ? (
+                  <div className="ws-split-media">
+                    <img src={serviceAndParts.imageUrl} alt="Service workshop and waiting area" loading="lazy" />
+                  </div>
+                ) : null}
+                {highlights.length ? <BenefitCards items={highlights} compact /> : null}
+              </div>
+            ) : null}
+          </Section>
+        </PreviewClickTarget>
+      );
+    },
+
+    // Vehicle cards (filterable by brand), the scheme benefits, then the
+    // specialist panel with team photos and the call-to-action.
     motability: (row) => {
       if (isBlank(motability)) return null;
-      const ranges = rangeBrandsOut(motability.rangeBrands);
+      // siteContent.motability.models is the card list. rangeBrands (either
+      // shape — see rangeBrandsOut) stands in as name-only cards if it is gone.
+      const listed = asList(motability.models).filter((m) => m?.model);
+      const models = listed.length
+        ? listed
+        : rangeBrandsOut(motability.rangeBrands).flatMap((rb) =>
+            rb.models.map((m) => ({ id: `${rb.brand}-${m}`, brand: rb.brand, model: m })),
+          );
+      const brands = Array.from(new Set(models.map((m) => m.brand).filter(Boolean)));
+      const shownModels =
+        motabilityBrand === "all" || !brands.includes(motabilityBrand)
+          ? models
+          : models.filter((m) => m.brand === motabilityBrand);
+      const specialist = motability.specialist || {};
+      const specialistTeam = asList(specialist.teamIds)
+        .map((id) => asList(team).find((m) => m.id === id))
+        .filter((m) => m?.photo);
       const cta = motability.cta;
       return (
         <PreviewClickTarget key={row.id} {...click("motability", "Motability")}>
           <Section id={row.anchor || "motability"} tint={row.tint}>
-            <div className="ws-split ws-split--reverse">
-              <div className="ws-split-text">
-                <SectionHead
-                  eyebrow={row.eyebrow || motability.eyebrow}
-                  title={row.title || motability.title}
-                  lead={row.lead}
-                />
-                {asList(motability.body).map((p) => (
-                  <p key={p} className="ws-muted">
-                    {p}
-                  </p>
-                ))}
-                {motability.payments ? (
-                  <p className="ws-price-line">{motability.payments}</p>
+            <SectionHead
+              eyebrow={row.eyebrow || motability.eyebrow}
+              title={row.title || motability.title}
+              lead={row.lead || asList(motability.body)[1]}
+            />
+
+            {models.length ? (
+              <>
+                {brands.length > 1 ? (
+                  <div className="ws-tabs" role="tablist" aria-label="Filter Motability vehicles by brand">
+                    {["all", ...brands].map((b) => (
+                      <button
+                        key={b}
+                        type="button"
+                        role="tab"
+                        aria-selected={motabilityBrand === b}
+                        className={motabilityBrand === b ? "ws-tab ws-tab--active" : "ws-tab"}
+                        onClick={() => setMotabilityBrand(b)}
+                      >
+                        {b === "all" ? "All models" : b}
+                      </button>
+                    ))}
+                  </div>
                 ) : null}
-                {cta?.label ? (
-                  <a href={cta.href || "#contact"} className="ws-btn ws-btn--primary">
-                    {cta.label}
-                  </a>
-                ) : null}
-              </div>
-              {/* Remove a brand — or every model under it — from
-                  siteContent.motability.rangeBrands and the card or chip row
-                  goes with it. */}
-              {ranges.length ? (
-                <div className="ws-split-side">
-                  {ranges.map((rb) => (
-                    <div key={rb.brand} className="ws-card ws-range">
-                      <h3 className="ws-card-title">{rb.brand}</h3>
-                      {rb.models.length ? (
-                        <ul className="ws-chips">
-                          {rb.models.map((m) => (
-                            <li key={m} className="ws-chip">
-                              {m}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </div>
+                <div className="ws-grid ws-grid--models">
+                  {shownModels.map((m) => (
+                    <MotabilityModelCard key={m.id || `${m.brand}-${m.model}`} model={m} />
                   ))}
                 </div>
-              ) : null}
-            </div>
+              </>
+            ) : null}
+
+            {asList(motability.schemeBenefits).length ? (
+              <>
+                <div className="ws-subhead">
+                  <h3 className="ws-h3">Included with the Motability Scheme</h3>
+                </div>
+                <BenefitCards items={motability.schemeBenefits} headingLevel={4} />
+              </>
+            ) : null}
+
+            {specialist.title || cta?.label ? (
+              <div className="ws-section-block ws-card ws-panel ws-specialist">
+                {specialistTeam.length ? (
+                  <ul className="ws-specialist-photos" aria-label="Our Motability team">
+                    {specialistTeam.map((m) => (
+                      <li key={m.id} className="ws-specialist-photo">
+                        <img src={m.photo} alt={m.name} loading="lazy" />
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <div className="ws-specialist-copy">
+                  <span className="ws-eyebrow">Motability specialists</span>
+                  {specialist.title ? <h3 className="ws-h3">{specialist.title}</h3> : null}
+                  {specialist.body || asList(motability.body)[0] ? (
+                    <p className="ws-muted">{specialist.body || asList(motability.body)[0]}</p>
+                  ) : null}
+                  {motability.payments ? <p className="ws-price-line">{motability.payments}</p> : null}
+                  <div className="ws-specialist-actions">
+                    {cta?.label ? (
+                      <a href={cta.href || "#contact"} className="ws-btn ws-btn--primary">
+                        <WebsiteIcon name="phone" />
+                        {cta.label}
+                      </a>
+                    ) : null}
+                    <a href="#contact" className="ws-btn ws-btn--ghost">
+                      Visit the showroom
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </Section>
         </PreviewClickTarget>
       );
     },
 
+    // A short copy card with compact trust points beside the team photograph,
+    // then the history timeline. Body, highlights, photo and milestones each
+    // drop out on their own when removed from code.
     about: (row) => {
       const milestones = asList(timeline);
       if (isBlank(about) && !milestones.length) return null;
       return (
         <PreviewClickTarget key={row.id} {...click("about", "About Us")}>
           <Section id={row.anchor || "about"} tint={row.tint}>
-            <div className="ws-split">
-              <div className="ws-split-text">
-                <SectionHead
-                  eyebrow={row.eyebrow || about.eyebrow}
-                  title={row.title || about.title}
-                  lead={row.lead}
-                />
-                {asList(about.body).map((p) => (
-                  <p key={p} className="ws-muted">
-                    {p}
-                  </p>
-                ))}
-              </div>
-              {about.imageUrl ? (
-                <div className="ws-split-media">
-                  <img src={about.imageUrl} alt={`The ${brand.name || "dealership"} showroom`} loading="lazy" />
+            {isBlank(about) ? null : (
+              <div className="ws-split ws-about">
+                <div className="ws-card ws-panel ws-split-text ws-about-copy">
+                  <SectionHead
+                    eyebrow={row.eyebrow || about.eyebrow}
+                    title={row.title || about.title}
+                    lead={row.lead}
+                  />
+                  {asList(about.body).map((p) => (
+                    <p key={p} className="ws-muted">
+                      {p}
+                    </p>
+                  ))}
+                  <BenefitCards items={about.highlights} compact />
                 </div>
-              ) : null}
-            </div>
+                {about.imageUrl ? (
+                  <div className="ws-split-media">
+                    <img src={about.imageUrl} alt={`The ${brand.name || "dealership"} team`} loading="lazy" />
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {/* Empty the timeline in data/timeline.js and its heading goes too;
-                the About copy above stays. */}
+                the About card above stays. */}
             {milestones.length ? (
               <PreviewClickTarget {...click("timeline", "Timeline")}>
-                <div className="ws-subhead">
-                  <h3 className="ws-h3">Our story since 1947</h3>
-                </div>
-                <ol className="ws-timeline">
-                  {milestones.map((t) => (
-                    <li key={t.year} className="ws-card ws-milestone">
-                      <span className="ws-milestone-year">{t.year}</span>
-                      <h4 className="ws-card-title">{t.title}</h4>
-                      <p className="ws-muted">{t.body}</p>
-                    </li>
-                  ))}
-                </ol>
+                <HistoryTimeline milestones={milestones} />
               </PreviewClickTarget>
             ) : null}
           </Section>
@@ -714,63 +911,29 @@ export default function WebsitePage() {
       );
     },
 
+    // Overall rating beside per-platform cards, topic filters and a carousel of
+    // featured quotes — all in components/ReviewsPanel.js. Ratings, quotes and
+    // the "Leave a review" button are separate lists in code; the block only
+    // disappears when all three are gone.
     reviews: (row) => {
       const ratingList = asList(ratings);
       const reviewList = asList(reviews);
-      // Ratings, quotes and the "Leave a review" strip are three separate
-      // lists in code — the block only disappears when all three are gone.
       if (!ratingList.length && !reviewList.length && !reviewCta?.href) return null;
       return (
-      <PreviewClickTarget key={row.id} {...click("reviews", "Customer reviews")}>
-        <Section id={row.anchor || "reviews"} tint={row.tint}>
-          <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} center />
-          {ratingList.length ? (
-            <PreviewClickTarget {...click("ratings", "Review ratings")}>
-              <ul className="ws-ratings">
-                {ratingList.map((r) => (
-                  <li key={r.source} className="ws-rating">
-                    <span className="ws-rating-score">{r.score}</span>
-                    <span className="ws-muted">{r.source}</span>
-                  </li>
-                ))}
-              </ul>
-            </PreviewClickTarget>
-          ) : null}
-          {reviewList.length ? (
-            <div className="ws-grid ws-grid--reviews">
-              {reviewList.map((rv) => (
-                <article key={rv.id} className="ws-card ws-review">
-                  <Stars rating={rv.rating} />
-                  <p className="ws-review-quote">“{rv.quote}”</p>
-                  <div className="ws-review-meta">
-                    <span className="ws-review-name">{rv.name}</span>
-                    <span className="ws-muted">
-                      {rv.source} · {rv.date}
-                    </span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : null}
-          {/* Same "Show more" strip the vehicle teaser uses, so the reviews the
-              visitor just read and the invitation to add one sit together. */}
-          {reviewCta?.href ? (
-            <div className="ws-section-more">
-              <a
-                href={reviewCta.href}
-                target="_blank"
-                rel="noreferrer"
-                className="ws-btn ws-btn--primary"
-              >
-                {reviewCta.label || "Leave a review"}
-              </a>
-              {reviewCta.note ? (
-                <span className="ws-section-more-note">{reviewCta.note}</span>
-              ) : null}
-            </div>
-          ) : null}
-        </Section>
-      </PreviewClickTarget>
+        <PreviewClickTarget key={row.id} {...click("reviews", "Customer reviews")}>
+          <Section id={row.anchor || "reviews"} tint={row.tint}>
+            <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} center />
+            <ReviewsPanel
+              ratings={ratingList}
+              reviews={reviewList}
+              topics={reviewTopics}
+              team={team}
+              reviewCta={reviewCta}
+              featuredLimit={FEATURED_REVIEW_LIMIT}
+              linkStaff={staffLinksOn}
+            />
+          </Section>
+        </PreviewClickTarget>
       );
     },
 
@@ -780,12 +943,14 @@ export default function WebsitePage() {
       <PreviewClickTarget key={row.id} {...click("team-members", "Team members")}>
         <Section id={row.anchor || "team"} tint={row.tint}>
           <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} center />
+          {/* Departments sit side by side across the full width. */}
+          <div className="ws-team-groups">
           {departments.map((dep) => (
             <div key={dep.id} className="ws-team-group">
               <h3 className="ws-h3">{dep.label}</h3>
               <div className="ws-grid ws-grid--team">
                 {dep.members.map((m) => (
-                  <article key={m.id} className="ws-card ws-member">
+                  <article key={m.id} id={`team-member-${m.id}`} className="ws-card ws-member">
                     {m.photo ? (
                       <div className="ws-member-photo">
                         <img src={m.photo} alt={m.name} loading="lazy" />
@@ -800,6 +965,7 @@ export default function WebsitePage() {
               </div>
             </div>
           ))}
+          </div>
         </Section>
       </PreviewClickTarget>
       ) : null,
@@ -858,8 +1024,10 @@ export default function WebsitePage() {
         </PreviewClickTarget>
       ) : null,
 
+    // Our promise, the visit call-to-action, then the contact details and map.
     contact: (row) => {
-      if (isBlank(contact)) return null;
+      const promiseItems = asList(promise.items);
+      if (isBlank(contact) && !promiseItems.length) return null;
       const address = asList(contact.address);
       const salesHours = asList(contact.salesHours);
       const serviceHours = asList(contact.serviceHours);
@@ -873,10 +1041,21 @@ export default function WebsitePage() {
               lead={row.lead}
               center
             />
+            {promiseItems.length ? (
+              <div className="ws-promise">
+                <div className="ws-promise-head">
+                  {promise.eyebrow ? <span className="ws-eyebrow">{promise.eyebrow}</span> : null}
+                  {promise.title ? <h3 className="ws-h3">{promise.title}</h3> : null}
+                </div>
+                <BenefitCards items={promiseItems} headingLevel={4} />
+              </div>
+            ) : null}
+            <VisitCta visit={contact.visit} />
             {/* Phone, address, hours, socials and the map are five independent
                 entries in siteContent.contact — each block only renders while
                 its own content is still there, so removing one does not leave
                 a labelled but empty panel behind. */}
+            {isBlank(contact) ? null : (
             <div className="ws-contact">
               <div className="ws-card ws-panel ws-contact-details">
                 {contact.phone ? (
@@ -898,7 +1077,7 @@ export default function WebsitePage() {
                   </div>
                 ) : null}
                 {salesHours.length || serviceHours.length ? (
-                  <div className="ws-contact-block">
+                  <div className="ws-contact-block ws-contact-block--wide">
                     <span className="ws-eyebrow">Opening Times</span>
                     <div className="ws-contact-hours">
                       <HoursTable caption="Sales hours" rows={salesHours} />
@@ -927,6 +1106,7 @@ export default function WebsitePage() {
                 </div>
               ) : null}
             </div>
+            )}
           </Section>
         </PreviewClickTarget>
       );
@@ -957,49 +1137,43 @@ export default function WebsitePage() {
             sessionLoading={authState.loading}
             customer={authState.customer}
             onNavigate={closeMenu}
+            className="ws-nav--grouped"
             menu={{ open: menuOpen, onToggle: () => setMenuOpen((v) => !v) }}
           >
-            {navLinks.map((link) => (
-              <a
-                key={link.id}
-                href={link.href}
-                className={activeId && link.href === `#${activeId}` ? "ws-nav-link ws-nav-link--active" : "ws-nav-link"}
-                onClick={handleNavClick(link)}
-              >
-                {link.label}
-              </a>
-            ))}
+            {navItems.map((item) =>
+              item.type === "group" ? (
+                <WebsiteNavGroup
+                  key={`group-${item.group.id}`}
+                  id={item.group.id}
+                  label={item.group.label}
+                  active={item.links.some(isActiveNavLink)}
+                  open={openNavGroup === item.group.id}
+                  onToggle={() => setOpenNavGroup((v) => (v === item.group.id ? null : item.group.id))}
+                >
+                  {item.links.map(renderNavLink)}
+                </WebsiteNavGroup>
+              ) : (
+                renderNavLink(item.link)
+              ),
+            )}
           </WebsiteTopBar>
         )}
 
         <main>{visibleBlocks.map((row) => BLOCK_RENDERERS[row.id](row))}</main>
 
+        {/* Pinned compare tray — renders nothing until a card is added. */}
+        {sectionPreview ? null : <VehicleCompareBar />}
+
         {/* ---------------- Footer ---------------- */}
         {sectionPreview ? null : (
           <PreviewClickTarget {...click("footer", "Footer", null, "div")}>
-          <footer className="ws-footer">
-            <div className="ws-container ws-footer-inner">
-              <div className="ws-footer-top">
-                <BrandLogo className="ws-logo" alt={brand.name || "Humphries & Parks"} />
-                {legalLinksOut(footer.legal).length ? (
-                  <ul className="ws-footer-links">
-                    {legalLinksOut(footer.legal).map((l) => (
-                      <li key={l.label}>
-                        <a href={l.href}>{l.label}</a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-              {footer.fcaReg ? <p className="ws-footer-legal">{footer.fcaReg}</p> : null}
-              {footer.creditDisclosure ? (
-                <p className="ws-footer-legal">{footer.creditDisclosure}</p>
-              ) : null}
-              <p className="ws-footer-copy">
-                © {year} {brand.name} Limited. All rights reserved.
-              </p>
-            </div>
-          </footer>
+            <WebsiteFooter
+              brand={brand}
+              contact={contact}
+              footer={footer}
+              brands={brandLogos}
+              links={customerLinks}
+            />
           </PreviewClickTarget>
         )}
 
@@ -1017,7 +1191,6 @@ export default function WebsitePage() {
 // website_section_layout.
 const BLOCK_KEYS = new Set([
   "hero",
-  "brands",
   "cars",
   "offers",
   "shop",

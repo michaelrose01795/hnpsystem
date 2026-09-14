@@ -14,6 +14,9 @@
 import { useState } from "react";
 import ProductCard from "@/features/website/shop/ProductCard";
 import CartDrawer from "@/features/website/shop/CartDrawer";
+import BasketSummary from "@/features/website/shop/BasketSummary";
+import VehicleFinder from "@/features/website/shop/VehicleFinder";
+import ShopServiceInfo from "@/features/website/shop/ShopServiceInfo";
 import { formatGbp } from "@/features/website/hooks/useShopCart";
 import { shopCategories, shopProducts } from "@/features/website/data/shopProducts";
 import { Frame, Row, ShowcaseSection } from "../ShowcasePrimitives";
@@ -25,6 +28,9 @@ export default function ShopShowcase({ section }) {
   const [first, second, third] = shopProducts;
   const lowStock = second ? { ...second, stock_qty: 3 } : null;
   const outOfStock = third ? { ...third, stock_qty: 0 } : null;
+  // A part that names no vehicle, for the quieter "check fitment" line.
+  const unknownFit = first ? { ...first, id: "dev-unknown-fit", name: "Microfibre Cloth Pack", brand: null, description: null, compare_at_price_pence: null } : null;
+  const emptyCart = { items: [], totals: { count: 0, subtotal: formatGbp(0), subtotal_pence: 0 } };
   const drawerItems = [first, second].filter(Boolean).map((product) => ({ ...product, qty: 1 }));
   const subtotalPence = drawerItems.reduce((sum, item) => sum + item.price_pence * item.qty, 0);
   // Static cart shape CartDrawer / BasketAccountNotice read — no storage, no fetch.
@@ -39,55 +45,84 @@ export default function ShopShowcase({ section }) {
 
   return (
     <ShowcaseSection id="shop" section={section}>
-      <Row label="Teaser toolbar" note=".ws-shop-toolbar · button.ws-shop-filter (--active) · button.ws-shop-cartbutton (primary)">
+      <Row label="Shop front" note=".ws-shop-front · .ws-shop-side · VehicleFinder (vehicle applied) · BasketSummary (empty) · form.ws-shop-search">
         <Frame padded>
           <div className="ws-page">
-            <div className="ws-shop-toolbar">
-              <div className="ws-shop-filters">
-                <button type="button" className="ws-shop-filter ws-shop-filter--active">
-                  All
-                </button>
-                {shopCategories.slice(0, 3).map((category) => (
-                  <button key={category.id} type="button" className="ws-shop-filter">
-                    {category.name}
+            <div className="ws-shop-front">
+              <VehicleFinder idPrefix="dev-shop-finder" vehicle={{ make: "Suzuki", model: "Swift" }} onApply={noop} onClear={noop} />
+              <div className="ws-shop-side">
+                <BasketSummary cart={emptyCart} onOpen={noop} />
+                <form className="ws-card ws-panel ws-shop-search" role="search" onSubmit={(event) => event.preventDefault()}>
+                  <label className="ws-stock-field" htmlFor="dev-shop-search">
+                    <span className="ws-stock-label">Search parts</span>
+                    <input id="dev-shop-search" type="search" placeholder="Part name, number or OE reference" />
+                  </label>
+                  <button type="submit" className="ws-btn ws-btn--primary">
+                    Search
                   </button>
-                ))}
+                </form>
               </div>
-              <button type="button" className="ws-shop-cartbutton" aria-label="Basket">
-                <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
-                <span className="ws-shop-cartbutton-count">3</span>
-              </button>
             </div>
           </div>
         </Frame>
       </Row>
 
-      <Row label="Product tiles" note="ProductCard · in stock · low stock · out of stock">
+      <Row label="Registration result" note=".ws-finder-result · .ws-val-plate · .ws-finder-result-text · .ws-finder-lead (the state after a DVLA lookup)">
+        <Frame padded>
+          <div className="ws-page">
+            <div className="ws-card ws-panel ws-finder">
+              <div className="ws-finder-result">
+                <span className="ws-val-plate">AB12 CDE</span>
+                <span className="ws-finder-result-text">2019 · Suzuki · 1373cc · Petrol</span>
+                <p className="ws-muted ws-finder-lead">Choose the model below to see parts that fit.</p>
+              </div>
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Teaser category tabs" note=".ws-tabs · button.ws-tab (--active) — filters the curated tiles">
+        <Frame padded>
+          <div className="ws-page">
+            <div className="ws-tabs" role="tablist" aria-label="Filter parts">
+              <button type="button" role="tab" aria-selected className="ws-tab ws-tab--active">
+                All
+              </button>
+              {shopCategories.slice(0, 3).map((category) => (
+                <button key={category.id} type="button" role="tab" aria-selected={false} className="ws-tab">
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Product tiles" note="ProductCard · saving badge + was price · fits · check fitment · low stock · out of stock (Enquire)">
         <Frame padded>
           <div className="ws-page">
             <div className="ws-grid--shop">
               {first ? <ProductCard product={first} href="#parts" /> : null}
               {lowStock ? <ProductCard product={lowStock} onAdd={noop} inBasketQty={1} /> : null}
+              {unknownFit ? <ProductCard product={unknownFit} onAdd={noop} /> : null}
               {outOfStock ? <ProductCard product={outOfStock} onAdd={noop} /> : null}
             </div>
           </div>
         </Frame>
       </Row>
 
-      <Row label="Basket drawer" note="CartDrawer (real) · opens from the Basket button · Esc, × or the backdrop closes it">
+      <Row label="Delivery, collection and help" note="ShopServiceInfo · .ws-shop-info · -item · -title">
         <Frame padded>
           <div className="ws-page">
-            <button
-              type="button"
-              className="ws-shop-cartbutton"
-              onClick={() => setBasketOpen(true)}
-              aria-haspopup="dialog"
-              aria-expanded={basketOpen}
-              aria-label="Basket"
-            >
-              <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
-              <span className="ws-shop-cartbutton-count">{mockCart.totals.count}</span>
-            </button>
+            <ShopServiceInfo />
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Basket summary + drawer" note="BasketSummary (count, total, View basket, Checkout) · CartDrawer (real) · Esc, × or the backdrop closes it">
+        <Frame padded>
+          <div className="ws-page">
+            <BasketSummary cart={mockCart} onOpen={() => setBasketOpen(true)} />
             <CartDrawer open={basketOpen} cart={mockCart} onClose={() => setBasketOpen(false)} />
           </div>
         </Frame>

@@ -91,6 +91,12 @@ const CUSTOMER_CODE_ROOTS = ["src/pages/website", "src/features/website"];
 const CUSTOMER_RENDERED_COMPONENTS = [
   "src/components/ui/dropdownAPI",
   "src/components/ui/calendarAPI",
+  // Global right-click menu: renders the .website-context-menu* classes when
+  // the page is under html.website-scope.
+  "src/components/ui/GlobalContextMenu.js",
+  // Global typing assistant: renders the .website-typing-assist* classes (named
+  // in its skins map) when the page is under html.website-scope.
+  "src/components/ui/typingAssist",
   // Global layout with a /website launcher styled by custglobal.css. (The
   // cookie banner's website panel lives in src/features/website/components.)
   "src/components/layout/CustomerWebsiteLayout.js",

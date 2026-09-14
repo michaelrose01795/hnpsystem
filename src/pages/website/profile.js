@@ -27,6 +27,7 @@ import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
 import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
 import WebsiteTopBar from "@/features/website/components/WebsiteTopBar";
 import WebsiteNativeDateTimeInput from "@/features/website/components/WebsiteNativeDateTimeInput";
+import useTypingAssistSettings from "@/hooks/useTypingAssistSettings";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import {
   CONTACT_PREFERENCE_OPTIONS,
@@ -2450,6 +2451,7 @@ export default function CustomerProfilePage() {
                         onSuccess={() => flash("prefs", "Preferences saved.")}
                         flash={actionFlash.prefs}
                       />
+                      <TypingAssistRow />
                       <ReferralRow
                         onSubmit={(payload) =>
                           callAction(
@@ -2829,6 +2831,37 @@ function NotificationPrefsRow({ initial, onSuccess, flash }) {
   );
 }
 
+// Spelling, grammar and Tab word prediction on text boxes (GlobalTypingAssist).
+// Saved on this device straight away — there is nothing to submit.
+function TypingAssistRow() {
+  const { settings, update } = useTypingAssistSettings();
+  return (
+    <div className="ws-portal-settings-row">
+      <div className="ws-portal-card__header">
+        <div>
+          <div className="ws-portal-item-title">Typing assistant</div>
+          <p className="ws-portal-hint">
+            UK English spelling and grammar checks on text boxes, with the next word suggested as you type. Press Tab to
+            accept a suggestion. Runs on this device only.
+          </p>
+        </div>
+      </div>
+      <Toggle label="Typing assistant" checked={settings.enabled} onChange={(value) => update({ enabled: value })} />
+      {settings.enabled ? (
+        <>
+          <Toggle
+            label="Check spelling and grammar"
+            checked={settings.spelling && settings.grammar}
+            onChange={(value) => update({ spelling: value, grammar: value })}
+          />
+          <Toggle label="Flag American spellings" checked={settings.ukSpelling} onChange={(value) => update({ ukSpelling: value })} />
+          <Toggle label="Suggest the next word" checked={settings.predictions} onChange={(value) => update({ predictions: value })} />
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 function Toggle({ label, checked, onChange }) {
   // Custom switch — custglobal.css explicitly avoids checkbox styling on
   // /website, so we render a role=switch element with onClick / onKeyDown
@@ -3106,7 +3139,7 @@ function AddVehicleRow({ onSubmit, flash }) {
               value={reg}
               onChange={(e) => setReg(e.target.value)}
               placeholder="e.g. AB12 CDE"
-              className="ws-portal-reg-input"
+              className="ws-reg-input"
             />
             <button
               type="button"

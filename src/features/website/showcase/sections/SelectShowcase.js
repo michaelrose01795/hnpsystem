@@ -90,6 +90,69 @@ export default function SelectShowcase({ section }) {
         </div>
       </Row>
 
+      <Row label="Right-click menu" hint="GlobalContextMenu · Jump to open · right-click this page to try it" size="wide">
+        <div className="website-dev-context-pair">
+          <div role="menu" aria-label="Context menu" className="website-context-menu website-dev-context-static is-visible">
+            <button type="button" role="menuitem" className="website-context-menu__item">
+              <span className="website-context-menu__icon" aria-hidden="true">
+                ←
+              </span>
+              <span className="website-context-menu__label">Back</span>
+              <span className="website-context-menu__shortcut">Alt+←</span>
+            </button>
+            <button type="button" role="menuitem" className="website-context-menu__item">
+              <span className="website-context-menu__icon" aria-hidden="true">
+                ⟳
+              </span>
+              <span className="website-context-menu__label">Reload</span>
+              <span className="website-context-menu__shortcut">Ctrl+R</span>
+            </button>
+            <div className="website-context-menu__separator" role="separator" />
+            <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded="true" className="website-context-menu__item">
+              <span className="website-context-menu__icon" aria-hidden="true">
+                ⤵
+              </span>
+              <span className="website-context-menu__label">Jump to</span>
+              <span className="website-context-menu__chevron" aria-hidden="true">
+                ›
+              </span>
+            </button>
+            <div className="website-context-menu__separator" role="separator" />
+            <button type="button" role="menuitem" disabled className="website-context-menu__item">
+              <span className="website-context-menu__icon" aria-hidden="true">
+                ⧉
+              </span>
+              <span className="website-context-menu__label">Copy</span>
+              <span className="website-context-menu__shortcut">Ctrl+C</span>
+            </button>
+          </div>
+          <div
+            role="menu"
+            aria-label="Jump to"
+            className="website-context-menu website-context-menu--submenu website-dev-context-static is-visible"
+          >
+            <span className="website-context-menu__heading">On this page</span>
+            <button type="button" role="menuitem" className="website-context-menu__item">
+              <span className="website-context-menu__label">Top of page</span>
+            </button>
+            <button type="button" role="menuitem" className="website-context-menu__item is-highlighted">
+              <span className="website-context-menu__label">Foundation</span>
+            </button>
+            <button type="button" role="menuitem" className="website-context-menu__item">
+              <span className="website-context-menu__label">Controls</span>
+            </button>
+          </div>
+          <div
+            role="menu"
+            aria-label="Jump to"
+            className="website-context-menu website-context-menu--submenu website-dev-context-static is-visible"
+          >
+            <span className="website-context-menu__heading">On this page</span>
+            <span className="website-context-menu__empty">No sections on this page</span>
+          </div>
+        </div>
+      </Row>
+
       <Row label="Dropdown API" hint="placeholder · empty">
         <div className="website-dev-menu-frame">
           <div className="dropdown-api">

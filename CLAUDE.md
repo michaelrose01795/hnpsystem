@@ -153,6 +153,7 @@ doc — recorded on purpose, not yet consolidated.
 5. **Every class custglobal.css declares must be rendered on `/website/dev` in the same change** — add it to the matching section in `src/features/website/showcase/sections/`. A new family needs a registry entry, an `@family` block and a `<ShowcaseSection id>`.
 6. Ratchets (raw colours, `!important`, dead classes, undeclared classNames, inline visual styles and raw colours in customer JS, undefined tokens, contrast) may only go down. `npm run check:website:update` locks in wins; `--accept-new` is a deliberate re-baseline only.
 7. Buttons: raw `<button>` is the secondary action, `.app-btn` is the primary action. There is no third.
+8. **Page width.** Every /website page is full viewport width with a max 20px side gutter, set once by `--ws-gutter`. Build new pages inside `.ws-container` (or an existing page shell); never give a page wrapper a `max-width` or its own side padding.
 
 ### 3.0 Layer Primitives — THE LAW (post-Layer-Sweep, 2026-05-05)
 

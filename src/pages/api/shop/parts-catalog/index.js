@@ -5,6 +5,7 @@
 // /website/parts-catalog.
 //
 // Query: ?search= &category= &sort=name|price_asc|price_desc|newest
+//        &make= &model= &stock=in|order &price=<band> (src/lib/parts/shopFilters.js)
 //        &limit= &offset= &categories=1
 //
 // Read-only and unauthenticated by design — this is the shop front. The
@@ -28,6 +29,10 @@ export default async function handler(req, res) {
     search = "",
     category = "",
     sort = "name",
+    make = "",
+    model = "",
+    stock = "",
+    price = "",
     limit = "24",
     offset = "0",
     categories,
@@ -40,6 +45,10 @@ export default async function handler(req, res) {
       search: String(search),
       category: String(category),
       sort: String(sort),
+      make: String(make),
+      model: String(model),
+      stock: String(stock),
+      price: String(price),
       limit: parseInt(limit, 10),
       offset: parseInt(offset, 10),
     }),

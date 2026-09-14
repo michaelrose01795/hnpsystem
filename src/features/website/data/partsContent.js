@@ -29,4 +29,32 @@ export const partsContent = {
     { name: "Mitsubishi", note: "Longest-established Mitsubishi dealer in the UK — full parts catalogue" },
   ],
   cta: { label: "Call the parts team", href: "tel:01732870711" },
+
+  // The delivery / collection / help strip in the shop (shop/ShopServiceInfo.js).
+  // Online checkout charges one flat delivery rate, shown at checkout, and has
+  // no collection option — so collection is arranged with the parts team.
+  serviceInfo: [
+    {
+      id: "delivery",
+      title: "UK mainland delivery",
+      body: "One flat delivery charge per order, shown at checkout. We do not ship outside mainland UK.",
+    },
+    {
+      id: "collect",
+      title: "Click & collect",
+      body: "Reserve a part with the parts team and collect it from our counter at 120 London Road, West Malling.",
+      link: { label: "Reserve on 01732 870711", href: "tel:01732870711" },
+    },
+    {
+      id: "genuine",
+      title: "Genuine parts",
+      body: "Genuine Suzuki and Mitsubishi parts, the same ones the manufacturer fits from new.",
+    },
+    {
+      id: "help",
+      title: "Not sure it fits?",
+      body: "Call with your registration and we will check the part against the manufacturer catalogue.",
+      link: { label: "Call 01732 870711", href: "tel:01732870711" },
+    },
+  ],
 };

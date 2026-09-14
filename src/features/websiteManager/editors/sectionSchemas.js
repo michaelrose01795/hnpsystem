@@ -469,17 +469,9 @@ export const BUILDER_SCHEMAS = {
       // "Default colour mode" was removed here (2026-09-11): the customer site
       // is light-only, so the control had nothing left to switch. The
       // website_design.default_theme column is left in place.
-      {
-        name: "container_width",
-        label: "Content width",
-        type: "select",
-        options: [
-          { value: "1040px", label: "Narrow (1040px)" },
-          { value: "1200px", label: "Standard (1200px)" },
-          { value: "1360px", label: "Wide (1360px)" },
-          { value: "100%", label: "Full bleed" },
-        ],
-      },
+      // "Content width" was removed here (2026-09-14): every /website page is
+      // full width with a max 20px gutter, set once by --ws-gutter in
+      // custglobal.css. The website_design.container_width column is left in place.
       {
         name: "section_spacing",
         label: "Section spacing",

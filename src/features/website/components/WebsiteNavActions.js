@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { canShowDevPages } from "@/lib/dev-tools/config";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
+import WebsiteIcon from "./WebsiteIcon";
 
 function useMounted() {
   const [mounted, setMounted] = useState(false);
@@ -27,7 +28,10 @@ function useMounted() {
   return mounted;
 }
 
-export function WebsiteDevNavControls({ onNavigate }) {
+// `className` wraps the pair in one element. The bar cluster passes
+// "ws-nav-dev-group" so custglobal can lift Dev / Overlay out of flow on desktop
+// and the home links centre as if they were not there.
+export function WebsiteDevNavControls({ onNavigate, className = "" }) {
   const mounted = useMounted();
   const { canAccess, isWebsiteSurface, enabled, toggleWebsiteOverlay } = useDevLayoutOverlay();
   if (!mounted) return null;
@@ -36,7 +40,7 @@ export function WebsiteDevNavControls({ onNavigate }) {
   const showOverlayToggle = canAccess && isWebsiteSurface;
   if (!showDevLink && !showOverlayToggle) return null;
 
-  return (
+  const controls = (
     <>
       {showDevLink ? (
         <Link
@@ -64,6 +68,8 @@ export function WebsiteDevNavControls({ onNavigate }) {
       ) : null}
     </>
   );
+
+  return className ? <span className={className}>{controls}</span> : controls;
 }
 
 export default function WebsiteNavActions({
@@ -78,10 +84,18 @@ export default function WebsiteNavActions({
 }) {
   return (
     <div className="ws-nav-actions">
-      <WebsiteDevNavControls onNavigate={onNavigate} />
+      <WebsiteDevNavControls onNavigate={onNavigate} className="ws-nav-dev-group" />
+      {/* The number folds to its icon on a phone (custglobal), so the capsule
+          carries the full accessible name at every width. */}
       {showPhone && phone ? (
-        <a href={phoneHref || `tel:${phone}`} className="ws-nav-phone" onClick={onNavigate}>
-          {phone}
+        <a
+          href={phoneHref || `tel:${phone}`}
+          className="ws-nav-phone"
+          aria-label={`Call us on ${phone}`}
+          onClick={onNavigate}
+        >
+          <WebsiteIcon name="phone" className="ws-nav-phone-icon" />
+          <span className="ws-nav-phone-number">{phone}</span>
         </a>
       ) : null}
       {!showAccount || sessionLoading ? null : customer ? (

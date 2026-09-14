@@ -18,7 +18,12 @@ const customerToken = (name) => {
   return token.light ?? token.dark;
 };
 
+// "Home" is the hero banner (anchor "top"). WebsitePage also guarantees it is
+// first when the live website_nav rows do not include a "#top" link.
+export const HOME_NAV_LINK = { id: "home", label: "Home", href: "#top", filter: null };
+
 export const navLinks = [
+  HOME_NAV_LINK,
   { id: "cars", label: "Our Cars", href: "#cars", filter: "all" },
   { id: "offers", label: "Offers", href: "#offers", filter: null },
   { id: "shop", label: "Shop", href: "#shop", filter: null },
@@ -32,19 +37,52 @@ export const navLinks = [
   { id: "contact", label: "Contact Us", href: "#contact", filter: null },
 ];
 
+// Home top-bar grouping. The live website_nav rows stay a flat, staff-editable
+// list; this only decides which of them fold into a dropdown. A link joins a
+// group when its id — or its #anchor — is listed in `members`, and anything
+// unlisted stays a top-level link. A group sits where its first member would
+// have, and a group left with a single link is drawn as that plain link.
+export const NAV_GROUPS = [
+  { id: "buy", label: "Buy a car", members: ["cars", "offers", "motability"] },
+  { id: "servicing", label: "Servicing", members: ["service", "shop"] },
+  { id: "about", label: "About us", members: ["about", "reviews", "team", "blog"] },
+];
+
+const navAnchor = (link) => String(link?.href || "").replace(/^#/, "");
+const memberRank = (group, link) =>
+  group.members.findIndex((m) => m === link.id || m === navAnchor(link));
+
+// [link, …] -> [{ type: "link", link } | { type: "group", group, links }]
+export function groupNavLinks(links, groups = NAV_GROUPS) {
+  const items = [];
+  const byGroup = new Map();
+  (Array.isArray(links) ? links : []).forEach((link) => {
+    if (!link) return;
+    const group = groups.find((g) => memberRank(g, link) !== -1);
+    if (!group) {
+      items.push({ type: "link", link });
+      return;
+    }
+    let entry = byGroup.get(group.id);
+    if (!entry) {
+      entry = { type: "group", group, links: [] };
+      byGroup.set(group.id, entry);
+      items.push(entry);
+    }
+    entry.links.push(link);
+  });
+  return items.map((item) => {
+    if (item.type !== "group") return item;
+    if (item.links.length === 1) return { type: "link", link: item.links[0] };
+    const ordered = [...item.links].sort((a, b) => memberRank(item.group, a) - memberRank(item.group, b));
+    return { ...item, links: ordered };
+  });
+}
+
 // `id` is the block key WebsitePage renders; `anchor` is the DOM id the nav
 // scrolls to. They differ only for the hero, whose anchor is "top".
 export const sectionLayout = [
   { id: "hero", label: "Hero banner", anchor: "top", eyebrow: null, title: null, lead: null, tint: false },
-  {
-    id: "brands",
-    label: "Partner brand strip",
-    anchor: "brands",
-    eyebrow: null,
-    title: "Authorised retailer for",
-    lead: null,
-    tint: true,
-  },
   {
     id: "cars",
     label: "Featured vehicles",
@@ -121,7 +159,9 @@ export const design = {
   // light-only (see useWebsiteTheme / isLightOnlyWebsitePath in _document.js),
   // so nothing reads this any more.
   defaultTheme: "light",
-  containerWidth: "1200px",
+  // Retained for the website_design row shape only. Every /website page is
+  // full width with a --ws-gutter inset (custglobal.css), so nothing reads it.
+  containerWidth: "100%",
   cornerRadius: "18px",
   buttonRadius: "999px",
   sectionSpacing: "comfortable",
@@ -168,7 +208,6 @@ export function hexToRgbTriplet(hex, fallback = customerToken("--accentMainRgb")
 export function designToCssVars(d) {
   const merged = { ...design, ...(d || {}) };
   const vars = {
-    "--ws-maxw": merged.containerWidth,
     "--ws-radius": merged.cornerRadius,
     "--ws-btn-radius": merged.buttonRadius,
     "--ws-nav-h": merged.navHeight,

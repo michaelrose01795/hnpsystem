@@ -21,28 +21,11 @@ import {
   formatPrice,
   formatMileage,
   mileageLabel,
-  priceLabel,
-  stockHref,
 } from "@/lib/stock/vehicleStock";
+import { toVehicleCard } from "../data/vehicles";
 
 // Similar cars shown before "View more"; one row on a wide screen.
 const SIMILAR_PREVIEW = 4;
-
-// Same card shape AvailableStockPage builds for VehicleCard.
-const toCard = (v) => ({
-  id: v.stockNumber,
-  type: v.condition,
-  brand: v.make,
-  model: `${v.model} ${v.derivative}`,
-  year: v.year,
-  price: priceLabel(v),
-  miles: mileageLabel(v),
-  badge: v.badge || null,
-  image: v.images?.[0] || null,
-  reg: v.reg,
-  stockNumber: v.stockNumber,
-  href: stockHref(v),
-});
 
 const formatDate = (value) => {
   if (!value) return null;
@@ -312,7 +295,7 @@ export default function StockDetailPage({ reg }) {
               <h2 className="ws-h2">Similar vehicles</h2>
               <div className="ws-grid ws-grid--cards">
                 {(showAllSimilar ? similar : similar.slice(0, SIMILAR_PREVIEW)).map((v) => (
-                  <VehicleCard key={v.stockNumber} vehicle={toCard(v)} />
+                  <VehicleCard key={v.stockNumber} vehicle={toVehicleCard(v)} />
                 ))}
               </div>
               {similar.length > SIMILAR_PREVIEW ? (

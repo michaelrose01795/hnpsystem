@@ -2,6 +2,7 @@
 
 import React from "react"; // support extracted fragments.
 import PopupModal from "@/components/popups/popupStyleApi";
+import WebsiteHelpQueue from "@/components/page-ui/messages/WebsiteHelpQueue";
 
 // Presentation-only: renders a thread member's last_read_at (the last time they
 // opened this conversation on /messages) as "HH:MM - DDth MMM".
@@ -110,6 +111,7 @@ export default function MessagesPageUi(props) {
     openBookingsThread,
     openGroupEditModal,
     openThread,
+    onWebsiteHelpJoined,
     orderedSystemNotifications,
     handleCreateJobFromRequest,
     palette,
@@ -393,6 +395,7 @@ export default function MessagesPageUi(props) {
                 }} />}
                     </button>)}
                 </DevLayoutSection>
+                {canSeeCustomerRequests && <WebsiteHelpQueue onJoined={onWebsiteHelpJoined} />}
                 {loadingThreads && <ThreadRowsSkeleton count={5} />}
                 {!loadingThreads && <>
                     {filteredThreads.length ? <div style={{

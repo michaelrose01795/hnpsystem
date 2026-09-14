@@ -14,7 +14,11 @@
 //                         keep them chronological
 //
 // Fields: year (also the React key, so keep it unique — "1950s" is fine),
-// title, body.
+// title, body. Optional: image (period photograph URL — a CDN link or a file
+// in /public referenced from the site root) and imageAlt. A milestone with an
+// image shows it above its copy; one without renders as a plain card.
+//
+// Rendered by components/HistoryTimeline.js.
 
 export const timeline = [
   {

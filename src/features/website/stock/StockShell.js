@@ -12,13 +12,13 @@
 import Head from "next/head";
 import Link from "next/link";
 
-import BrandLogo from "@/components/BrandLogo";
 import useWebsiteScope from "../hooks/useWebsiteScope";
 import useWebsiteTheme from "../hooks/useWebsiteTheme";
 import useWebsiteContent from "../hooks/useWebsiteContent";
 import useCustomerSession from "../hooks/useCustomerSession";
 import WebsiteTopBar from "../components/WebsiteTopBar";
-import { resolveLegalLinks } from "../legal/legalLinks";
+import VehicleCompareBar from "../components/VehicleCompareBar";
+import WebsiteFooter from "../components/WebsiteFooter";
 
 /* ------------------------------------------------------------------ */
 /* Live-content shape guards                                           */
@@ -40,9 +40,8 @@ import { resolveLegalLinks } from "../legal/legalLinks";
 const brandName = (brand) => brand?.name || "Humphries & Parks";
 
 // footer.legal is plain strings from the static fallback and { href, label }
-// rows from website_footer. resolveLegalLinks normalises both and keeps every
-// link on the customer site (stored hrefs used to point at staff routes).
-const legalLinks = (footer) => resolveLegalLinks(footer?.legal);
+// rows from website_footer. WebsiteFooter — the same footer the home page
+// renders — normalises both and keeps every link on the customer site.
 
 // `backToSite` collapses the two nav links into a single "Back to site" link.
 // Used by /website/valuation, where "Sell your car" points at the page the
@@ -51,14 +50,12 @@ export default function StockShell({ title, description, backToSite = false, chi
   useWebsiteScope();
 
   const { content } = useWebsiteContent();
-  const { brand, contact, footer } = content.siteContent;
+  const { brand, contact, footer, customerLinks } = content.siteContent;
   const name = brandName(brand);
   const { design } = content;
   const { loading: sessionLoading, customer } = useCustomerSession();
 
   useWebsiteTheme();
-
-  const year = new Date().getFullYear();
 
   return (
     <>
@@ -68,7 +65,7 @@ export default function StockShell({ title, description, backToSite = false, chi
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
 
-      <div className="ws-page ws-page--stock" data-presentation="website-stock-page">
+      <div className="ws-page" data-presentation="website-stock-page">
         {/* No "Contact" link here on purpose — the phone button IS the
             contact route, and two of them read as a choice the visitor does
             not have to make. The footer still links back into the site. */}
@@ -98,25 +95,16 @@ export default function StockShell({ title, description, backToSite = false, chi
 
         <main>{children}</main>
 
-        <footer className="ws-footer">
-          <div className="ws-container ws-footer-inner">
-            <div className="ws-footer-top">
-              <BrandLogo className="ws-logo" alt={name} />
-              <ul className="ws-footer-links">
-                {legalLinks(footer).map((l) => (
-                  <li key={l.label}>
-                    <Link href={l.href}>{l.label}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <p className="ws-footer-legal">{footer?.fcaReg}</p>
-            <p className="ws-footer-legal">{footer?.creditDisclosure}</p>
-            <p className="ws-footer-copy">
-              © {year} {name} Limited. All rights reserved.
-            </p>
-          </div>
-        </footer>
+        {/* Compare tray for the stock cards; renders nothing until one is added. */}
+        <VehicleCompareBar />
+
+        <WebsiteFooter
+          brand={brand}
+          contact={contact}
+          footer={footer}
+          brands={content.brands}
+          links={customerLinks}
+        />
       </div>
     </>
   );

@@ -32,6 +32,7 @@ import { useRouter } from "next/router";
 
 import StockShell from "../stock/StockShell";
 import useWebsiteContent from "../hooks/useWebsiteContent";
+import InfoList from "../components/InfoList";
 import { ChoiceGroup, TickList } from "./ValuationChoices";
 import {
   BODY_TYPES,
@@ -73,6 +74,9 @@ const INITIAL_ANSWERS = {
   issues: [],
   writeOff: "",
   finance: "no",
+  // Not used by the estimate. Carried from the home page Sell Your Car form so
+  // the result can confirm where we would collect from.
+  postcode: "",
   dvlaConfirmed: false,
 };
 
@@ -83,6 +87,14 @@ const FUEL_OPTIONS = [
   { value: "PLUG-IN HYBRID", label: "Plug-in hybrid" },
   { value: "ELECTRICITY", label: "Electric" },
   { value: "OTHER", label: "Something else" },
+];
+
+// The appraisal needs the same documents the small print below asks for.
+const WHAT_TO_BRING = [
+  "Your V5C logbook",
+  "Every key you have for the car",
+  "The service book or history",
+  "Photo ID and proof of address",
 ];
 
 // Mileage is the single biggest lever after age, so it is worth catching a
@@ -114,7 +126,8 @@ const STEPS = [
 
 export default function ValuationPage() {
   const { content } = useWebsiteContent();
-  const { contact } = content.siteContent;
+  const { contact, sellYourCar } = content.siteContent;
+  const benefits = Array.isArray(sellYourCar?.benefits) ? sellYourCar.benefits : [];
 
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState(INITIAL_ANSWERS);
@@ -185,17 +198,28 @@ export default function ValuationPage() {
   }, [answers.registration, set]);
 
   // ?reg= — handed over by the home page quick valuation ("Improve my
-  // estimate"). Prefill the plate once, then run the same DVLA lookup the
-  // customer would have triggered, so they land straight on the next questions.
+  // estimate") and the Sell Your Car form. Prefill the plate once, then run the
+  // same DVLA lookup the customer would have triggered, so they land straight
+  // on the next questions. The Sell Your Car form also sends ?mileage= and
+  // ?postcode=, which prefill without a lookup.
   const router = useRouter();
   const [autoLookup, setAutoLookup] = useState(false);
   useEffect(() => {
     if (!router.isReady) return;
-    const reg = normaliseReg(Array.isArray(router.query.reg) ? router.query.reg[0] : router.query.reg);
-    if (!isPlausibleReg(reg)) return;
-    set({ registration: reg, dvlaConfirmed: false });
-    setAutoLookup(true);
-  }, [router.isReady, router.query.reg, set]);
+    const firstOf = (value) => (Array.isArray(value) ? value[0] : value) || "";
+    const mileage = digitsOnly(firstOf(router.query.mileage));
+    const postcode = firstOf(router.query.postcode).trim().toUpperCase().slice(0, 8);
+    const patch = {};
+    if (mileage) patch.mileage = String(Math.min(MAX_MILEAGE, Number(mileage)));
+    if (postcode) patch.postcode = postcode;
+    const reg = normaliseReg(firstOf(router.query.reg));
+    if (isPlausibleReg(reg)) {
+      patch.registration = reg;
+      patch.dvlaConfirmed = false;
+    }
+    if (Object.keys(patch).length) set(patch);
+    if (patch.registration) setAutoLookup(true);
+  }, [router.isReady, router.query.reg, router.query.mileage, router.query.postcode, set]);
   useEffect(() => {
     if (!autoLookup || !answers.registration) return;
     setAutoLookup(false);
@@ -252,7 +276,10 @@ export default function ValuationPage() {
       </section>
 
       <section className="ws-section ws-val-body">
-        <div className="ws-container ws-val-container">
+        <div className="ws-container">
+          {/* Full width: the wizard on the left, supporting cards on the right. */}
+          <div className="ws-page-split">
+          <div className="ws-page-main">
           {/* ---------------------------------------------- progress ------ */}
           {!isResult ? (
             <div className="ws-val-progress">
@@ -294,7 +321,7 @@ export default function ValuationPage() {
                     <input
                       id="val-reg"
                       type="text"
-                      className="ws-val-reg"
+                      className="ws-reg-input"
                       placeholder="AB12 CDE"
                       autoComplete="off"
                       autoCapitalize="characters"
@@ -603,6 +630,7 @@ export default function ValuationPage() {
                     <p className="ws-val-cta-note">
                       No appointment needed. Pop in during opening hours, or call if you would rather
                       run through a few more questions first.
+                      {answers.postcode ? ` Prefer us to come to you? Mention ${answers.postcode} when you call and we can arrange free collection.` : ""}
                     </p>
 
                     {estimate.factors.length ? (
@@ -709,6 +737,52 @@ export default function ValuationPage() {
             after a physical appraisal and a history check. Proof of identity, address and ownership
             is required before we can buy any vehicle.
           </p>
+          </div>
+
+          <aside className="ws-page-aside" aria-label="About selling your car">
+            {benefits.length ? (
+              <div className="ws-card ws-panel ws-info-card">
+                <h2 className="ws-card-title">Why sell to us</h2>
+                <ul className="ws-ticks">
+                  {benefits.map((b) => (
+                    <li key={b}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <div className="ws-card ws-panel ws-info-card">
+              <h2 className="ws-card-title">What to bring</h2>
+              <ul className="ws-ticks">
+                {WHAT_TO_BRING.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            {contact?.phone || addressLine ? (
+              <div className="ws-card ws-panel ws-info-card">
+                <h2 className="ws-card-title">Visit or call us</h2>
+                <InfoList
+                  items={[
+                    contact?.phone ? ["Phone", contact.phone, contact.phoneHref] : null,
+                    addressLine ? ["Address", addressLine] : null,
+                  ]}
+                />
+                {contact?.salesHours?.length ? (
+                  <ul className="ws-val-hours">
+                    {contact.salesHours.map((row) => (
+                      <li key={row.days}>
+                        <span>{row.days}</span>
+                        <span>{row.time}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+          </aside>
+          </div>
         </div>
       </section>
     </StockShell>

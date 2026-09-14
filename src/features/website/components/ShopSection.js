@@ -1,25 +1,27 @@
 // file location: src/features/website/components/ShopSection.js
 //
-// The #shop teaser on /website. A curated preview, not the shop.
+// The #shop block on /website: the shop front, not the shop.
 //
-// It renders exactly SHOP_TEASER_LIMIT (8) items of hard-coded mock data
-// from data/shopProducts.js, so the marketing page is always full and
-// always fast, and never shows an empty grid because the parts counter
-// happened to run the stock down. "Show all parts & accessories" hands
-// over to /website/parts-catalog, which is the real, DB-backed shop
-// reading the staff DMS Stock Catalogue (public.parts_catalog).
+// It gives a visitor three ways in, all of which hand over to the real,
+// DB-backed catalogue at /website/parts-catalog (public.parts_catalog):
+//   - Find parts for my vehicle (registration or make / model)
+//   - a part search
+//   - the curated tiles below
+// alongside a clear basket summary and the delivery / collection / help strip.
 //
-// Because these tiles are mock rows with no parts_catalog id behind them,
-// they do not add to the basket — a mock id would fail re-pricing at
-// checkout. Each tile links through to the catalogue instead, where the
-// real item can be basketed. The basket button stays in the toolbar so
-// the drawer is reachable from the homepage.
+// The tiles are exactly the hard-coded rows in data/shopProducts.js, capped at
+// SHOP_TEASER_LIMIT, so the marketing page is always full and always fast and
+// never shows an empty grid because the parts counter ran the stock down.
+// Because those rows have no parts_catalog id behind them they do not add to
+// the basket — a mock id would fail re-pricing at checkout — so each tile links
+// through to the catalogue, where the real item carries Add to basket.
 //
-// Styling: every class is .ws-* / .ws-shop-* / .ws-product-* from
-// custglobal.css under the PUBLIC SHOP block.
+// Styling: .ws-shop-* / .ws-product-* / .ws-basket-summary-* / .ws-finder-*
+// from custglobal.css (@family shop), plus the shared .ws-tabs.
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import useShopCart from "../hooks/useShopCart";
 import {
   shopProducts,
@@ -28,13 +30,18 @@ import {
 } from "../data/shopProducts";
 import ProductCard from "../shop/ProductCard";
 import CartDrawer from "../shop/CartDrawer";
+import BasketSummary from "../shop/BasketSummary";
+import VehicleFinder from "../shop/VehicleFinder";
+import ShopServiceInfo from "../shop/ShopServiceInfo";
 
 const CATALOG_HREF = "/website/parts-catalog";
 
 export default function ShopSection() {
+  const router = useRouter();
   const cart = useShopCart();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeCat, setActiveCat] = useState("all");
+  const [search, setSearch] = useState("");
 
   // Always capped at the teaser limit, whatever the filter selects.
   const visible = useMemo(() => {
@@ -45,54 +52,67 @@ export default function ShopSection() {
     return pool.slice(0, SHOP_TEASER_LIMIT);
   }, [activeCat]);
 
+  const openCatalogue = (query) => {
+    const clean = Object.fromEntries(Object.entries(query).filter(([, v]) => v));
+    router.push({ pathname: CATALOG_HREF, query: clean });
+  };
+
+  const tabs = [{ id: "all", name: "All" }, ...shopCategories];
+
   return (
     <>
-      <div className="ws-shop-toolbar" data-presentation="website-shop-filters">
-        <div className="ws-shop-filters">
-          <button
-            type="button"
-            className={
-              "ws-shop-filter" +
-              (activeCat === "all" ? " ws-shop-filter--active" : "")
-            }
-            onClick={() => setActiveCat("all")}
+      <div className="ws-shop-front">
+        <VehicleFinder idPrefix="ws-shop-finder" onApply={({ make, model }) => openCatalogue({ make, model })} />
+        <div className="ws-shop-side">
+          <BasketSummary cart={cart} onOpen={() => setDrawerOpen(true)} />
+          <form
+            className="ws-card ws-panel ws-shop-search"
+            role="search"
+            onSubmit={(event) => {
+              event.preventDefault();
+              openCatalogue({ search: search.trim() });
+            }}
           >
-            All
-          </button>
-          {shopCategories.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              className={
-                "ws-shop-filter" +
-                (activeCat === c.id ? " ws-shop-filter--active" : "")
-              }
-              onClick={() => setActiveCat(c.id)}
-            >
-              {c.name}
+            <label className="ws-stock-field" htmlFor="ws-shop-search-input">
+              <span className="ws-stock-label">Search parts</span>
+              <input
+                id="ws-shop-search-input"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Part name, number or OE reference"
+                autoComplete="off"
+              />
+            </label>
+            <button type="submit" className="ws-btn ws-btn--primary">
+              Search
             </button>
-          ))}
+          </form>
         </div>
-        <button
-          type="button"
-          className="ws-shop-cartbutton"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Basket"
-        >
-          <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
-          <span className="ws-shop-cartbutton-count">{cart.totals.count}</span>
-        </button>
+      </div>
+
+      <div className="ws-tabs" role="tablist" aria-label="Filter parts" data-presentation="website-shop-filters">
+        {tabs.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            role="tab"
+            aria-selected={activeCat === c.id}
+            className={activeCat === c.id ? "ws-tab ws-tab--active" : "ws-tab"}
+            onClick={() => setActiveCat(c.id)}
+          >
+            {c.name}
+          </button>
+        ))}
       </div>
 
       <div className="ws-grid--shop" data-presentation="website-shop-products">
         {visible.map((p) => (
-          <ProductCard
-            key={p.id}
-            product={p}
-            href={CATALOG_HREF}
-          />
+          <ProductCard key={p.id} product={p} href={CATALOG_HREF} />
         ))}
       </div>
+
+      <ShopServiceInfo />
 
       <div className="ws-shop-more" data-presentation="website-shop-more">
         <p className="ws-muted">

@@ -5,6 +5,12 @@
 // a product page. Keeping one card means the teaser and the real shop
 // cannot drift apart visually.
 //
+// A tile answers what a buyer checks first: what it is, whether it fits the
+// car, what it costs (and what it cost before), whether it is on the shelf,
+// and the button to buy it. Compatibility comes from product.fitment (set by
+// the catalogue read layer) or is inferred the same way for code-owned rows
+// (src/lib/parts/vehicleFitment.js).
+//
 // parts_catalog carries no imagery, so a card with no image_url draws a
 // typographic placeholder from the part number rather than a broken frame.
 //
@@ -12,14 +18,16 @@
 
 import Link from "next/link";
 import { formatGbp } from "../hooks/useShopCart";
+import { fitmentFor } from "@/lib/parts/vehicleFitment";
 
 const LOW_STOCK_THRESHOLD = 5;
 
-export function ProductMedia({ product }) {
+export function ProductMedia({ product, badge }) {
   if (product.image_url) {
     return (
       <div className="ws-product-media">
         <img src={product.image_url} alt={product.name} loading="lazy" />
+        {badge ? <span className="ws-badge">{badge}</span> : null}
       </div>
     );
   }
@@ -28,8 +36,9 @@ export function ProductMedia({ product }) {
     .slice(0, 3)
     .toUpperCase();
   return (
-    <div className="ws-product-media ws-product-media--empty" aria-hidden="true">
-      <span className="ws-product-media-mark">{initials}</span>
+    <div className="ws-product-media ws-product-media--empty">
+      <span className="ws-product-media-mark" aria-hidden="true">{initials}</span>
+      {badge ? <span className="ws-badge">{badge}</span> : null}
     </div>
   );
 }
@@ -54,24 +63,33 @@ export function StockLine({ product }) {
   );
 }
 
+export function FitmentLine({ product }) {
+  const label = (product.fitment || fitmentFor(product)).label;
+  return (
+    <p className={label ? "ws-product-fit" : "ws-product-fit ws-product-fit--unknown"}>
+      {label || "Check fitment with our parts team"}
+    </p>
+  );
+}
+
 export default function ProductCard({ product, href, onAdd, inBasketQty = 0 }) {
   const out = (Number(product.stock_qty) || 0) <= 0;
+  const saving = (Number(product.compare_at_price_pence) || 0) - (Number(product.price_pence) || 0);
 
   const body = (
     <>
-      <ProductMedia product={product} />
+      <ProductMedia product={product} badge={saving > 0 ? `Save ${formatGbp(saving)}` : null} />
       <div className="ws-product-body">
         {product.sku ? (
           <span className="ws-product-meta">{product.sku}</span>
         ) : null}
         <h3 className="ws-product-name">{product.name}</h3>
-        {product.description ? (
-          <p className="ws-product-meta ws-product-desc">{product.description}</p>
-        ) : null}
+        <FitmentLine product={product} />
         <p className="ws-product-price">
           {formatGbp(product.price_pence)}
-          {product.compare_at_price_pence ? (
+          {saving > 0 ? (
             <span className="ws-product-was">
+              <span className="ws-sr-only">Was </span>
               {formatGbp(product.compare_at_price_pence)}
             </span>
           ) : null}
@@ -91,19 +109,21 @@ export default function ProductCard({ product, href, onAdd, inBasketQty = 0 }) {
         body
       )}
       <div className="ws-product-add">
-        {onAdd ? (
-          <button
-            type="button"
-            className="ws-btn ws-btn--primary"
-            onClick={onAdd}
-            disabled={out}
-          >
-            {out
-              ? "Enquire"
-              : inBasketQty > 0
-              ? `In basket (${inBasketQty})`
-              : "Add to basket"}
+        {onAdd && !out ? (
+          <button type="button" className="ws-btn ws-btn--primary" onClick={onAdd}>
+            {inBasketQty > 0 ? `Add another (${inBasketQty} in basket)` : "Add to basket"}
           </button>
+        ) : onAdd && out ? (
+          // Nothing on the shelf: the product page offers the phone order.
+          href ? (
+            <Link href={href} className="ws-btn ws-btn--ghost">
+              Enquire
+            </Link>
+          ) : (
+            <button type="button" className="ws-btn ws-btn--ghost" disabled>
+              Enquire
+            </button>
+          )
         ) : (
           <Link href={href || "/website/parts-catalog"} className="ws-btn ws-btn--ghost">
             View part

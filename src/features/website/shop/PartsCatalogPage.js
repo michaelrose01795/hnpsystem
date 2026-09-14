@@ -2,11 +2,14 @@
 //
 // /website/parts-catalog — the real shop.
 //
-// Unlike the #shop teaser on /website (8 hard-coded mock tiles), every row
+// Unlike the #shop teaser on /website (hard-coded mock tiles), every row
 // here comes from the staff DMS Stock Catalogue: public.parts_catalog, read
-// through /api/shop/parts-catalog. Search, category and sort live in the URL
-// query so a filtered catalogue can be linked, shared and reloaded, and so
-// the browser Back button steps through filters the way customers expect.
+// through /api/shop/parts-catalog. Every filter — search, category, vehicle
+// (make / model), availability, price and sort — lives in the URL query so a
+// filtered catalogue can be linked, shared and reloaded, and so the browser
+// Back button steps through filters the way customers expect. The #shop
+// teaser's vehicle finder and search hand over by linking here with the same
+// query keys.
 //
 // Clicking a tile opens /website/parts-catalog/[partId], where the part can
 // also be added to the basket.
@@ -18,19 +21,18 @@ import ShopShell from "./ShopShell";
 import ProductCard from "./ProductCard";
 import CartDrawer from "./CartDrawer";
 import BasketAccountNotice from "./BasketAccountNotice";
+import BasketSummary from "./BasketSummary";
+import VehicleFinder from "./VehicleFinder";
+import ShopFilters from "./ShopFilters";
+import ShopServiceInfo from "./ShopServiceInfo";
 import useShopCart from "../hooks/useShopCart";
 import usePartsCatalog from "../hooks/usePartsCatalog";
-import WebsiteNativeSelect from "../components/WebsiteNativeSelect";
 import { siteContent } from "../data/siteContent";
 
-const SORT_OPTIONS = [
-  { value: "name", label: "Name (A–Z)" },
-  { value: "price_asc", label: "Price (low to high)" },
-  { value: "price_desc", label: "Price (high to low)" },
-  { value: "newest", label: "Recently added" },
-];
-
 const SEARCH_DEBOUNCE_MS = 300;
+
+// Every filter key this page owns in the URL; "Clear filters" empties them.
+const FILTER_KEYS = ["search", "category", "make", "model", "stock", "price"];
 
 const queryString = (value) => (Array.isArray(value) ? value[0] : value) || "";
 
@@ -44,6 +46,10 @@ export default function PartsCatalogPage() {
   // once the customer pauses.
   const search = queryString(router.query.search);
   const category = queryString(router.query.category);
+  const make = queryString(router.query.make);
+  const model = queryString(router.query.model);
+  const stock = queryString(router.query.stock);
+  const price = queryString(router.query.price);
   const sort = queryString(router.query.sort) || "name";
   const [searchDraft, setSearchDraft] = useState(search);
 
@@ -74,30 +80,15 @@ export default function PartsCatalogPage() {
   }, [searchDraft, search, setQuery]);
 
   const { items, categories, total, loading, loadingMore, error, hasMore, loadMore } =
-    usePartsCatalog({ search, category, sort });
+    usePartsCatalog({ search, category, sort, make, model, stock, price });
 
   const activeCategoryName = useMemo(
     () => categories.find((c) => c.id === category)?.name || null,
     [categories, category]
   );
 
-  // The category list is a dropdown rather than a row of chips: the stock
-  // catalogue carries dozens of categories, which wrapped into several
-  // lines of pills and pushed the products themselves below the fold.
-  // Counts ride along as the option hint, which only the open menu shows.
-  const categoryOptions = useMemo(
-    () => [
-      { value: "", label: "All parts" },
-      ...categories.map((c) => ({
-        value: c.id,
-        label: c.name,
-        hint: String(c.count),
-      })),
-    ],
-    [categories]
-  );
-
-  const hasFilters = Boolean(search || category);
+  const vehicleName = [make, model].filter(Boolean).join(" ");
+  const hasFilters = FILTER_KEYS.some((key) => queryString(router.query[key]));
   const pageTitle = `Parts & Accessories - ${siteContent.brand.name}`;
 
   return (
@@ -109,67 +100,34 @@ export default function PartsCatalogPage() {
           content="Genuine Suzuki and Mitsubishi parts and accessories from Humphries & Parks, West Malling. Search the full catalogue and order online."
         />
       </Head>
+      {/* No navActions: the basket is the summary below, and the top bar keeps
+          its plain Basket link. */}
       <ShopShell
         eyebrow="Parts & Accessories"
         title="The full parts catalogue"
-        lead="Genuine factory parts and accessories, straight from our stock catalogue. Search by part number, name or OE reference."
-        navActions={
-          <button
-            type="button"
-            className="ws-shop-cartbutton"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Basket"
-          >
-            <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
-            <span className="ws-shop-cartbutton-count">{cart.totals.count}</span>
-          </button>
-        }
+        lead="Genuine factory parts and accessories, straight from our stock catalogue. Find parts for your vehicle, or search by part number, name or OE reference."
       >
         <BasketAccountNotice cart={cart} />
 
-        <div className="ws-catalog-controls" data-presentation="website-catalog-controls">
-          <div className="ws-catalog-search">
-            <label className="ws-sr-only" htmlFor="ws-catalog-search-input">
-              Search parts
-            </label>
-            <input
-              id="ws-catalog-search-input"
-              type="search"
-              value={searchDraft}
-              onChange={(e) => setSearchDraft(e.target.value)}
-              placeholder="Search part number, name or OE reference"
-              autoComplete="off"
-            />
-          </div>
-          <div className="ws-catalog-category">
-            <label className="ws-sr-only" htmlFor="ws-catalog-category-select">
-              Category
-            </label>
-            <WebsiteNativeSelect
-              id="ws-catalog-category-select"
-              value={category}
-              onChange={(value) => setQuery({ category: value })}
-              options={categoryOptions}
-              placeholder=""
-              disabled={categories.length === 0}
-            />
-          </div>
-          <div className="ws-catalog-sort">
-            <label className="ws-sr-only" htmlFor="ws-catalog-sort-select">
-              Sort by
-            </label>
-            {/* The customer site's own select control (custglobal.css), not
-                the staff DropdownField — /website is a separate design
-                system and must never pull in staff chrome. */}
-            <WebsiteNativeSelect
-              id="ws-catalog-sort-select"
-              value={sort}
-              onChange={(value) => setQuery({ sort: value })}
-              options={SORT_OPTIONS}
-              placeholder=""
-            />
+        <div className="ws-shop-front">
+          <VehicleFinder
+            idPrefix="ws-catalog-finder"
+            vehicle={{ make, model }}
+            onApply={(vehicle) => setQuery({ make: vehicle.make, model: vehicle.model })}
+            onClear={() => setQuery({ make: "", model: "" })}
+          />
+          <div className="ws-shop-side">
+            <BasketSummary cart={cart} onOpen={() => setDrawerOpen(true)} />
           </div>
         </div>
+
+        <ShopFilters
+          filters={{ category, make, stock, price, sort }}
+          searchDraft={searchDraft}
+          onSearchDraft={setSearchDraft}
+          onChange={setQuery}
+          categories={categories}
+        />
 
         <div className="ws-catalog-summary">
           <span className="ws-muted">
@@ -177,13 +135,13 @@ export default function PartsCatalogPage() {
               ? "Searching the catalogue…"
               : `${total} ${total === 1 ? "part" : "parts"}${
                   activeCategoryName ? ` in ${activeCategoryName}` : ""
-                }${search ? ` matching “${search}”` : ""}`}
+                }${vehicleName ? ` for ${vehicleName}` : ""}${search ? ` matching “${search}”` : ""}`}
           </span>
           {hasFilters ? (
             <button
               type="button"
               className="ws-catalog-clear"
-              onClick={() => setQuery({ search: "", category: "" })}
+              onClick={() => setQuery(Object.fromEntries(FILTER_KEYS.map((key) => [key, ""])))}
             >
               Clear filters
             </button>
@@ -207,7 +165,7 @@ export default function PartsCatalogPage() {
           <div className="ws-catalog-empty">
             <p>
               {hasFilters
-                ? "No parts match that search."
+                ? "No parts match those filters."
                 : "The catalogue is being stocked. Check back shortly."}
             </p>
             <p className="ws-muted">
@@ -248,6 +206,8 @@ export default function PartsCatalogPage() {
             </button>
           </div>
         ) : null}
+
+        <ShopServiceInfo />
 
         <CartDrawer
           open={drawerOpen}

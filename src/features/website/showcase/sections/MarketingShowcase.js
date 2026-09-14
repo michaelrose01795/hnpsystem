@@ -10,8 +10,23 @@
 
 import BrandLogo from "@/components/BrandLogo";
 import VehicleCard from "@/features/website/components/VehicleCard";
-import { brands } from "@/features/website/data/brands";
+import { OfferCard } from "@/features/website/components/OffersSection";
+import { offers } from "@/features/website/data/offers";
+import BenefitCards from "@/features/website/components/BenefitCards";
+import SellValuationPanel from "@/features/website/components/SellValuationPanel";
+import WorkshopBookingPanel from "@/features/website/components/WorkshopBookingPanel";
+import MotabilityModelCard from "@/features/website/components/MotabilityModelCard";
+import WebsiteIcon from "@/features/website/components/WebsiteIcon";
 import { vehicles } from "@/features/website/data/vehicles";
+import { siteContent } from "@/features/website/data/siteContent";
+import { team } from "@/features/website/data/team";
+import { timeline } from "@/features/website/data/timeline";
+import { brands } from "@/features/website/data/brands";
+import { FEATURED_REVIEW_LIMIT, reviews, reviewTopics } from "@/features/website/data/reviews";
+import HistoryTimeline from "@/features/website/components/HistoryTimeline";
+import ReviewsPanel from "@/features/website/components/ReviewsPanel";
+import VisitCta from "@/features/website/components/VisitCta";
+import WebsiteFooter from "@/features/website/components/WebsiteFooter";
 import { Frame, Row, ShowcaseSection } from "../ShowcasePrimitives";
 
 const PHOTO = vehicles.find((vehicle) => vehicle.image)?.image || null;
@@ -21,18 +36,6 @@ const HOURS = [
   ["Saturday", "9:00am – 1:00pm"],
   ["Sunday", "Closed"],
 ];
-
-function Stars({ rating }) {
-  return (
-    <span className="ws-stars" aria-label={`${rating} out of 5`}>
-      {Array.from({ length: 5 }, (_, index) => (
-        <span key={index} className={index < rating ? "ws-star ws-star--on" : "ws-star"}>
-          ★
-        </span>
-      ))}
-    </span>
-  );
-}
 
 function HoursTable({ caption }) {
   return (
@@ -61,37 +64,64 @@ export default function MarketingShowcase({ section }) {
         <div className="website-dev-stack">
           <Frame>
             <div className="ws-page">
-              <header className="ws-nav">
+              <header className="ws-nav ws-nav--grouped">
                 <div className="ws-nav-inner">
                   <a href="#marketing" className="ws-brand">
                     <BrandLogo className="ws-logo" alt="Humphries and Parks" />
                   </a>
+                  {/* Mirrors WebsiteNavGroup: an open group holding the active
+                      link, and a closed one. */}
                   <nav className="ws-nav-links" aria-label="Showcase primary">
-                    <a href="#marketing" className="ws-nav-link ws-nav-link--active">
+                    <a href="#marketing" className="ws-nav-link">
                       Home
                     </a>
-                    <a href="#stock" className="ws-nav-link">
-                      Cars
-                    </a>
-                    <a href="#parts" className="ws-nav-link">
-                      Parts
-                    </a>
+                    <div className="ws-nav-group ws-nav-group--open">
+                      <button type="button" className="ws-nav-group-trigger ws-nav-group-trigger--active" aria-expanded="true">
+                        Buy a car
+                        <WebsiteIcon name="chevron" className="ws-nav-caret" />
+                      </button>
+                      <div className="ws-nav-menu" role="group" aria-label="Buy a car">
+                        <a href="#stock" className="ws-nav-link ws-nav-link--active" aria-current="location">
+                          Our Cars
+                        </a>
+                        <a href="#marketing" className="ws-nav-link">
+                          Offers
+                        </a>
+                        <a href="#marketing" className="ws-nav-link">
+                          Motability
+                        </a>
+                      </div>
+                    </div>
                     <a href="#valuation" className="ws-nav-link">
                       Sell your car
                     </a>
+                    <div className="ws-nav-group">
+                      <button type="button" className="ws-nav-group-trigger" aria-expanded="false">
+                        About us
+                        <WebsiteIcon name="chevron" className="ws-nav-caret" />
+                      </button>
+                      <div className="ws-nav-menu" role="group" aria-label="About us">
+                        <a href="#marketing" className="ws-nav-link">
+                          Reviews
+                        </a>
+                      </div>
+                    </div>
                   </nav>
                   <button type="button" className="ws-nav-toggle">
                     Menu
                   </button>
                   <div className="ws-nav-actions">
-                    <button type="button" className="ws-nav-account ws-nav-dev">
-                      Dev
-                    </button>
-                    <button type="button" className="ws-nav-account ws-nav-dev ws-nav-dev--on" aria-pressed="true">
-                      Overlay
-                    </button>
-                    <a href="tel:01732870711" className="ws-nav-phone">
-                      01732 870711
+                    <span className="ws-nav-dev-group">
+                      <button type="button" className="ws-nav-account ws-nav-dev">
+                        Dev
+                      </button>
+                      <button type="button" className="ws-nav-account ws-nav-dev ws-nav-dev--on" aria-pressed="true">
+                        Overlay
+                      </button>
+                    </span>
+                    <a href="tel:01732870711" className="ws-nav-phone" aria-label="Call us on 01732 870711">
+                      <WebsiteIcon name="phone" className="ws-nav-phone-icon" />
+                      <span className="ws-nav-phone-number">01732 870711</span>
                     </a>
                     <a href="#auth" className="ws-nav-account ws-nav-account--profile">
                       Account
@@ -108,19 +138,22 @@ export default function MarketingShowcase({ section }) {
                   <a href="#shop" className="ws-brand">
                     <BrandLogo className="ws-logo" alt="Humphries and Parks" />
                   </a>
-                  <nav className="ws-nav-links" aria-label="Showcase shop">
-                    <a href="#parts" className="ws-nav-link ws-nav-link--active">
-                      Parts catalogue
-                    </a>
-                    <a href="#shop" className="ws-nav-link">
-                      Accessories
-                    </a>
+                  <nav className="ws-nav-links ws-nav-links--balanced ws-nav-links--even" aria-label="Showcase shop">
+                    <div className="ws-nav-links__side ws-nav-links__side--start">
+                      <a href="#parts" className="ws-nav-link ws-nav-link--active">
+                        Parts catalogue
+                      </a>
+                    </div>
+                    <div className="ws-nav-links__side ws-nav-links__side--end">
+                      <a href="#shop" className="ws-nav-link">
+                        Accessories
+                      </a>
+                    </div>
                   </nav>
                   <div className="ws-nav-actions">
-                    <button type="button" className="ws-shop-cartbutton" aria-label="Basket">
-                      <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
-                      <span className="ws-shop-cartbutton-count">2</span>
-                    </button>
+                    <a href="#shop" className="ws-nav-link">
+                      Basket
+                    </a>
                     <a href="#auth" className="ws-nav-account">
                       Sign in
                     </a>
@@ -144,6 +177,21 @@ export default function MarketingShowcase({ section }) {
                   <a href="#stock" className="ws-nav-link">
                     Cars
                   </a>
+                  {/* In the open panel a group opens inline, as an accordion. */}
+                  <div className="ws-nav-group ws-nav-group--open">
+                    <button type="button" className="ws-nav-group-trigger" aria-expanded="true">
+                      About us
+                      <WebsiteIcon name="chevron" className="ws-nav-caret" />
+                    </button>
+                    <div className="ws-nav-menu" role="group" aria-label="About us (menu)">
+                      <a href="#marketing" className="ws-nav-link">
+                        Reviews
+                      </a>
+                      <a href="#marketing" className="ws-nav-link">
+                        Meet the Team
+                      </a>
+                    </div>
+                  </div>
                   <div className="ws-nav-menu-extras">
                     <a href="tel:01732870711" className="ws-nav-phone">
                       Call us
@@ -203,38 +251,134 @@ export default function MarketingShowcase({ section }) {
           <div className="ws-page">
             <section className="ws-hero">
               <div className="ws-container ws-hero-inner">
-                <div>
-                  <span className="ws-eyebrow">Since 1947</span>
-                  <h3 className="ws-h1">Family-run Suzuki and Mitsubishi dealer</h3>
-                  <p className="ws-lead">New and used cars, servicing, MOTs and genuine parts in Kent.</p>
-                  <div className="ws-hero-ctas">
-                    <a href="#stock" className="ws-btn ws-btn--primary">
-                      Browse cars
-                    </a>
-                    <a href="#contact" className="ws-btn ws-btn--ghost">
-                      Book a service
-                    </a>
+                <div className="ws-hero-copy">
+                  <div className="ws-hero-intro">
+                    <span className="ws-eyebrow">Suzuki &amp; Mitsubishi · West Malling, Kent</span>
+                    <h3 className="ws-h1">Family-run in Kent since 1947</h3>
+                    <p className="ws-lead">New and used cars, servicing, MOTs and fair valuations.</p>
+                    <div className="ws-hero-ctas">
+                      <a href="#stock" className="ws-btn ws-btn--primary">
+                        Browse cars
+                      </a>
+                      <a href="#contact" className="ws-btn ws-btn--ghost">
+                        Book a service
+                      </a>
+                    </div>
+                  </div>
+                  {/* Mirrors QuickActions: three large choices over the panel. */}
+                  <div className="ws-quick">
+                    <div className="ws-quick-choices" role="tablist" aria-label="Showcase customer actions">
+                      <button type="button" role="tab" aria-selected="true" className="ws-quick-choice ws-quick-choice--active">
+                        <span className="ws-icon-badge">
+                          <WebsiteIcon name="search" />
+                        </span>
+                        <span className="ws-quick-choice-text">
+                          <span className="ws-quick-choice-label">Find a car</span>
+                          <span className="ws-quick-choice-hint">New &amp; used stock</span>
+                        </span>
+                      </button>
+                      <button type="button" role="tab" aria-selected="false" className="ws-quick-choice">
+                        <span className="ws-icon-badge">
+                          <WebsiteIcon name="wrench" />
+                        </span>
+                        <span className="ws-quick-choice-text">
+                          <span className="ws-quick-choice-label">Book workshop</span>
+                          <span className="ws-quick-choice-hint">Service, MOT &amp; repairs</span>
+                        </span>
+                      </button>
+                      <button type="button" role="tab" aria-selected="false" className="ws-quick-choice">
+                        <span className="ws-icon-badge">
+                          <WebsiteIcon name="pound" />
+                        </span>
+                        <span className="ws-quick-choice-text">
+                          <span className="ws-quick-choice-label">Value my car</span>
+                          <span className="ws-quick-choice-hint">Free instant estimate</span>
+                        </span>
+                      </button>
+                    </div>
+                    <div className="ws-card ws-panel ws-quick-panel">
+                      <div className="ws-quick-view-head">
+                        <h4 className="ws-quick-view-title">Search our stock</h4>
+                        <p className="ws-quick-view-lead">40 new and used cars ready to view in West Malling.</p>
+                      </div>
+                      <form className="ws-quick-form" onSubmit={(e) => e.preventDefault()}>
+                        <div className="ws-quick-fields">
+                          <label className="ws-stock-field">
+                            <span className="ws-stock-label">Condition</span>
+                            <input type="text" placeholder="New &amp; used" readOnly />
+                          </label>
+                          <label className="ws-stock-field">
+                            <span className="ws-stock-label">Make</span>
+                            <input type="text" placeholder="Any make" readOnly />
+                          </label>
+                          <label className="ws-stock-field">
+                            <span className="ws-stock-label">Model</span>
+                            <input type="text" placeholder="Any model" readOnly />
+                          </label>
+                          <label className="ws-stock-field">
+                            <span className="ws-stock-label">Price</span>
+                            <input type="text" placeholder="Any price" readOnly />
+                          </label>
+                        </div>
+                        <button type="submit" className="ws-btn ws-btn--primary">Search cars</button>
+                      </form>
+                    </div>
                   </div>
                 </div>
                 {PHOTO ? (
                   <div className="ws-hero-media">
                     <img src={PHOTO} alt="Forecourt" />
+                    <div className="ws-hero-proof">
+                      <a href="#marketing" className="ws-hero-proof-item">
+                        <span className="ws-icon-badge">
+                          <WebsiteIcon name="star" />
+                        </span>
+                        <span className="ws-hero-proof-text">
+                          <span className="ws-hero-proof-title">5.0</span>
+                          <span className="ws-hero-proof-note">97 verified reviews</span>
+                        </span>
+                      </a>
+                      <a href="#marketing" className="ws-hero-proof-item">
+                        <span className="ws-icon-badge">
+                          <WebsiteIcon name="pin" />
+                        </span>
+                        <span className="ws-hero-proof-text">
+                          <span className="ws-hero-proof-title">West Malling, Kent</span>
+                          <span className="ws-hero-proof-note">120 London Road · Open Mon–Sat</span>
+                        </span>
+                      </a>
+                    </div>
                   </div>
                 ) : null}
               </div>
               <div className="ws-container">
                 <ul className="ws-trust">
                   <li className="ws-trust-item">
-                    <span className="ws-trust-value">4.9</span>
-                    <span className="ws-trust-label">Google rating</span>
+                    <span className="ws-icon-badge">
+                      <WebsiteIcon name="family" />
+                    </span>
+                    <span className="ws-trust-text">
+                      <span className="ws-trust-value">Since 1947</span>
+                      <span className="ws-trust-label">Family-run in Kent</span>
+                    </span>
                   </li>
                   <li className="ws-trust-item">
-                    <span className="ws-trust-value">75+</span>
-                    <span className="ws-trust-label">Years trading</span>
+                    <span className="ws-icon-badge">
+                      <WebsiteIcon name="inspect" />
+                    </span>
+                    <span className="ws-trust-text">
+                      <span className="ws-trust-value">120-point</span>
+                      <span className="ws-trust-label">Inspection on every car</span>
+                    </span>
                   </li>
                   <li className="ws-trust-item">
-                    <span className="ws-trust-value">120</span>
-                    <span className="ws-trust-label">Cars in stock</span>
+                    <span className="ws-icon-badge">
+                      <WebsiteIcon name="award" />
+                    </span>
+                    <span className="ws-trust-text">
+                      <span className="ws-trust-value">Award-winning</span>
+                      <span className="ws-trust-label">AutoTrader Retailer Awards</span>
+                    </span>
                   </li>
                 </ul>
               </div>
@@ -267,41 +411,56 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Brand strip" hint="with quick actions" size="wide">
+      <Row label="Quick actions" hint="value my car result" size="wide">
         <Frame>
           <div className="ws-page">
             <section className="ws-section">
-              <div className="ws-container ws-quick">
-                <div className="ws-card ws-panel ws-quick-panel">
-                  <div className="ws-tabs ws-quick-tabs" role="tablist" aria-label="Quick actions">
-                    <button type="button" role="tab" aria-selected="false" className="ws-tab">Find a car</button>
-                    <button type="button" role="tab" aria-selected="false" className="ws-tab">Book workshop</button>
-                    <button type="button" role="tab" aria-selected="true" className="ws-tab ws-tab--active">Value my car</button>
-                  </div>
-                  <form className="ws-quick-form" onSubmit={(e) => e.preventDefault()}>
-                    <div className="ws-quick-fields">
-                      <label className="ws-stock-field">
-                        <span className="ws-stock-label">Registration</span>
-                        <input type="text" className="ws-val-reg" placeholder="AB12 CDE" readOnly />
-                      </label>
-                    </div>
-                    <div className="ws-quick-result">
-                      <span className="ws-val-plate">AB12 CDE</span>
-                      <p className="ws-quick-result-range">£6,200 – £7,300</p>
-                      <p className="ws-muted">A rough guide. Answer a few more questions for a better figure.</p>
-                    </div>
-                    <a href="#top" className="ws-btn ws-btn--ghost">Improve my estimate</a>
-                  </form>
+              <div className="ws-container">
+                {/* The hero trust card as it sits when the hero has no photo. */}
+                <div className="ws-hero-proof ws-hero-proof--inline">
+                  <a href="#marketing" className="ws-hero-proof-item">
+                    <span className="ws-icon-badge">
+                      <WebsiteIcon name="pin" />
+                    </span>
+                    <span className="ws-hero-proof-text">
+                      <span className="ws-hero-proof-title">West Malling, Kent</span>
+                      <span className="ws-hero-proof-note">Trust card without a photo</span>
+                    </span>
+                  </a>
                 </div>
-                <div className="ws-brands-inner">
-                  <span className="ws-brands-label">Authorised retailer for</span>
-                  <ul className="ws-brands-list">
-                    {brands.map((brand) => (
-                      <li key={brand.name}>
-                        <img src={brand.logo} alt={brand.name} loading="lazy" />
-                      </li>
-                    ))}
-                  </ul>
+                <div className="ws-card ws-panel ws-quick-panel">
+                  <div className="ws-quick-views">
+                    <div className="ws-quick-view" data-active="false" inert>
+                      <div className="ws-quick-view-head">
+                        <h4 className="ws-quick-view-title">What is my car worth?</h4>
+                        <p className="ws-quick-view-lead">Enter your registration for a free rough estimate.</p>
+                      </div>
+                      <form className="ws-quick-form" onSubmit={(e) => e.preventDefault()}>
+                        <label className="ws-stock-field">
+                          <span className="ws-stock-label">Registration</span>
+                          <input type="text" className="ws-reg-input" placeholder="AB12 CDE" readOnly />
+                        </label>
+                        <label className="ws-stock-field">
+                          <span className="ws-stock-label">Mileage</span>
+                          <input type="text" inputMode="numeric" placeholder="e.g. 45,000" readOnly />
+                        </label>
+                        <button type="submit" className="ws-btn ws-btn--primary">Get estimate</button>
+                      </form>
+                    </div>
+                    <div className="ws-quick-view" data-active="true">
+                      <div className="ws-quick-result">
+                        <div className="ws-quick-result-head">
+                          <span className="ws-val-plate">AB12 CDE</span>
+                          <p className="ws-quick-result-range">£6,200 – £7,300</p>
+                        </div>
+                        <p className="ws-muted">A rough guide for a 2019 Suzuki in good condition with 45,000 miles.</p>
+                        <div className="ws-quick-actions">
+                          <a href="#top" className="ws-btn ws-btn--ghost">Improve my estimate</a>
+                          <button type="button">Value another car</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -314,17 +473,9 @@ export default function MarketingShowcase({ section }) {
           <div className="ws-page">
             <div className="ws-grid ws-grid--cards">
               {staticVehicle ? <VehicleCard vehicle={{ ...staticVehicle, href: null, badge: "Reduced" }} /> : null}
-              <article className="ws-card">
-                <div className="ws-offer-media">
-                  {PHOTO ? <img src={PHOTO} alt="Offer" /> : null}
-                  <span className="ws-badge">Offer</span>
-                </div>
-                <div className="ws-card-body">
-                  <span className="ws-eyebrow">Servicing</span>
-                  <h3 className="ws-card-title">Fixed-price service plans</h3>
-                  <p className="ws-muted">Spread the cost with a monthly plan.</p>
-                </div>
-              </article>
+              {/* The real offer card: photo + badge, manufacturer, title,
+                  headline figure, copy, expiry and View offer. */}
+              {offers[0] ? <OfferCard offer={offers[0]} /> : null}
               <article className="ws-card">
                 <div className="ws-blog-media">{PHOTO ? <img src={PHOTO} alt="Blog" /> : null}</div>
                 <div className="ws-card-body">
@@ -337,108 +488,192 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Steps & sell panel" size="md">
+      <Row label="Tick list" hint=".ws-ticks" size="md">
         <Frame padded>
           <div className="ws-page">
-            <div className="ws-grid ws-grid--steps">
-              {["Tell us about it", "Get a valuation", "Get paid"].map((title, index) => (
-                <article key={title} className="ws-card ws-step">
-                  <span className="ws-step-n">{`0${index + 1}`}</span>
-                  <h3 className="ws-card-title">{title}</h3>
-                  <p className="ws-muted">One short line.</p>
-                </article>
-              ))}
-            </div>
-            <div className="ws-card ws-panel ws-sell-panel">
+            <div className="ws-card ws-panel">
               <ul className="ws-ticks">
                 <li>Same-day payment</li>
                 <li>No admin fees</li>
               </ul>
-              <a href="#valuation" className="ws-btn ws-btn--primary">
-                Value my car
-              </a>
             </div>
           </div>
         </Frame>
       </Row>
 
-      <Row label="Split & range" size="md">
+      <Row label="Sell Your Car" hint="compact steps · valuation lead form · compact benefits" size="wide">
+        <Frame padded>
+          <div className="ws-page">
+            <div className="ws-sell-layout">
+              <div className="ws-sell-intro">
+                <header className="ws-head">
+                  <span className="ws-eyebrow">Sell Your Car</span>
+                  <h3 className="ws-h2">Sell to us in three simple steps</h3>
+                </header>
+                <ol className="ws-steps-compact">
+                  {(siteContent.sellYourCar.steps || []).map((s) => (
+                    <li key={s.n} className="ws-step-compact">
+                      <span className="ws-step-compact-n" aria-hidden="true">
+                        {s.n}
+                      </span>
+                      <div>
+                        <h4 className="ws-card-title">{s.title}</h4>
+                        <p className="ws-muted">{s.body}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <SellValuationPanel />
+            </div>
+            <div className="ws-section-block">
+              <BenefitCards items={siteContent.sellYourCar.benefitCards} compact headingLevel={4} />
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Service & Parts" hint="action cards · booking panel · highlights" size="wide">
+        <Frame padded>
+          <div className="ws-page">
+            <div className="ws-service-layout">
+              <BenefitCards
+                headingLevel={4}
+                items={(siteContent.serviceAndParts.services || []).map((s) => ({ ...s, href: s.href || "#marketing" }))}
+              />
+              <WorkshopBookingPanel services={siteContent.serviceAndParts.services} body="Tell us what you need.">
+                <HoursTable caption="Service hours" />
+              </WorkshopBookingPanel>
+            </div>
+            <div className="ws-section-block ws-service-highlights">
+              <div className="ws-split-media">{PHOTO ? <img src={PHOTO} alt="Workshop" /> : null}</div>
+              <BenefitCards items={siteContent.serviceAndParts.highlights} compact headingLevel={4} />
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Motability" hint="vehicle cards · fallback media · specialist panel" size="wide">
+        <Frame padded>
+          <div className="ws-page">
+            <div className="ws-grid ws-grid--models">
+              {(siteContent.motability.models || []).slice(0, 3).map((m) => (
+                <MotabilityModelCard key={m.id} model={m} />
+              ))}
+              <MotabilityModelCard
+                model={{ brand: "Suzuki", model: "No photo yet", powertrain: "Hybrid", automatic: "Automatic available", advancePayment: "£0" }}
+              />
+            </div>
+            <div className="ws-section-block ws-card ws-panel ws-specialist">
+              <ul className="ws-specialist-photos" aria-label="Showcase team">
+                {team
+                  .filter((m) => m.photo)
+                  .slice(0, 4)
+                  .map((m) => (
+                    <li key={m.id} className="ws-specialist-photo">
+                      <img src={m.photo} alt={m.name} />
+                    </li>
+                  ))}
+              </ul>
+              <div className="ws-specialist-copy">
+                <span className="ws-eyebrow">Motability specialists</span>
+                <h4 className="ws-h3">Talk it through with a specialist</h4>
+                <p className="ws-muted">.ws-specialist pairs team imagery with the call to action.</p>
+                <p className="ws-price-line">From £299 per month</p>
+                <div className="ws-specialist-actions">
+                  <a href="#marketing" className="ws-btn ws-btn--primary">
+                    <WebsiteIcon name="phone" />
+                    Speak to a specialist
+                  </a>
+                  <a href="#marketing" className="ws-btn ws-btn--ghost">
+                    Visit the showroom
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Split, hours & chips" size="md">
         <Frame padded>
           <div className="ws-page">
             <div className="ws-split">
               <div className="ws-split-media">{PHOTO ? <img src={PHOTO} alt="Workshop" /> : null}</div>
-              <div className="ws-split-text">
+              <div className="ws-card ws-panel ws-split-text">
                 <span className="ws-eyebrow">About us</span>
                 <h3 className="ws-h2">Four generations</h3>
                 <p className="ws-muted">The first paragraph gets extra top spacing.</p>
-                <p className="ws-muted">Later paragraphs keep the rhythm.</p>
-              </div>
-            </div>
-            <div className="ws-split ws-split--reverse">
-              <div className="ws-split-text">
-                <span className="ws-eyebrow">Motability</span>
-                <h3 className="ws-h2">Worry-free motoring</h3>
-                <p className="ws-price-line">From £0 advance payment</p>
-              </div>
-              <div className="ws-split-side">
-                <div className="ws-card ws-range">
-                  <h3 className="ws-card-title">Suzuki</h3>
-                  <ul className="ws-chips">
-                    <li className="ws-chip">Swift</li>
-                    <li className="ws-chip">Vitara</li>
-                  </ul>
-                </div>
+                <HoursTable caption="Service hours" />
+                <ul className="ws-chips">
+                  <li className="ws-chip">Swift</li>
+                  <li className="ws-chip">Vitara</li>
+                </ul>
               </div>
             </div>
           </div>
         </Frame>
       </Row>
 
-      <Row label="Timeline" size="md">
+      <Row label="About" hint=".ws-about · compact BenefitCards beside the team photo" size="wide">
         <Frame padded>
           <div className="ws-page">
-            <ol className="ws-timeline">
-              {[
-                ["1947", "First forecourt"],
-                ["1985", "Suzuki franchise"],
-                ["2020", "Mitsubishi joins"],
-              ].map(([year, title]) => (
-                <li key={year} className="ws-card ws-milestone">
-                  <span className="ws-milestone-year">{year}</span>
-                  <h4 className="ws-card-title">{title}</h4>
-                  <p className="ws-muted">A line of history.</p>
-                </li>
-              ))}
-            </ol>
+            <div className="ws-split ws-about">
+              <div className="ws-card ws-panel ws-split-text ws-about-copy">
+                <header className="ws-head">
+                  <span className="ws-eyebrow">{siteContent.about.eyebrow}</span>
+                  <h3 className="ws-h2">{siteContent.about.title}</h3>
+                </header>
+                <p className="ws-muted">{siteContent.about.body[0]}</p>
+                <BenefitCards items={siteContent.about.highlights} compact />
+              </div>
+              <div className="ws-split-media">
+                {siteContent.about.imageUrl ? <img src={siteContent.about.imageUrl} alt="The team" /> : null}
+              </div>
+            </div>
           </div>
         </Frame>
       </Row>
 
-      <Row label="Reviews" size="md">
+      <Row label="Timeline" hint="HistoryTimeline · rail on desktop, vertical on a phone" size="wide">
         <Frame padded>
           <div className="ws-page">
-            <ul className="ws-ratings">
-              <li className="ws-rating">
-                <span className="ws-rating-score">4.9</span>
-                <Stars rating={5} />
-                <span className="ws-muted">Google</span>
-              </li>
-              <li className="ws-rating">
-                <span className="ws-rating-score">4.7</span>
-                <Stars rating={4} />
-                <span className="ws-muted">AutoTrader</span>
-              </li>
-            </ul>
-            <div className="ws-grid ws-grid--reviews">
-              <article className="ws-card ws-review">
-                <Stars rating={5} />
-                <p className="ws-review-quote">“Friendly, honest and the car was spotless.”</p>
-                <div className="ws-review-meta">
-                  <span className="ws-review-name">Sarah K.</span>
-                  <span className="ws-muted">Swift Hybrid · Google</span>
-                </div>
-              </article>
+            <HistoryTimeline
+              milestones={[
+                ...timeline.slice(0, 1).map((t) => ({ ...t, image: PHOTO, imageAlt: "Period photograph" })),
+                ...timeline.slice(1),
+              ]}
+            />
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Reviews" hint="ReviewsPanel · overall + platforms · filters · carousel" size="wide">
+        <Frame padded>
+          <div className="ws-page">
+            <ReviewsPanel
+              ratings={siteContent.ratings}
+              reviews={reviews}
+              topics={reviewTopics}
+              team={team}
+              reviewCta={siteContent.reviewCta}
+              featuredLimit={FEATURED_REVIEW_LIMIT}
+            />
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Our promise & visit CTA" hint=".ws-promise · VisitCta" size="wide">
+        <Frame padded>
+          <div className="ws-page">
+            <div className="ws-promise">
+              <div className="ws-promise-head">
+                <span className="ws-eyebrow">{siteContent.promise.eyebrow}</span>
+                <h3 className="ws-h3">{siteContent.promise.title}</h3>
+              </div>
+              <BenefitCards items={siteContent.promise.items} headingLevel={4} />
             </div>
+            <VisitCta visit={siteContent.contact.visit} />
           </div>
         </Frame>
       </Row>
@@ -446,6 +681,7 @@ export default function MarketingShowcase({ section }) {
       <Row label="Team" size="md">
         <Frame padded>
           <div className="ws-page">
+            <div className="ws-team-groups">
             <div className="ws-team-group">
               <h3 className="ws-h3">Sales</h3>
               <div className="ws-grid ws-grid--team">
@@ -460,30 +696,73 @@ export default function MarketingShowcase({ section }) {
                 ))}
               </div>
             </div>
+            </div>
           </div>
         </Frame>
       </Row>
 
-      <Row label="Footer" size="md">
+      <Row label="Info cards & page layout" hint=".ws-page-split · .ws-grid--info · .ws-info-list · .ws-jump-links" size="wide">
+        <Frame padded>
+          <div className="ws-page">
+            <div className="ws-page-split">
+              <div className="ws-page-main">
+                <div className="ws-card ws-panel ws-info-card">
+                  <h3 className="ws-card-title">At a glance</h3>
+                  <dl className="ws-info-list">
+                    {[
+                      ["Data controller", "Humphries & Parks Limited"],
+                      ["Do we sell your data?", "Never"],
+                      ["Rights requests", "Answered within one month"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="ws-info-item">
+                        <dt className="ws-info-label">{label}</dt>
+                        <dd className="ws-info-value">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+                <div className="ws-grid ws-grid--info">
+                  {["Who we are", "Information we collect"].map((title) => (
+                    <section key={title} className="ws-card ws-panel ws-info-card">
+                      <h3 className="ws-card-title">{title}</h3>
+                      <p className="ws-muted">Each topic is its own card, packed across the width.</p>
+                    </section>
+                  ))}
+                  <section className="ws-card ws-panel ws-info-card ws-info-card--wide">
+                    <h3 className="ws-card-title">Wide card</h3>
+                    <p className="ws-muted">.ws-info-card--wide spans the whole grid row.</p>
+                  </section>
+                </div>
+              </div>
+              <aside className="ws-page-aside">
+                <nav className="ws-card ws-panel ws-info-card" aria-label="Showcase contents">
+                  <h3 className="ws-card-title">On this page</h3>
+                  <ul className="ws-jump-links">
+                    {["Who we are", "Information we collect", "Your rights"].map((label) => (
+                      <li key={label}>
+                        <a href="#marketing" className="ws-jump-link">
+                          {label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              </aside>
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Footer" hint="WebsiteFooter · every /website page" size="wide">
         <Frame>
           <div className="ws-page">
-            <footer className="ws-footer">
-              <div className="ws-container ws-footer-inner">
-                <div className="ws-footer-top">
-                  <BrandLogo className="ws-logo" alt="Humphries and Parks" />
-                  <ul className="ws-footer-links">
-                    <li>
-                      <a href="#marketing">Privacy</a>
-                    </li>
-                    <li>
-                      <a href="#marketing">Cookies</a>
-                    </li>
-                  </ul>
-                </div>
-                <p className="ws-footer-legal">Authorised and regulated by the Financial Conduct Authority.</p>
-                <p className="ws-footer-copy">© 2026 Humphries and Parks</p>
-              </div>
-            </footer>
+            <WebsiteFooter
+              brand={siteContent.brand}
+              contact={siteContent.contact}
+              footer={siteContent.footer}
+              brands={brands}
+              links={siteContent.customerLinks}
+            />
           </div>
         </Frame>
       </Row>
@@ -506,7 +785,7 @@ export default function MarketingShowcase({ section }) {
                     <span>Kent</span>
                   </address>
                 </div>
-                <div className="ws-contact-block">
+                <div className="ws-contact-block ws-contact-block--wide">
                   <span className="ws-eyebrow">Opening times</span>
                   <div className="ws-contact-hours">
                     <HoursTable caption="Sales" />

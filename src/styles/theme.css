@@ -188,6 +188,9 @@
   --dangerMain: var(--danger-base);
   --danger-base: #c62b2b;
   --danger-base-hover: #a82121;
+  /* Typing assistant underlines (src/styles/families/typing-assist.css). */
+  --mark-spelling: var(--danger-base);
+  --mark-grammar: #2563eb;
   --danger-strong: #b91c1c;
   --danger-surface: #fee2e2;
   --danger-surface-hover: rgba(var(--danger-rgb), 0.24);
@@ -650,6 +653,8 @@
   --dangerMain: #f87171;
   --danger-base: #f87171;
   --danger-base-hover: #fca5a5;
+  --mark-spelling: var(--danger-base);
+  --mark-grammar: #60a5fa;
   --danger-strong: #ef4444;
   --danger-surface: rgba(var(--danger-rgb), 0.24);
   --danger-surface-hover: rgba(var(--danger-rgb), 0.34);
