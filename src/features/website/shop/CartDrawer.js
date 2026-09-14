@@ -6,21 +6,26 @@
 //
 // Styling: .ws-cart-* from custglobal.css (PUBLIC SHOP block).
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { formatGbp } from "../hooks/useShopCart";
 import BasketAccountNotice from "./BasketAccountNotice";
 
 export default function CartDrawer({ open, cart, onClose }) {
-  // Escape closes the drawer — it is a modal-ish surface over the page.
+  const drawerRef = useRef(null);
   useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
+    const dialog = drawerRef.current;
+    if (!open || !dialog) return undefined;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus?.();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open]);
 
   return (
     <>
@@ -28,7 +33,10 @@ export default function CartDrawer({ open, cart, onClose }) {
         className={"ws-cart-backdrop" + (open ? " ws-cart-backdrop--open" : "")}
         onClick={onClose}
       />
-      <aside
+      <dialog
+        ref={drawerRef}
+        onCancel={(event) => { event.preventDefault(); onClose(); }}
+        onClick={(event) => { if (event.target === event.currentTarget && event.clientX < event.currentTarget.getBoundingClientRect().left) onClose(); }}
         data-presentation="website-shop-cart-drawer"
         className={"ws-cart-drawer" + (open ? " ws-cart-drawer--open" : "")}
         aria-hidden={!open}
@@ -117,15 +125,15 @@ export default function CartDrawer({ open, cart, onClose }) {
               <span>Subtotal</span>
               <span>{cart.totals.subtotal}</span>
             </div>
-            <Link href="/website/shop/checkout" className="ws-btn ws-btn--primary">
+            <Link href="/website/shop?step=details" className="ws-btn ws-btn--primary">
               Checkout
             </Link>
-            <Link href="/website/shop/cart" className="ws-btn ws-btn--ghost">
+            <Link href="/website/shop?step=basket" className="ws-btn ws-btn--ghost">
               View basket
             </Link>
           </div>
         )}
-      </aside>
+      </dialog>
     </>
   );
 }

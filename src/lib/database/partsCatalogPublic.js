@@ -18,6 +18,7 @@
 
 import { supabase } from "@/lib/database/supabaseClient";
 import { logFailure } from "@/lib/utils/logFailure";
+import { partImageFor } from "@/lib/parts/partTypeImages";
 
 // Explicit allowlist — never `select("*")` on this table for public reads.
 const PUBLIC_COLUMNS = [
@@ -64,7 +65,9 @@ export const toPublicProduct = (row) => {
     // Customers see a capped availability signal, never the real shelf count.
     stock_qty: available,
     in_stock: available > 0,
-    image_url: null, // parts_catalog holds no imagery — the card draws a placeholder.
+    // parts_catalog holds no imagery, so every part shows the generic picture
+    // for its TYPE — all alternators share one image, whatever the part number.
+    image_url: partImageFor(row.name, row.category),
     updated_at: row.updated_at || null,
   };
 };

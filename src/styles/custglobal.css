@@ -99,6 +99,8 @@ html.website-scope {
      same row regardless of which element you reach for. Adjust here,
      never at the call-site. */
   --website-control-height: 44px !important;
+  --website-motion-duration: 0.2s !important;
+  --website-motion-easing: ease !important;
   --website-control-radius: 14px !important;
   --website-field-gap: 10px !important;
   /* Control type + shape — every button, field, trigger and link-button reads
@@ -128,10 +130,10 @@ html.website-scope {
      in src/pages/website/profile.js). Dark theme lifts them with faint
      white; the light theme below re-paints them as faint dark washes so
      the same panels stay visible on the pale surface. */
-  --website-elev-1: rgba(255, 255, 255, 0.03) !important;
-  --website-elev-2: rgba(255, 255, 255, 0.04) !important;
-  --website-elev-3: rgba(255, 255, 255, 0.06) !important;
-  --website-elev-4: rgba(255, 255, 255, 0.10) !important;
+  --website-elev-1: rgba(255, 255, 255, 0.05) !important;
+  --website-elev-2: rgba(255, 255, 255, 0.075) !important;
+  --website-elev-3: rgba(255, 255, 255, 0.10) !important;
+  --website-elev-4: rgba(255, 255, 255, 0.14) !important;
 
   /* ── /website control surface — the "secondary" material ───────────
      One flat translucent wash plus a 1px hairline ring: the inactive
@@ -330,9 +332,9 @@ html.website-scope [role="button"]:not(.app-btn) {
   white-space: nowrap;
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
   transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    background var(--website-motion-duration) var(--website-motion-easing),
+    box-shadow var(--website-motion-duration) var(--website-motion-easing),
+    transform var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope button:not(.app-btn):hover,
 html.website-scope [role="button"]:not(.app-btn):hover {
@@ -388,9 +390,9 @@ html.website-scope a.app-btn {
   white-space: nowrap;
   box-shadow: 0 10px 24px rgba(var(--accentMainRgb), 0.32);
   transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    background var(--website-motion-duration) var(--website-motion-easing),
+    box-shadow var(--website-motion-duration) var(--website-motion-easing),
+    transform var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope button.app-btn:hover,
 html.website-scope [role="button"].app-btn:hover,
@@ -430,8 +432,8 @@ html.website-scope button.website-calendar__day {
   backdrop-filter: none;
   box-shadow: none;
   border-radius: var(--website-radius-chip);
-  font-weight: 500;
-  letter-spacing: 0;
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   text-transform: none;
 }
 html.website-scope button.calendar-api__day {
@@ -463,7 +465,7 @@ html.website-scope button.calendar-api__picker-cell {
   backdrop-filter: none;
   box-shadow: none;
   text-transform: none;
-  letter-spacing: 0;
+  letter-spacing: var(--website-control-letter-spacing);
 }
 
 /* @family controls — form rhythm and the raw <select> fallback */
@@ -516,7 +518,7 @@ html.website-scope select:not(.app-btn) {
   border-radius: var(--website-radius-pill);
   cursor: pointer;
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing), transform var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope select:not(.app-btn):hover {
   background-color: var(--ws-control-bg-hover);
@@ -533,7 +535,7 @@ html.website-scope select:not(.app-btn):disabled {
 html.website-scope select:not(.app-btn) option {
   color: var(--txt-bright);
   background: var(--website-option-bg);
-  font-weight: 600;
+  font-weight: var(--website-control-font-weight);
 }
 html.website-scope select:not(.app-btn) option:checked,
 html.website-scope select:not(.app-btn) option:hover {
@@ -594,7 +596,7 @@ html.website-scope .website-native-select__caret {
   flex-shrink: 0;
   opacity: 0.8;
   background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat center / contain;
-  transition: transform 0.2s ease;
+  transition: transform var(--website-motion-duration) var(--website-motion-easing);
 }
 
 html.website-scope .website-native-select[data-open="true"] .website-native-select__caret {
@@ -654,7 +656,7 @@ html.website-scope .website-native-select__option {
   /* Full-pill capsule — matches the /website button shape style. */
   border-radius: var(--website-radius-pill);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing);
 }
 
 html.website-scope .website-native-select__option:hover,
@@ -731,7 +733,7 @@ html.website-scope .dropdown-api__chevron {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.2s ease;
+  transition: transform var(--website-motion-duration) var(--website-motion-easing);
 }
 
 html.website-scope .dropdown-api.is-open .dropdown-api__chevron {
@@ -778,7 +780,7 @@ html.website-scope.app-dropdown-menu button.dropdown-api__option {
   line-height: 1.3;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing);
 }
 
 html.website-scope button.dropdown-api__option:hover,
@@ -900,7 +902,7 @@ html.website-scope textarea:not(.app-btn) {
      --website-control-radius (14px). */
   border-radius: var(--website-radius-pill);
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing);
 }
 /* Textarea grows by line as the user types — no manual resize handle,
    no fixed minimum row count. Single line by default; `field-sizing:
@@ -944,7 +946,7 @@ html.website-scope input[type="date"]::-webkit-calendar-picker-indicator,
 html.website-scope input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(1) opacity(0.85);
   cursor: pointer;
-  transition: filter 0.15s ease;
+  transition: filter var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope input[type="date"]::-webkit-calendar-picker-indicator:hover,
 html.website-scope input[type="time"]::-webkit-calendar-picker-indicator:hover {
@@ -983,7 +985,7 @@ html.website-scope input[type="radio"]:not(.app-btn) {
   background: var(--ws-control-bg);
   cursor: pointer;
   position: relative;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing);
   flex-shrink: 0;
 }
 html.website-scope input[type="radio"]:not(.app-btn):checked {
@@ -1034,7 +1036,7 @@ html.website-scope input[type="file"]::file-selector-button {
   border-radius: var(--website-radius-pill);
   cursor: pointer;
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing), transform var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope input[type="file"]::file-selector-button:hover {
   background: var(--ws-control-bg-hover);
@@ -1067,9 +1069,11 @@ html.website-scope .website-calendar {
 }
 
 html.website-scope .website-calendar {
-  width: 304px;
-  max-width: calc(100vw - 24px);
-  padding: 14px;
+  /* Seven touch targets plus the shared panel padding. */
+  box-sizing: border-box;
+  width: calc(7 * var(--website-control-height) + 2 * var(--website-field-gap));
+  max-width: calc(100vw - 12px);
+  padding: var(--website-field-gap);
   border-radius: var(--website-radius-panel);
   /* Theme-aware default text colour for the whole calendar surface —
      --txt-bright resolves to white in dark mode and to near-black in
@@ -1109,8 +1113,13 @@ html.website-scope button.website-calendar__nav {
 html.website-scope .website-calendar__weekdays,
 html.website-scope .website-calendar__grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 2px;
+  grid-template-columns: repeat(7, minmax(var(--website-control-height), 1fr));
+  gap: 0;
+}
+
+/* Keep the seven-day grid usable on the narrowest phone screens. */
+@media (max-width: 359px) {
+  html.website-scope .website-calendar { padding-inline: 0; }
 }
 
 html.website-scope .website-calendar__weekdays {
@@ -1131,11 +1140,11 @@ html.website-scope .website-calendar__day {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 34px;
-  min-height: 34px;
+  height: var(--website-control-height);
+  min-height: var(--website-control-height);
   padding: 0;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--website-control-font-size);
   line-height: 1;
   color: var(--txt-bright);
   background: transparent;
@@ -1144,9 +1153,9 @@ html.website-scope .website-calendar__day {
   text-align: center;
   white-space: nowrap;
   text-transform: none;
-  letter-spacing: 0;
+  letter-spacing: var(--website-control-letter-spacing);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing), color var(--website-motion-duration) var(--website-motion-easing);
 }
 
 html.website-scope .website-calendar__day:hover {
@@ -1177,7 +1186,7 @@ html.website-scope .website-calendar__grid button.website-calendar__day {
    same pill as every other day. The `.website-calendar__grid` ancestor plus
    both day classes (0,4,2) beat the raw-button hover rule (0,3,2). */
 html.website-scope .website-calendar__grid button.website-calendar__day.website-calendar__day--today {
-  font-weight: 600;
+  font-weight: var(--website-control-font-weight);
   background: transparent;
   /* INSET ring — drawn inside the cell so today does not grow larger than
      a plain day. An outer box-shadow (e.g. var(--focus-ring)) would extend
@@ -1274,9 +1283,9 @@ html.website-scope .website-banner {
   border-radius: var(--website-control-radius);
   box-shadow: var(--website-banner-shadow);
   transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    background var(--website-motion-duration) var(--website-motion-easing),
+    box-shadow var(--website-motion-duration) var(--website-motion-easing),
+    transform var(--website-motion-duration) var(--website-motion-easing);
 }
 
 /* ── Cookie consent (src/components/CookieBanner.js, /website branch) ──
@@ -1427,6 +1436,59 @@ html.website-scope .ws-support-launcher__button {
    These classes are exempt from showcase coverage (they ARE the showcase),
    but they are held to zero raw colours like everything else.
    ═══════════════════════════════════════════════════════════════════════ */
+
+/* Showcase layout belongs here so examples inherit the same tokens as the site. */
+html.website-scope .website-dev-intro,
+html.website-scope .website-dev-stack,
+html.website-scope .website-dev-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--website-field-gap);
+}
+html.website-scope .website-dev-theme {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--website-field-gap);
+}
+html.website-scope .website-dev-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 36rem), 1fr));
+  gap: var(--website-field-gap);
+}
+html.website-scope .website-dev-section--full { grid-column: 1 / -1; }
+html.website-scope .website-dev-section { min-width: 0; }
+html.website-scope .website-dev-row__title { color: var(--txt-soft); }
+html.website-scope .website-dev-row__hint {
+  letter-spacing: normal;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+html.website-scope .website-dev-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: var(--website-field-gap);
+}
+html.website-scope .website-dev-metric__sample--shape { height: var(--website-control-height); }
+html.website-scope .website-dev-metric__sample--pill { border-radius: var(--website-radius-pill); }
+html.website-scope .website-dev-metric__sample--card { border-radius: var(--website-radius-card); }
+html.website-scope .website-dev-metric__sample--panel { border-radius: var(--website-radius-panel); }
+html.website-scope .website-dev-metric__sample--tile { border-radius: var(--website-radius-tile); }
+html.website-scope .website-dev-metric__sample--chip { border-radius: var(--website-radius-chip); }
+html.website-scope .website-dev-metric__sample--banner { border-radius: var(--website-radius-panel); }
+html.website-scope .website-dev-row--md,
+html.website-scope .website-dev-row--wide { min-width: 0; }
+html.website-scope .website-dev-stage--compact,
+html.website-scope .website-dev-stage--mini { min-height: 0; }
+html.website-scope .website-dev-tracker-spaced { margin-top: var(--website-field-gap); }
+html.website-scope .website-dev-compose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--website-field-gap);
+}
+html.website-scope .website-dev-compose textarea { flex: 1 1 12rem; min-width: 0; }
+
 html.website-scope .website-dev-shell {
   min-height: 100vh;
   padding: 32px clamp(16px, 4vw, 48px) 96px;
@@ -1434,6 +1496,22 @@ html.website-scope .website-dev-shell {
   flex-direction: column;
   gap: 24px;
   color: var(--txt-bright);
+}
+/* Under the site top bar: the shared --ws-nav-gap cap; the sticky section index
+   parks below the bar and slides under it (not over it) where the bar wraps. */
+html.website-scope .ws-nav + .website-dev-shell {
+  padding-top: var(--ws-nav-gap);
+}
+html.website-scope .ws-nav + .website-dev-shell .website-dev-index {
+  top: var(--ws-nav-h);
+  z-index: 40;
+}
+html.website-scope .ws-nav + .website-dev-shell .website-dev-section {
+  scroll-margin-top: calc(var(--ws-nav-h) + 88px);
+}
+html.website-scope .ws-nav + .website-dev-locked {
+  justify-content: flex-start;
+  padding-top: var(--ws-nav-gap);
 }
 
 html.website-scope .website-dev-header {
@@ -1496,7 +1574,7 @@ html.website-scope .website-dev-index {
   gap: 6px;
   overflow-x: auto;
   padding: 8px;
-  border-radius: 16px;
+  border-radius: var(--website-radius-panel);
   background: var(--surface);
   box-shadow:
     inset 0 0 0 1px var(--ws-control-ring),
@@ -1723,7 +1801,7 @@ html.website-scope .website-dev-metric__sample {
 html.website-scope .website-dev-metric__sample--height {
   width: 14px;
   height: var(--website-control-height);
-  border-radius: 4px;
+  border-radius: var(--website-radius-chip);
 }
 
 html.website-scope .website-dev-metric__sample--radius {
@@ -1737,7 +1815,7 @@ html.website-scope .website-dev-metric__sample--radius {
 html.website-scope .website-dev-metric__sample--gap {
   width: var(--website-field-gap);
   height: var(--website-control-height);
-  border-radius: 2px;
+  border-radius: var(--website-radius-chip);
 }
 
 html.website-scope .website-dev-scroll-host {
@@ -1760,7 +1838,7 @@ html.website-scope .website-dev-scroll-row {
 
 html.website-scope .website-dev-code {
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--website-radius-chip);
   font-family: var(--font-family-mono);
   font-size: 12px;
   color: var(--txt-bright);
@@ -1797,6 +1875,17 @@ html.website-scope .website-dev-choice {
   font-size: 14px;
   color: var(--txt-soft);
   cursor: pointer;
+}
+
+/* A radio/checkbox row is tapped on its LABEL, not on the 18px box
+   (--website-check-size) drawn inside it, so the label is what has to meet the
+   touch floor. .ws-consent-option already clears it at 57px; this row was 21px,
+   i.e. shorter than the single line of text it wraps. Touch devices only, so
+   the showcase keeps its current density under a mouse. */
+@media (pointer: coarse) {
+  html.website-scope .website-dev-choice {
+    min-height: var(--website-control-height);
+  }
 }
 
 html.website-scope .website-dev-form {
@@ -1903,8 +1992,8 @@ html.website-scope .website-dev-table__td--nowrap {
 html.website-scope .website-dev-token-chip {
   display: inline-block;
   width: 20px;
-  height: 20px;
-  border-radius: 6px;
+  height: var(--website-check-size);
+  border-radius: var(--website-radius-chip);
   background: var(--website-dev-swatch);
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
 }
@@ -2130,6 +2219,7 @@ html.website-scope .ws-page {
   --ws-nav-bg: rgba(10, 10, 14, 0.86);
   --ws-maxw: 1200px;
   --ws-nav-h: 66px;
+  --ws-nav-gap: 20px;
   --ws-radius: 18px;
 
   /* Site-builder tokens. WebsitePage overwrites these inline on .ws-page from
@@ -2269,7 +2359,7 @@ html.website-scope button.ws-btn {
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: background var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing), transform var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope .ws-btn:active,
 html.website-scope button.ws-btn:active {
@@ -2370,7 +2460,7 @@ html.website-scope .ws-nav-link {
   line-height: 1;
   color: var(--txt-soft);
   white-space: nowrap;
-  transition: color 0.18s ease, background 0.18s ease;
+  transition: color var(--website-motion-duration) var(--website-motion-easing), background var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope .ws-nav-link:hover {
   color: var(--ws-control-text);
@@ -2635,6 +2725,20 @@ html.website-scope .ws-hero {
   padding: clamp(40px, 6vw, 80px) 0 clamp(48px, 6vw, 80px);
   scroll-margin-top: var(--ws-nav-h);
 }
+
+/* ── Gap under the top bar ───────────────────────────────────────────────
+   Every /website page caps the space between the bottom of the top bar
+   (WebsiteTopBar) and the first content at --ws-nav-gap. Only the TOP of the
+   first block changes; its bottom padding and every later section keep the
+   normal rhythm. The preview-target branch covers ?preview=editor, where each
+   home block is wrapped in a click target. The login, profile and /website/dev
+   shells take the same cap in their own families. */
+html.website-scope .ws-nav + main > .ws-hero:first-child,
+html.website-scope .ws-nav + main > .ws-section:first-child,
+html.website-scope .ws-nav + main > .ws-preview-target:first-child > .ws-hero:first-child,
+html.website-scope .ws-nav + main > .ws-preview-target:first-child > .ws-section:first-child {
+  padding-top: var(--ws-nav-gap);
+}
 html.website-scope .ws-hero-inner {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
@@ -2658,7 +2762,7 @@ html.website-scope .ws-trust {
   margin: clamp(36px, 5vw, 56px) 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
   gap: 14px;
 }
 html.website-scope .ws-trust-item {
@@ -2710,6 +2814,55 @@ html.website-scope .ws-brands-list img {
   height: clamp(40px, 6vw, 64px);
   width: auto;
   opacity: 0.85;
+}
+
+/* ── Quick actions — shares the brand strip row: panel left, brands right.
+   Stacks to one column on narrow screens. */
+html.website-scope .ws-quick {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 56px);
+}
+html.website-scope .ws-quick .ws-brands-inner {
+  flex-direction: column;
+}
+@media (max-width: 860px) {
+  html.website-scope .ws-quick {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+html.website-scope .ws-quick-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: clamp(18px, 2.5vw, 28px);
+}
+html.website-scope .ws-quick-tabs {
+  margin-bottom: 0;
+}
+html.website-scope .ws-quick-form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+}
+html.website-scope .ws-quick-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 12px;
+}
+html.website-scope .ws-quick-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+html.website-scope .ws-quick-result-range {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 800;
+  color: var(--txt-bright);
 }
 
 /* ── Grids ───────────────────────────────────────────────────────────── */
@@ -2828,7 +2981,7 @@ html.website-scope button.ws-tab {
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  transition: background 0.18s ease, color 0.18s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing), color var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope button.ws-tab:hover {
   color: var(--ws-control-text);
@@ -3096,8 +3249,8 @@ html.website-scope .ws-contact-block {
   gap: 6px;
 }
 html.website-scope .ws-contact-phone {
-  font-size: 26px;
-  font-weight: 800;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
   color: var(--accentText);
 }
 html.website-scope .ws-contact-address {
@@ -3265,7 +3418,7 @@ html.website-scope .ws-section-more-note {
 /* ── Vehicle card — the clickable advert ─────────────────────────────── */
 html.website-scope a.ws-vehicle--link {
   color: inherit;
-  transition: transform 0.18s ease, box-shadow 0.2s ease;
+  transition: transform var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope a.ws-vehicle--link:hover {
   transform: translateY(-3px);
@@ -3509,7 +3662,8 @@ html.website-scope .ws-stock-detail-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
   gap: clamp(20px, 3vw, 36px);
-  align-items: start;
+  /* Gallery column (main photo + thumbs) and buying panel share one height. */
+  align-items: stretch;
 }
 html.website-scope .ws-stock-gallery {
   display: flex;
@@ -3518,6 +3672,8 @@ html.website-scope .ws-stock-gallery {
 }
 html.website-scope .ws-stock-gallery-main {
   position: relative;
+  /* Grows to absorb any extra height from the buying panel. */
+  flex: 1 1 auto;
   aspect-ratio: 16 / 10;
   max-width: 100%;
   overflow: hidden;
@@ -3547,7 +3703,7 @@ html.website-scope button.ws-stock-thumb {
   backdrop-filter: none;
   box-shadow: inset 0 0 0 1px var(--ws-line);
   opacity: 0.72;
-  transition: opacity 0.18s ease, box-shadow 0.18s ease;
+  transition: opacity var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope button.ws-stock-thumb:hover {
   background: var(--ws-card-soft);
@@ -3572,8 +3728,6 @@ html.website-scope button.ws-stock-thumb img {
 
 /* Buying panel */
 html.website-scope .ws-stock-buy {
-  position: sticky;
-  top: calc(var(--ws-nav-h) + 16px);
   gap: 4px;
   padding: clamp(20px, 3vw, 28px);
 }
@@ -3636,11 +3790,40 @@ html.website-scope .ws-stock-detail-body {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: clamp(16px, 2vw, 24px);
   margin-top: clamp(24px, 3vw, 36px);
-  align-items: start;
+  align-items: stretch;
 }
 html.website-scope .ws-stock-panel {
   gap: 12px;
   padding: clamp(20px, 3vw, 28px);
+}
+/* The "About" panel (data-sizer) sets the row height. Collapsed panels size
+   their body out of the row (contain: size), stretch to that height and clip
+   the rest behind a "Show more" toggle. Expanded panels grow fully. On one
+   column there is no sizer in the row, so the min-height is the floor. */
+html.website-scope .ws-stock-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+html.website-scope .ws-stock-panel[data-expanded="false"]:not([data-sizer]) {
+  min-height: 360px;
+}
+html.website-scope .ws-stock-panel[data-expanded="false"]:not([data-sizer]) .ws-stock-panel-body {
+  contain: size;
+  overflow: hidden;
+}
+/* Similar vehicles row under the detail panels. */
+html.website-scope .ws-stock-similar {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 24px);
+  margin-top: clamp(32px, 4vw, 48px);
+}
+html.website-scope button.ws-stock-panel-toggle {
+  align-self: flex-start;
+  flex: 0 0 auto;
 }
 html.website-scope .ws-stock-panel .ws-ticks {
   margin-top: 4px;
@@ -3676,8 +3859,8 @@ html.website-scope .ws-stock-spec tr:last-child td {
   html.website-scope .ws-stock-detail-layout {
     grid-template-columns: 1fr;
   }
-  html.website-scope .ws-stock-buy {
-    position: static;
+  html.website-scope .ws-stock-gallery-main {
+    flex: 0 0 auto;
   }
 }
 
@@ -3753,23 +3936,37 @@ html.website-scope button.ws-shop-filter.ws-shop-filter--active {
 html.website-scope button.ws-shop-filter.ws-shop-filter--active:focus-visible {
   box-shadow: var(--focus-ring);
 }
-/* Basket button — the primary capsule (it is the shop's one action). */
+/* Basket button — the primary capsule (it is the shop's one action). Shows a
+   basket symbol instead of a word; the button carries aria-label="Basket".
+   No glow: the accent fill alone marks it. */
 html.website-scope button.ws-shop-cartbutton {
   position: relative;
+  display: inline-flex;
+  align-items: center;
   color: var(--onAccentText);
   background: var(--accentMain);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: 0 10px 24px rgba(var(--accentMainRgb), 0.32);
+  box-shadow: none;
 }
 html.website-scope button.ws-shop-cartbutton:hover {
   color: var(--onAccentText);
   background: var(--primary-hover);
+  box-shadow: none;
 }
 html.website-scope button.ws-shop-cartbutton:focus-visible {
-  box-shadow:
-    0 10px 24px rgba(var(--accentMainRgb), 0.32),
-    var(--focus-ring);
+  box-shadow: var(--focus-ring);
+}
+/* Basket symbol — an SVG mask painted in currentColor, so it follows the
+   button's text colour in both themes. */
+html.website-scope .ws-shop-cartbutton-icon {
+  display: inline-block;
+  flex: none;
+  width: 1.25em;
+  height: 1.25em;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9h18l-2 11H5L3 9z'/%3E%3Cpath d='M8 9l4-6 4 6'/%3E%3Cpath d='M9 13v3M15 13v3'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9h18l-2 11H5L3 9z'/%3E%3Cpath d='M8 9l4-6 4 6'/%3E%3Cpath d='M9 13v3M15 13v3'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 html.website-scope .ws-shop-cartbutton-count {
   display: inline-block;
@@ -3783,7 +3980,7 @@ html.website-scope .ws-shop-cartbutton-count {
 /* ── Product grid ─────────────────────────────────────────────────────── */
 html.website-scope .ws-grid--shop {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 16px;
 }
 html.website-scope .ws-product {
@@ -3792,7 +3989,7 @@ html.website-scope .ws-product {
   background: var(--ws-card);
   border-radius: var(--ws-radius);
   overflow: hidden;
-  transition: transform 160ms, box-shadow 160ms;
+  transition: transform var(--website-motion-duration), box-shadow var(--website-motion-duration);
 }
 html.website-scope .ws-product:hover {
   transform: translateY(-2px);
@@ -3853,7 +4050,17 @@ html.website-scope .ws-product-add .ws-btn {
 html.website-scope .ws-cart-drawer {
   position: fixed;
   inset: 0 0 0 auto;
-  width: min(420px, 96vw);
+  /* Larger screens: a full-height panel from the right, ~1/4 of the screen
+     (with a floor so the item rows stay readable on laptop widths). */
+  width: clamp(380px, 25vw, 640px);
+  height: 100dvh;
+  /* It is a <dialog>: cancel the UA auto-margin and max-height that would
+     otherwise shrink it into a small centred/top box. */
+  margin: 0 0 0 auto;
+  max-width: none;
+  max-height: none;
+  /* Small curve on the left edge only — the right edge meets the screen. */
+  border-radius: var(--website-radius-tile) 0 0 var(--website-radius-tile);
   /* Floating panel — the dense surface tint, so the page behind the basket
      is frosted out rather than readable through it. */
   background: var(--ws-panel-bg);
@@ -3864,10 +4071,24 @@ html.website-scope .ws-cart-drawer {
   flex-direction: column;
   z-index: 9000;
   transform: translateX(100%);
-  transition: transform 220ms ease;
+  transition: transform var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope .ws-cart-drawer--open {
   transform: translateX(0);
+}
+/* Phones: the basket drops down from the top and fills the whole screen. */
+@media (max-width: 767px) {
+  html.website-scope .ws-cart-drawer {
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    transform: translateY(-100%);
+  }
+  html.website-scope .ws-cart-drawer--open {
+    transform: translateY(0);
+  }
 }
 html.website-scope .ws-cart-backdrop {
   position: fixed;
@@ -3875,7 +4096,7 @@ html.website-scope .ws-cart-backdrop {
   background: var(--website-backdrop);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 220ms;
+  transition: opacity var(--website-motion-duration);
   z-index: 8999;
 }
 html.website-scope .ws-cart-backdrop--open {
@@ -4101,6 +4322,17 @@ html.website-scope .ws-checkout-submit,
 html.website-scope .ws-order-cta {
   margin-top: 12px;
 }
+/* Checkout action row: primary action and "back" share one row, 50/50. */
+html.website-scope .ws-checkout-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+html.website-scope .ws-checkout-actions > * {
+  width: 100%;
+  margin-top: 0;
+}
 html.website-scope .ws-checkout-fineprint {
   margin: 10px 0 0;
   font-size: 0.8rem;
@@ -4301,7 +4533,7 @@ html.website-scope .ws-catalog-empty {
 }
 html.website-scope .ws-catalog-phone {
   color: var(--accentText);
-  font-weight: 700;
+  font-weight: var(--website-control-font-weight);
   white-space: nowrap;
 }
 
@@ -4364,17 +4596,34 @@ html.website-scope .ws-pdp {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   gap: 28px;
-  align-items: start;
+  align-items: stretch;
+}
+/* The media column matches the info column's full height (specs,
+   description and buy card) rather than holding its own aspect ratio.
+   The media is absolutely filled so the image's intrinsic height never
+   drives the row — the top of the specs to the bottom of the buy card
+   sets the height. */
+html.website-scope .ws-pdp-media {
+  position: relative;
+  min-height: 280px;
+}
+html.website-scope .ws-pdp-media .ws-product-media {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: auto;
+  border-radius: var(--ws-radius);
 }
 @media (max-width: 860px) {
   html.website-scope .ws-pdp {
     grid-template-columns: 1fr;
   }
-}
-html.website-scope .ws-pdp-media .ws-product-media {
-  aspect-ratio: 1 / 1;
-  max-width: 100%;
-  border-radius: var(--ws-radius);
+  html.website-scope .ws-pdp-media {
+    min-height: 0;
+  }
+  html.website-scope .ws-pdp-media .ws-product-media {
+    position: static;
+    aspect-ratio: 1 / 1;
+  }
 }
 html.website-scope .ws-pdp-info {
   display: flex;
@@ -4383,7 +4632,7 @@ html.website-scope .ws-pdp-info {
 }
 html.website-scope .ws-pdp-specs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
   gap: 12px;
   margin: 0;
 }
@@ -4436,9 +4685,9 @@ html.website-scope .ws-pdp-qty {
   align-items: center;
 }
 html.website-scope .ws-pdp-qty label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   text-transform: uppercase;
   color: var(--txt-soft);
 }
@@ -4484,7 +4733,7 @@ html.website-scope .ws-preview-target {
   cursor: pointer;
   outline: 2px dashed transparent;
   outline-offset: -2px;
-  transition: outline-color 120ms ease, background 120ms ease;
+  transition: outline-color var(--website-motion-duration) var(--website-motion-easing), background var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope .ws-preview-target:hover {
   outline-color: rgba(var(--website-preview-rgb), 0.55);
@@ -4510,7 +4759,7 @@ html.website-scope .ws-preview-target-label {
   opacity: 0;
   pointer-events: none;
   transform: translateY(-2px);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition: opacity var(--website-motion-duration) var(--website-motion-easing), transform var(--website-motion-duration) var(--website-motion-easing);
   white-space: nowrap;
   box-shadow: var(--website-chip-shadow);
 }
@@ -4545,6 +4794,13 @@ html.website-scope .authShell {
   align-items: center;
   justify-content: center;
   color: var(--txt-bright);
+}
+/* Under the site top bar the card sits --ws-nav-gap below it rather than
+   centred in the viewport (the cap every /website page shares). */
+html.website-scope .ws-nav + .authShell {
+  min-height: calc(100vh - var(--ws-nav-h));
+  align-items: flex-start;
+  padding-top: var(--ws-nav-gap);
 }
 
 html.website-scope .authMain {
@@ -4609,7 +4865,7 @@ html.website-scope a.authBackLink {
   background: var(--ws-control-bg);
   border-radius: var(--website-radius-pill);
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope a.authBackLink:hover {
   background: var(--ws-control-bg-hover);
@@ -4656,6 +4912,16 @@ html.website-scope .signupHint {
   color: var(--txt-mute);
 }
 
+/* The policy link inside the footnote takes the accent so it reads as a link. */
+html.website-scope a.authFootnoteLink {
+  color: var(--accentText);
+  font-weight: 600;
+  text-decoration: none;
+}
+html.website-scope a.authFootnoteLink:hover {
+  text-decoration: underline;
+}
+
 html.website-scope .authError {
   margin: 0;
   padding: 12px 14px;
@@ -4683,7 +4949,7 @@ html.website-scope .signupPanel {
 html.website-scope .authRow,
 html.website-scope .postcodeLookupRow {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: var(--website-field-gap);
 }
 
@@ -4789,7 +5055,10 @@ html.website-scope .authDevCard {
    --ws-control-bg), so the light / dark flip needs no rules of its own.
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* Tighter top than a normal .ws-section so the heading sits close under the
+   top bar — this is the first thing on the page, not a scroll section. */
 html.website-scope .ws-val-hero {
+  padding-top: clamp(20px, 3vw, 32px);
   padding-bottom: 0;
 }
 html.website-scope .ws-val-body {
@@ -4925,9 +5194,9 @@ html.website-scope .ws-val-reg-row {
 html.website-scope input[type="text"].ws-val-reg:not(.app-btn) {
   flex: 1 1 200px;
   min-width: 0;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 2px;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
   text-align: center;
   text-transform: uppercase;
 }
@@ -5043,13 +5312,13 @@ html.website-scope .ws-val-option {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  min-height: 52px;
+  min-height: var(--website-control-height);
   padding: 13px 16px;
   border-radius: var(--website-radius-panel);
   cursor: pointer;
   background: var(--ws-tint);
   box-shadow: inset 0 0 0 1px var(--ws-line);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope .ws-val-option:hover {
   background: rgba(var(--accentMainRgb), 0.1);
@@ -5105,7 +5374,7 @@ html.website-scope .ws-val-option input[type="checkbox"]:not(.app-btn) {
   /* Same well as the radio — the control material, which flips per theme. */
   background: var(--ws-control-bg);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope .ws-val-option input[type="checkbox"]:not(.app-btn):checked {
   background: var(--accentMain);
@@ -5119,8 +5388,8 @@ html.website-scope .ws-val-option input[type="checkbox"]:not(.app-btn):checked::
   left: 4px;
   top: 0;
   width: 5px;
-  height: 10px;
-  border-radius: 1px;
+  height: var(--website-field-gap);
+  border-radius: 0;
   transform: rotate(45deg);
   box-shadow: inset -2px -2px 0 0 var(--onAccentText);
 }
@@ -5306,7 +5575,7 @@ html.website-scope .ws-val-smallprint {
 html.website-scope .ws-chip--accent {
   background: var(--accentMain);
   color: var(--onAccentText);
-  font-weight: 700;
+  font-weight: var(--website-control-font-weight);
 }
 
 /* Category chip, dropped onto the card art like .ws-badge. */
@@ -5643,9 +5912,18 @@ html.website-scope .ws-portal-shell {
   padding: clamp(16px, 3vw, 32px) clamp(16px, 4vw, 48px) 96px;
   color: var(--txt-bright);
 }
+/* Full viewport width — the card grid below decides how many columns fit. */
 html.website-scope .ws-portal-main {
-  max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
+}
+/* Under the site top bar: the shared --ws-nav-gap cap, and the sticky jump-to
+   rail clears the bar instead of sliding beneath it. */
+html.website-scope .ws-nav + .ws-portal-shell {
+  padding-top: var(--ws-nav-gap);
+}
+html.website-scope .ws-nav + .ws-portal-shell .ws-portal-main > .ws-portal-status:first-child {
+  margin-top: 0;
 }
 html.website-scope .ws-portal-status {
   font-size: 14px;
@@ -5656,14 +5934,6 @@ html.website-scope a.ws-portal-link {
 }
 
 /* ── Header ────────────────────────────────────────────────────────────── */
-html.website-scope .ws-portal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
-}
 html.website-scope .ws-portal-eyebrow {
   font-size: 11px;
   font-weight: 700;
@@ -5690,23 +5960,54 @@ html.website-scope .ws-portal-header__actions {
   gap: 10px;
 }
 
-/* ── Layout: jump-to rail + content stack ──────────────────────────────── */
-html.website-scope .ws-portal-layout {
-  display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
-  align-items: start;
-  gap: 24px;
+/* ── Header in the sticky site top bar (.ws-portal-navbar) ─────────────────
+   /website/profile passes its jump-to links as the bar's links and the
+   greeting + actions as a second row (.ws-portal-topbar), so both stick like
+   the /website nav. Sixteen links outgrow the bar, so they scroll sideways;
+   on a phone they fold into the Menu panel instead. */
+html.website-scope .ws-portal-navbar .ws-nav-links {
+  justify-content: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
-html.website-scope .ws-portal-nav {
-  position: sticky;
-  top: 16px;
+html.website-scope .ws-portal-navbar .ws-portal-nav__heading {
+  flex: 0 0 auto;
+  padding: 0 6px;
+}
+html.website-scope .ws-portal-topbar {
+  box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  border-radius: var(--website-radius-panel);
-  background: var(--website-elev-1);
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 10px clamp(12px, 2vw, 28px) 12px;
+  box-shadow: inset 0 1px 0 var(--ws-line);
 }
+html.website-scope .ws-portal-topbar .ws-portal-title {
+  margin: 2px 0;
+  font-size: clamp(18px, 2.2vw, 24px);
+}
+html.website-scope .ws-portal-topbar .ws-portal-subtitle {
+  font-size: 13px;
+}
+/* Anchored sections clear the taller two-row bar. */
+html.website-scope .ws-portal-stack [id] {
+  scroll-margin-top: calc(var(--ws-nav-h) + 128px);
+}
+@media (max-width: 640px) {
+  html.website-scope .ws-portal-navbar .ws-nav-links--open {
+    max-height: calc(100dvh - var(--ws-nav-h) - 24px);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  html.website-scope .ws-portal-topbar .ws-portal-subtitle {
+    display: none;
+  }
+}
+
+/* ── Jump-to heading (shown in the top bar's links) ────────────────────── */
 html.website-scope .ws-portal-nav__heading {
   padding: 4px 10px 8px;
   font-size: 10px;
@@ -5714,23 +6015,23 @@ html.website-scope .ws-portal-nav__heading {
   text-transform: uppercase;
   color: var(--txt-mute);
 }
-html.website-scope a.ws-portal-nav__link {
-  display: block;
-  padding: 8px 12px;
-  border-radius: var(--website-radius-chip);
-  font-size: 13px;
-  color: var(--txt-soft);
-  text-decoration: none;
-}
+/* Card grid: as many ~380px columns as the width allows; dense flow back-fills
+   gaps left by wide cards so the space is packed. Wide cards and split rows
+   (summary banners, money) span the full row. */
 html.website-scope .ws-portal-stack {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  grid-auto-flow: row dense;
+  align-items: start;
   gap: 18px;
   min-width: 0;
 }
+html.website-scope .ws-portal-stack > .ws-portal-split {
+  grid-column: 1 / -1;
+}
 html.website-scope .ws-portal-split {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 18px;
 }
 
@@ -5741,7 +6042,15 @@ html.website-scope .ws-portal-card {
   gap: 14px;
   padding: clamp(16px, 3vw, 24px);
   border-radius: var(--website-radius-card);
-  background: var(--website-elev-1);
+  /* Same card material as the /website .ws-card, so the portal cards stand
+     off the page in both themes (elev-1 was a 5% wash — invisible in light). */
+  background: var(--ws-card);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    var(--website-specular),
+    0 0 0 1px var(--ws-line),
+    var(--ws-shadow);
 }
 html.website-scope .ws-portal-card--wide {
   grid-column: 1 / -1;
@@ -5913,7 +6222,7 @@ html.website-scope .ws-portal-form {
 }
 html.website-scope .ws-portal-form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: var(--website-field-gap);
 }
 html.website-scope .ws-portal-field {
@@ -5960,7 +6269,7 @@ html.website-scope .ws-portal-balance__figure {
 }
 html.website-scope .ws-portal-details {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 12px;
 }
 /* Detail field — also the saved-payment-card chip. */
@@ -6169,7 +6478,7 @@ html.website-scope .ws-portal-light[data-tone="red"] .ws-portal-light__dot {
 /* ── Media (inspection photos / video) ─────────────────────────────────── */
 html.website-scope .ws-portal-media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr));
   gap: 10px;
 }
 html.website-scope .ws-portal-media {
@@ -6319,7 +6628,7 @@ html.website-scope .ws-portal-bubble__meta {
    pressed:hover (0,4,2), then the focus rings. */
 html.website-scope .ws-portal-services {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 10px;
 }
 html.website-scope button.ws-portal-service {
@@ -6331,7 +6640,7 @@ html.website-scope button.ws-portal-service {
   min-height: 0;
   padding: 14px 16px;
   border-radius: var(--website-radius-panel);
-  letter-spacing: 0;
+  letter-spacing: var(--website-control-letter-spacing);
   text-align: left;
   text-transform: none;
   white-space: normal;
@@ -6340,7 +6649,7 @@ html.website-scope button.ws-portal-service {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   box-shadow: inset 0 0 0 1px var(--website-elev-3);
-  transition: background 0.2s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope button.ws-portal-service:hover {
   color: var(--txt-bright);
@@ -6393,7 +6702,7 @@ html.website-scope .ws-portal-toggle__track {
   height: 22px;
   border-radius: var(--website-radius-pill);
   background: var(--website-elev-4);
-  transition: background 0.2s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope .ws-portal-toggle[aria-checked="true"] .ws-portal-toggle__track {
   background: linear-gradient(180deg, var(--website-accent-highlight) 0%, var(--accentText) 100%);
@@ -6406,7 +6715,7 @@ html.website-scope .ws-portal-toggle__knob {
   height: 18px;
   border-radius: var(--website-radius-pill);
   background: var(--onAccentText);
-  transition: left 0.2s ease;
+  transition: left var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope .ws-portal-toggle[aria-checked="true"] .ws-portal-toggle__knob {
   left: 20px;
@@ -6472,12 +6781,12 @@ html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="web
   appearance: none;
   box-sizing: border-box;
   min-height: 0;
-  letter-spacing: 0;
+  letter-spacing: var(--website-control-letter-spacing);
   line-height: 1.2;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   transform: none;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background var(--website-motion-duration) var(--website-motion-easing), box-shadow var(--website-motion-duration) var(--website-motion-easing);
 }
 
 /* Section labels — the floating number / preview chips drawn on each box. */
@@ -6486,8 +6795,8 @@ html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="web
   gap: 0;
   padding: 3px 8px;
   border-radius: var(--website-radius-pill);
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
   line-height: 1.4;
   text-align: left;
   white-space: normal;
@@ -6516,11 +6825,11 @@ html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="web
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 30px;
+  min-height: var(--website-control-height);
   padding: 0 12px;
   border-radius: var(--website-radius-pill);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
   white-space: nowrap;
   color: var(--text-1);
   background: var(--dev-overlay-control-bg);
@@ -6555,7 +6864,7 @@ html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="web
 html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"] {
   display: inline-block;
   width: 48px;
-  height: 24px;
+  height: var(--website-control-height);
   padding: 0;
   border-radius: var(--website-radius-pill);
   background: var(--dev-overlay-switch-bg);
@@ -6570,11 +6879,12 @@ html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="web
   background: var(--accent-base);
 }
 html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"]::after {
-  top: 3px;
+  top: 50%;
   left: 3px;
+  transform: translateY(-50%);
 }
 html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"][aria-checked="true"]::after {
-  transform: translateX(24px);
+  transform: translate(24px, -50%);
 }
 html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="website"] button[data-dev-overlay-control="switch"]:disabled {
   opacity: 0.45;
@@ -6593,11 +6903,11 @@ html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="web
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  min-height: 44px;
+  min-height: var(--website-control-height);
   padding: 10px 12px;
   border-radius: var(--website-radius-tile);
-  font-size: 0.76rem;
-  font-weight: 700;
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
   text-align: left;
   white-space: nowrap;
   color: var(--text-1);
@@ -6622,4 +6932,126 @@ html.website-scope [data-dev-overlay-internal="1"][data-dev-overlay-surface="web
   box-shadow:
     inset 0 0 0 1px var(--dev-overlay-pill-ring),
     var(--dev-overlay-focus);
+}
+
+/* @family foundation - shared customer motion preference */
+@media (prefers-reduced-motion: reduce) {
+  html.website-scope { --website-motion-duration: 0s !important; }
+  html.website-scope *,
+  html.website-scope *::before,
+  html.website-scope *::after {
+    animation: none;
+    scroll-behavior: auto;
+  }
+}
+
+/* @family portal - reusable profile layout; replaces page-local styles. */
+html.website-scope .ws-portal-flow { display: flex; flex-direction: column; gap: var(--website-field-gap); min-width: 0; }
+html.website-scope .ws-portal-spaced { margin-top: var(--website-field-gap); }
+html.website-scope .ws-portal-actions-end { justify-content: flex-end; }
+html.website-scope .ws-portal-action-start { align-self: flex-start; }
+html.website-scope .ws-portal-grow { flex: 1 1 14rem; min-width: 0; }
+html.website-scope .ws-portal-compose { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--website-field-gap); }
+/* @family shop - shared shop copy and quantity controls. */
+html.website-scope .ws-shop-more .ws-muted { margin: 0; }
+html.website-scope button.ws-cart-qty { min-width: var(--website-control-height); }
+
+html.website-scope .ws-portal-card,
+html.website-scope .ws-portal-field,
+html.website-scope .ws-portal-detail { min-width: 0; overflow-wrap: anywhere; }
+/* @family shop - retain accessible navigation and quantity controls on phones. */
+@media (max-width: 1023px) {
+  html.website-scope .ws-nav--shop .ws-nav-inner { display: flex; flex-wrap: wrap; height: auto; }
+  html.website-scope .ws-nav--shop .ws-nav-links { order: 3; flex: 1 1 100%; justify-content: flex-start; flex-wrap: wrap; overflow: visible; }
+}
+html.website-scope .ws-cart-item-controls { flex-wrap: wrap; }
+html.website-scope button.ws-cart-qty { flex-shrink: 0; }
+@media (max-width: 479px) {
+  html.website-scope .ws-cart-item { grid-template-columns: auto minmax(0, 1fr); }
+  html.website-scope .ws-cart-item-total { grid-column: 2; }
+}
+
+/* @family pickers - top-layer panels use measured viewport geometry. */
+html.website-scope [data-website-popover="true"] {
+  position: fixed; inset: auto; margin: 0; border: none; box-sizing: border-box;
+  left: var(--website-popover-left); top: var(--website-popover-top);
+  width: var(--website-popover-width); max-width: calc(100vw - 12px);
+  max-height: var(--website-popover-height); overflow-y: auto;
+}
+
+/* @family shop - native dialog supplies focus containment for the basket. */
+html.website-scope dialog.ws-cart-drawer { margin: 0 0 0 auto; border: none; max-height: 100dvh; min-height: 100dvh; max-width: 100vw; box-sizing: border-box; }
+html.website-scope dialog.ws-cart-drawer:not([open]) { visibility: hidden; pointer-events: none; }
+html.website-scope dialog.ws-cart-drawer::backdrop { background: var(--website-backdrop); }
+
+/* ==========================================================================
+ * @family controls - touch target floor (responsive sweep, 2026-09)
+ * ==========================================================================
+ *
+ * Three customer-site links render below the 44px touch floor. They passed
+ * every static check because none of them declares a height at all - their box
+ * is whatever their line-height happens to produce, so there is no literal for
+ * a source scan to catch. They only surface by measuring a rendered page, which
+ * e2e/responsive/website-phone-floor.spec.js now does:
+ *
+ *   .ws-brand           38px   header wordmark / home link
+ *   .ws-contact-phone   16px   the tel: link - the single most important tap
+ *                              target on the site when opened on a phone
+ *   .ws-footer-links a  17px   Privacy / Terms / legal links
+ *
+ * Keyed on `pointer: coarse` rather than a width, deliberately: the constraint
+ * is a fingertip, not a viewport. A large tablet is touch-operated and needs
+ * the same 44px target as a phone but matches no max-width phone rule. Mouse
+ * users keep the current compact spacing, so desktop layout is unchanged.
+ *
+ * Uses --website-control-height (the shared 44px control token) rather than a
+ * literal, so these follow the control system like every other control here.
+ */
+@media (pointer: coarse) {
+  html.website-scope .ws-brand {
+    min-height: var(--website-control-height);
+  }
+
+  /* inline-flex + centred so the taller box grows around the text rather than
+     pushing the baseline, which would knock the contact block out of rhythm. */
+  html.website-scope .ws-contact-phone {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--website-control-height);
+  }
+
+  html.website-scope .ws-footer-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--website-control-height);
+  }
+}
+
+/* @family pickers - picker CHROME honours the touch floor on touch devices.
+ *
+ * The rule above sets min-height: 0 on .calendar-api__month-year,
+ * .calendar-api__today-button and .calendar-api__picker-cell together. That is
+ * right for picker-cell, which is a month-grid cell sized by its cell exactly
+ * like .calendar-api__day - but month-year ("May 2026", opens the month picker)
+ * and today-button ("Today") are CHROME, and the comment on that very rule says
+ * chrome "stay full controls: the 44px floor". They were rendering 13px tall on
+ * a phone, so the two were swept into the grid-cell opt-out by mistake.
+ *
+ * Restored here under pointer: coarse only, so the frosted desktop panel keeps
+ * its current compact proportions and only touch devices get the larger target.
+ */
+@media (pointer: coarse) {
+  html.website-scope button.calendar-api__month-year,
+  html.website-scope button.calendar-api__today-button {
+    min-height: var(--website-control-height);
+  }
+
+  /* The month-picker cell was swept into the same opt-out as the day cell, but
+     the two are not alike: a day cell is a SQUARE sized by its grid (40x40, and
+     forcing 44 would break the square), whereas a month cell is a row in a
+     three-column list of month names and had no height of its own at all - it
+     rendered 60x13. It gets the floor; the day cell keeps its square. */
+  html.website-scope button.calendar-api__picker-cell {
+    min-height: var(--website-control-height);
+  }
 }

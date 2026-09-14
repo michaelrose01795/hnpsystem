@@ -10,6 +10,14 @@
 // supabase/migrations/20260901120000_website_builder_nav_design_layout.sql —
 // they are the same data, one copy for the browser and one for the database.
 
+import WEBSITE_DESIGN from "@/config/websiteDesign.generated.json";
+
+// Generated from custglobal.css: fallbacks stay in sync with the canonical palette.
+const customerToken = (name) => {
+  const token = WEBSITE_DESIGN.tokens.find((entry) => entry.name === name);
+  return token.light ?? token.dark;
+};
+
 export const navLinks = [
   { id: "cars", label: "Our Cars", href: "#cars", filter: "all" },
   { id: "offers", label: "Offers", href: "#offers", filter: null },
@@ -107,8 +115,8 @@ export const sectionLayout = [
 ];
 
 export const design = {
-  accentHex: "#b91c1c",
-  accentHoverHex: "#981717",
+  accentHex: customerToken("--accentMain"),
+  accentHoverHex: customerToken("--primary-hover"),
   // Retained for the website_design row shape only. The customer site is
   // light-only (see useWebsiteTheme / isLightOnlyWebsitePath in _document.js),
   // so nothing reads this any more.
@@ -143,7 +151,7 @@ export const HEADING_FONT_STACKS = {
 
 // "#b91c1c" -> "185, 28, 28". custglobal.css uses --accentMainRgb inside
 // rgba() for the primary button glow, so a hex alone is not enough.
-export function hexToRgbTriplet(hex, fallback = "185, 28, 28") {
+export function hexToRgbTriplet(hex, fallback = customerToken("--accentMainRgb")) {
   if (typeof hex !== "string") return fallback;
   const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!match) return fallback;

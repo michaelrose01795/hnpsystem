@@ -8,15 +8,15 @@
 // painted in after hydration — and a reg that is not in stock has to answer
 // 404 so a sold car stops being indexed.
 import { customerWebsiteGetLayout } from "@/components/layout/CustomerWebsiteLayout";
-import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
+import WebsiteRouteBoundary from "@/features/website/errors/WebsiteRouteBoundary";
 import StockDetailPage from "@/features/website/stock/StockDetailPage";
 import { getStockByReg } from "@/lib/stock/vehicleStock";
 
 export default function StockVehicle({ reg }) {
   return (
-    <RouteBoundary variant="customer" homeHref="/website" hostSupportModal>
+    <WebsiteRouteBoundary>
       <StockDetailPage reg={reg} />
-    </RouteBoundary>
+    </WebsiteRouteBoundary>
   );
 }
 

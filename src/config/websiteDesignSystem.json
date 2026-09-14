@@ -96,12 +96,18 @@
     "--font-family": "Deliberately shared: /website uses the same Inter-first stack the staff app loads once through next/font (theme.css). Re-declaring it would duplicate the stack and let the two drift."
   },
   "runtimeTokens": {
+    "--website-popover-left": "src/features/website/hooks/useWebsitePopover.js",
+    "--website-popover-top": "src/features/website/hooks/useWebsitePopover.js",
+    "--website-popover-width": "src/features/website/hooks/useWebsitePopover.js",
+    "--website-popover-height": "src/features/website/hooks/useWebsitePopover.js",
     "--website-dev-swatch": "src/features/website/showcase/ShowcasePrimitives.js",
     "--ws-portal-pct": "src/pages/website/profile.js",
     "--ws-portal-score": "src/pages/website/profile.js",
     "--ws-portal-steps": "src/pages/website/profile.js"
   },
   "tokens": {
+    "--website-motion-duration": { "group": "control-system", "purpose": "Shared customer transition duration; zero when reduced motion is requested." },
+    "--website-motion-easing": { "group": "control-system", "purpose": "Shared easing for customer control and surface transitions." },
     "--accentMain": { "group": "brand", "purpose": "Brand red. The one hex the accent derives from - change it together with --accentMainRgb." },
     "--accentMainRgb": { "group": "brand", "purpose": "Brand red as an r, g, b triplet for rgba(var(--accentMainRgb), a) tints and glows." },
     "--accentText": { "group": "brand", "purpose": "Accent used as text (prices, eyebrows, links). Reads --accentMain." },
@@ -195,6 +201,7 @@
     "--ws-nav-bg": { "group": "page", "purpose": "Translucent navigation bar fill." },
     "--ws-maxw": { "group": "page", "purpose": "Content max-width of .ws-container." },
     "--ws-nav-h": { "group": "page", "purpose": "Navigation bar height (also the scroll-margin offset)." },
+    "--ws-nav-gap": { "group": "page", "purpose": "Maximum gap between the bottom of the top bar and the first page content, on every /website page." },
     "--ws-radius": { "group": "page", "purpose": "Card corner radius on .ws-page." },
     "--ws-btn-radius": { "group": "page", "purpose": "CTA corner radius. Overwritten inline from the Website Manager design row." },
     "--ws-logo-h": { "group": "page", "purpose": "Logo height. Overwritten inline from the Website Manager design row." },

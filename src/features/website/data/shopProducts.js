@@ -10,6 +10,11 @@
 //
 // Prices are in pence to match the cart / order money format used by
 // useShopCart and shop_orders.
+//
+// Images are the generic part-type pictures (src/lib/parts/partTypeImages.js),
+// the same ones the real catalogue uses, so a tile never draws a blank frame.
+
+import { partImageFor } from "@/lib/parts/partTypeImages";
 
 export const SHOP_TEASER_LIMIT = 8;
 
@@ -22,7 +27,7 @@ export const shopCategories = [
 ];
 
 // Exactly SHOP_TEASER_LIMIT items — the teaser renders all of them.
-export const shopProducts = [
+const teaserProducts = [
   {
     id: "mock-service-kit-swift",
     sku: "SZ-SVC-SWIFT",
@@ -108,3 +113,8 @@ export const shopProducts = [
     image_url: null,
   },
 ];
+
+export const shopProducts = teaserProducts.map((product) => ({
+  ...product,
+  image_url: product.image_url || partImageFor(product.name, product.category_id),
+}));

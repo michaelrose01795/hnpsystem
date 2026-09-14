@@ -4,6 +4,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import useWebsitePopover from "@/features/website/hooks/useWebsitePopover";
+
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTHS = [
   "January",
@@ -71,6 +73,8 @@ export default function WebsiteNativeDateTimeInput({
   disabled = false,
   className = "",
   name,
+  id,
+  "aria-label": ariaLabel,
   required,
   min,
   max,
@@ -80,6 +84,7 @@ export default function WebsiteNativeDateTimeInput({
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(selectedDate || new Date());
   const rootRef = useRef(null);
+  const panelRef = useWebsitePopover(open, rootRef, true);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -144,6 +149,8 @@ export default function WebsiteNativeDateTimeInput({
         type="button"
         className={`website-native-datetime__trigger ${className}`}
         disabled={disabled}
+        id={id}
+        aria-label={ariaLabel || name || displayLabel}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
@@ -160,7 +167,7 @@ export default function WebsiteNativeDateTimeInput({
         <span className="website-native-datetime__icon" aria-hidden="true" />
       </button>
       {open && !isTime ? (
-        <div className="website-calendar" role="dialog" aria-label="Choose a date">
+        <div ref={panelRef} popover="manual" data-website-popover="true" className="website-calendar" role="dialog" aria-label="Choose a date">
           <div className="website-calendar__header">
             <button
               type="button"
@@ -251,7 +258,7 @@ export default function WebsiteNativeDateTimeInput({
         </div>
       ) : null}
       {open && isTime ? (
-        <div className="website-calendar website-time-picker" role="dialog" aria-label="Choose a time">
+        <div ref={panelRef} popover="manual" data-website-popover="true" className="website-calendar website-time-picker" role="dialog" aria-label="Choose a time">
           <div className="website-calendar__header">
             <div className="website-calendar__title">Preferred time</div>
           </div>

@@ -26,8 +26,9 @@
 //
 // Styling is entirely custglobal.css (.ws-val-*). No inline visual styling.
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 
 import StockShell from "../stock/StockShell";
 import useWebsiteContent from "../hooks/useWebsiteContent";
@@ -182,6 +183,24 @@ export default function ValuationPage() {
       });
     }
   }, [answers.registration, set]);
+
+  // ?reg= — handed over by the home page quick valuation ("Improve my
+  // estimate"). Prefill the plate once, then run the same DVLA lookup the
+  // customer would have triggered, so they land straight on the next questions.
+  const router = useRouter();
+  const [autoLookup, setAutoLookup] = useState(false);
+  useEffect(() => {
+    if (!router.isReady) return;
+    const reg = normaliseReg(Array.isArray(router.query.reg) ? router.query.reg[0] : router.query.reg);
+    if (!isPlausibleReg(reg)) return;
+    set({ registration: reg, dvlaConfirmed: false });
+    setAutoLookup(true);
+  }, [router.isReady, router.query.reg, set]);
+  useEffect(() => {
+    if (!autoLookup || !answers.registration) return;
+    setAutoLookup(false);
+    runLookup();
+  }, [autoLookup, answers.registration, runLookup]);
 
   const startAgain = useCallback(() => {
     setAnswers(INITIAL_ANSWERS);
@@ -638,11 +657,13 @@ export default function ValuationPage() {
                 )}
 
                 <div className="ws-val-nav">
-                  <button type="button" className="ws-btn ws-btn--ghost" onClick={() => goTo(STEPS.length - 1)}>
-                    Change my answers
-                  </button>
-                  <button type="button" className="ws-val-link" onClick={startAgain}>
+                  {/* Same secondary / primary pair as the step nav below, so the
+                      two buttons split the row 50/50 (and stack on mobile). */}
+                  <button type="button" className="ws-btn ws-btn--ghost" onClick={startAgain}>
                     Value another vehicle
+                  </button>
+                  <button type="button" className="ws-btn ws-btn--primary" onClick={() => goTo(STEPS.length - 1)}>
+                    Change my answers
                   </button>
                 </div>
 

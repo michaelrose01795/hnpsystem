@@ -28,7 +28,7 @@ function CardHeader({ eyebrow, title, count, action }) {
         {eyebrow ? <div className="ws-portal-eyebrow">{eyebrow}</div> : null}
         <h2 className="ws-portal-card__title">{title}</h2>
       </div>
-      <div className="ws-portal-action-row">
+      <div className="ws-portal-action-row ws-portal-actions-end">
         {count !== undefined ? <span className="ws-portal-count">{count}</span> : null}
         {action}
       </div>
@@ -39,8 +39,8 @@ function CardHeader({ eyebrow, title, count, action }) {
 function Tracker({ spaced = false }) {
   return (
     <div
-      className="ws-portal-tracker"
-      style={{ "--ws-portal-steps": String(STAGES.length), marginTop: spaced ? 6 : 0 }}
+      className={spaced ? "ws-portal-tracker ws-portal-spaced" : "ws-portal-tracker"}
+      style={{ "--ws-portal-steps": String(STAGES.length) }}
     >
       {STAGES.map((stage) => (
         <div key={stage.key} className="ws-portal-step" data-state={stage.state}>
@@ -68,11 +68,21 @@ export default function PortalShowcase({ section }) {
 
   return (
     <ShowcaseSection id="portal" section={section}>
-      <Row label="Portal page" note=".ws-portal-shell · .ws-portal-header · .ws-portal-layout · .ws-portal-nav · .ws-portal-banner">
-        <Frame padded>
-          <div className="ws-portal-shell">
-            <main className="ws-portal-main">
-              <header className="ws-portal-header">
+      <Row label="Portal top bar" note=".ws-nav.ws-portal-navbar · .ws-portal-topbar — jump-to links and greeting in the sticky bar">
+        <Frame>
+          <div className="ws-page">
+            <header className="ws-nav ws-portal-navbar">
+              <div className="ws-nav-inner">
+                <nav className="ws-nav-links" aria-label="Showcase account sections">
+                  <span className="ws-portal-nav__heading">Jump to</span>
+                  {NAV_LINKS.map((label, index) => (
+                    <a key={label} href="#portal" className={index === 0 ? "ws-nav-link ws-nav-link--active" : "ws-nav-link"}>
+                      {label}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+              <div className="ws-portal-topbar">
                 <div>
                   <span className="ws-portal-eyebrow">Customer portal</span>
                   <h1 className="ws-portal-title">Hello, Jordan Reyes</h1>
@@ -85,26 +95,25 @@ export default function PortalShowcase({ section }) {
                   <a href="#portal" role="button">
                     Back to site
                   </a>
-                  <button type="button" className="app-btn">
+                  <button type="button" className="app-btn ws-portal-action-start">
                     Log out
                   </button>
                 </div>
-              </header>
+              </div>
+            </header>
+          </div>
+        </Frame>
+      </Row>
 
-              <div className="ws-portal-layout">
-                <aside className="ws-portal-nav" aria-label="Sections">
-                  <span className="ws-portal-nav__heading">Jump to</span>
-                  {NAV_LINKS.map((label) => (
-                    <a key={label} href="#portal" className="ws-portal-nav__link">
-                      {label}
-                    </a>
-                  ))}
-                </aside>
-
+      <Row label="Portal page" note=".ws-portal-shell · .ws-portal-stack · .ws-portal-banner">
+        <Frame padded>
+          <div className="ws-portal-shell">
+            <main className="ws-portal-main">
+              <div>
                 <div className="ws-portal-stack">
                   <div className="ws-portal-split">
                     <section className="website-banner ws-portal-banner">
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <div className="ws-portal-flow">
                         <span className="ws-portal-banner__title">MOT due in 12 days — AB12 CDE</span>
                         <span className="ws-portal-banner__meta">Expires 25 Sep 2026</span>
                       </div>
@@ -119,7 +128,7 @@ export default function PortalShowcase({ section }) {
                         action={<span className="ws-portal-badge">In workshop</span>}
                       />
                       <p className="ws-portal-hint">AB12 CDE · Ford Focus</p>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      <div className="ws-portal-action-row">
                         <span className="ws-portal-tag" data-tone="accent">
                           Mobile visit · TN15 6AA
                         </span>
@@ -161,7 +170,7 @@ export default function PortalShowcase({ section }) {
                     <div className="ws-portal-item-meta ws-portal-item-meta--spaced">
                       MOT due 25 Sep 2026 · Warranty until 01 Mar 2027
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                    <div className="ws-portal-action-row">
                       <span className="ws-portal-light" data-tone="red">
                         <span className="ws-portal-light__dot" />2
                       </span>
@@ -249,14 +258,14 @@ export default function PortalShowcase({ section }) {
           <section className="ws-portal-card">
             <CardHeader eyebrow="Ownership hub" title="Vehicle health overview" count="1 vehicle" />
             <div className="ws-portal-tile">
-              <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+              <div className="ws-portal-action-row">
                 <div className="ws-portal-score" style={{ "--ws-portal-score": `${80 * 3.6}deg` }}>
                   <div className="ws-portal-score__inner">
                     <span className="ws-portal-score__value">80</span>
                     <span className="ws-portal-score__label">health</span>
                   </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div className="website-dev-stack">
                   <span className="ws-portal-item-title">Ford Focus</span>
                   <span className="ws-portal-badge">AB12 CDE</span>
                 </div>
@@ -274,7 +283,7 @@ export default function PortalShowcase({ section }) {
                   <span className="ws-portal-detail__value">48,250 miles</span>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+              <div className="ws-portal-action-row">
                 <span className="ws-portal-notify" data-enabled="true">
                   <span className="ws-portal-notify__dot" />
                   SMS
@@ -362,7 +371,7 @@ export default function PortalShowcase({ section }) {
                   <span className="ws-portal-media__caption">Front brake disc</span>
                 </a>
               </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div className="ws-portal-action-row">
                 <div className="ws-portal-thumb">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {photo ? <img src={photo} alt="" className="ws-portal-media__fill" /> : null}
@@ -388,8 +397,8 @@ export default function PortalShowcase({ section }) {
                   <span className="ws-portal-bubble__meta">You · 03 Sep 2026, 16:10</span>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-                <textarea placeholder="Type a message…" style={{ flex: 1 }} />
+              <div className="ws-portal-compose">
+                <textarea className="ws-portal-grow" placeholder="Type a message…" />
                 <button type="button" className="app-btn">
                   Send
                 </button>
@@ -429,7 +438,7 @@ export default function PortalShowcase({ section }) {
                     <label className="ws-portal-label" htmlFor="dev-portal-reg">
                       Registration
                     </label>
-                    <div style={{ display: "flex", gap: 10 }}>
+                    <div className="ws-portal-action-row">
                       <input id="dev-portal-reg" type="text" placeholder="e.g. AB12 CDE" className="ws-portal-reg-input" />
                       <button type="button">Search</button>
                     </div>

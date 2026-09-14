@@ -1,14 +1,14 @@
 // file location: src/pages/website/shop/cart.js
-// Public cart review page. Opts out of the dashboard chrome.
+// Legacy route: opens the single /website/shop flow at the basket checkpoint.
 
 import dynamic from "next/dynamic";
 
-const CartPage = dynamic(() => import("@/features/website/shop/CartPage"), {
+const ShopCheckoutFlow = dynamic(() => import("@/features/website/shop/ShopCheckoutFlow"), {
   ssr: false,
 });
 
 export default function Page() {
-  return <CartPage />;
+  return <ShopCheckoutFlow initialStep="basket" />;
 }
 
 Page.getLayout = (page) => page;

@@ -48,12 +48,14 @@ import useWebsiteTheme from "./hooks/useWebsiteTheme";
 import useWebsiteContent from "./hooks/useWebsiteContent";
 import useWebsitePreviewMode from "./hooks/useWebsitePreviewMode";
 import PreviewClickTarget from "./components/PreviewClickTarget";
-import WebsiteNavActions, { WebsiteDevNavControls } from "./components/WebsiteNavActions";
+import WebsiteTopBar from "./components/WebsiteTopBar";
 import ShopSection from "./components/ShopSection";
+import QuickActions from "./components/QuickActions";
 import VehicleCard from "./components/VehicleCard";
 import HelpArticleModal from "./components/HelpArticleModal";
 import { designToCssVars } from "./data/siteDesign";
 import { FEATURED_VEHICLE_LIMIT } from "./data/vehicles";
+import { resolveLegalLinks } from "./legal/legalLinks";
 
 /* ------------------------------------------------------------------ */
 /* Small presentational helpers                                        */
@@ -100,14 +102,9 @@ const rangeBrandsOut = (rangeBrands) =>
       : { brand: rb?.brand || "", models: Array.isArray(rb?.models) ? rb.models : [] },
   );
 
-const legalLinksOut = (legal) =>
-  (Array.isArray(legal) ? legal : [])
-    .map((entry) =>
-      typeof entry === "string"
-        ? { label: entry, href: "#top" }
-        : { label: entry?.label || "", href: entry?.href || "#top" },
-    )
-    .filter((entry) => entry.label);
+// Both shapes normalise through resolveLegalLinks, which also keeps every link on
+// the customer site (stored hrefs used to point at staff /profile/privacy, /terms).
+const legalLinksOut = (legal) => resolveLegalLinks(legal);
 
 /* ------------------------------------------------------------------ */
 /* Removable-content guards                                            */
@@ -404,28 +401,33 @@ export default function WebsitePage() {
       </PreviewClickTarget>
     ),
 
-    // Remove every logo from data/brands.js and the strip disappears rather
-    // than leaving a label with nothing after it.
-    brands: (row) =>
-      asList(brands).length ? (
-        <PreviewClickTarget key={row.id} {...click("partner-brands", "Partner brand strip")}>
-          <section
-            id={row.anchor || "brands"}
-            className={row.tint ? "ws-section ws-section--tint" : "ws-section"}
-          >
-            <div className="ws-container ws-brands-inner">
-              <span className="ws-brands-label">{row.title || "Authorised retailer for"}</span>
-              <ul className="ws-brands-list">
-                {asList(brands).map((b) => (
-                  <li key={b.name}>
-                    <img src={b.logo} alt={b.name} loading="lazy" />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-        </PreviewClickTarget>
-      ) : null,
+    // Quick actions (find a car / book workshop / value my car) on the left,
+    // the brand strip on the right. Remove every logo from data/brands.js and
+    // only the brand side goes — the quick actions stay.
+    brands: (row) => (
+      <PreviewClickTarget key={row.id} {...click("partner-brands", "Partner brand strip")}>
+        <section
+          id={row.anchor || "brands"}
+          className={row.tint ? "ws-section ws-section--tint" : "ws-section"}
+        >
+          <div className="ws-container ws-quick">
+            <QuickActions />
+            {asList(brands).length ? (
+              <div className="ws-brands-inner">
+                <span className="ws-brands-label">{row.title || "Authorised retailer for"}</span>
+                <ul className="ws-brands-list">
+                  {asList(brands).map((b) => (
+                    <li key={b.name}>
+                      <img src={b.logo} alt={b.name} loading="lazy" />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      </PreviewClickTarget>
+    ),
 
     cars: (row) => (
       <PreviewClickTarget key={row.id} {...click("vehicles", "Featured vehicles")}>
@@ -946,66 +948,28 @@ export default function WebsitePage() {
         {/* ---------------- Top navigation ---------------- */}
         {/* Section embeds are one block on their own — no nav, no footer. */}
         {sectionPreview ? null : (
-          <header className="ws-nav" data-presentation="website-nav">
-            <div className="ws-nav-inner">
-              {/* The full-resolution local wordmark, as ShopShell / StockShell use.
-                  The old <img> read brand.logoUrl, a 150px CDN thumbnail that also
-                  went undefined once the live brand row (snake_case) loaded. */}
-              <a href="#top" className="ws-brand" onClick={closeMenu}>
-                <BrandLogo className="ws-logo" alt={brand.name || "Humphries & Parks"} priority />
-              </a>
-
-              <nav className={menuOpen ? "ws-nav-links ws-nav-links--open" : "ws-nav-links"} aria-label="Primary">
-                {navLinks.map((link) => (
-                  <a
-                    key={link.id}
-                    href={link.href}
-                    className={
-                      activeId && link.href === `#${activeId}` ? "ws-nav-link ws-nav-link--active" : "ws-nav-link"
-                    }
-                    onClick={handleNavClick(link)}
-                  >
-                    {link.label}
-                  </a>
-                ))}
-                {/* Phone menu only (custglobal hides this above 640px): the bar
-                    is too narrow there for the phone number and dev controls. */}
-                <div className="ws-nav-menu-extras">
-                  <WebsiteDevNavControls onNavigate={closeMenu} />
-                  {design?.showNavPhone === false || !contact.phone ? null : (
-                    <a
-                      href={contact.phoneHref || `tel:${contact.phone}`}
-                      className="ws-nav-phone"
-                      onClick={closeMenu}
-                    >
-                      {contact.phone}
-                    </a>
-                  )}
-                </div>
-              </nav>
-
-              <button
-                type="button"
-                className="ws-nav-toggle"
-                aria-expanded={menuOpen}
-                aria-label={menuOpen ? "Close menu" : "Open menu"}
-                onClick={() => setMenuOpen((v) => !v)}
+          <WebsiteTopBar
+            label="Primary"
+            brandHref="#top"
+            brandAlt={brand.name || "Humphries & Parks"}
+            contact={contact}
+            design={design}
+            sessionLoading={authState.loading}
+            customer={authState.customer}
+            onNavigate={closeMenu}
+            menu={{ open: menuOpen, onToggle: () => setMenuOpen((v) => !v) }}
+          >
+            {navLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.href}
+                className={activeId && link.href === `#${activeId}` ? "ws-nav-link ws-nav-link--active" : "ws-nav-link"}
+                onClick={handleNavClick(link)}
               >
-                {menuOpen ? "Close" : "Menu"}
-              </button>
-
-              {/* Far-right corner: [Dev] [Overlay] [phone] [Account]. */}
-              <WebsiteNavActions
-                phone={contact.phone}
-                phoneHref={contact.phoneHref}
-                showPhone={design?.showNavPhone !== false}
-                showAccount={design?.showNavAccount !== false}
-                sessionLoading={authState.loading}
-                customer={authState.customer}
-                onNavigate={closeMenu}
-              />
-            </div>
-          </header>
+                {link.label}
+              </a>
+            ))}
+          </WebsiteTopBar>
         )}
 
         <main>{visibleBlocks.map((row) => BLOCK_RENDERERS[row.id](row))}</main>

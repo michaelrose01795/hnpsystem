@@ -1,0 +1,30 @@
+{
+  "/website": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/website/available-stock": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/website/parts-catalog": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/website/valuation": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/website/login": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/website/shop/cart": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/website/dev": {
+    "clipped": 0,
+    "touch": 18
+  }
+}

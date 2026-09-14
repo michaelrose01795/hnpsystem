@@ -6,14 +6,14 @@
 // in the FIRST paint. Reading it from the router on the client instead would
 // show every car for a frame and then drop half of them, which reads as a bug.
 import { customerWebsiteGetLayout } from "@/components/layout/CustomerWebsiteLayout";
-import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
+import WebsiteRouteBoundary from "@/features/website/errors/WebsiteRouteBoundary";
 import AvailableStockPage from "@/features/website/stock/AvailableStockPage";
 
 export default function AvailableStock({ initialQuery }) {
   return (
-    <RouteBoundary variant="customer" homeHref="/website" hostSupportModal>
+    <WebsiteRouteBoundary>
       <AvailableStockPage initialQuery={initialQuery} />
-    </RouteBoundary>
+    </WebsiteRouteBoundary>
   );
 }
 

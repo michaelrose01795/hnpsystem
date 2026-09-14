@@ -21,8 +21,11 @@
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import { canShowDevPages } from "@/lib/dev-tools/config";
 import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
+import useCustomerSession from "@/features/website/hooks/useCustomerSession";
+import WebsiteTopBar from "@/features/website/components/WebsiteTopBar";
 import WEBSITE_DESIGN from "@/config/websiteDesign.generated.json";
 import FoundationShowcase from "@/features/website/showcase/sections/FoundationShowcase";
 import ButtonsShowcase from "@/features/website/showcase/sections/ButtonsShowcase";
@@ -78,6 +81,7 @@ const resolveWebsiteTheme = (preference) => {
 
 export default function WebsiteDevShowcasePage() {
   useWebsiteScope();
+  const { loading: sessionLoading, customer } = useCustomerSession();
 
   const [themePreference, setThemePreference] = useState("light");
   const [theme, setTheme] = useState("light");
@@ -111,11 +115,22 @@ export default function WebsiteDevShowcasePage() {
     setThemePreference(next);
   };
 
+  const topBar = (
+    <WebsiteTopBar sessionLoading={sessionLoading} customer={customer}>
+      <Link href="/website" className="ws-nav-link">
+        Back to site
+      </Link>
+    </WebsiteTopBar>
+  );
+
   if (!canShowDevPages()) {
     return (
-      <div className="website-dev-locked">
-        <h1 className="website-dev-locked__title">Not available</h1>
-        <p className="website-dev-locked__body">This page is disabled in the current environment.</p>
+      <div className="ws-page">
+        {topBar}
+        <div className="website-dev-locked">
+          <h1 className="website-dev-locked__title">Not available</h1>
+          <p className="website-dev-locked__body">This page is disabled in the current environment.</p>
+        </div>
       </div>
     );
   }
@@ -132,6 +147,8 @@ export default function WebsiteDevShowcasePage() {
         <meta name="robots" content="noindex,nofollow" />
       </Head>
 
+      <div className="ws-page">
+      {topBar}
       <main className="website-dev-shell">
         <div className="website-dev-intro">
           <h1 className="website-dev-page-title">Customer UI</h1>
@@ -189,6 +206,7 @@ export default function WebsiteDevShowcasePage() {
           ))}
         </div>
       </main>
+      </div>
     </>
   );
 }

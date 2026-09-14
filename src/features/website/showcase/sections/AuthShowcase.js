@@ -14,7 +14,7 @@ const noop = () => {};
 export default function AuthShowcase({ section }) {
   return (
     <ShowcaseSection id="auth" section={section}>
-      <Row label="Email step" note=".authCard · .authTopRow · .authBackLink · .authInput (type=email) · .authSubmit">
+      <Row label="Email step" note=".authCard · .authTopRow · .authBackLink · .authInput (type=email) · .authSubmit · .authFootnoteLink">
         <div className="website-dev-auth-frame">
           <div className="authShell">
             <main className="authMain">
@@ -42,7 +42,12 @@ export default function AuthShowcase({ section }) {
                     Continue
                   </button>
                 </form>
-                <p className="authFootnote">By continuing you agree to our privacy and data policy.</p>
+                <p className="authFootnote">
+                  By continuing you agree to Humphries &amp; Parks&apos;s{" "}
+                  <a href="#auth" className="authFootnoteLink">
+                    privacy and data policy.
+                  </a>
+                </p>
               </div>
               <div className="authCard authDevCard">
                 <span className="authDevTag">Dev tools</span>

@@ -122,3 +122,165 @@ html.staff-scope .app-table-scroll .app-data-table :where(th, td)[data-table-cel
   white-space: nowrap;
   overflow-wrap: normal;
 }
+
+/* ========================================================================== */
+/* === Mobile stacked-card mode — .app-data-table--stack                  === */
+/* === (responsive sweep, 2026-09; breakpoints: src/styles/breakpoints.js) === */
+/* ========================================================================== */
+/*
+ * A data table cannot be made readable at 375px as a table. Six columns of
+ * real content need ~700px minimum, and this app deliberately does NOT scroll
+ * tables sideways (see .app-table-scroll above — scrollbar chrome is hidden
+ * app-wide, so a sideways scroll hides columns behind an invisible scrollbar).
+ * Wrapping alone is not enough either: at 375px a 6-column table gives each
+ * cell ~50px, and every value wraps to four lines of two characters.
+ *
+ * So below the MOBILE breakpoint each ROW becomes a card: the header row is
+ * removed from the flow and each cell carries its own label, taken from the
+ * matching <th> and stamped onto the cell as data-label by DataTableShell.
+ *
+ * This is NOT a new surface in the layer-ladder sense (CLAUDE.md §3.0a-2) —
+ * the row keeps painting --row-background exactly as it does on desktop, and
+ * rows stay separated by --separating-line, which is the one line the border
+ * law allows inside a list. No card background is invented here.
+ *
+ * Cells with no label (an actions column, a checkbox column) are detected by
+ * an empty/absent data-label and span the full width without a label gutter.
+ */
+
+@media (max-width: 640px) {
+  /* The base rule in staffglobal.css pins every body row to --table-row-height
+     with !important, which would crush a stacked card back to 44px. Rebinding
+     the custom property beats it without adding a second !important (the
+     family is at its budget of 3) — a var() rebind is not a cascade conflict. */
+  html.staff-scope .app-data-table--stack {
+    --table-row-height: auto;
+    display: block;
+    width: 100%;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  /* The header is the label source, not a visible row. Kept in the accessibility
+     tree rather than display:none so screen readers still announce the column
+     names; clip-based hiding is what keeps that true. */
+  html.staff-scope .app-data-table--stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    background: none;
+  }
+
+  html.staff-scope .app-data-table--stack tbody,
+  html.staff-scope .app-data-table--stack tfoot {
+    display: block;
+    width: 100%;
+  }
+
+  html.staff-scope .app-data-table--stack tbody tr {
+    display: block;
+    width: 100%;
+    padding: var(--space-3) 0;
+    background: var(--row-background);
+    border-bottom: var(--separating-line);
+  }
+
+  html.staff-scope .app-data-table--stack tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  /* Label | value, two columns. The label column is capped at 45% so a long
+     header cannot starve the value, and both sides wrap independently. */
+  html.staff-scope .app-data-table--stack tbody td {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: var(--space-md);
+    align-items: start;
+    width: 100%;
+    padding: var(--space-2) var(--space-md);
+    border-bottom: none;
+    text-align: left;
+    /* Long unbroken values (reg plates, VINs, part numbers, emails) are the
+       usual cause of sideways overflow at 375px. */
+    overflow-wrap: anywhere;
+  }
+
+  html.staff-scope .app-data-table--stack tbody td::before {
+    content: attr(data-label);
+    font-size: var(--text-caption);
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text-1);
+    opacity: 0.72;
+    overflow-wrap: anywhere;
+  }
+
+  /* Unlabelled cells — actions, checkboxes, spacers — take the full width and
+     drop the label gutter entirely rather than rendering an empty column. */
+  html.staff-scope .app-data-table--stack tbody td:not([data-label]),
+  html.staff-scope .app-data-table--stack tbody td[data-label=""] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  html.staff-scope .app-data-table--stack tbody td:not([data-label])::before,
+  html.staff-scope .app-data-table--stack tbody td[data-label=""]::before {
+    content: none;
+  }
+
+  /* A cell explicitly marked full-width spans the card with its label above
+     the value instead of beside it — for notes and long free text. */
+  html.staff-scope .app-data-table--stack tbody td[data-table-cell="block"] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  /* The desktop nowrap opt-out must NOT survive into stacked mode: it is the
+     single most common cause of a stacked card overflowing its parent. */
+  html.staff-scope .app-data-table--stack :where(th, td)[data-table-cell="nowrap"] {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* In a stacked card the value side of a row is usually the primary action
+     for that record - the customer name, the job number, the account. On
+     desktop that is a normal inline text link sitting in a 44px table row,
+     so the ROW supplies a comfortable hit area. Stacked, the link is only as
+     tall as its own line box (~17px), well under the touch floor, and it is
+     the main thing a user taps on that screen. Give it the row height back.
+
+     Scoped to a cell whose only link it is, so a link inside a sentence of
+     body copy - which WCAG 2.5.8 exempts from the target-size rule - is not
+     turned into a block. */
+  html.staff-scope .app-data-table--stack tbody td > a:only-child {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--control-height);
+  }
+
+  /* Empty-state / "no results" rows keep a single centred cell. */
+  html.staff-scope .app-data-table--stack tbody td[colspan]:only-child {
+    display: block;
+    text-align: center;
+  }
+
+  html.staff-scope .app-data-table--stack tbody td[colspan]:only-child::before {
+    content: none;
+  }
+
+  /* The vertical row cap is a desktop affordance — a stacked card is ~5x taller
+     than a 44px row, so an 11-row cap becomes a tiny scrolling window inside an
+     already-scrolling page. Let the page scroll instead. */
+  html.staff-scope .app-table-scroll {
+    max-height: none;
+    overflow-y: visible;
+  }
+}

@@ -20,7 +20,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import dynamic from "next/dynamic";
 import Head from "next/head";
-import React, { useEffect } from "react"; // import React helpers
+import React, { useEffect, useState } from "react"; // import React helpers
 
 // Self-hosted Inter via next/font (no FOUT, no external request at runtime).
 // We need the resolved font-family string (next/font generates a hashed name
@@ -61,6 +61,8 @@ import StaffProviders from "@/components/App/StaffProviders";
 // only add a chunk request to the critical path — and a boundary that arrives
 // late cannot catch a crash during the first render it is supposed to guard.
 import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
+import WebsiteRouteBoundary from "@/features/website/errors/WebsiteRouteBoundary";
+import { isFrameworkErrorRoute } from "@/features/website/errors/websiteErrorRoutes";
 import Layout from "@/components/Layout";
 
 // Keep staff-only providers, shell code and global listeners out of the login
@@ -167,7 +169,17 @@ function AppWrapper({ Component, pageProps }) {
     isPublicVhcReportPath(pathname) ||
     isPublicVhcReportPath(asPathClean) ||
     Component.hideGlobalNotesWidget === true;
-  const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
+  // The framework error pages (/404, /500, /_error) render under their own route
+  // pattern, and the prerendered /404 and /500 do not even carry the real URL in
+  // asPath. Read the browser address for those, so an error on a /website address
+  // keeps the website scope + stylesheet instead of flipping to staff styling.
+  const onFrameworkErrorRoute = isFrameworkErrorRoute(pathname);
+  const [errorRouteBrowserPath, setErrorRouteBrowserPath] = useState("");
+  useEffect(() => {
+    setErrorRouteBrowserPath(onFrameworkErrorRoute ? window.location.pathname : "");
+  }, [onFrameworkErrorRoute, asPath]);
+  const isWebsiteRoute =
+    isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery) || isWebsitePath(errorRouteBrowserPath);
   const isTrackingRoute = isTrackingPath(pathname) || isTrackingPath(asPathWithoutQuery);
   const isDevRoute = pathname === "/dev" || pathname.startsWith("/dev/") || asPathWithoutQuery === "/dev" || asPathWithoutQuery.startsWith("/dev/");
   // Login routes get their own body class. The login page's viewport rules used
@@ -704,7 +716,13 @@ function AppWrapper({ Component, pageProps }) {
   // The `key` resets the boundary on navigation, so a crash screen never
   // survives into the next route. The app-shell boundary remains above as the
   // last resort for a crash in the layout itself.
-  const pageElement = (
+  // /website pages recover on the customer site's own error page (custglobal.css)
+  // rather than the staff recovery card.
+  const pageElement = isWebsiteRoute ? (
+    <WebsiteRouteBoundary key={pathname}>
+      <Component {...pageProps} />
+    </WebsiteRouteBoundary>
+  ) : (
     <RouteBoundary
       key={pathname}
       variant={isCustomerFacingSurface ? "customer" : "staff"}

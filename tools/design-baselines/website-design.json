@@ -10,9 +10,10 @@
   },
   "undeclared-classes": {},
   "inline-visual": {},
-  "js-raw-colours": {
-    "src/features/website/data/siteDesign.js": 2
-  },
+  "js-raw-colours": {},
   "js-undefined-tokens": {},
-  "contrast": {}
+  "contrast": {},
+  "control-metric-literals": {},
+  "radius-literals": {},
+  "js-staff-classes": {}
 }

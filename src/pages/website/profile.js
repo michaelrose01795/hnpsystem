@@ -25,6 +25,7 @@ import { useTheme } from "@/styles/themeProvider";
 import { siteContent } from "@/features/website/data/siteContent";
 import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
 import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
+import WebsiteTopBar from "@/features/website/components/WebsiteTopBar";
 import WebsiteNativeDateTimeInput from "@/features/website/components/WebsiteNativeDateTimeInput";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import {
@@ -294,9 +295,9 @@ function PortalCard({ id, eyebrow, title, count, action, todo, wide = false, chi
   );
 }
 
-function PortalButtonLink({ href, children, style }) {
+function PortalButtonLink({ href, children, className = "" }) {
   return (
-    <a className="app-btn" href={href} style={style}>
+    <a className={`app-btn ${className}`} href={href}>
       {children}
     </a>
   );
@@ -358,12 +359,12 @@ function OwnershipDashboardCard({ vehicles = [] }) {
       }}
     >
       {vehicles.length === 0 ? <p className="ws-portal-empty">No vehicles are linked to this account yet.</p> : null}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="ws-portal-flow" >
         {vehicles.map((vehicle) => (
           <div key={vehicle.vehicle_id || vehicle.id || portalVehicleReg(vehicle)} className="ws-portal-tile">
-            <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="ws-portal-action-row" >
               <ScoreRing score={getHealthScore(vehicle)} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div className="ws-portal-flow" >
                 <span className="ws-portal-item-title">{portalVehicleTitle(vehicle)}</span>
                 <span className="ws-portal-badge">{portalVehicleReg(vehicle)}</span>
               </div>
@@ -408,7 +409,7 @@ function LiveProgressTrackerCard({ jobs = [], customer }) {
         <p className="ws-portal-empty">No active workshop job is currently linked to this account.</p>
       ) : (
         <div className="ws-portal-tile">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          <div className="ws-portal-action-row" >
             <span className="ws-portal-item-title">{active.job_number || active.id}</span>
             <span className="ws-portal-badge" data-tone="open">{active.status || "Booked"}</span>
             {active.service_mode === "mobile" ? <span className="ws-portal-badge" data-tone="ok">Mobile service</span> : null}
@@ -425,7 +426,7 @@ function LiveProgressTrackerCard({ jobs = [], customer }) {
           </DetailFieldGrid>
           <div>
             <h3 className="ws-portal-subhead">Notifications</h3>
-            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
+            <div className="ws-portal-action-row ws-portal-spaced" >
               <NotificationDot enabled={smsEnabled} label="SMS" />
               <NotificationDot enabled={emailEnabled} label="Email" />
               <NotificationDot enabled={false} label="Push" />
@@ -459,7 +460,7 @@ function RepairApprovalTimelineCard({ jobs = [], jobStatusHistory = [] }) {
         <p className="ws-portal-empty">No job timeline is available for this account yet.</p>
       ) : (
         <div className="ws-portal-tile">
-          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <div className="ws-portal-action-row" >
             <span className="ws-portal-item-title">{job.job_number}</span>
             <span className="ws-portal-item-meta">{[job.vehicle_make_model, job.vehicle_reg].filter(Boolean).join(" · ")}</span>
           </div>
@@ -549,7 +550,7 @@ function DigitalServiceHistoryCard({ jobs = [], jobHistory = [], invoices = [], 
                 </div>
                 {visit.note ? <div className="ws-portal-item-meta ws-portal-item-meta--spaced">{visit.note}</div> : null}
               </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <div className="ws-portal-action-row ws-portal-actions-end" >
                 {visit.red > 0 ? <span className="ws-portal-badge" data-tone="open">{visit.red} red</span> : null}
                 {visit.amber > 0 ? <span className="ws-portal-badge">{visit.amber} amber</span> : null}
                 {visit.red === 0 && visit.amber === 0 ? <span className="ws-portal-badge" data-tone="ok">No red/amber</span> : null}
@@ -574,13 +575,13 @@ function MotHistoryCard({ vehicles = [] }) {
       }}
     >
       {vehicles.length === 0 ? <p className="ws-portal-empty">No vehicles are linked to this account yet.</p> : null}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="ws-portal-flow" >
         {vehicles.map((vehicle) => {
           const days = daysUntil(vehicle.mot_due);
           const status = days == null ? "Unknown" : days < 0 ? "Overdue" : days <= 30 ? "Due soon" : "Current";
           return (
             <div key={vehicle.vehicle_id || vehicle.reg_number} className="ws-portal-tile">
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <div className="ws-portal-action-row" >
                 <span className="ws-portal-item-title">{portalVehicleTitle(vehicle)}</span>
                 <span className="ws-portal-badge">{portalVehicleReg(vehicle)}</span>
               </div>
@@ -610,10 +611,10 @@ function RecallCheckerCard({ vehicles = [] }) {
       todo={{ label: "Manufacturer / DVSA recall API not linked yet" }}
     >
       {vehicles.length === 0 ? <p className="ws-portal-empty">No vehicles are linked to this account yet.</p> : null}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="ws-portal-flow" >
         {vehicles.map((vehicle) => (
           <div key={vehicle.vehicle_id || vehicle.reg_number} className="ws-portal-tile">
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div className="ws-portal-action-row" >
               <span className="ws-portal-item-title">{portalVehicleTitle(vehicle)}</span>
               <span className="ws-portal-badge">{portalVehicleReg(vehicle)}</span>
               {vehicle.vin ? <span className="ws-portal-item-meta">VIN {vehicle.vin}</span> : null}
@@ -669,7 +670,7 @@ function VhcEnhancementsCard({ jobs = [], vhcByJob = {}, vhcDeclinations = [], v
       {!latestSummary ? (
         <p className="ws-portal-empty">No live VHC is linked to this account yet.</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="ws-portal-flow" >
           <div className="ws-portal-split">
             <div className="ws-portal-tile">
               <div className="ws-portal-balance">
@@ -697,13 +698,13 @@ function VhcEnhancementsCard({ jobs = [], vhcByJob = {}, vhcDeclinations = [], v
                   ))}
                 </ul>
               )}
-              <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Ask us to re-quote</PortalButtonLink>
+              <PortalButtonLink href="#messages" className="ws-portal-action-start" >Ask us to re-quote</PortalButtonLink>
             </div>
           </div>
           <div className="ws-portal-tile">
             <h3 className="ws-portal-subhead">Inspection media</h3>
             {latestMedia.length ? (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div className="ws-portal-action-row" >
                 {latestMedia.map((item) => <MediaThumb key={item.id} item={item} />)}
               </div>
             ) : (
@@ -786,7 +787,7 @@ function InvoicesPaymentsExtrasCard({ invoicePayments = [], paymentPlans = [], t
               ))}
             </ul>
           )}
-          <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Request full statement</PortalButtonLink>
+          <PortalButtonLink href="#messages" className="ws-portal-action-start" >Request full statement</PortalButtonLink>
         </div>
       </div>
     </PortalCard>
@@ -859,7 +860,7 @@ function SalesShowroomCard() {
         <div className="ws-portal-tile">
           <h3 className="ws-portal-subhead">Saved cars & price alerts</h3>
           <p className="ws-portal-empty">Saved cars will appear here once the customer watchlist table is connected.</p>
-          <PortalButtonLink href="/website#cars" style={{ alignSelf: "flex-start" }}>Browse cars</PortalButtonLink>
+          <PortalButtonLink href="/website#cars" className="ws-portal-action-start" >Browse cars</PortalButtonLink>
         </div>
         <div className="ws-portal-tile">
           <h3 className="ws-portal-subhead">Reservations and orders</h3>
@@ -887,8 +888,8 @@ function PartsPortalExtrasCard({ partsJobItems = [], partsRequests = [], partsOr
     >
       <div className="ws-portal-tile">
         <h3 className="ws-portal-subhead">VIN lookup</h3>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input type="text" placeholder="Enter VIN or registration" disabled style={{ flex: "1 1 220px", minWidth: 0 }} />
+        <div className="ws-portal-action-row" >
+          <input type="text" placeholder="Enter VIN or registration" disabled className="ws-portal-grow"  />
           <button type="button">Find parts</button>
         </div>
       </div>
@@ -975,7 +976,7 @@ function SmartRepairCard({ bookingRequests = [] }) {
           <div className="ws-portal-upload">Upload connection required</div>
           <div className="ws-portal-upload">Upload connection required</div>
         </div>
-        <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Request estimate</PortalButtonLink>
+        <PortalButtonLink href="#messages" className="ws-portal-action-start" >Request estimate</PortalButtonLink>
       </div>
       <div className="ws-portal-tile">
         <h3 className="ws-portal-subhead">Repair requests</h3>
@@ -1029,7 +1030,7 @@ function ValetDetailingCard({ bookingRequests = [] }) {
             ))}
           </ul>
         )}
-        <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Ask about valet options</PortalButtonLink>
+        <PortalButtonLink href="#messages" className="ws-portal-action-start" >Ask about valet options</PortalButtonLink>
       </div>
     </PortalCard>
   );
@@ -1128,7 +1129,7 @@ function SelfServiceToolsCard({ vehicles = [], vhcDeclinations = [] }) {
         <div className="ws-portal-tile">
           <h3 className="ws-portal-subhead">Loyalty & referral</h3>
           <p className="ws-portal-empty">Loyalty points and referral rewards will appear once the programme schema is connected.</p>
-          <PortalButtonLink href="#settings" style={{ alignSelf: "flex-start" }}>Refer a friend</PortalButtonLink>
+          <PortalButtonLink href="#settings" className="ws-portal-action-start" >Refer a friend</PortalButtonLink>
         </div>
         <div className="ws-portal-tile">
           <h3 className="ws-portal-subhead">Advisory reminders</h3>
@@ -1173,13 +1174,13 @@ function AiAssistantCard() {
             </button>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div className="ws-portal-action-row" >
           <input
             type="text"
             placeholder="Type a question..."
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            style={{ flex: "1 1 220px", minWidth: 0 }}
+            className="ws-portal-grow" 
           />
           <button type="button">Ask</button>
         </div>
@@ -1210,6 +1211,26 @@ export default function CustomerProfilePage() {
   // Theme cycle preference: "light" | "dark" | "system". Defaults to dark
   // (the historic /website look) until the stored choice loads on mount.
   const [websiteThemePref, setWebsiteThemePref] = useState("dark");
+  // Top-bar jump-to links: phone menu + scroll-spy, as on /website.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeId, setActiveId] = useState(SECTIONS[0].id);
+  const closeMenu = () => setMenuOpen(false);
+
+  useEffect(() => {
+    if (status !== "ready" || typeof window === "undefined") return undefined;
+    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean);
+    if (!els.length) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) setActiveId(e.target.id);
+        });
+      },
+      { rootMargin: "-45% 0px -50% 0px" },
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [status]);
 
   useEffect(() => {
     // Force dark mode + red accent for the whole /website/profile experience.
@@ -1479,6 +1500,56 @@ export default function CustomerProfilePage() {
       <Head>
         <title>{`Your account - ${siteContent.brand.name}`}</title>
       </Head>
+      <div className="ws-page">
+      <WebsiteTopBar
+        label="Account sections"
+        className="ws-portal-navbar"
+        sessionLoading={status === "loading"}
+        customer={customer}
+        onNavigate={closeMenu}
+        menu={{ open: menuOpen, onToggle: () => setMenuOpen((v) => !v) }}
+        subbar={
+          status !== "loading" && status !== "error" && customer ? (
+            <div data-presentation="website-profile-header" className="ws-portal-topbar">
+              <div>
+                <span className="ws-portal-eyebrow">Customer portal</span>
+                <h1 className="ws-portal-title">Hello, {fullName}</h1>
+                <p className="ws-portal-subtitle">
+                  Your vehicles, jobs, invoices, messages and account
+                  settings — all in one place.
+                </p>
+              </div>
+              <div className="ws-portal-header__actions">
+                <button
+                  type="button"
+                  onClick={cycleWebsiteTheme}
+                  aria-label={`Theme: ${websiteThemePref}. Click to cycle light, dark, system.`}
+                >
+                  {`Theme: ${websiteThemePref.charAt(0).toUpperCase()}${websiteThemePref.slice(1)}`}
+                </button>
+                <Link href="/website" role="button">
+                  Back to site
+                </Link>
+                <button type="button" className="app-btn" onClick={handleLogout}>
+                  Log out
+                </button>
+              </div>
+            </div>
+          ) : null
+        }
+      >
+        <span className="ws-portal-nav__heading">Jump to</span>
+        {SECTIONS.map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            className={activeId === s.id ? "ws-nav-link ws-nav-link--active" : "ws-nav-link"}
+            onClick={closeMenu}
+          >
+            {s.label}
+          </a>
+        ))}
+      </WebsiteTopBar>
       <div
         data-presentation="website-profile"
         className="ws-portal-shell"
@@ -1498,49 +1569,15 @@ export default function CustomerProfilePage() {
             </p>
           ) : (
             <>
-              <header data-presentation="website-profile-header" className="ws-portal-header">
-                <div>
-                  <span className="ws-portal-eyebrow">Customer portal</span>
-                  <h1 className="ws-portal-title">Hello, {fullName}</h1>
-                  <p className="ws-portal-subtitle">
-                    Your vehicles, jobs, invoices, messages and account
-                    settings — all in one place.
-                  </p>
-                </div>
-                <div className="ws-portal-header__actions">
-                  <button
-                    type="button"
-                    onClick={cycleWebsiteTheme}
-                    aria-label={`Theme: ${websiteThemePref}. Click to cycle light, dark, system.`}
-                  >
-                    {`Theme: ${websiteThemePref.charAt(0).toUpperCase()}${websiteThemePref.slice(1)}`}
-                  </button>
-                  <Link href="/website" role="button">
-                    Back to site
-                  </Link>
-                  <button type="button" className="app-btn" onClick={handleLogout}>
-                    Log out
-                  </button>
-                </div>
-              </header>
-
-              <div className="ws-portal-layout">
-                <aside data-presentation="website-profile-nav" className="ws-portal-nav" aria-label="Sections">
-                  <span className="ws-portal-nav__heading">Jump to</span>
-                  {SECTIONS.map((s) => (
-                    <a key={s.id} href={`#${s.id}`} className="ws-portal-nav__link">
-                      {s.label}
-                    </a>
-                  ))}
-                </aside>
-
+              {/* Greeting, actions and jump-to links live in the sticky top bar. */}
+              <div>
                 <div className="ws-portal-stack">
                   {/* ───────── Summary banners ───────── */}
                   <div id="summary" data-presentation="website-profile-summary" className="ws-portal-split">
                     {motSoonest ? (
                       <section
                         className="website-banner ws-portal-banner">
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <div className="ws-portal-flow" >
                           <span className="ws-portal-banner__title">
                             {motSoonest.days < 0
                               ? `MOT overdue on ${motSoonest.vehicle.reg_number}`
@@ -1575,7 +1612,7 @@ export default function CustomerProfilePage() {
                     {serviceDue ? (
                       <section
                         className="website-banner ws-portal-banner">
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <div className="ws-portal-flow" >
                           <span className="ws-portal-banner__title">
                             Service due — {serviceDue.vehicle.reg_number}
                           </span>
@@ -1634,8 +1671,8 @@ export default function CustomerProfilePage() {
                           const active = getActiveStageIndex(stages);
                           return (
                             <div
-                              className="ws-portal-tracker"
-                              style={{ "--ws-portal-steps": String(stages.length), marginTop: 6 }}
+                              className="ws-portal-tracker ws-portal-spaced"
+                              style={{ "--ws-portal-steps": String(stages.length) }}
                             >
                               {stages.map((stage, idx) => {
                                 const state =
@@ -1659,7 +1696,7 @@ export default function CustomerProfilePage() {
                   </div>
 
                   {/* ───────── Personal details ───────── */}
-                  <section className="ws-portal-card ws-portal-card--wide">
+                  <section className="ws-portal-card">
                     <PortalCardHeader
                       eyebrow="Account"
                       title="Personal details"
@@ -1719,12 +1756,12 @@ export default function CustomerProfilePage() {
                             />
                           </div>
                         </div>
-                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <div className="ws-portal-action-row" >
                           <button
                             type="submit"
-                            className="app-btn"
+                            className="app-btn ws-portal-grow"
                             disabled={saving}
-                            style={{ flex: 1, minWidth: 160 }}
+                            
                           >
                             {saving ? "Saving…" : "Save changes"}
                           </button>
@@ -1754,6 +1791,11 @@ export default function CustomerProfilePage() {
                       </div>
                     )}
                   </section>
+
+                  {/* ───────── Ownership & live tracking ───────── */}
+                  <OwnershipDashboardCard vehicles={vehicles} />
+                  <LiveProgressTrackerCard jobs={jobs} customer={customer} />
+                  <RepairApprovalTimelineCard jobs={jobs} jobStatusHistory={jobStatusHistory} />
 
                   {/* ───────── Vehicles ───────── */}
                   <section id="vehicles" className="ws-portal-card">
@@ -1884,12 +1926,7 @@ export default function CustomerProfilePage() {
                                 </div>
                                 {vhc ? (
                                   <div
-                                    style={{
-                                      display: "flex",
-                                      flexWrap: "wrap",
-                                      gap: 6,
-                                      marginTop: 6,
-                                    }}
+                                    className="ws-portal-action-row ws-portal-spaced" 
                                   >
                                     {vhc.red ? (
                                       <span className="ws-portal-light" data-tone="red">
@@ -1941,6 +1978,10 @@ export default function CustomerProfilePage() {
                     </section>
                   ) : null}
 
+                  <DigitalServiceHistoryCard jobs={jobs} jobHistory={jobHistory} invoices={invoices} vhcByJob={vhcByJob} />
+                  <MotHistoryCard vehicles={vehicles} />
+                  <RecallCheckerCard vehicles={vehicles} />
+
                   {/* ───────── Inspections (VHC media + items you declined) ───────── */}
                   {(data.vhcMedia?.length || 0) > 0 ||
                   (data.vhcDeclinations?.length || 0) > 0 ? (
@@ -1987,7 +2028,7 @@ export default function CustomerProfilePage() {
                       )}
 
                       {(data.vhcDeclinations?.length || 0) > 0 ? (
-                        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div className="ws-portal-flow ws-portal-spaced" >
                           <p className="ws-portal-hint">
                             Items you previously declined — want to revisit?
                           </p>
@@ -2029,6 +2070,8 @@ export default function CustomerProfilePage() {
                     </section>
                   ) : null}
 
+                  <VhcEnhancementsCard jobs={jobs} vhcByJob={vhcByJob} vhcDeclinations={vhcDeclinations} vhcMedia={vhcMedia} vhcShareLinks={data?.vhcShareLinks || []} />
+
                   {/* ───────── Money / Account / Invoices ───────── */}
                   <div id="invoices" className="ws-portal-split">
                     {accounts.length > 0
@@ -2048,7 +2091,7 @@ export default function CustomerProfilePage() {
                                 {a.credit_terms ?? 30}-day terms
                               </span>
                             </div>
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <div className="ws-portal-action-row" >
                               <button
                                 type="button"
                                 onClick={() =>
@@ -2107,7 +2150,7 @@ export default function CustomerProfilePage() {
                                     {i.due_date ? ` · Due ${formatDate(i.due_date)}` : ""}
                                   </div>
                                 </div>
-                                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                <div className="ws-portal-action-row" >
                                   <span className="ws-portal-badge" data-tone={isPaid ? "ok" : "open"}>
                                     {isPaid ? "Paid" : i.payment_status || "Open"}
                                   </span>
@@ -2210,6 +2253,9 @@ export default function CustomerProfilePage() {
                     </section>
                   ) : null}
 
+                  <InvoicesPaymentsExtrasCard invoicePayments={invoicePayments} paymentPlans={paymentPlans} transactions={transactions} />
+                  <DocumentsCentreCard invoices={invoices} vhcMedia={vhcMedia} />
+
                   {/* ───────── Messages ───────── */}
                   <section id="messages" className="ws-portal-card ws-portal-card--wide">
                     <PortalCardHeader eyebrow="Inbox" title="Messages" count={messages.length} />
@@ -2265,7 +2311,7 @@ export default function CustomerProfilePage() {
                       flash={actionFlash.book}
                     />
                     {bookingRequests.length > 0 ? (
-                      <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div className="ws-portal-flow ws-portal-spaced" >
                         <p className="ws-portal-hint">Recent requests</p>
                         <ul className="ws-portal-list">
                           {bookingRequests.slice(0, 5).map((r) => (
@@ -2343,12 +2389,14 @@ export default function CustomerProfilePage() {
                       }
                       flash={actionFlash.show}
                     />
-                    <div style={{ marginTop: 12 }}>
+                    <div className="ws-portal-spaced" >
                       <Link href="/website#cars">Browse all cars</Link>
                     </div>
                   </section>
 
-                  {/* ───────── Activity timeline ───────── */}
+                  {/* ───────── Activity timeline ─────────
+                      Sits after the hub cards so the DOM follows the Jump-to
+                      nav order; the grid packs the cards around it. */}
                   <section id="activity" className="ws-portal-card">
                     <PortalCardHeader eyebrow="Timeline" title="Activity" count={timeline.length} />
                     {timeline.length === 0 ? (
@@ -2372,20 +2420,7 @@ export default function CustomerProfilePage() {
                     )}
                   </section>
 
-                  {/* ───────── Expanded ownership-hub sections ─────────
-                      Each card renders its own card surface using whatever
-                      classes the component decides — they're left alone here
-                      so the rest of /website/profile follows custglobal.css
-                      without touching shared portal cards. */}
-                  <OwnershipDashboardCard vehicles={vehicles} />
-                  <LiveProgressTrackerCard jobs={jobs} customer={customer} />
-                  <RepairApprovalTimelineCard jobs={jobs} jobStatusHistory={jobStatusHistory} />
-                  <DigitalServiceHistoryCard jobs={jobs} jobHistory={jobHistory} invoices={invoices} vhcByJob={vhcByJob} />
-                  <MotHistoryCard vehicles={vehicles} />
-                  <RecallCheckerCard vehicles={vehicles} />
-                  <VhcEnhancementsCard jobs={jobs} vhcByJob={vhcByJob} vhcDeclinations={vhcDeclinations} vhcMedia={vhcMedia} vhcShareLinks={data?.vhcShareLinks || []} />
-                  <InvoicesPaymentsExtrasCard invoicePayments={invoicePayments} paymentPlans={paymentPlans} transactions={transactions} />
-                  <DocumentsCentreCard invoices={invoices} vhcMedia={vhcMedia} />
+                  {/* ───────── Sales, parts & extras hub ───────── */}
                   <SalesShowroomCard />
                   <PartsPortalExtrasCard partsJobItems={partsJobItems} partsRequests={partsRequests} partsOrderCards={partsOrderCards} />
                   <SmartRepairCard bookingRequests={bookingRequests} />
@@ -2397,7 +2432,7 @@ export default function CustomerProfilePage() {
                   {/* ───────── Settings / security ───────── */}
                   <section id="settings" className="ws-portal-card ws-portal-card--wide">
                     <PortalCardHeader eyebrow="Security" title="Account & security" />
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div className="ws-portal-flow" >
                       <ChangePasswordRow
                         onSuccess={() => flash("pw", "Password updated.")}
                         flash={actionFlash.pw}
@@ -2454,6 +2489,7 @@ export default function CustomerProfilePage() {
           )}
         </main>
       </div>
+      </div>
     </>
   );
 }
@@ -2485,12 +2521,12 @@ function MessageComposer({ onSend, flash }) {
   const [sending, setSending] = useState(false);
   return (
     <>
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+      <div className="ws-portal-compose" >
         <textarea
           placeholder="Type a message…"
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          style={{ flex: 1 }}
+          className="ws-portal-grow" 
         />
         <button
           type="button"
@@ -2832,7 +2868,7 @@ function DataActionsRow({ onExport, onDelete, flashExp, flashDel }) {
           </p>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div className="ws-portal-action-row" >
         <button type="button" onClick={onExport}>
           Request data export
         </button>
@@ -2905,7 +2941,7 @@ function ActiveJobTags({ job, bookingRequest, vhcSent }) {
   }
   if (tags.length === 0) return null;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+    <div className="ws-portal-action-row" >
       {tags.map((t) => (
         <span
           key={t.key}
@@ -3064,7 +3100,7 @@ function AddVehicleRow({ onSubmit, flash }) {
       <div className="ws-portal-form-row">
         <div className="ws-portal-field">
           <label className="ws-portal-label">Registration</label>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div className="ws-portal-action-row" >
             <input
               type="text"
               value={reg}
@@ -3147,8 +3183,8 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
         ))}
       </div>
       <form
-        className="ws-portal-form"
-        style={{ marginTop: 14 }}
+        className="ws-portal-form ws-portal-spaced"
+        
         onSubmit={async (e) => {
           e.preventDefault();
           if (!details.trim()) return;

@@ -45,7 +45,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/pages/jobs/index.js", 1],
   ["src/pages/dashboard/mobile/index.js", 0],
   ["src/pages/nextjobs.js", 1],
-  ["src/pages/tech/[jobNumber].js", 1],
+  ["src/pages/tech/[jobNumber].js", 0],
 ]);
 
 function walk(directory, files = []) {

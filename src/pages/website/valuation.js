@@ -5,14 +5,14 @@
 // Client-only: there is nothing to render on the server that the first paint
 // needs, and the DVLA lookup happens on demand from the customer's own action.
 import { customerWebsiteGetLayout } from "@/components/layout/CustomerWebsiteLayout";
-import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
+import WebsiteRouteBoundary from "@/features/website/errors/WebsiteRouteBoundary";
 import ValuationPage from "@/features/website/valuation/ValuationPage";
 
 export default function Valuation() {
   return (
-    <RouteBoundary variant="customer" homeHref="/website" hostSupportModal>
+    <WebsiteRouteBoundary>
       <ValuationPage />
-    </RouteBoundary>
+    </WebsiteRouteBoundary>
   );
 }
 

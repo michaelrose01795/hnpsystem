@@ -2,9 +2,9 @@
 //
 // POST /api/shop/checkout-session
 //
-// Creates a pending shop_orders row from the supplied cart, then a Stripe
-// Checkout Session whose success_url returns the customer to /website/shop/success.
-// The session id is stored on the order so the webhook can mark it paid.
+// Creates a pending shop_orders row from the supplied cart. Payment is taken
+// in-app afterwards by POST /api/shop/simulate-payment (Stripe is switched off
+// for now — see src/lib/payments/stripe.js, still used by the webhook).
 //
 // Body shape:
 //   {
@@ -23,14 +23,9 @@
 // An id is looked up in the parts catalogue first and falls back to the
 // marketing store, so both keep working from one basket.
 
-import {
-  getProductsByIds,
-  createPendingOrder,
-  setStripeSession,
-} from "@/lib/database/shop";
+import { getProductsByIds, createPendingOrder } from "@/lib/database/shop";
 import { getPublicPartsByIds } from "@/lib/database/partsCatalogPublic";
 import { getCustomerSessionFromReq } from "@/lib/auth/customerSession";
-import { getStripe, siteUrl } from "@/lib/payments/stripe";
 
 const SHIPPING_FLAT_PENCE = 595;
 
@@ -112,61 +107,9 @@ export default async function handler(req, res) {
   }
   const order = orderResult.data;
 
-  // Build Stripe Checkout session.
-  let stripe;
-  try {
-    stripe = getStripe();
-  } catch (err) {
-    return res.status(503).json({
-      success: false,
-      message: err.message,
-      order_number: order.order_number,
-    });
-  }
-
-  const line_items = orderItems.map((it) => ({
-    quantity: it.qty,
-    price_data: {
-      currency: "gbp",
-      unit_amount: it.unit_price_pence,
-      product_data: {
-        name: it.name,
-        ...(it.sku ? { metadata: { sku: it.sku } } : {}),
-      },
-    },
-  }));
-  if (shipping > 0) {
-    line_items.push({
-      quantity: 1,
-      price_data: {
-        currency: "gbp",
-        unit_amount: shipping,
-        product_data: { name: "Shipping" },
-      },
-    });
-  }
-
-  try {
-    const base = siteUrl();
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      customer_email: email,
-      line_items,
-      success_url: `${base}/website/shop/success?order=${order.order_number}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/website/shop/cancel?order=${order.order_number}`,
-      metadata: {
-        order_id: order.id,
-        order_number: order.order_number,
-      },
-    });
-    await setStripeSession(order.id, session.id);
-    return res.status(200).json({
-      success: true,
-      url: session.url,
-      order_number: order.order_number,
-    });
-  } catch (err) {
-    console.error("[checkout-session] stripe error:", err);
-    return res.status(500).json({ success: false, message: err.message });
-  }
+  return res.status(200).json({
+    success: true,
+    order_number: order.order_number,
+    total_pence: total,
+  });
 }

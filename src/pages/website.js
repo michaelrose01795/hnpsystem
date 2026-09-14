@@ -5,7 +5,7 @@
 
 import dynamic from "next/dynamic";
 import { customerWebsiteGetLayout } from "@/components/layout/CustomerWebsiteLayout";
-import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
+import WebsiteRouteBoundary from "@/features/website/errors/WebsiteRouteBoundary";
 
 // Dynamically import so GSAP / IntersectionObserver code never runs during SSR.
 const WebsitePage = dynamic(() => import("@/features/website/WebsitePage"), {
@@ -17,9 +17,9 @@ const WebsitePage = dynamic(() => import("@/features/website/WebsitePage"), {
 // no StaffTopbar here) instead of a blank page if a leaf crashes.
 export default function Website() {
   return (
-    <RouteBoundary variant="customer" homeHref="/website" hostSupportModal>
+    <WebsiteRouteBoundary>
       <WebsitePage />
-    </RouteBoundary>
+    </WebsiteRouteBoundary>
   );
 }
 

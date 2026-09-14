@@ -1057,7 +1057,6 @@ const shopOrdersResponse = (rows, _q, parsed) => {
 
 const shopCheckoutResponse = () => ({
   success: true,
-  url: "/website/shop/success?order=HNP-2026-DEMO01&presentation=1",
   order_number: "HNP-2026-DEMO01",
 });
 
@@ -1247,6 +1246,7 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/shop\/products\/?$/, table: "shop_products", transform: shopProductsResponse },
   { pattern: /^\/api\/shop\/categories\/?$/, table: "shop_categories", transform: shopCategoriesResponse },
   { pattern: /^\/api\/shop\/checkout-session\/?$/, table: "shop_orders", transform: shopCheckoutResponse },
+  { pattern: /^\/api\/shop\/simulate-payment\/?$/, table: "shop_orders", transform: () => ({ success: true, order_number: "HNP-2026-DEMO01" }) },
   { pattern: /^\/api\/shop\/admin\/products(\/.*)?\/?$/, table: "shop_products", transform: shopProductsResponse },
   { pattern: /^\/api\/shop\/admin\/categories(\/.*)?\/?$/, table: "shop_categories", transform: shopCategoriesResponse },
   { pattern: /^\/api\/shop\/admin\/orders(\/.*)?\/?$/, table: "shop_orders", transform: shopOrdersResponse },

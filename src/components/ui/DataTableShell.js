@@ -9,6 +9,14 @@ import React from "react";
 
 export default function DataTableShell({
   visibleRows = 10,
+  /* Mobile stacked-card mode (families/tables.css). ON by default — it is what
+     makes a table usable at the 375px floor. The class and the per-cell labels
+     are applied by GlobalTableShells for every table in the app, so this prop
+     only needs to carry the OPT-OUT down to the DOM. Pass stack={false} for a
+     table that is already narrow enough (2-3 short columns), or one laid out
+     as a grid/matrix rather than as a list of records, where turning each row
+     into a card loses the comparison the table exists to make. */
+  stack = true,
   className = "",
   style,
   children,
@@ -21,6 +29,7 @@ export default function DataTableShell({
     <div
       className={["app-table-scroll", className].filter(Boolean).join(" ")}
       style={shellStyle}
+      {...(stack ? {} : { "data-app-table-stack": "off" })}
       {...rest}
     >
       {children}

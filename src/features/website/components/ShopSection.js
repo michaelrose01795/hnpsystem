@@ -77,8 +77,9 @@ export default function ShopSection() {
           type="button"
           className="ws-shop-cartbutton"
           onClick={() => setDrawerOpen(true)}
+          aria-label="Basket"
         >
-          Basket
+          <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
           <span className="ws-shop-cartbutton-count">{cart.totals.count}</span>
         </button>
       </div>
@@ -94,7 +95,7 @@ export default function ShopSection() {
       </div>
 
       <div className="ws-shop-more" data-presentation="website-shop-more">
-        <p className="ws-muted" style={{ margin: 0 }}>
+        <p className="ws-muted">
           A selection of what we stock — the full catalogue runs to thousands of
           genuine Suzuki and Mitsubishi parts.
         </p>

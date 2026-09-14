@@ -2,18 +2,26 @@
 //
 // /website/dev — @family shop: the #shop teaser, product tiles, the basket
 // drawer, cart, checkout and the order status cards. ProductCard and CartDrawer
-// are the real shared components; the drawer is rendered open inside a Stage
-// because it is position:fixed.
+// are the real shared components.
+//
+// The basket drawer starts CLOSED and opens from its Basket button, exactly as
+// it does on the live shop. It used to be rendered with `open` hard-coded inside
+// a Stage, which worked while the drawer was position: fixed. CartDrawer is now
+// a native <dialog> opened with showModal(), and a modal dialog lives in the
+// browser's top layer - no ancestor can contain it, a Stage included. Rendered
+// open, it covered the whole of /website/dev on load and locked page scroll.
 
+import { useState } from "react";
 import ProductCard from "@/features/website/shop/ProductCard";
 import CartDrawer from "@/features/website/shop/CartDrawer";
 import { formatGbp } from "@/features/website/hooks/useShopCart";
 import { shopCategories, shopProducts } from "@/features/website/data/shopProducts";
-import { Frame, Row, ShowcaseSection, Stage } from "../ShowcasePrimitives";
+import { Frame, Row, ShowcaseSection } from "../ShowcasePrimitives";
 
 const noop = () => {};
 
 export default function ShopShowcase({ section }) {
+  const [basketOpen, setBasketOpen] = useState(false);
   const [first, second, third] = shopProducts;
   const lowStock = second ? { ...second, stock_qty: 3 } : null;
   const outOfStock = third ? { ...third, stock_qty: 0 } : null;
@@ -45,8 +53,8 @@ export default function ShopShowcase({ section }) {
                   </button>
                 ))}
               </div>
-              <button type="button" className="ws-shop-cartbutton">
-                Basket
+              <button type="button" className="ws-shop-cartbutton" aria-label="Basket">
+                <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
                 <span className="ws-shop-cartbutton-count">3</span>
               </button>
             </div>
@@ -66,12 +74,23 @@ export default function ShopShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Basket drawer" note="CartDrawer (real) · .ws-cart-drawer--open · .ws-cart-backdrop--open (position: fixed)">
-        <Stage>
+      <Row label="Basket drawer" note="CartDrawer (real) · opens from the Basket button · Esc, × or the backdrop closes it">
+        <Frame padded>
           <div className="ws-page">
-            <CartDrawer open cart={mockCart} onClose={noop} />
+            <button
+              type="button"
+              className="ws-shop-cartbutton"
+              onClick={() => setBasketOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={basketOpen}
+              aria-label="Basket"
+            >
+              <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
+              <span className="ws-shop-cartbutton-count">{mockCart.totals.count}</span>
+            </button>
+            <CartDrawer open={basketOpen} cart={mockCart} onClose={() => setBasketOpen(false)} />
           </div>
-        </Stage>
+        </Frame>
       </Row>
 
       <Row label="Empty basket" note=".ws-cart-empty">
@@ -136,7 +155,7 @@ export default function ShopShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Checkout" note=".ws-checkout-panel · .ws-form-row (type=email) · .ws-form-error · .ws-checkout-submit · .ws-order-line--first">
+      <Row label="Checkout" note=".ws-checkout-panel · .ws-form-row (type=email) · .ws-form-error · .ws-checkout-actions · .ws-checkout-submit · .ws-order-line--first">
         <Frame padded>
           <div className="ws-page">
             <form className="ws-checkout-grid" onSubmit={(event) => event.preventDefault()}>
@@ -157,10 +176,13 @@ export default function ShopShowcase({ section }) {
                   </div>
                 </div>
                 <p className="ws-form-error">Checkout failed — please try again.</p>
-                <button type="submit" className="ws-btn ws-btn--primary ws-checkout-submit">
-                  Pay with Stripe
-                </button>
-                <p className="ws-checkout-fineprint">Card details are handled securely by Stripe.</p>
+                <div className="ws-checkout-actions">
+                  <button type="submit" className="ws-btn ws-btn--primary ws-checkout-submit">
+                    Payment
+                  </button>
+                  <button type="button">Back to basket</button>
+                </div>
+                <p className="ws-checkout-fineprint">Test payment — no real card is charged.</p>
               </div>
               <aside className="ws-order-summary">
                 <h3 className="ws-h3">Order summary</h3>

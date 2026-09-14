@@ -610,7 +610,12 @@ export default function MessagesPageUi(props) {
                               <>
                                 <div style={{
                                   display: "grid",
-                                  gridTemplateColumns: "minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(0, 2fr) minmax(120px, auto)",
+                                  // Four tracks with 160+120+0+120 of hard minimum need 400px before gaps,
+                                  // so at the 375px floor the last column was pushed outside the card and
+                                  // clipped (the app never scrolls sideways). Stack on mobile instead.
+                                  gridTemplateColumns: isMobileView
+                                    ? "minmax(0, 1fr)"
+                                    : "minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(0, 2fr) minmax(120px, auto)",
                                   alignItems: "center",
                                   gap: "16px",
                                   flex: 1,

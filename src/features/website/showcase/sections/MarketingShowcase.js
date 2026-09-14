@@ -117,8 +117,8 @@ export default function MarketingShowcase({ section }) {
                     </a>
                   </nav>
                   <div className="ws-nav-actions">
-                    <button type="button" className="ws-shop-cartbutton">
-                      Basket
+                    <button type="button" className="ws-shop-cartbutton" aria-label="Basket">
+                      <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
                       <span className="ws-shop-cartbutton-count">2</span>
                     </button>
                     <a href="#auth" className="ws-nav-account">
@@ -267,19 +267,42 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Brand strip" size="md">
+      <Row label="Brand strip" hint="with quick actions" size="wide">
         <Frame>
           <div className="ws-page">
             <section className="ws-section">
-              <div className="ws-container ws-brands-inner">
-                <span className="ws-brands-label">Authorised retailer for</span>
-                <ul className="ws-brands-list">
-                  {brands.map((brand) => (
-                    <li key={brand.name}>
-                      <img src={brand.logo} alt={brand.name} loading="lazy" />
-                    </li>
-                  ))}
-                </ul>
+              <div className="ws-container ws-quick">
+                <div className="ws-card ws-panel ws-quick-panel">
+                  <div className="ws-tabs ws-quick-tabs" role="tablist" aria-label="Quick actions">
+                    <button type="button" role="tab" aria-selected="false" className="ws-tab">Find a car</button>
+                    <button type="button" role="tab" aria-selected="false" className="ws-tab">Book workshop</button>
+                    <button type="button" role="tab" aria-selected="true" className="ws-tab ws-tab--active">Value my car</button>
+                  </div>
+                  <form className="ws-quick-form" onSubmit={(e) => e.preventDefault()}>
+                    <div className="ws-quick-fields">
+                      <label className="ws-stock-field">
+                        <span className="ws-stock-label">Registration</span>
+                        <input type="text" className="ws-val-reg" placeholder="AB12 CDE" readOnly />
+                      </label>
+                    </div>
+                    <div className="ws-quick-result">
+                      <span className="ws-val-plate">AB12 CDE</span>
+                      <p className="ws-quick-result-range">£6,200 – £7,300</p>
+                      <p className="ws-muted">A rough guide. Answer a few more questions for a better figure.</p>
+                    </div>
+                    <a href="#top" className="ws-btn ws-btn--ghost">Improve my estimate</a>
+                  </form>
+                </div>
+                <div className="ws-brands-inner">
+                  <span className="ws-brands-label">Authorised retailer for</span>
+                  <ul className="ws-brands-list">
+                    {brands.map((brand) => (
+                      <li key={brand.name}>
+                        <img src={brand.logo} alt={brand.name} loading="lazy" />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </section>
           </div>

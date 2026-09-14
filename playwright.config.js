@@ -61,6 +61,25 @@ module.exports = defineConfig({
       },
     },
 
+    // Responsive floor — asserts no page scrolls horizontally at 375px.
+    // Viewport is set per-test, so no device preset is used here.
+    {
+      name: "responsive",
+      testDir: "./e2e/responsive",
+      dependencies: ["auth-setup"],
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "e2e/.auth/user.json",
+        // Emulate a real phone, not just a narrow desktop window. Several
+        // touch-floor rules are keyed on `pointer: coarse` (a fingertip is the
+        // constraint, not a viewport), and that media query does NOT match
+        // under plain Desktop Chrome - so without this the gate would measure
+        // the mouse layout and silently pass the touch assertions.
+        hasTouch: true,
+        isMobile: true,
+      },
+    },
+
     // Visual/screenshot comparison tests
     {
       name: 'visual',

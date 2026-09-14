@@ -113,6 +113,25 @@ export default function StockShowcase({ section }) {
         </Frame>
       </Row>
 
+      <Row label="Similar vehicles" note=".ws-stock-similar · VehicleCard · .ws-section-more">
+        <Frame padded>
+          <div className="ws-page ws-page--stock">
+            <div className="ws-stock-similar">
+              <h3 className="ws-h2">Similar vehicles</h3>
+              <div className="ws-grid ws-grid--cards">
+                {vehicles.slice(0, 4).map((card) => (
+                  <VehicleCard key={card.id} vehicle={card} />
+                ))}
+              </div>
+              <div className="ws-section-more">
+                <button type="button">View more similar vehicles</button>
+                <span className="ws-section-more-note">Showing 4 of 8</span>
+              </div>
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
       <Row label="Empty state and show more" note=".ws-stock-empty · .ws-section-more">
         <Frame padded>
           <div className="ws-page ws-page--stock">
@@ -197,12 +216,18 @@ export default function StockShowcase({ section }) {
               </aside>
             </div>
             <div className="ws-stock-detail-body">
-              <div className="ws-card ws-stock-panel">
-                <h3 className="ws-h3">Equipment</h3>
-                <ul className="ws-ticks">
-                  <li>Adaptive cruise control</li>
-                  <li>Reversing camera</li>
-                </ul>
+              <div className="ws-card ws-stock-panel" data-expanded="false">
+                <div className="ws-stock-panel-body">
+                  <h3 className="ws-h3">Equipment</h3>
+                  <ul className="ws-ticks">
+                    {Array.from({ length: 16 }, (_, index) => (
+                      <li key={index}>Equipment item {index + 1}</li>
+                    ))}
+                  </ul>
+                </div>
+                <button type="button" className="ws-stock-panel-toggle" aria-expanded="false">
+                  Show more
+                </button>
               </div>
               <div className="ws-card ws-stock-panel">
                 <h3 className="ws-h3">Specification</h3>

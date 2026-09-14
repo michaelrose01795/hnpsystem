@@ -17,7 +17,8 @@ import useWebsiteScope from "../hooks/useWebsiteScope";
 import useWebsiteTheme from "../hooks/useWebsiteTheme";
 import useWebsiteContent from "../hooks/useWebsiteContent";
 import useCustomerSession from "../hooks/useCustomerSession";
-import WebsiteNavActions from "../components/WebsiteNavActions";
+import WebsiteTopBar from "../components/WebsiteTopBar";
+import { resolveLegalLinks } from "../legal/legalLinks";
 
 /* ------------------------------------------------------------------ */
 /* Live-content shape guards                                           */
@@ -39,16 +40,9 @@ import WebsiteNavActions from "../components/WebsiteNavActions";
 const brandName = (brand) => brand?.name || "Humphries & Parks";
 
 // footer.legal is plain strings from the static fallback and { href, label }
-// rows from website_footer. Rendering the object form straight into JSX throws
-// "Objects are not valid as a React child" and takes the whole page down.
-const legalLinks = (footer) =>
-  (footer?.legal || [])
-    .map((entry) =>
-      typeof entry === "string"
-        ? { label: entry, href: "/website" }
-        : { label: entry?.label || "", href: entry?.href || "/website" },
-    )
-    .filter((entry) => entry.label);
+// rows from website_footer. resolveLegalLinks normalises both and keeps every
+// link on the customer site (stored hrefs used to point at staff routes).
+const legalLinks = (footer) => resolveLegalLinks(footer?.legal);
 
 // `backToSite` collapses the two nav links into a single "Back to site" link.
 // Used by /website/valuation, where "Sell your car" points at the page the
@@ -75,40 +69,32 @@ export default function StockShell({ title, description, backToSite = false, chi
       </Head>
 
       <div className="ws-page ws-page--stock" data-presentation="website-stock-page">
-        <header className="ws-nav" data-presentation="website-stock-nav">
-          <div className="ws-nav-inner">
-            <Link href="/website" className="ws-brand">
-              <BrandLogo className="ws-logo" alt={name} priority />
+        {/* No "Contact" link here on purpose — the phone button IS the
+            contact route, and two of them read as a choice the visitor does
+            not have to make. The footer still links back into the site. */}
+        <WebsiteTopBar
+          dataPresentation="website-stock-nav"
+          brandAlt={name}
+          contact={contact}
+          design={design}
+          sessionLoading={sessionLoading}
+          customer={customer}
+        >
+          {backToSite ? (
+            <Link href="/website" className="ws-nav-link">
+              Back to site
             </Link>
-            <nav className="ws-nav-links" aria-label="Site">
-              {backToSite ? (
-                <Link href="/website" className="ws-nav-link">
-                  Back to site
-                </Link>
-              ) : (
-                <>
-                  <Link href="/website/available-stock" className="ws-nav-link">
-                    Available stock
-                  </Link>
-                  <Link href="/website/valuation" className="ws-nav-link">
-                    Sell your car
-                  </Link>
-                </>
-              )}
-            </nav>
-            {/* No "Contact" link here on purpose — the phone button IS the
-                contact route, and two of them read as a choice the visitor does
-                not have to make. The footer still links back into the site. */}
-            <WebsiteNavActions
-              phone={contact.phone}
-              phoneHref={contact.phoneHref}
-              showPhone={design?.showNavPhone !== false}
-              showAccount={design?.showNavAccount !== false}
-              sessionLoading={sessionLoading}
-              customer={customer}
-            />
-          </div>
-        </header>
+          ) : (
+            <>
+              <Link href="/website/available-stock" className="ws-nav-link">
+                Available stock
+              </Link>
+              <Link href="/website/valuation" className="ws-nav-link">
+                Sell your car
+              </Link>
+            </>
+          )}
+        </WebsiteTopBar>
 
         <main>{children}</main>
 

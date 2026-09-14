@@ -3,9 +3,16 @@
 // /website/dev — the customer surface ladder in one place: the glass card, the
 // floating panel (cookie consent), the basket drawer, the solid popup card
 // (Help "More info") and the pinned support launcher. position:fixed surfaces
-// open inside a <Stage>. CartDrawer is the real component; the popup is static
-// markup because HelpArticleModal locks page scroll and grabs focus.
+// open inside a <Stage>. The popup is static markup because HelpArticleModal
+// locks page scroll and grabs focus.
+//
+// CartDrawer is the real component, and for the same reason it now starts
+// CLOSED and opens from a Basket button. It is a native <dialog> opened with
+// showModal(), so it renders in the browser's top layer, which no ancestor can
+// contain - a Stage included. Rendered with `open` hard-coded, it covered the
+// whole of /website/dev on load and locked page scroll.
 
+import { useState } from "react";
 import CartDrawer from "@/features/website/shop/CartDrawer";
 import { formatGbp } from "@/features/website/hooks/useShopCart";
 import { shopProducts } from "@/features/website/data/shopProducts";
@@ -15,6 +22,7 @@ import { Frame, Row, ShowcaseSection, Stage } from "../ShowcasePrimitives";
 const noop = () => {};
 
 export default function SurfacesShowcase({ section }) {
+  const [basketOpen, setBasketOpen] = useState(false);
   const drawerItems = shopProducts.slice(0, 2).map((product) => ({ ...product, qty: 1 }));
   const subtotalPence = drawerItems.reduce((sum, item) => sum + item.price_pence * item.qty, 0);
   // Static cart shape CartDrawer / BasketAccountNotice read — no storage, no fetch.
@@ -76,12 +84,23 @@ export default function SurfacesShowcase({ section }) {
         </Stage>
       </Row>
 
-      <Row label="Basket drawer" hint="CartDrawer" size="md">
-        <Stage>
+      <Row label="Basket drawer" hint="CartDrawer · opens from the Basket button" size="md">
+        <Frame padded>
           <div className="ws-page">
-            <CartDrawer open cart={mockCart} onClose={noop} />
+            <button
+              type="button"
+              className="ws-shop-cartbutton"
+              onClick={() => setBasketOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={basketOpen}
+              aria-label="Basket"
+            >
+              <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
+              <span className="ws-shop-cartbutton-count">{mockCart.totals.count}</span>
+            </button>
+            <CartDrawer open={basketOpen} cart={mockCart} onClose={() => setBasketOpen(false)} />
           </div>
-        </Stage>
+        </Frame>
       </Row>
 
       <Row label="Solid popup card" hint="Help · More info" size="md">

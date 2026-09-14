@@ -7,12 +7,12 @@
 import { Row, ShowcaseSection, Swatch } from "../ShowcasePrimitives";
 
 const SHAPES = [
-  { key: "pill", label: "Pill" },
-  { key: "card", label: "Card" },
-  { key: "panel", label: "Panel" },
-  { key: "tile", label: "Tile" },
-  { key: "chip", label: "Chip" },
-  { key: "banner", label: "Banner" },
+  { key: "pill", className: "website-dev-metric__sample website-dev-metric__sample--shape website-dev-metric__sample--pill", label: "Pill" },
+  { key: "card", className: "website-dev-metric__sample website-dev-metric__sample--shape website-dev-metric__sample--card", label: "Card" },
+  { key: "panel", className: "website-dev-metric__sample website-dev-metric__sample--shape website-dev-metric__sample--panel", label: "Panel" },
+  { key: "tile", className: "website-dev-metric__sample website-dev-metric__sample--shape website-dev-metric__sample--tile", label: "Tile" },
+  { key: "chip", className: "website-dev-metric__sample website-dev-metric__sample--shape website-dev-metric__sample--chip", label: "Chip" },
+  { key: "banner", className: "website-dev-metric__sample website-dev-metric__sample--shape website-dev-metric__sample--banner", label: "Banner" },
 ];
 
 export default function FoundationShowcase({ section }) {
@@ -85,7 +85,7 @@ export default function FoundationShowcase({ section }) {
           {SHAPES.map((shape) => (
             <div key={shape.key} className="website-dev-metric">
               <span
-                className={`website-dev-metric__sample website-dev-metric__sample--shape website-dev-metric__sample--${shape.key}`}
+                className={shape.className}
               />
               <span>{shape.label}</span>
             </div>

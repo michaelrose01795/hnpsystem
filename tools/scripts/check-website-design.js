@@ -798,6 +798,9 @@ function collectUndeclaredClasses() {
 const GOVERNED_STYLE_KEYS = [
   "background", "backgroundColor", "backgroundImage", "color", "border", "borderRadius", "borderColor",
   "boxShadow", "fontSize", "fontWeight", "fontFamily", "letterSpacing", "textTransform",
+  "display", "gap", "rowGap", "columnGap", "flex", "flexDirection", "flexWrap", "alignItems", "alignSelf", "justifyContent",
+  "width", "minWidth", "maxWidth", "height", "minHeight", "maxHeight", "margin", "marginTop", "marginBottom", "marginLeft", "marginRight",
+  "transition", "animation", "transform", "position", "top", "right", "bottom", "left",
   "padding", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight", "opacity",
 ];
 const STYLE_PROP_RE = /style=\{\{([\s\S]{0,600}?)\}\}/g;

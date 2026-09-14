@@ -262,18 +262,30 @@ const routeScopedCssFor = (pathname = "") => {
     .filter((entry) => Boolean(entry.href));
 };
 
+// The address a document is actually being rendered for. The framework error
+// pages report their own route pattern ("/404", "/_error") as pathname, which
+// used to put a /website error on the staff stylesheet and theme; for those the
+// real requested address (asPath) decides instead.
+const FRAMEWORK_ERROR_PAGES = new Set(["/404", "/500", "/_error"]);
+const documentPathFor = (ctx) => {
+  const pathname = ctx?.pathname || "";
+  if (!FRAMEWORK_ERROR_PAGES.has(pathname)) return pathname;
+  return String(ctx?.asPath || pathname).split(/[?#]/)[0];
+};
+
 class MyDocument extends Document {
   static async getInitialProps(ctx) {
     const initialProps = await Document.getInitialProps(ctx);
     const cookies = parseCookieHeader(ctx?.req?.headers?.cookie || "");
+    const documentPath = documentPathFor(ctx);
     return {
       ...initialProps,
-      bootTheme: getBootTheme(cookies, ctx?.pathname || ""),
+      bootTheme: getBootTheme(cookies, documentPath),
       hasAuthCookie: hasAuthenticatedCookie(cookies),
       // Which route-scoped stylesheets this document needs (see
       // tools/scripts/emit-route-scoped-css.js). Resolved here rather than in
       // _app so the <link> is in the initial HTML and the route paints styled.
-      routeCss: routeScopedCssFor(ctx?.pathname || ""),
+      routeCss: routeScopedCssFor(documentPath),
     };
   }
 

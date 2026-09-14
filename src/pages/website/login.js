@@ -19,6 +19,7 @@ import { isPresentationMode } from "@/features/presentation/runtime/presentation
 import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
 import useWebsiteTheme from "@/features/website/hooks/useWebsiteTheme";
 import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
+import WebsiteTopBar from "@/features/website/components/WebsiteTopBar";
 
 const STEP_EMAIL = "email";
 const STEP_SIGNIN = "signin";
@@ -311,6 +312,18 @@ export default function CustomerLoginPage() {
       <Head>
         <title>{pageTitle}</title>
       </Head>
+      <div className="ws-page">
+      <WebsiteTopBar>
+        <Link href="/website" className="ws-nav-link">
+          Back to site
+        </Link>
+        <Link href="/website/available-stock" className="ws-nav-link">
+          Available stock
+        </Link>
+        <Link href="/website/parts-catalog" className="ws-nav-link">
+          Parts catalogue
+        </Link>
+      </WebsiteTopBar>
       <div className={"authShell"} data-presentation="website-login">
         <main className={"authMain"}>
           <div className={"authCard"} data-presentation="website-login-card">
@@ -617,8 +630,10 @@ export default function CustomerLoginPage() {
             ) : null}
 
             <p className={"authFootnote"}>
-              By continuing you agree to {siteContent.brand.name}'s privacy and
-              data policy.
+              By continuing you agree to {siteContent.brand.name}'s{" "}
+              <Link href="/website/privacy" className="authFootnoteLink">
+                privacy and data policy.
+              </Link>
             </p>
           </div>
 
@@ -663,6 +678,7 @@ export default function CustomerLoginPage() {
             </div>
           ) : null}
         </main>
+      </div>
       </div>
     </>
   );

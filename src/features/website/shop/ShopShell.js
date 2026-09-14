@@ -15,12 +15,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/router";
-import BrandLogo from "@/components/BrandLogo";
 import useWebsiteScope from "../hooks/useWebsiteScope";
 import useWebsiteTheme from "../hooks/useWebsiteTheme";
 import useCustomerSession from "../hooks/useCustomerSession";
 import useWebsiteContent from "../hooks/useWebsiteContent";
-import WebsiteNavActions from "../components/WebsiteNavActions";
+import WebsiteTopBar from "../components/WebsiteTopBar";
 
 export default function ShopShell({
   title,
@@ -43,37 +42,29 @@ export default function ShopShell({
 
   return (
     <div className="ws-page" data-presentation="website-shop-page">
-      <header className="ws-nav ws-nav--shop" data-presentation="website-shop-nav">
-        <div className="ws-nav-inner">
-          <Link href="/website" className="ws-brand">
-            <BrandLogo className="ws-logo" alt="Humphries & Parks" priority />
+      <WebsiteTopBar
+        label="Shop nav"
+        dataPresentation="website-shop-nav"
+        contact={contact}
+        design={design}
+        sessionLoading={sessionLoading}
+        customer={customer}
+        loginHref={`/website/login?next=${next}`}
+      >
+        <Link href="/website/parts-catalog" className="ws-nav-link">
+          Parts catalogue
+        </Link>
+        <Link href="/website#shop" className="ws-nav-link">
+          Back to site
+        </Link>
+        {/* Pages that own a basket drawer pass their own button here;
+            the rest keep a plain link so the basket is always reachable. */}
+        {navActions || (
+          <Link href="/website/shop?step=basket" className="ws-nav-link">
+            Basket
           </Link>
-          <nav className="ws-nav-links" aria-label="Shop nav">
-            <Link href="/website/parts-catalog" className="ws-nav-link">
-              Parts catalogue
-            </Link>
-            <Link href="/website#shop" className="ws-nav-link">
-              Back to site
-            </Link>
-            {/* Pages that own a basket drawer pass their own button here;
-                the rest keep a plain link so the basket is always reachable. */}
-            {navActions || (
-              <Link href="/website/shop/cart" className="ws-nav-link">
-                Basket
-              </Link>
-            )}
-          </nav>
-          <WebsiteNavActions
-            phone={contact.phone}
-            phoneHref={contact.phoneHref}
-            showPhone={design?.showNavPhone !== false}
-            showAccount={design?.showNavAccount !== false}
-            sessionLoading={sessionLoading}
-            customer={customer}
-            loginHref={`/website/login?next=${next}`}
-          />
-        </div>
-      </header>
+        )}
+      </WebsiteTopBar>
       <main>
         <section className="ws-section" data-presentation="website-shop-content">
           <div className="ws-container">

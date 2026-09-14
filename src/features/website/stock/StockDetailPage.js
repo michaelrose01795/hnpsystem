@@ -9,17 +9,40 @@
 // no current listing the page says so plainly and points at the search,
 // instead of 404ing on a link the customer was given in good faith.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import StockShell from "./StockShell";
+import VehicleCard from "../components/VehicleCard";
 import {
   getStockByReg,
   wasPreviouslyInStock,
+  similarStock,
   formatPrice,
   formatMileage,
   mileageLabel,
+  priceLabel,
+  stockHref,
 } from "@/lib/stock/vehicleStock";
+
+// Similar cars shown before "View more"; one row on a wide screen.
+const SIMILAR_PREVIEW = 4;
+
+// Same card shape AvailableStockPage builds for VehicleCard.
+const toCard = (v) => ({
+  id: v.stockNumber,
+  type: v.condition,
+  brand: v.make,
+  model: `${v.model} ${v.derivative}`,
+  year: v.year,
+  price: priceLabel(v),
+  miles: mileageLabel(v),
+  badge: v.badge || null,
+  image: v.images?.[0] || null,
+  reg: v.reg,
+  stockNumber: v.stockNumber,
+  href: stockHref(v),
+});
 
 const formatDate = (value) => {
   if (!value) return null;
@@ -54,21 +77,77 @@ const specRows = (v) =>
     { label: "Seats", value: v.seats },
     { label: "Fuel", value: v.fuel },
     { label: "Transmission", value: v.transmission },
+    { label: "Drivetrain", value: v.drivetrain },
     { label: "Engine size", value: v.engineSize ? `${v.engineSize} litre` : null },
+    { label: "Battery", value: v.batteryKwh ? `${v.batteryKwh} kWh` : null },
+    { label: "Power", value: v.powerBhp ? `${v.powerBhp} bhp` : null },
+    { label: "0–62 mph", value: v.zeroToSixty ? `${v.zeroToSixty} seconds` : null },
+    { label: "Top speed", value: v.topSpeed ? `${v.topSpeed} mph` : null },
     { label: "Electric range", value: v.rangeMiles ? `${v.rangeMiles} miles` : null },
     { label: "CO₂ emissions", value: Number.isFinite(v.co2) ? `${v.co2} g/km` : null },
     { label: "Combined economy", value: v.mpg ? `${v.mpg} mpg` : null },
+    { label: "Emissions standard", value: v.emissionsStandard },
+    { label: "ULEZ compliant", value: v.ulezCompliant ? "Yes" : null },
+    { label: "Boot capacity", value: v.bootLitres ? `${v.bootLitres} litres` : null },
+    { label: "Insurance group", value: v.insuranceGroup },
     { label: "Previous owners", value: v.condition === "new" ? "None — brand new" : v.owners },
     { label: "MOT due", value: formatDate(v.motDue) },
     { label: "Service history", value: v.serviceHistory },
+    { label: "Warranty", value: v.warranty },
+    { label: "Keys", value: v.keys },
     { label: "Location", value: v.location },
     { label: "In stock since", value: formatDate(v.stockedAt) },
   ].filter((row) => row.value !== null && row.value !== undefined && row.value !== "");
+
+// A detail panel held at the shared collapsed height. The toggle only appears
+// when the content actually overflows that height.
+// `sizer` marks the panel whose natural height sets the row (never clamped).
+function StockPanel({ title, children, sizer = false }) {
+  const bodyRef = useRef(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body || expanded) return undefined;
+    const measure = () => setOverflows(body.scrollHeight > body.clientHeight + 1);
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(body);
+    return () => observer.disconnect();
+  }, [expanded]);
+
+  return (
+    <div
+      className="ws-card ws-stock-panel"
+      data-expanded={expanded ? "true" : "false"}
+      data-sizer={sizer ? "true" : undefined}
+    >
+      <div ref={bodyRef} className="ws-stock-panel-body">
+        <h2 className="ws-h3">{title}</h2>
+        {children}
+      </div>
+      {overflows || expanded ? (
+        <button
+          type="button"
+          className="ws-stock-panel-toggle"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 export default function StockDetailPage({ reg }) {
   const vehicle = getStockByReg(reg);
   const soldPreviously = !vehicle && wasPreviouslyInStock(reg);
   const [activeImage, setActiveImage] = useState(0);
+  const [showAllSimilar, setShowAllSimilar] = useState(false);
+  const similar = similarStock(vehicle, 8);
 
   if (!vehicle) {
     return (
@@ -192,8 +271,7 @@ export default function StockDetailPage({ reg }) {
 
           {/* ---------------- Detail ---------------- */}
           <div className="ws-stock-detail-body">
-            <div className="ws-card ws-stock-panel">
-              <h2 className="ws-h3">About this {vehicle.model}</h2>
+            <StockPanel title={`About this ${vehicle.model}`} sizer>
               <p className="ws-muted">{vehicle.description}</p>
               {vehicle.highlights?.length ? (
                 <ul className="ws-ticks">
@@ -202,10 +280,9 @@ export default function StockDetailPage({ reg }) {
                   ))}
                 </ul>
               ) : null}
-            </div>
+            </StockPanel>
 
-            <div className="ws-card ws-stock-panel">
-              <h2 className="ws-h3">Specification</h2>
+            <StockPanel title="Specification">
               <table className="ws-stock-spec">
                 <tbody>
                   {specRows(vehicle).map((row) => (
@@ -216,19 +293,40 @@ export default function StockDetailPage({ reg }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </StockPanel>
 
             {vehicle.features?.length ? (
-              <div className="ws-card ws-stock-panel">
-                <h2 className="ws-h3">Equipment</h2>
+              <StockPanel title="Equipment">
                 <ul className="ws-ticks">
                   {vehicle.features.map((f) => (
                     <li key={f}>{f}</li>
                   ))}
                 </ul>
-              </div>
+              </StockPanel>
             ) : null}
           </div>
+
+          {/* ---------------- Similar vehicles ---------------- */}
+          {similar.length ? (
+            <div className="ws-stock-similar">
+              <h2 className="ws-h2">Similar vehicles</h2>
+              <div className="ws-grid ws-grid--cards">
+                {(showAllSimilar ? similar : similar.slice(0, SIMILAR_PREVIEW)).map((v) => (
+                  <VehicleCard key={v.stockNumber} vehicle={toCard(v)} />
+                ))}
+              </div>
+              {similar.length > SIMILAR_PREVIEW ? (
+                <div className="ws-section-more">
+                  <button type="button" onClick={() => setShowAllSimilar((open) => !open)}>
+                    {showAllSimilar ? "View fewer" : "View more similar vehicles"}
+                  </button>
+                  <span className="ws-section-more-note">
+                    Showing {showAllSimilar ? similar.length : SIMILAR_PREVIEW} of {similar.length}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="ws-section-more">
             <Link

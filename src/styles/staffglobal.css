@@ -4837,8 +4837,8 @@ html.staff-scope .tab-scroll-row.is-overflowing {
    so tabs share the button-family shape. */
 html.staff-scope button.tab-api__item,
 html.staff-scope a.tab-api__item {
-  height: 35px;
-  min-height: 35px !important;
+  height: var(--tab-api-height);
+  min-height: var(--tab-api-height) !important;
   padding: 0 var(--space-sm);
   /* Matches .app-btn's corner radius so tabs share the Primary button shape. */
   border-radius: var(--control-radius) !important;
@@ -9205,5 +9205,34 @@ html.staff-scope .app-delivery-month-picker .calendar-api__control {
 
   html.staff-scope .app-delivery-month-picker {
     flex: 1 1 100%;
+  }
+}
+
+/* ==========================================================================
+ * Touch target floor — responsive sweep, 2026-09
+ * Breakpoints: src/styles/breakpoints.js
+ * ==========================================================================
+ *
+ * CLAUDE.md §3.6 sets a 44x44px minimum touch target. Three shared controls
+ * sat under it and, being shared, accounted for the large majority of the
+ * violations found by e2e/responsive/phone-floor.spec.js:
+ *
+ *   .app-table-action-btn  32px   in-row "View" / "Edit" actions
+ *   .app-news-link         32px   newsfeed links (same token)
+ *   .tab-api__item         35px   the tab-api tab chips
+ *
+ * All three are driven by a token, so lifting the token lifts every instance
+ * without touching a single component — and without a new !important, which
+ * matters because staffglobal.css is at its recorded important-budget.
+ *
+ * Keyed on `pointer: coarse` rather than a width, deliberately. The constraint
+ * is a fingertip, not a viewport: a 1024px tablet is touch-operated and needs
+ * the same 44px target as a phone, but matches no max-width phone rule. Mouse
+ * users keep the denser 32/35px controls, so desktop density is unchanged.
+ */
+@media (pointer: coarse) {
+  html.staff-scope {
+    --table-action-btn-height: var(--control-height);
+    --tab-api-height: var(--control-height);
   }
 }

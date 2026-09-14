@@ -89,7 +89,7 @@ export default function PartsShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Grid, empty and more" note="ProductCard (no image) · .ws-catalog-empty · .ws-shop-more">
+      <Row label="Grid, empty and more" note="ProductCard (generic part-type image) · .ws-catalog-empty · .ws-shop-more">
         <Frame padded>
           <div className="ws-page">
             <div className="ws-grid--shop">

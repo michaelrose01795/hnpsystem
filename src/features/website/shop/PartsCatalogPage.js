@@ -118,8 +118,9 @@ export default function PartsCatalogPage() {
             type="button"
             className="ws-shop-cartbutton"
             onClick={() => setDrawerOpen(true)}
+            aria-label="Basket"
           >
-            Basket
+            <span className="ws-shop-cartbutton-icon" aria-hidden="true" />
             <span className="ws-shop-cartbutton-count">{cart.totals.count}</span>
           </button>
         }

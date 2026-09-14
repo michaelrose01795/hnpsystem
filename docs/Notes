@@ -33,61 +33,70 @@ CHECK NON GLOBAL ON DEV PAGE
 
 
  
--------------
+---------------------
 
 TODO
-
-
 /website/dev
 
-TODO
-Mkae sure within the "/website/dev" is 100% following the custglobal.css setting full all throught the app first. the "Native date & time raw input type="date" / "time" 21/05/2026 09:30 AM " sectioin isnt even following it withint he website/dev page omg, do a deepd ive and correct eveythign which isnt following this strick rule now. also remove the focus ring from around the button or fiedl etc when pressed, this isnt shown wihtin the "Primary action .app-btn · " or "Secondary action raw <button> and [role=button]" now. like the " 01732 870711" button doesnt seem to be following the height of the custglobal.css setting etc, this needs a massive deep dive to make sure nothings stopping these changes from happenign as there has to be somethign etc, heres a prompt to follow from chatgpt as well to help. Deeply audit the existing customer-facing design system and strengthen `custglobal.css` so it has the same level of consistency, central control and rule enforcement as the staff design system without merging the two systems or allowing staff styling to bleed into customer pages, treating `custglobal.css` and the customer UI system as the single source of truth for all `/website` routes, identifying duplicated, page-specific, inline, hard-coded or conflicting customer visual styling and replacing it with reusable customer-side tokens, component families and centrally governed rules where appropriate so changes to buttons, inputs, selects, cards, surfaces, typography, spacing, radii, glass treatments, colours, states, responsive behaviour, light/dark behaviour and other shared elements automatically propagate across every customer-facing page, extend the existing design-governance approach where appropriate so future `/website` code cannot casually bypass the customer system with duplicate styling, raw visual values or unnecessary one-off implementations while preserving the strict `html.website-scope` isolation from `staffglobal.css`, and completely improve `/website/dev` into a compact full-width visual source-of-truth catalogue for this customer design system by using the available screen width intelligently with a responsive multi-column layout that places compatible showcase sections beside each other, reducing excessive vertical scrolling and empty space, removing unnecessary technical wording and duplicated examples such as listing every HTML text-input type when one representative text box is sufficient, showing only genuinely visually distinct component states or variants, grouping related controls logically, keeping useful examples interactive, removing inline visual/layout styling from the showcase itself where it should be governed centrally, clearly demonstrating light and dark modes, tokens, typography, buttons, form controls, dropdowns, date/time controls, choices, cards, banners, glass surfaces, states and responsive behaviour, and making the finished `/website/dev` page quick to scan so it can genuinely be used as the reference that every existing and future customer-facing page must follow.
-
-
-TODO
-make sure that all of the pages, card sections is all 100% useable on all types of devices, make it most feistible for the phone view but also for all devices size and make. 
-
--------
-
-/website
-TODO
-"Report a problem" button in the bottom right needs an extra button to the left of its, move add a perfect 44px circle with a cookie button dead in the middle of the circle button, when clciked have it so it takes the user to the cookie page which is also linked and connected in some way to the privacy and data policy page etc. also change it so the primary button is surface colour background and the secondary button is theme colour background wihtin the custglobal.css setting. only button like save, report a promblem or soemthign which needs the eyes being attachet to needs to use the secondary button, but most will use the primary. 
-
--------
-
-/website/login
 
 CHECK
-text box within the "Sign in or create account" section isnt following the custglobal.css setting, same with "Back to website" button for example, make sure everything else on this page is 100% following. 
+make sure that all of the pages, card sections is all 100% useable on all types of devices, make it most feistible for the phone view but also for all devices size and make. 
 
-TODO
-within "By continuing you agree to Humphries & Parks's privacy and data policy." text add change the "privacy and data policy." text to a theme colour text and make it so its clickable, when clicked it takes the user to the privacy and data policy page, within here is all of the legal info the user is required from a opbliaged company, have it easy to find. 
+
+CHECK
+ok so now run a check, make sure every button card, text box calendar picker, colour, shade, annimation, everythign follows whats in the custglobal.css setting already. this is to mkae sure everything is copued and follows the same design everywhere. 
+
+CHECK
+have it so wihtin all the pages its a max of 20px gap between the bottom of the top bar and the page context, make sure this is throughout all of the /website pages.
 
 -------
 
+CHECK
+/website
+
+CHECK
+error pages not using staffglobal.css setting side etc
+
+TODO
+*fix the "privacy, Terms" button at the bottom of the /website pages, this takes the user tot he staffglobal.css setting side, so the "/profile/privacy" page opens or page not found for the terms button etc Make sure those button takes users to the /website pricay or terms page for customer facing details following the goverment law etc.*
+
+-------
+
+CHECK
+/website/login
+
+
+-------
+
+CHECK
 /website/profile
 
 -------
 
+CHECK
 /website/valuation
+
 
 -------
 
+CHECK
 /website/available-stock
 
 -------
 
+CHECK
 /website/stock/[reg]
 
+
 -------
 
+CHECK
 /website/parts-catalog
 
+
 -------
 
+CHECK
 /website/parts-catalog/[partId]
 
--------
 
-TODO
-lets move "/website/shop/cart, /website/shop/checkout, /website/shop/success, /website/shop/cancel" pages into one singular page just with diff checkpoints, when reach check point lets then locally save that checkpoint os if the user has to reload the page it auto loads back to their last checkpoint with all details saved.
