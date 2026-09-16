@@ -134,8 +134,7 @@ export default function CheckoutPage() {
             {busy ? "Redirecting to payment…" : "Pay with Stripe"}
           </button>
           <p style={{ fontSize: "0.8rem", color: "var(--txt-mute)", marginTop: 10 }}>
-            Card details are handled securely by Stripe. Your card is never
-            stored by Humphries &amp; Parks.
+            Your card is never stored by Humphries &amp; Parks.
           </p>
         </div>
 

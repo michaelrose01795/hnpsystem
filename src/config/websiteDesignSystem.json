@@ -1,0 +1,873 @@
+{
+  "$comment": "Customer (/website) design-system registry. The custglobal.css counterpart of src/components/ui/variants.js. Hand-maintained; tools/scripts/check-website-design.js validates it against src/styles/custglobal.css and the /website/dev showcase on every predev/prebuild, and emits src/config/websiteDesign.generated.json for the showcase to render. See docs/ui/website-design-governance.md.",
+  "sections": [
+    {
+      "id": "foundation",
+      "title": "Foundation",
+      "description": "Brand red, surfaces, the ink ramp, the page wash, the scrollbar and the control-system metrics. Every value on this page flips with the theme button above."
+    },
+    {
+      "id": "controls",
+      "title": "Controls",
+      "description": "The two button styles, every raw form control custglobal.css styles, and the notice banner."
+    },
+    {
+      "id": "select",
+      "title": "Selects & Dropdowns",
+      "description": "WebsiteNativeSelect (live and open), the raw select fallback and the shared Dropdown API as it renders under the customer scope."
+    },
+    {
+      "id": "pickers",
+      "title": "Date & Time Pickers",
+      "description": "WebsiteNativeDateTimeInput triggers, the calendar and time-picker surfaces, and the Calendar API opt-outs."
+    },
+    {
+      "id": "marketing",
+      "title": "Marketing Page",
+      "description": "The .ws-* family behind /website: navigation, hero, typography, cards, grids, reviews, team, contact, footer and the Live Preview editor outlines."
+    },
+    {
+      "id": "stock",
+      "title": "Vehicle Stock",
+      "description": "/website/available-stock and /website/stock/[reg]: filters, toolbar, vehicle cards, gallery, buying panel and specification."
+    },
+    {
+      "id": "shop",
+      "title": "Shop, Basket & Checkout",
+      "description": "The #shop teaser, product tiles, the basket drawer, the cart and checkout layouts."
+    },
+    {
+      "id": "parts",
+      "title": "Parts Catalogue",
+      "description": "/website/parts-catalog and the product detail page: breadcrumbs, basket notices, catalogue controls and the PDP."
+    },
+    {
+      "id": "auth",
+      "title": "Sign-in & Account Forms",
+      "description": "/website/login: the auth card, fields, errors, the sign-up panel and the dev impersonation card."
+    },
+    {
+      "id": "valuation",
+      "title": "Valuation Wizard",
+      "description": "/website/valuation: progress, questions, answer groups, the DVLA result and the estimate."
+    },
+    {
+      "id": "help",
+      "title": "Help & Advice",
+      "description": "The Help & Advice cards, the More info popup, and the bottom-right help chat that runs on every /website page."
+    },
+    {
+      "id": "portal",
+      "title": "Customer Portal",
+      "description": "/website/profile: header and jump-to rail, cards, item rows, badges and VHC lights, the health ring, progress and tracker, money and mileage, media, messages, service tiles and the settings switch."
+    },
+    {
+      "id": "reference",
+      "title": "Token & Coverage Reference",
+      "description": "Every token custglobal.css declares with its dark and light value and the value live on this page, plus every @family with its class count and recorded debt. Generated from the stylesheet, so it cannot go stale."
+    }
+  ],
+  "families": [
+    {
+      "id": "foundation",
+      "title": "Foundation",
+      "section": "foundation"
+    },
+    {
+      "id": "controls",
+      "title": "Controls",
+      "section": "controls"
+    },
+    {
+      "id": "select",
+      "title": "WebsiteNativeSelect",
+      "section": "select"
+    },
+    {
+      "id": "dropdown",
+      "title": "Shared Dropdown API",
+      "section": "select"
+    },
+    {
+      "id": "context-menu",
+      "title": "Right-click menu",
+      "section": "select"
+    },
+    {
+      "id": "typing-assist",
+      "title": "Typing assistant",
+      "section": "controls"
+    },
+    {
+      "id": "pickers",
+      "title": "Date & time pickers",
+      "section": "pickers"
+    },
+    {
+      "id": "banner",
+      "title": "Banner / alert",
+      "section": "controls"
+    },
+    {
+      "id": "showcase",
+      "title": "/website/dev showcase chrome",
+      "section": "reference"
+    },
+    {
+      "id": "theme",
+      "title": "Light theme overrides",
+      "section": "foundation"
+    },
+    {
+      "id": "marketing",
+      "title": "Public marketing page",
+      "section": "marketing"
+    },
+    {
+      "id": "stock",
+      "title": "Vehicle stock",
+      "section": "stock"
+    },
+    {
+      "id": "shop",
+      "title": "Public shop",
+      "section": "shop"
+    },
+    {
+      "id": "parts",
+      "title": "Parts catalogue",
+      "section": "parts"
+    },
+    {
+      "id": "preview",
+      "title": "Live Preview editor",
+      "section": "marketing"
+    },
+    {
+      "id": "auth",
+      "title": "Sign-in forms",
+      "section": "auth"
+    },
+    {
+      "id": "valuation",
+      "title": "Valuation wizard",
+      "section": "valuation"
+    },
+    {
+      "id": "help",
+      "title": "Help & Advice",
+      "section": "help"
+    },
+    {
+      "id": "help-chat",
+      "title": "Help chat",
+      "section": "help"
+    },
+    {
+      "id": "portal",
+      "title": "Customer portal",
+      "section": "portal"
+    },
+    {
+      "id": "dev-overlay",
+      "title": "Dev layout overlay skin",
+      "section": "reference"
+    }
+  ],
+  "coverageExemptFamilies": {
+    "showcase": "The website-dev-* classes ARE the showcase page; they are rendered by definition.",
+    "dev-overlay": "Developer tooling, not customer UI: re-skins the staff dev layout overlay (src/components/dev-layout-overlay/) when it runs on a /website route. Every selector is anchored on the overlay's own data-dev-overlay-* attributes, so it cannot reach a customer page; it is exercised by typing /website-dev on any website page."
+  },
+  "coverageExemptions": {},
+  "inheritedStaffTokens": {
+    "--font-family": "Deliberately shared: /website uses the same Inter-first stack the staff app loads once through next/font (theme.css). Re-declaring it would duplicate the stack and let the two drift."
+  },
+  "runtimeTokens": {
+    "--website-popover-left": "src/features/website/hooks/useWebsitePopover.js",
+    "--website-popover-top": "src/features/website/hooks/useWebsitePopover.js",
+    "--website-popover-width": "src/features/website/hooks/useWebsitePopover.js",
+    "--website-popover-height": "src/features/website/hooks/useWebsitePopover.js",
+    "--website-dev-swatch": "src/features/website/showcase/ShowcasePrimitives.js",
+    "--ws-portal-pct": "src/pages/website/profile.js",
+    "--ws-portal-score": "src/pages/website/profile.js",
+    "--ws-portal-steps": "src/pages/website/profile.js"
+  },
+  "tokens": {
+    "--website-motion-duration": {
+      "group": "control-system",
+      "purpose": "Shared customer transition duration; zero when reduced motion is requested."
+    },
+    "--website-motion-easing": {
+      "group": "control-system",
+      "purpose": "Shared easing for customer control and surface transitions."
+    },
+    "--accentMain": {
+      "group": "brand",
+      "purpose": "Brand red. The one hex the accent derives from - change it together with --accentMainRgb."
+    },
+    "--accentMainRgb": {
+      "group": "brand",
+      "purpose": "Brand red as an r, g, b triplet for rgba(var(--accentMainRgb), a) tints and glows."
+    },
+    "--accentText": {
+      "group": "brand",
+      "purpose": "Accent used as text (prices, eyebrows, links). Reads --accentMain."
+    },
+    "--primary": {
+      "group": "brand",
+      "purpose": "Legacy alias of the brand red. Reads --accentMain."
+    },
+    "--primary-hover": {
+      "group": "brand",
+      "purpose": "Brand red, darkened - hover on primary fills."
+    },
+    "--primary-pressed": {
+      "group": "brand",
+      "purpose": "Brand red, darkest - pressed primary fills."
+    },
+    "--onAccentText": {
+      "group": "brand",
+      "purpose": "Ink on any solid brand-red fill."
+    },
+    "--website-page-bg": {
+      "group": "surface",
+      "purpose": "The opaque page base under the wash (html / body / scrollbar gutter)."
+    },
+    "--surface": {
+      "group": "surface",
+      "purpose": "Opaque card fill - the Help popup card."
+    },
+    "--surfaceMain": {
+      "group": "surface",
+      "purpose": "Legacy alias of --surface."
+    },
+    "--surfaceText": {
+      "group": "surface",
+      "purpose": "Legacy ink on --surface."
+    },
+    "--website-wash-accent": {
+      "group": "surface",
+      "purpose": "The two brand glows in the page wash (top-right, bottom-left)."
+    },
+    "--website-wash-cool": {
+      "group": "surface",
+      "purpose": "The two cool-grey glows in the page wash (top-left, bottom-right)."
+    },
+    "--website-elev-1": {
+      "group": "surface",
+      "purpose": "Faintest lifted-panel wash (sign-up panel, showcase sections)."
+    },
+    "--website-elev-2": {
+      "group": "surface",
+      "purpose": "Standard glass-card wash (--ws-card, auth card, control material)."
+    },
+    "--website-elev-3": {
+      "group": "surface",
+      "purpose": "Raised wash (inline code, hatched chips)."
+    },
+    "--website-elev-4": {
+      "group": "surface",
+      "purpose": "Strongest wash (--ws-card-soft, control hover)."
+    },
+    "--txt-bright": {
+      "group": "ink",
+      "purpose": "Primary ink: headings, body copy, control labels."
+    },
+    "--txt-soft": {
+      "group": "ink",
+      "purpose": "Secondary ink: leads, supporting copy."
+    },
+    "--txt-mute": {
+      "group": "ink",
+      "purpose": "Muted ink: meta lines, labels, hints."
+    },
+    "--txt-faint": {
+      "group": "ink",
+      "purpose": "Faintest ink: decorative only (off stars, fine print)."
+    },
+    "--website-placeholder": {
+      "group": "ink",
+      "purpose": "Placeholder text in select, date/time and dropdown triggers."
+    },
+    "--website-input-placeholder": {
+      "group": "ink",
+      "purpose": "::placeholder text in raw inputs and textareas."
+    },
+    "--website-photo-ink": {
+      "group": "ink",
+      "purpose": "Ink on a photograph (condition pill) - fixed, photos do not change with the theme."
+    },
+    "--font-family-base": {
+      "group": "type",
+      "purpose": "Base font stack alias. Reads the shared --font-family."
+    },
+    "--font-family-mono": {
+      "group": "type",
+      "purpose": "Monospace stack (stock numbers, showcase code). Pinned here so the staff theme cannot change it."
+    },
+    "--ghostbutton-ring": {
+      "group": "rings",
+      "purpose": "Legacy ghost-button outline shorthand (the capsules use inset shadows now)."
+    },
+    "--input-ring": {
+      "group": "rings",
+      "purpose": "Legacy input outline shorthand."
+    },
+    "--checkbox-ring": {
+      "group": "rings",
+      "purpose": "Radio / checkbox outline shorthand - border: var(--checkbox-ring)."
+    },
+    "--focus-ring": {
+      "group": "rings",
+      "purpose": "Keyboard focus halo (a box-shadow value, never a border)."
+    },
+    "--separating-line-color": {
+      "group": "rings",
+      "purpose": "Colour half of the row-separator pair, pinned to the brand red."
+    },
+    "--separating-line": {
+      "group": "rings",
+      "purpose": "Row separator shorthand - border-bottom: var(--separating-line)."
+    },
+    "--website-control-height": {
+      "group": "control-system",
+      "purpose": "44px floor shared by every button, field, trigger, option row and banner."
+    },
+    "--website-control-radius": {
+      "group": "control-system",
+      "purpose": "Corner radius of the banner. Every control uses the 999px pill."
+    },
+    "--website-field-gap": {
+      "group": "control-system",
+      "purpose": "Gap between stacked form fields."
+    },
+    "--website-control-font-size": {
+      "group": "control-system",
+      "purpose": "Label size on every button, field, trigger and link-button."
+    },
+    "--website-control-font-weight": {
+      "group": "control-system",
+      "purpose": "Label weight on every control."
+    },
+    "--website-control-letter-spacing": {
+      "group": "control-system",
+      "purpose": "Label tracking on every control."
+    },
+    "--website-control-padding-x": {
+      "group": "control-system",
+      "purpose": "Inline padding inside a text control or capsule."
+    },
+    "--website-control-glyph": {
+      "group": "control-system",
+      "purpose": "Glyph size inside an icon-only circle control (×, −, +, ‹ ›)."
+    },
+    "--website-radius-pill": {
+      "group": "radius",
+      "purpose": "Every control: buttons, fields, triggers, option rows, chips."
+    },
+    "--website-radius-card": {
+      "group": "radius",
+      "purpose": "Cards and large surfaces."
+    },
+    "--website-radius-panel": {
+      "group": "radius",
+      "purpose": "Floating panels and in-card panels (menus, calendar, notices)."
+    },
+    "--website-radius-tile": {
+      "group": "radius",
+      "purpose": "Small tiles and media wells inside a card."
+    },
+    "--website-radius-chip": {
+      "group": "radius",
+      "purpose": "Tiny non-interactive marks (code, tags, plates)."
+    },
+    "--website-radius-dialog": {
+      "group": "radius",
+      "purpose": "Dialog-scale cards: the Help popup and the sign-in card."
+    },
+    "--website-radius-check": {
+      "group": "radius",
+      "purpose": "Checkbox corner (radios are pills)."
+    },
+    "--website-check-size": {
+      "group": "control-system",
+      "purpose": "Radio and checkbox box size."
+    },
+    "--ws-control-bg": {
+      "group": "control-material",
+      "purpose": "The secondary control material: a near-opaque --surface tint on every non-primary control."
+    },
+    "--ws-panel-bg": {
+      "group": "control-material",
+      "purpose": "Denser --surface tint for floating panels: dropdown lists, calendar / time picker, mobile menu, basket drawer and summary."
+    },
+    "--website-backdrop": {
+      "group": "overlay",
+      "purpose": "Dim behind the basket drawer."
+    },
+    "--website-drawer-shadow": {
+      "group": "overlay",
+      "purpose": "Lift cast by the basket drawer onto the page."
+    },
+    "--website-on-accent-wash": {
+      "group": "state",
+      "purpose": "Count badge sitting on a solid accent fill (active tab, basket button)."
+    },
+    "--website-banner-bg": {
+      "group": "state",
+      "purpose": "Notice banner fill: the accent-tinted glass gradient."
+    },
+    "--website-banner-shadow": {
+      "group": "state",
+      "purpose": "Notice banner specular, hairline and accent glow."
+    },
+    "--website-popup-scrim-tint": {
+      "group": "overlay",
+      "purpose": "Brand-red wash over the page behind the Help popup."
+    },
+    "--website-popup-scrim-base": {
+      "group": "overlay",
+      "purpose": "Darkening base under the Help popup's red wash."
+    },
+    "--website-popup-shadow": {
+      "group": "overlay",
+      "purpose": "Lift under the Help popup card."
+    },
+    "--website-chip-shadow": {
+      "group": "overlay",
+      "purpose": "Lift under the Live Preview section label chip."
+    },
+    "--website-success-rgb": {
+      "group": "status",
+      "purpose": "Positive status green as an r, g, b triplet for rgba() tints (Paid badge, green VHC light) and the solid light dot."
+    },
+    "--website-warning-rgb": {
+      "group": "status",
+      "purpose": "Amber status as an r, g, b triplet: the amber VHC light tint and dot."
+    },
+    "--website-danger-rgb": {
+      "group": "status",
+      "purpose": "Red status as an r, g, b triplet: the red VHC light tint and dot."
+    },
+    "--website-danger-ink": {
+      "group": "status",
+      "purpose": "Negative / open ink: form errors, open badges, accent tags, debit amounts, red VHC light."
+    },
+    "--website-accent-highlight": {
+      "group": "brand",
+      "purpose": "Bright start stop of accent gradients: tracker done dot, switch on-track, mileage bar."
+    },
+    "--website-photo-shadow": {
+      "group": "overlay",
+      "purpose": "Text shadow under captions laid over a photograph - fixed, photos do not change with the theme."
+    },
+    "--ws-control-bg-hover": {
+      "group": "control-material",
+      "purpose": "Control material, hovered / focused."
+    },
+    "--ws-control-ring": {
+      "group": "control-material",
+      "purpose": "1px hairline drawn inset on the control material."
+    },
+    "--ws-control-text": {
+      "group": "control-material",
+      "purpose": "Label ink on the control material."
+    },
+    "--website-option-bg": {
+      "group": "state",
+      "purpose": "Browser-native <option> list background."
+    },
+    "--website-option-selected-bg": {
+      "group": "state",
+      "purpose": "Browser-native <option> checked / hovered background."
+    },
+    "--website-selected-bg": {
+      "group": "state",
+      "purpose": "Selected row in a custom menu (native select list, Dropdown API)."
+    },
+    "--website-selected-bg-hover": {
+      "group": "state",
+      "purpose": "Selected row, hovered / active."
+    },
+    "--website-selected-ink": {
+      "group": "state",
+      "purpose": "Ink on a selected row."
+    },
+    "--website-selected-hint": {
+      "group": "state",
+      "purpose": "Secondary hint line on a selected row."
+    },
+    "--website-day-muted": {
+      "group": "state",
+      "purpose": "Calendar days outside the visible month."
+    },
+    "--website-day-disabled": {
+      "group": "state",
+      "purpose": "Calendar days that cannot be picked (weekends, out of range)."
+    },
+    "--website-overlay-shadow": {
+      "group": "overlay",
+      "purpose": "Drop shadow under floating surfaces: menus, calendar, time picker."
+    },
+    "--website-specular": {
+      "group": "overlay",
+      "purpose": "Thin top highlight on glass cards."
+    },
+    "--website-scrim": {
+      "group": "overlay",
+      "purpose": "Dark scrim behind the popup and under the photo condition pill."
+    },
+    "--scrollbar-thumb": {
+      "group": "overlay",
+      "purpose": "Scrollbar thumb. Reads --accentMain."
+    },
+    "--scrollbar-thumb-hover": {
+      "group": "overlay",
+      "purpose": "Scrollbar thumb, hovered."
+    },
+    "--website-scrollbar-track": {
+      "group": "overlay",
+      "purpose": "Scrollbar gutter / track."
+    },
+    "--website-success-ink": {
+      "group": "status",
+      "purpose": "Positive figures (valuation factors that raise the estimate)."
+    },
+    "--website-warning-ink": {
+      "group": "status",
+      "purpose": "Warning figures (low stock)."
+    },
+    "--website-preview-rgb": {
+      "group": "status",
+      "purpose": "Live Preview editor outline colour as an r, g, b triplet (staff-editor chrome inside the iframe)."
+    },
+    "--website-typing-spelling": {
+      "group": "state",
+      "purpose": "Typing assistant: the straight red underline under a misspelt word or an American spelling."
+    },
+    "--website-typing-grammar": {
+      "group": "state",
+      "purpose": "Typing assistant: the straight blue underline under a grammar, punctuation or UK-usage issue."
+    },
+    "--website-typing-mirror-ink": {
+      "group": "state",
+      "purpose": "Typing assistant: ink of the mirror laid over a field - always invisible, so only the underlines and the ghost word paint."
+    },
+    "--ws-card": {
+      "group": "page",
+      "purpose": "Glass card fill on .ws-page. Reads --website-elev-2."
+    },
+    "--ws-card-soft": {
+      "group": "page",
+      "purpose": "Soft card fill (media wells, chips). Reads --website-elev-4."
+    },
+    "--ws-line": {
+      "group": "page",
+      "purpose": "Hairline on .ws-page (card rings, table rows, nav rule)."
+    },
+    "--ws-shadow": {
+      "group": "page",
+      "purpose": "Card drop shadow on .ws-page."
+    },
+    "--ws-tint": {
+      "group": "page",
+      "purpose": "Tinted section band and quiet fills on .ws-page."
+    },
+    "--ws-nav-bg": {
+      "group": "page",
+      "purpose": "Translucent glass navigation bar fill."
+    },
+    "--ws-nav-shadow": {
+      "group": "page",
+      "purpose": "Soft lift under the glass navigation bar."
+    },
+    "--ws-accent-soft": {
+      "group": "page",
+      "purpose": "Soft accent wash: the active nav link / group pill and every .ws-icon-badge disc."
+    },
+    "--ws-band-glow": {
+      "group": "page",
+      "purpose": "Soft red glow band behind odd home-page sections (the hero first); even sections take --ws-tint."
+    },
+    "--ws-gutter": {
+      "group": "page",
+      "purpose": "Page width setting: the only side space on every /website page (max 20px). Read by .ws-container, the top bar and every page shell - pages are otherwise full viewport width."
+    },
+    "--ws-nav-h": {
+      "group": "page",
+      "purpose": "Navigation bar height (also the scroll-margin offset)."
+    },
+    "--ws-nav-gap": {
+      "group": "page",
+      "purpose": "Maximum gap between the bottom of the top bar and the first page content, on every /website page."
+    },
+    "--ws-section-gap": {
+      "group": "page",
+      "purpose": "Vertical padding inside each home-page section band (/website main blocks)."
+    },
+    "--ws-radius": {
+      "group": "page",
+      "purpose": "Card corner radius on .ws-page."
+    },
+    "--ws-segmented-track": {
+      "group": "control-system",
+      "purpose": "Segmented control (.ws-segmented) track fill - the standard --ws-control-bg control material, so an unselected segment matches every other customer button."
+    },
+    "--ws-segmented-tab-hover": {
+      "group": "control-system",
+      "purpose": "Hover fill for an unselected segment - the shared --ws-control-bg-hover control hover."
+    },
+    "--ws-segmented-gap": {
+      "group": "control-system",
+      "purpose": "Space under a .ws-segmented track before the content it filters."
+    },
+    "--ws-segmented-tab-height": {
+      "group": "control-system",
+      "purpose": "Segment height: the 44px customer control floor, so segments fill the track."
+    },
+    "--ws-segmented-tab-radius": {
+      "group": "radius",
+      "purpose": "Corner radius on the first and last .ws-segmented-tab, giving the track its pill ends."
+    },
+    "--ws-segmented-track-padding": {
+      "group": "control-system",
+      "purpose": "Inset between the .ws-segmented track and its segments."
+    },
+    "--ws-head-scrim": {
+      "group": "page",
+      "purpose": "Scrim over section-head photography (.ws-head-figure), fading the copy-side edge of the photo into the band behind it."
+    },
+    "--ws-logo-plate": {
+      "group": "page",
+      "purpose": "Plate behind the manufacturer logos in the footer: pale on dark so the dark logo artwork stays legible, the glass card fill on light."
+    },
+    "--ws-btn-radius": {
+      "group": "page",
+      "purpose": "CTA corner radius. Overwritten inline from the Website Manager design row."
+    },
+    "--ws-logo-h": {
+      "group": "page",
+      "purpose": "Logo height. Overwritten inline from the Website Manager design row."
+    },
+    "--ws-section-pad": {
+      "group": "page",
+      "purpose": "Vertical section padding. Overwritten inline from the Website Manager design row."
+    },
+    "--ws-nav-position": {
+      "group": "page",
+      "purpose": "sticky / static navigation. Overwritten inline from the Website Manager design row."
+    },
+    "--ws-heading-font": {
+      "group": "page",
+      "purpose": "Heading typeface. Overwritten inline from the Website Manager design row."
+    },
+    "--ws-popup-gap": {
+      "group": "popup",
+      "purpose": "Viewport gap around the Help popup card (mirrors the staff --popup-viewport-gap)."
+    },
+    "--surface-rgb": {
+      "group": "dev-overlay",
+      "purpose": "Staff token re-declared on the dev overlay root so staff overlay components render on the customer dark material."
+    },
+    "--text-1-rgb": {
+      "group": "dev-overlay",
+      "purpose": "Staff token re-declared on the dev overlay root (overlay ink as a triplet)."
+    },
+    "--text-1": {
+      "group": "dev-overlay",
+      "purpose": "Staff token re-declared on the dev overlay root (overlay ink)."
+    },
+    "--text-2": {
+      "group": "dev-overlay",
+      "purpose": "Staff token re-declared on the dev overlay root (ink on the accent)."
+    },
+    "--theme": {
+      "group": "dev-overlay",
+      "purpose": "Staff token re-declared on the dev overlay root (tinted layer)."
+    },
+    "--accent-base": {
+      "group": "dev-overlay",
+      "purpose": "Staff token re-declared on the dev overlay root (brand red)."
+    },
+    "--accent-base-rgb": {
+      "group": "dev-overlay",
+      "purpose": "Staff token re-declared on the dev overlay root (brand red triplet)."
+    },
+    "--accent-strong": {
+      "group": "dev-overlay",
+      "purpose": "Staff token re-declared on the dev overlay root (strong brand red)."
+    },
+    "--checkbox-ring-color": {
+      "group": "dev-overlay",
+      "purpose": "Staff ring colour re-declared on the dev overlay root (switch outline)."
+    },
+    "--dev-overlay-control-bg": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay compact control fill."
+    },
+    "--dev-overlay-control-bg-hover": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay compact control fill, hovered."
+    },
+    "--dev-overlay-control-ring": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay compact control hairline."
+    },
+    "--dev-overlay-on-accent": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay ink on a solid accent fill."
+    },
+    "--dev-overlay-focus": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay keyboard focus ring."
+    },
+    "--dev-overlay-label-bg": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay section label chip fill."
+    },
+    "--dev-overlay-label-bg-hover": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay section label chip fill, hovered."
+    },
+    "--dev-overlay-label-shadow": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay section label chip lift."
+    },
+    "--dev-overlay-switch-bg": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay switch track, off."
+    },
+    "--dev-overlay-switch-bg-hover": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay switch track, off and hovered."
+    },
+    "--dev-overlay-pill-bg": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay category pill fill."
+    },
+    "--dev-overlay-pill-bg-hover": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay category pill fill, hovered."
+    },
+    "--dev-overlay-pill-ring": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay category pill hairline."
+    },
+    "--dev-overlay-pill-selected": {
+      "group": "dev-overlay",
+      "purpose": "Dev overlay category pill fill, selected."
+    }
+  },
+  "contrast": [
+    {
+      "label": "Body text on the page",
+      "fg": "--txt-bright",
+      "on": [
+        "--website-page-bg"
+      ],
+      "min": 4.5
+    },
+    {
+      "label": "Secondary text on the page",
+      "fg": "--txt-soft",
+      "on": [
+        "--website-page-bg"
+      ],
+      "min": 4.5
+    },
+    {
+      "label": "Muted meta text on the page",
+      "fg": "--txt-mute",
+      "on": [
+        "--website-page-bg"
+      ],
+      "min": 3
+    },
+    {
+      "label": "Body text on the solid card",
+      "fg": "--txt-bright",
+      "on": [
+        "--surface"
+      ],
+      "min": 4.5
+    },
+    {
+      "label": "Body text on a glass card",
+      "fg": "--txt-bright",
+      "on": [
+        "--ws-card",
+        "--website-page-bg"
+      ],
+      "min": 4.5
+    },
+    {
+      "label": "Accent text on the page",
+      "fg": "--accentText",
+      "on": [
+        "--website-page-bg"
+      ],
+      "min": 4.5
+    },
+    {
+      "label": "Label on a primary (accent) fill",
+      "fg": "--onAccentText",
+      "on": [
+        "--accentMain"
+      ],
+      "min": 4.5
+    },
+    {
+      "label": "Control label on the control material",
+      "fg": "--ws-control-text",
+      "on": [
+        "--ws-control-bg",
+        "--website-page-bg"
+      ],
+      "min": 4.5
+    },
+    {
+      "label": "Placeholder on the control material",
+      "fg": "--website-placeholder",
+      "on": [
+        "--ws-control-bg",
+        "--website-page-bg"
+      ],
+      "min": 3
+    },
+    {
+      "label": "Selected menu row",
+      "fg": "--website-selected-ink",
+      "on": [
+        "--website-selected-bg",
+        "--ws-control-bg",
+        "--website-page-bg"
+      ],
+      "min": 4.5
+    },
+    {
+      "label": "Positive figure on the page",
+      "fg": "--website-success-ink",
+      "on": [
+        "--website-page-bg"
+      ],
+      "min": 3
+    },
+    {
+      "label": "Low-stock warning on a glass card",
+      "fg": "--website-warning-ink",
+      "on": [
+        "--ws-card",
+        "--website-page-bg"
+      ],
+      "min": 3
+    },
+    {
+      "label": "Error / open ink on the page",
+      "fg": "--website-danger-ink",
+      "on": [
+        "--website-page-bg"
+      ],
+      "min": 4.5
+    }
+  ]
+}

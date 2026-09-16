@@ -988,8 +988,7 @@ async function buildOrderInvoiceFallback({ orderNumber, vatRate, companyProfile 
           part_number,
           part_name,
           quantity,
-          unit_price,
-          unit_cost
+          unit_price
         )
       `
     )
@@ -1054,7 +1053,7 @@ async function buildOrderInvoiceFallback({ orderNumber, vatRate, companyProfile 
     job_number: order.job_number || "",
     order_number: orderNumber,
     page_count: 1,
-    invoice_to,
+    invoice_to: invoiceTo,
     deliver_to: deliverAddressBlock,
     vehicle_details: vehicleDetails,
     totals

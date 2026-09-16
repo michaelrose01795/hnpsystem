@@ -2,6 +2,7 @@
 
 import React from "react"; // support extracted fragments.
 import PopupModal from "@/components/popups/popupStyleApi";
+import WebsiteHelpQueue from "@/components/page-ui/messages/WebsiteHelpQueue";
 
 // Presentation-only: renders a thread member's last_read_at (the last time they
 // opened this conversation on /messages) as "HH:MM - DDth MMM".
@@ -110,6 +111,7 @@ export default function MessagesPageUi(props) {
     openBookingsThread,
     openGroupEditModal,
     openThread,
+    onWebsiteHelpJoined,
     orderedSystemNotifications,
     handleCreateJobFromRequest,
     palette,
@@ -393,6 +395,7 @@ export default function MessagesPageUi(props) {
                 }} />}
                     </button>)}
                 </DevLayoutSection>
+                {canSeeCustomerRequests && <WebsiteHelpQueue onJoined={onWebsiteHelpJoined} />}
                 {loadingThreads && <ThreadRowsSkeleton count={5} />}
                 {!loadingThreads && <>
                     {filteredThreads.length ? <div style={{
@@ -508,7 +511,7 @@ export default function MessagesPageUi(props) {
           marginBottom: "var(--space-xs)"
         }}>
                 <Button type="button" variant="ghost" size="sm" onClick={() => handleMobileBack(false)}>
-                  ← Back
+                  Back
                 </Button>
               </div>}
             {activeSystemView || activeBookingsView ? <>
@@ -610,7 +613,12 @@ export default function MessagesPageUi(props) {
                               <>
                                 <div style={{
                                   display: "grid",
-                                  gridTemplateColumns: "minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(0, 2fr) minmax(120px, auto)",
+                                  // Four tracks with 160+120+0+120 of hard minimum need 400px before gaps,
+                                  // so at the 375px floor the last column was pushed outside the card and
+                                  // clipped (the app never scrolls sideways). Stack on mobile instead.
+                                  gridTemplateColumns: isMobileView
+                                    ? "minmax(0, 1fr)"
+                                    : "minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(0, 2fr) minmax(120px, auto)",
                                   alignItems: "center",
                                   gap: "16px",
                                   flex: 1,

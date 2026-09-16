@@ -14,8 +14,13 @@
 //      the line on the map follows the roads the van actually takes rather than
 //      a straight hop between postcodes.
 //
-// OSRM is best-effort. If it is slow, rate-limited, unreachable, or refuses the
-// waypoint set, the response falls back to the previous behaviour —
+// The demo server's latency swings from 200ms to several seconds, so a routing
+// attempt is retried once with a longer patience before giving up, and a routed
+// answer is cached against its waypoint set — a day looked at twice is routed
+// once. Between them, a slow moment at OSRM no longer costs the real drive.
+//
+// OSRM is still best-effort. If it is down, rate-limited, unreachable, or
+// refuses the waypoint set, the response falls back to the older behaviour —
 // straight-line distance with a winding factor, and no geometry — and flags
 // itself with provider: "estimate" so the page says so in its caption instead
 // of quietly presenting a guess as a routed drive.
@@ -93,24 +98,65 @@ const OSRM_BASE_URL = (process.env.OSRM_BASE_URL || "https://router.project-osrm
   /\/+$/,
   ""
 );
-// A route panel must never hold the page open on a slow third party; past this
-// the request is abandoned and the estimate is used instead.
-const OSRM_TIMEOUT_MS = 7000;
+// The public OSRM demo server is free but its latency is erratic — the same
+// request can answer in 200ms or take six seconds while it is busy. A single
+// short attempt therefore dropped ordinary days onto the straight-line estimate
+// for no reason other than a slow moment. Two attempts are made: a short one
+// that covers the common case, then a patient one before giving up. A route
+// panel must still never hold the page open indefinitely, hence the ceiling.
+const OSRM_ATTEMPT_TIMEOUTS_MS = [7000, 14000];
 // Waypoints travel in the URL path. A day's van run is nowhere near this, and
 // the cap stops a pathological day building an unroutable request.
 const OSRM_MAX_WAYPOINTS = 60;
+
+// A day's waypoint set does not move, and the roads between them do not change
+// while anyone is looking at the panel, so a routed answer is held and replayed
+// rather than re-asked. That is what makes the second and later views of a day
+// immune to an OSRM slow patch, and it keeps the diary off the public demo
+// server for repeat traffic. Process-local and deliberately small: a latency
+// shield, not a store.
+const ROUTE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const ROUTE_CACHE_MAX_ENTRIES = 200;
+const routeCache = new Map();
+
+const cacheKeyFor = (points) =>
+  points.map((point) => `${point.latitude.toFixed(5)},${point.longitude.toFixed(5)}`).join(";");
+
+function readRouteCache(key) {
+  const entry = routeCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.storedAt > ROUTE_CACHE_TTL_MS) {
+    routeCache.delete(key);
+    return null;
+  }
+  // Re-inserting moves it to the back, so the eviction below drops the
+  // least-recently-used day rather than whichever was cached first.
+  routeCache.delete(key);
+  routeCache.set(key, entry);
+  return entry.route;
+}
+
+function writeRouteCache(key, route) {
+  routeCache.set(key, { storedAt: Date.now(), route });
+  while (routeCache.size > ROUTE_CACHE_MAX_ENTRIES) {
+    const oldest = routeCache.keys().next().value;
+    if (oldest === undefined) break;
+    routeCache.delete(oldest);
+  }
+}
 
 const roundTenth = (value) => Math.round(value * 10) / 10;
 
 const normaliseKey = (postcode) => String(postcode || "").toUpperCase().replace(/\s+/g, "");
 
 /**
- * Ask OSRM to drive through `points` in order.
+ * One attempt at asking OSRM to drive through `points` in order.
  *
- * Returns null on any failure — the caller then falls back to the estimate.
- * Never throws: a routing outage must not take the panel down with it.
+ * Returns null on any failure — the caller retries, then falls back to the
+ * estimate. Never throws: a routing outage must not take the panel down.
  *
  * @param {Array<{latitude:number, longitude:number}>} points
+ * @param {number} timeoutMs
  * @returns {Promise<null | {
  *   legMiles: number[],
  *   legMinutes: number[],
@@ -119,9 +165,7 @@ const normaliseKey = (postcode) => String(postcode || "").toUpperCase().replace(
  *   totalMinutes: number,
  * }>}
  */
-async function routeDrive(points) {
-  if (points.length < 2 || points.length > OSRM_MAX_WAYPOINTS) return null;
-
+async function requestDrive(points, timeoutMs) {
   const coordinates = points
     .map((point) => `${point.longitude.toFixed(6)},${point.latitude.toFixed(6)}`)
     .join(";");
@@ -133,7 +177,7 @@ async function routeDrive(points) {
     "?overview=simplified&geometries=geojson&steps=false&alternatives=false";
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), OSRM_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       headers: { accept: "application/json" },
@@ -169,6 +213,30 @@ async function routeDrive(points) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * The routed drive through `points`, replayed from cache when this exact
+ * waypoint set has already been routed.
+ *
+ * Returns null only when OSRM could not answer either attempt — the caller then
+ * falls back to the estimate and the page says so in its caption.
+ */
+async function routeDrive(points) {
+  if (points.length < 2 || points.length > OSRM_MAX_WAYPOINTS) return null;
+
+  const key = cacheKeyFor(points);
+  const cached = readRouteCache(key);
+  if (cached) return cached;
+
+  for (const timeoutMs of OSRM_ATTEMPT_TIMEOUTS_MS) {
+    const route = await requestDrive(points, timeoutMs);
+    if (route) {
+      writeRouteCache(key, route);
+      return route;
+    }
+  }
+  return null;
 }
 
 async function handler(req, res, session) {

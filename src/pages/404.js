@@ -1,15 +1,20 @@
 // file location: src/pages/404.js
 //
-// The H&P in-app experience for a route that does not exist.
+// The H&P experience for a route that does not exist.
 //
 // Without this file Next.js serves its own stock "404 | This page could not be
-// found" screen — unstyled by our design system, with no way to report the
-// broken link and no record that anyone hit it. This renders the shared recovery
-// screen instead (the same component the error boundary uses) and logs the hit
-// automatically to support_error_events.
+// found" screen. This renders the shared recovery screen instead and logs the
+// hit automatically to support_error_events.
+//
+// The same page serves both sides of the app: a /website address gets the
+// customer-site error page and layout (custglobal.css), everything else the
+// staff screen and layout. See FrameworkErrorPage / ErrorSurfaceLayout.
 
-import PageErrorScreen from "@/components/support/PageErrorScreen";
+import FrameworkErrorPage from "@/components/support/FrameworkErrorPage";
+import { errorSurfaceGetLayout } from "@/components/layout/ErrorSurfaceLayout";
 
 export default function NotFoundPage() {
-  return <PageErrorScreen statusCode={404} />;
+  return <FrameworkErrorPage statusCode={404} />;
 }
+
+NotFoundPage.getLayout = errorSurfaceGetLayout;

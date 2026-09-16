@@ -25,7 +25,12 @@ const SEARCH_ROOTS = [
   "src/pages",
 ];
 const EXCLUDED_PREFIXES = [
+  // Customer (/website) UI is a separate design system: raw <button>/<input>
+  // ARE its canonical controls (custglobal.css styles them), so the staff
+  // Button/.app-input contract does not apply. Governed instead by
+  // tools/scripts/check-website-design.js (CLAUDE.md §3.0c).
   "src/pages/website/",
+  "src/features/website/",
 ];
 const FILE_EXT_RE = /\.(js|jsx|ts|tsx)$/;
 
@@ -48,22 +53,22 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/HR/EmployeeProfilePanel.js", 2],
   ["src/components/HR/OvertimeEntriesEditor.js", 1],
   ["src/components/HR/SidebarAccessEditor.js", 4],
-  ["src/components/HR/StaffVehiclesCard.js", 21],
+  ["src/components/HR/StaffVehiclesCard.js", 7],
   ["src/components/HR/tabs/AttendanceTab.js", 1],
-  ["src/components/HR/tabs/EmployeesTab.js", 27],
+  ["src/components/HR/tabs/EmployeesTab.js", 10],
   ["src/components/JobCards/ClockingHistorySection.js", 2],
   ["src/components/JobCards/CustomerRequestsTab.js", 4],
   ["src/components/JobCards/JobCardModal.js", 1],
   ["src/components/JobCards/LocationUpdateModal.js", 0],
   ["src/components/JobCards/RequestPresetAutosuggestInput.js", 2],
-  ["src/components/JobCards/WriteUpForm.js", 14],
+  ["src/components/JobCards/WriteUpForm.js", 12],
   ["src/components/JobCards/WriteUpWorkspace.js", 3],
   ["src/components/layout/StaffLayout.js", 2],
   ["src/components/LoanCars/FuelGauge.js", 1],
   ["src/components/LoanCars/LoanCarSchedulePanel.js", 3],
   ["src/components/mobile/RedirectToWorkshopButton.js", 4],
-  ["src/components/NotesTab.js", 9],
-  ["src/components/page-ui/accounts/payslips/payslips-ui.js", 3],
+  ["src/components/NotesTab.js", 8],
+  ["src/components/page-ui/accounts/payslips/payslips-ui.js", 0],
   ["src/components/page-ui/accounts/reports/accounts-reports-ui.js", 2],
   ["src/components/page-ui/appointments/appointments-ui.js", 2],
   ["src/components/page-ui/clocking/clocking-technician-slug-ui.js", 3],
@@ -78,20 +83,20 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js", 0],
   ["src/components/page-ui/job-cards/WarrantyTab.js", 2],
   ["src/components/page-ui/messages/messages-ui.js", 4],
-  ["src/components/page-ui/parts/create-order/parts-create-order-order-number-ui.js", 4],
-  ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 30],
+  ["src/components/page-ui/parts/create-order/parts-create-order-order-number-ui.js", 0],
+  ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 0],
   ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 14],
   ["src/components/page-ui/parts/parts-delivery-planner-ui.js", 8],
-  ["src/components/page-ui/parts/parts-goods-in-ui.js", 49],
+  ["src/components/page-ui/parts/parts-goods-in-ui.js", 12],
   ["src/components/page-ui/parts/parts-manager-ui.js", 0],
-  ["src/components/page-ui/stock-catalogue-ui.js", 10],
+  ["src/components/page-ui/stock-catalogue-ui.js", 9],
   ["src/components/page-ui/tech/tech-consumables-request-ui.js", 3],
   ["src/components/page-ui/valet/valet-ui.js", 2],
   ["src/components/page-ui/vhc/customer-preview/vhc-customer-preview-job-number-ui.js", 3],
   ["src/components/page-ui/vhc/customer-view/vhc-customer-view-job-number-ui.js", 1],
   ["src/components/page-ui/vhc/share/[jobNumber]/vhc-share-job-number-link-code-ui.js", 1],
-  ["src/components/Parts/DeliverySchedulerModal.js", 10],
-  ["src/components/Parts/PartDeliveryLogModal.js", 9],
+  ["src/components/Parts/DeliverySchedulerModal.js", 8],
+  ["src/components/Parts/PartDeliveryLogModal.js", 4],
   ["src/components/PartsTab.js", 3],
   ["src/components/popups/CheckSheetPopup.js", 3],
   ["src/components/popups/ConfirmationDialog.js", 0],
@@ -104,8 +109,8 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/profile/personal/widgets/PersonalWidgets.js", 4],
   ["src/components/profile/personal/WidgetSettingsModal.js", 6],
   ["src/components/profile/ProfilePersonalTab.js", 1],
-  ["src/components/profile/ProfileWorkTab.js", 18],
-  ["src/components/reporting/SavedViewsBar.js", 3],
+  ["src/components/profile/ProfileWorkTab.js", 17],
+  ["src/components/reporting/SavedViewsBar.js", 2],
   ["src/components/sidebar-access/SidebarGroupAccessModal.js", 1],
   ["src/components/StatusTracking/JobProgressTracker.js", 1],
   ["src/components/StatusTracking/StatusSidebar.js", 2],
@@ -114,12 +119,12 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/support/dev/SupportWorkspace.js", 2],
   ["src/components/support/SupportErrorBoundary.js", 1],
   ["src/components/support/SupportReportLauncher.js", 1],
-  ["src/components/support/SupportScreenshotField.js", 5],
-  ["src/components/topbar/AssistantPanel.js", 3],
+  ["src/components/support/SupportScreenshotField.js", 3],
+  ["src/components/topbar/AssistantPanel.js", 2],
   ["src/components/topbar/CommandPalette.js", 2],
-  ["src/components/topbar/TeamPanel.js", 5],
-  ["src/components/topbar/WorkspaceCustomiseOverlay.js", 4],
-  ["src/components/topbar/WorkspacePanel.js", 4],
+  ["src/components/topbar/TeamPanel.js", 3],
+  ["src/components/topbar/WorkspaceCustomiseOverlay.js", 2],
+  ["src/components/topbar/WorkspacePanel.js", 3],
   ["src/components/TopbarAlerts.js", 2],
   ["src/components/ui/Button.js", 1],
   ["src/components/ui/calendarAPI/Calendar.js", 8],
@@ -129,6 +134,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/ui/dropdownAPI/MultiSelectDropdown.js", 4],
   ["src/components/ui/monthPickerAPI/MonthPicker.js", 5],
   ["src/components/ui/searchBarAPI/SearchBar.js", 2],
+  ["src/components/ui/SymbolButton.js", 1],
   ["src/components/ui/StaffButton.js", 1],
   ["src/components/ui/timePickerAPI/TimePicker.js", 6],
   ["src/components/ui/timePickerAPI/TimePickerField.js", 2],
@@ -136,8 +142,8 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/VHC/BrakeDiagram.js", 1],
   ["src/components/VHC/BrakesHubsDetailsModal.js", 2],
   ["src/components/VHC/CustomerVideoButton.js", 1],
-  ["src/components/VHC/ExternalDetailsModal.js", 3],
-  ["src/components/VHC/InternalElectricsDetailsModal.js", 3],
+  ["src/components/VHC/ExternalDetailsModal.js", 2],
+  ["src/components/VHC/InternalElectricsDetailsModal.js", 2],
   ["src/components/VHC/IssueAutocomplete.js", 2],
   ["src/components/VHC/mediaCapture/ConcernPanel.js", 2],
   ["src/components/VHC/mediaCapture/ConcernPickerModal.js", 1],
@@ -149,14 +155,14 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/VHC/ServiceIndicatorDetailsModal.js", 5],
   ["src/components/VHC/TyreDiagram.js", 2],
   ["src/components/VHC/TyresSection.js", 1],
-  ["src/components/VHC/UndersideDetailsModal.js", 3],
+  ["src/components/VHC/UndersideDetailsModal.js", 2],
   ["src/components/VHC/VhcCustomerDescriptionModal.js", 1],
   ["src/components/VHC/VhcCustomerView.js", 1],
   ["src/components/VHC/VhcDetailsPanel.js", 39],
   ["src/components/VHC/videoEditor/TimelineTrimControl.js", 2],
   ["src/components/VHC/videoEditor/VideoMetaPanel.js", 2],
   ["src/components/VHC/WheelsHubsModal.js", 4],
-  ["src/components/VHC/WheelsTyresDetailsModal.js", 9],
+  ["src/components/VHC/WheelsTyresDetailsModal.js", 5],
   ["src/components/Workshop/JobClockingCard.js", 6],
   ["src/features/3Dwebsite/components/DealershipEntrySection.js", 1],
   ["src/features/3Dwebsite/components/ScrollProgress.js", 1],
@@ -168,39 +174,38 @@ const MIGRATION_BASELINE = new Map([
   ["src/features/payslips/PayslipsListPopup.js", 1],
   ["src/features/roleTreeDemo/components/RoleTreeDemo.js", 1],
   ["src/features/roleTreeDemo/components/sections/InteractiveDemoSection.js", 1],
-  ["src/features/staffStyleReview/StaffStyleReviewPage.js", 2],
+  ["src/features/staffStyleReview/StaffStyleReviewPage.js", 1],
   ["src/features/tracking/map/TrackingMap.js", 16],
   ["src/features/vision/components/VisionViews.js", 1],
-  ["src/features/website/components/ShopSection.js", 8],
-  ["src/features/website/components/WebsiteNativeDateTimeInput.js", 9],
-  ["src/features/website/components/WebsiteNativeSelect.js", 2],
-  ["src/features/website/shop/CartPage.js", 3],
-  ["src/features/website/shop/CheckoutPage.js", 9],
-  ["src/features/website/WebsitePage.js", 2],
   ["src/features/websiteManager/panels/SeoPanel.js", 0],
   ["src/pages/admin/compliance/breaches.js", 2],
   ["src/pages/admin/compliance/dpias.js", 1],
   ["src/pages/admin/compliance/ropa.js", 1],
-  ["src/pages/customers/[customerSlug].js", 3],
+  ["src/pages/customers/[customerSlug].js", 1],
   ["src/pages/deliveries/index.js", 0],
-  ["src/pages/delivery-planner.js", 16],
+  ["src/pages/delivery-planner.js", 15],
   ["src/pages/dev/knowledge.js", 1],
-  ["src/pages/dev/user-diagnostic.js", 27],
+  ["src/pages/dev/user-diagnostic.js", 26],
   ["src/pages/goods-in/index.js", 11],
   ["src/pages/hr/disciplinary.js", 1],
   ["src/pages/hr/performance.js", 1],
   ["src/pages/hr/settings.js", 1],
   ["src/pages/hr/training.js", 1],
   ["src/pages/job-cards/[jobNumber].js", 25],
-  ["src/pages/new-order/[orderNumber].js", 1],
-  ["src/pages/password-reset/new.js", 2],
-  ["src/pages/stock-catalogue.js", 31],
+  ["src/pages/order/[orderNumber].js", 0],
+  ["src/pages/password-reset/new.js", 0],
+  ["src/pages/stock-catalogue.js", 14],
   ["src/pages/tech/[jobNumber].js", 5],
   ["src/pages/valet/index.js", 3],
-  ["src/pages/vhc/customer-preview/[jobNumber].js", 2],
 ]);
 
 const CONTROL_TAG_RE = /<(input|textarea|button)\b/;
+// Customer (/website) markup carries its own design system (CLAUDE.md §3.0c),
+// where a raw <button> IS the canonical secondary action. EXCLUDED_PREFIXES
+// covers website-only files, but a shared component can render both skins
+// (e.g. GlobalContextMenu), so also exempt controls whose class is a
+// website-scope class. Those are governed by check-website-design.js instead.
+const WEBSITE_SCOPE_RE = /className=(?:"[^"]*\bwebsite-[\w-]+|'[^']*\bwebsite-[\w-]+|{`[^`]*\bwebsite-[\w-]+|{[^}]*["'`]website-[\w-]+)/;
 // Body of a style={{ ... }} prop, so VISUAL_STYLE_RE is tested against the
 // declarations themselves rather than against neighbouring attribute text.
 const STYLE_BODY_RE = /style=\{\{([\s\S]*?)\}\}/;
@@ -262,6 +267,7 @@ function findViolations(source) {
 
     const tagMatch = openingTag.match(CONTROL_TAG_RE);
     if (!tagMatch) return;
+    if (WEBSITE_SCOPE_RE.test(openingTag)) return;
     const tagName = tagMatch[1].toLowerCase();
 
     if (tagName === "button") {
@@ -525,7 +531,7 @@ for (const contract of buttonContracts) {
 // check-design-governance.js, which tracks that as recorded debt) - this
 // assertion follows the rule to wherever it actually is rather than forcing it
 // to move.
-const tableButtonRuleStart = staffGlobalSource.indexOf("html.staff-scope .app-data-table button {");
+const tableButtonRuleStart = staffGlobalSource.indexOf("html.staff-scope .app-data-table button:not(.app-symbol-btn):not(.app-btn--has-symbol) {");
 const tableButtonRuleEnd = staffGlobalSource.indexOf("}", tableButtonRuleStart);
 
 if (tableButtonRuleStart < 0 || tableButtonRuleEnd < 0) {

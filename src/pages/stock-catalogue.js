@@ -8,11 +8,11 @@ import {
   getPipelineStageMeta } from
 "@/lib/parts/pipeline";
 import { supabase } from "@/lib/database/supabaseClient";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import SymbolButton from "@/components/ui/SymbolButton";
 import StockCataloguePageUi from "@/components/page-ui/stock-catalogue-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
 
@@ -927,45 +927,29 @@ function StockCataloguePage() {
 
     return (
       <div
-        style={{
-          ...popupOverlayStyles,
-          zIndex: 1500
-        }}
+        className="popup-backdrop"
         onClick={() => {
           setShowAddToJobModal(false);
           resetAddToJobModal();
         }}>
         
         <div
+          className="popup-card"
           style={{
-            ...popupCardStyles,
             width: "min(540px, 92vw)",
-            maxHeight: "90vh",
-            overflowY: "auto",
             padding: "24px"
           }}
           onClick={(event) => event.stopPropagation()}>
           
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
             <h2 style={{ ...sectionTitleStyle, margin: 0 }}>Add part to job</h2>
-            <button
-              type="button"
+            <SymbolButton
+              symbol="close"
+              label="Close"
               onClick={() => {
                 setShowAddToJobModal(false);
                 resetAddToJobModal();
-              }}
-              style={{
-                background: "var(--surface)",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                fontSize: "var(--text-h3)",
-                cursor: "pointer",
-                color: "var(--text-1)",
-                padding: "6px 10px"
-              }}>
-              
-              ×
-            </button>
+              }} />
           </div>
 
           <div
@@ -992,7 +976,7 @@ function StockCataloguePage() {
             <label style={{ display: "block", marginBottom: "10px" }}>
               <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>Search job number</span>
               <div style={{ display: "flex", gap: "8px" }}>
-                <input
+                <input className="app-input"
                   type="text"
                   value={addToJobSearch}
                   onChange={(event) => setAddToJobSearch(event.target.value)}
@@ -1058,7 +1042,7 @@ function StockCataloguePage() {
 
             <label style={{ display: "block", marginBottom: "12px" }}>
               <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>Quantity</span>
-              <input
+              <input className="app-input"
                 type="number"
                 min={1}
                 value={addToJobQuantity}
@@ -1097,18 +1081,12 @@ function StockCataloguePage() {
     if (!showDeliveryModal) return null;
 
     return (
-      <div
-        style={{
-          ...popupOverlayStyles,
-          zIndex: 1500
-        }}>
+      <div className="popup-backdrop">
         
         <div
+          className="popup-card"
           style={{
-            ...popupCardStyles,
             width: "min(520px, 90vw)",
-            maxHeight: "90vh",
-            overflowY: "auto",
             padding: "28px"
           }}>
           
@@ -1118,7 +1096,7 @@ function StockCataloguePage() {
             <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
               Supplier
             </span>
-            <input
+            <input className="app-input"
               type="text"
               value={deliveryForm.supplier}
               onChange={(event) =>
@@ -1138,7 +1116,7 @@ function StockCataloguePage() {
             <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
               Order Reference
             </span>
-            <input
+            <input className="app-input"
               type="text"
               value={deliveryForm.orderReference}
               onChange={(event) =>
@@ -1161,7 +1139,7 @@ function StockCataloguePage() {
             <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
               Part
             </span>
-            <input
+            <input className="app-input"
               type="text"
               value={deliveryPartSearch}
               onChange={(event) => setDeliveryPartSearch(event.target.value)}
@@ -1269,7 +1247,7 @@ function StockCataloguePage() {
                 <p style={{ fontSize: "var(--text-body-sm)", color: "var(--info-dark)", marginBottom: "8px", margin: "4px 0 8px 0" }}>
                   Paste one part per line with 8 fields: Order Ref, Part Number, Name, Supplier, Location, Cost Price, Sell Price, Quantity
                 </p>
-                <textarea
+                <textarea className="app-input"
                 value={newPartForm.notes}
                 onChange={(event) => {
                   const text = event.target.value;
@@ -1308,7 +1286,7 @@ function StockCataloguePage() {
                 <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                   Part Number
                 </span>
-                <input
+                <input className="app-input"
                 type="text"
                 value={newPartForm.partNumber}
                 onChange={(event) =>
@@ -1328,7 +1306,7 @@ function StockCataloguePage() {
                 <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                   Part Name
                 </span>
-                <input
+                <input className="app-input"
                 type="text"
                 value={newPartForm.name}
                 onChange={(event) =>
@@ -1348,7 +1326,7 @@ function StockCataloguePage() {
                 <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                   Category {detectedCategory && <span style={{ color: "var(--accent-purple)", fontWeight: 500, fontSize: "var(--text-body-sm)" }}>(Auto-detected: {detectedCategory})</span>}
                 </span>
-                <input
+                <input className="app-input"
                 type="text"
                 value={categorySearch || newPartForm.category}
                 onChange={(e) => {
@@ -1411,7 +1389,7 @@ function StockCataloguePage() {
                     fontWeight: 600
                   }}>
                   
-                        + Create "{categorySearch.trim()}"
+                        Create "{categorySearch.trim()}"
                       </button> :
 
                 filteredCategories.map((cat) =>
@@ -1472,7 +1450,7 @@ function StockCataloguePage() {
                   <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                     Supplier
                   </span>
-                  <input
+                  <input className="app-input"
                   type="text"
                   value={newPartForm.supplier}
                   onChange={(event) =>
@@ -1491,7 +1469,7 @@ function StockCataloguePage() {
                   <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                     Storage Location
                   </span>
-                  <input
+                  <input className="app-input"
                   type="text"
                   value={newPartLocationSearch}
                   onChange={(event) => {
@@ -1572,7 +1550,7 @@ function StockCataloguePage() {
                   <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                     Unit Cost
                   </span>
-                  <input
+                  <input className="app-input"
                   type="number"
                   min="0"
                   step="0.01"
@@ -1593,7 +1571,7 @@ function StockCataloguePage() {
                   <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                     Unit Price
                   </span>
-                  <input
+                  <input className="app-input"
                   type="number"
                   min="0"
                   step="0.01"
@@ -1665,7 +1643,7 @@ function StockCataloguePage() {
               <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
                 Qty Ordered
               </span>
-              <input
+              <input className="app-input"
                 type="number"
                 min="0"
                 value={deliveryForm.quantityOrdered}
@@ -1688,7 +1666,7 @@ function StockCataloguePage() {
               <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
                 Qty Received
               </span>
-              <input
+              <input className="app-input"
                 type="number"
                 min="0"
                 value={deliveryForm.quantityReceived}
@@ -1712,7 +1690,7 @@ function StockCataloguePage() {
             <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
               Unit Cost (optional)
             </span>
-            <input
+            <input className="app-input"
               type="number"
               min="0"
               step="0.01"
@@ -1737,7 +1715,7 @@ function StockCataloguePage() {
             <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
               Notes
             </span>
-            <textarea
+            <textarea className="app-input"
               value={deliveryForm.notes}
               onChange={(event) =>
               setDeliveryForm((prev) => ({ ...prev, notes: event.target.value }))
@@ -1778,7 +1756,7 @@ function StockCataloguePage() {
 
   };
 
-  return <StockCataloguePageUi view="section1" buttonStyle={buttonStyle} cardStyle={cardStyle} ConfirmationDialog={ConfirmationDialog} confirmDialog={confirmDialog} displayedJobParts={displayedJobParts} displayLimit={displayLimit} editedPart={editedPart} filterType={filterType} formatCurrency={formatCurrency} formatDateTime={formatDateTime} formatMargin={formatMargin} formatStatusLabel={formatStatusLabel} getPipelineStageMeta={getPipelineStageMeta} handleCancelEdit={handleCancelEdit} handleEditPart={handleEditPart} handleJobPartUpdate={handleJobPartUpdate} handleSavePart={handleSavePart} inventory={inventory} inventoryError={inventoryError} inventoryLoading={inventoryLoading} inventorySearch={inventorySearch} isEditMode={isEditMode} isPartModalOpen={isPartModalOpen} isSavingPart={isSavingPart} JOB_PART_STATUSES={JOB_PART_STATUSES} jobCardSectionExpanded={jobCardSectionExpanded} jobData={jobData} jobError={jobError} jobLoading={jobLoading} jobParts={jobParts} jobRequests={jobRequests} jobSearch={jobSearch} locationFilter={locationFilter} locationSearchTerm={locationSearchTerm} mapPartStatusToPipelineId={mapPartStatusToPipelineId} matchesLinkedJobStatus={matchesLinkedJobStatus} partsPipeline={partsPipeline} pendingJobParts={pendingJobParts} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} PRE_PICK_OPTIONS={PRE_PICK_OPTIONS} renderAddToJobModal={renderAddToJobModal} renderDeliveryModal={renderDeliveryModal} RequirementBadge={RequirementBadge} resetAddToJobModal={resetAddToJobModal} resolveSourceMeta={resolveSourceMeta} resolveStatusStyles={resolveStatusStyles} SearchBar={SearchBar} searchJob={searchJob} secondaryButtonStyle={secondaryButtonStyle} sectionTitleStyle={sectionTitleStyle} selectedPart={selectedPart} selectedPipelineStage={selectedPipelineStage} setConfirmDialog={setConfirmDialog} setDisplayLimit={setDisplayLimit} setEditedPart={setEditedPart} setFilterType={setFilterType} setInventorySearch={setInventorySearch} setIsEditMode={setIsEditMode} setIsPartModalOpen={setIsPartModalOpen} setJobCardSectionExpanded={setJobCardSectionExpanded} setJobSearch={setJobSearch} setLocationFilter={setLocationFilter} setLocationSearchTerm={setLocationSearchTerm} setSelectedPart={setSelectedPart} setSelectedPipelineStage={setSelectedPipelineStage} setShowAddToJobModal={setShowAddToJobModal} setStatusFilter={setStatusFilter} statusFilter={statusFilter} STORAGE_LOCATION_CODES={STORAGE_LOCATION_CODES} tableStyle={tableStyle} />;
+  return <StockCataloguePageUi view="section1" buttonStyle={buttonStyle} cardStyle={cardStyle} ConfirmationDialog={ConfirmationDialog} confirmDialog={confirmDialog} displayedJobParts={displayedJobParts} displayLimit={displayLimit} editedPart={editedPart} filterType={filterType} formatCurrency={formatCurrency} formatDateTime={formatDateTime} formatMargin={formatMargin} formatStatusLabel={formatStatusLabel} getPipelineStageMeta={getPipelineStageMeta} handleCancelEdit={handleCancelEdit} handleEditPart={handleEditPart} handleJobPartUpdate={handleJobPartUpdate} handleSavePart={handleSavePart} inventory={inventory} inventoryError={inventoryError} inventoryLoading={inventoryLoading} inventorySearch={inventorySearch} isEditMode={isEditMode} isPartModalOpen={isPartModalOpen} isSavingPart={isSavingPart} JOB_PART_STATUSES={JOB_PART_STATUSES} jobCardSectionExpanded={jobCardSectionExpanded} jobData={jobData} jobError={jobError} jobLoading={jobLoading} jobParts={jobParts} jobRequests={jobRequests} jobSearch={jobSearch} locationFilter={locationFilter} locationSearchTerm={locationSearchTerm} mapPartStatusToPipelineId={mapPartStatusToPipelineId} matchesLinkedJobStatus={matchesLinkedJobStatus} partsPipeline={partsPipeline} pendingJobParts={pendingJobParts} PRE_PICK_OPTIONS={PRE_PICK_OPTIONS} renderAddToJobModal={renderAddToJobModal} renderDeliveryModal={renderDeliveryModal} RequirementBadge={RequirementBadge} resetAddToJobModal={resetAddToJobModal} resolveSourceMeta={resolveSourceMeta} resolveStatusStyles={resolveStatusStyles} SearchBar={SearchBar} searchJob={searchJob} secondaryButtonStyle={secondaryButtonStyle} sectionTitleStyle={sectionTitleStyle} selectedPart={selectedPart} selectedPipelineStage={selectedPipelineStage} setConfirmDialog={setConfirmDialog} setDisplayLimit={setDisplayLimit} setEditedPart={setEditedPart} setFilterType={setFilterType} setInventorySearch={setInventorySearch} setIsEditMode={setIsEditMode} setIsPartModalOpen={setIsPartModalOpen} setJobCardSectionExpanded={setJobCardSectionExpanded} setJobSearch={setJobSearch} setLocationFilter={setLocationFilter} setLocationSearchTerm={setLocationSearchTerm} setSelectedPart={setSelectedPart} setSelectedPipelineStage={setSelectedPipelineStage} setShowAddToJobModal={setShowAddToJobModal} setStatusFilter={setStatusFilter} statusFilter={statusFilter} STORAGE_LOCATION_CODES={STORAGE_LOCATION_CODES} tableStyle={tableStyle} />;
 
 
 

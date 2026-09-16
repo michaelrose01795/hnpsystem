@@ -1,6 +1,7 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md 3.0)
 import IssueReportPopup, {
   IssueReportAddSection,
   IssueReportList,
@@ -157,7 +158,7 @@ const PadsSection = ({
   resetFocus,
   panelStyle,
 }) => (
-  <div data-dev-section="1" data-dev-section-key={`vhc-brakes-pads-${title.toLowerCase().replace(/\s+/g, "-")}`} data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
+  <LayerTheme data-dev-section="1" data-dev-section-key={`vhc-brakes-pads-${title.toLowerCase().replace(/\s+/g, "-")}`} data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
     <div style={{ display: "flex", alignItems: "center" }}>
       <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
         {title}
@@ -190,7 +191,7 @@ const PadsSection = ({
         <option>Green</option>
       </DropdownField>
     </div>
-  </div>
+  </LayerTheme>
 );
 
 const DiscsSection = ({
@@ -213,7 +214,7 @@ const DiscsSection = ({
 }) => {
   const activeTab = discData.tab || "measurements";
   return (
-    <div data-dev-section="1" data-dev-section-key={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}`} data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
+    <LayerTheme data-dev-section="1" data-dev-section-key={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}`} data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
       <div data-dev-section="1" data-dev-section-key={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}-toolbar`} data-dev-section-type="toolbar" data-dev-section-parent={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
         <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
           {title}
@@ -295,7 +296,7 @@ const DiscsSection = ({
           Switch to Drum Brakes
         </Button>
       )}
-    </div>
+    </LayerTheme>
   );
 };
 
@@ -306,7 +307,7 @@ const DrumBrakesSection = ({
   sectionPanelBase,
   panelStyle,
 }) => (
-    <div data-dev-section="1" data-dev-section-key="vhc-brakes-drums" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
+    <LayerTheme data-dev-section="1" data-dev-section-key="vhc-brakes-drums" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
       <div data-dev-section="1" data-dev-section-key="vhc-brakes-drums-toolbar" data-dev-section-type="toolbar" data-dev-section-parent="vhc-brakes-drums" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
         <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
           Drum Brakes
@@ -344,7 +345,7 @@ const DrumBrakesSection = ({
         })}
       </div>
 
-    </div>
+    </LayerTheme>
 );
 
 export default function BrakesHubsDetailsModal({
@@ -1099,7 +1100,7 @@ export default function BrakesHubsDetailsModal({
                 />
               )}
 
-              <div data-dev-section="1" data-dev-section-key="vhc-brakes-issues" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, flex: "1 1 auto", minHeight: 0 }}>
+              <LayerTheme data-dev-section="1" data-dev-section-key="vhc-brakes-issues" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, flex: "1 1 auto", minHeight: 0 }}>
                 <div
                   data-dev-section="1"
                   data-dev-section-key="vhc-brakes-issues-toolbar"
@@ -1115,7 +1116,7 @@ export default function BrakesHubsDetailsModal({
                 >
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>Issues Logged</h3>
                   <Button variant="ghost" size="sm" onClick={openConcernPopup} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                    + Add Concern
+                    Add Concern
                   </Button>
                 </div>
                 {activeIssueEntries.length === 0 ? (
@@ -1157,7 +1158,7 @@ export default function BrakesHubsDetailsModal({
                     ))}
                   </div>
                 )}
-              </div>
+              </LayerTheme>
             </div>
           </div>
 

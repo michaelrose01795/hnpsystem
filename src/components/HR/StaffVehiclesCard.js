@@ -494,15 +494,7 @@ export default function StaffVehiclesCard({
     >
       {confirmRemoveId && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: "var(--z-modal)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(0,0,0,0.45)",
-          }}
+          className="popup-backdrop"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               setConfirmRemoveId(null);
@@ -510,9 +502,8 @@ export default function StaffVehiclesCard({
           }}
         >
           <div
+            className="popup-card"
             style={{
-              background: "var(--section-card-bg)",
-              borderRadius: "var(--radius-md)",
               padding: "var(--section-card-padding)",
               width: "100%",
               maxWidth: "360px",
@@ -736,7 +727,7 @@ export default function StaffVehiclesCard({
                   >
                     <label style={historyLabelStyle}>
                       Registration
-                      <input
+                      <input className="app-input"
                         type="text"
                         value={editForm.registration}
                         onChange={(event) =>
@@ -748,7 +739,7 @@ export default function StaffVehiclesCard({
                     </label>
                     <label style={historyLabelStyle}>
                       Make
-                      <input
+                      <input className="app-input"
                         type="text"
                         value={editForm.make}
                         onChange={(event) => handleEditFieldChange(vehicle.id, "make", event.target.value)}
@@ -757,7 +748,7 @@ export default function StaffVehiclesCard({
                     </label>
                     <label style={historyLabelStyle}>
                       Model
-                      <input
+                      <input className="app-input"
                         type="text"
                         value={editForm.model}
                         onChange={(event) => handleEditFieldChange(vehicle.id, "model", event.target.value)}
@@ -766,7 +757,7 @@ export default function StaffVehiclesCard({
                     </label>
                     <label style={historyLabelStyle}>
                       VIN
-                      <input
+                      <input className="app-input"
                         type="text"
                         value={editForm.vin}
                         onChange={(event) => handleEditFieldChange(vehicle.id, "vin", event.target.value)}
@@ -775,7 +766,7 @@ export default function StaffVehiclesCard({
                     </label>
                     <label style={historyLabelStyle}>
                       Colour
-                      <input
+                      <input className="app-input"
                         type="text"
                         value={editForm.colour}
                         onChange={(event) => handleEditFieldChange(vehicle.id, "colour", event.target.value)}
@@ -784,7 +775,7 @@ export default function StaffVehiclesCard({
                     </label>
                     <label style={historyLabelStyle}>
                       Payroll reference
-                      <input
+                      <input className="app-input"
                         type="text"
                         value={editForm.payrollDeductionReference}
                         onChange={(event) =>
@@ -931,7 +922,7 @@ export default function StaffVehiclesCard({
               </label>
               <label style={historyLabelStyle}>
                 Description
-                <input
+                <input className="app-input"
                   type="text"
                   value={historyForms[selectedHistoryVehicleId]?.description ?? ""}
                   onChange={(event) =>
@@ -944,7 +935,7 @@ export default function StaffVehiclesCard({
               </label>
               <label style={historyLabelStyle}>
                 Cost (£)
-                <input
+                <input className="app-input"
                   type="number"
                   step="0.01"
                   value={historyForms[selectedHistoryVehicleId]?.cost ?? ""}
@@ -1138,7 +1129,7 @@ export default function StaffVehiclesCard({
               <label style={historyLabelStyle}>
                 Registration
                 <div style={{ marginTop: "6px", display: "flex", gap: "8px" }}>
-                  <input
+                  <input className="app-input"
                     type="text"
                     value={vehicleForm.registration}
                     onChange={(event) =>
@@ -1159,7 +1150,7 @@ export default function StaffVehiclesCard({
               </label>
               <label style={historyLabelStyle}>
                 Make
-                <input
+                <input className="app-input"
                   type="text"
                   value={vehicleForm.make}
                   onChange={(event) => handleVehicleFieldChange("make", event.target.value)}
@@ -1168,7 +1159,7 @@ export default function StaffVehiclesCard({
               </label>
               <label style={historyLabelStyle}>
                 Model
-                <input
+                <input className="app-input"
                   type="text"
                   value={vehicleForm.model}
                   onChange={(event) => handleVehicleFieldChange("model", event.target.value)}
@@ -1177,7 +1168,7 @@ export default function StaffVehiclesCard({
               </label>
               <label style={historyLabelStyle}>
                 VIN
-                <input
+                <input className="app-input"
                   type="text"
                   value={vehicleForm.vin}
                   onChange={(event) => handleVehicleFieldChange("vin", event.target.value)}
@@ -1186,7 +1177,7 @@ export default function StaffVehiclesCard({
               </label>
               <label style={historyLabelStyle}>
                 Colour
-                <input
+                <input className="app-input"
                   type="text"
                   value={vehicleForm.colour}
                   onChange={(event) => handleVehicleFieldChange("colour", event.target.value)}
@@ -1195,7 +1186,7 @@ export default function StaffVehiclesCard({
               </label>
               <label style={historyLabelStyle}>
                 Payroll reference
-                <input
+                <input className="app-input"
                   type="text"
                   value={vehicleForm.payrollDeductionReference}
                   onChange={(event) =>

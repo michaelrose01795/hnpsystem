@@ -59,7 +59,6 @@ const DESIGN_COLUMN_DEFAULTS = {
 
 const RENDERABLE_BLOCKS = [
   "hero",
-  "brands",
   "cars",
   "offers",
   "shop",

@@ -2,7 +2,7 @@
 import React from "react";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
-export default function PageShell({ sectionKey, children, className = "", style }) {
+export default function PageShell({ sectionKey, children, className = "", style, ...rest }) {
   return (
     <DevLayoutSection
       sectionKey={sectionKey}
@@ -11,6 +11,7 @@ export default function PageShell({ sectionKey, children, className = "", style 
       widthMode="page"
       className={`app-layout-page-shell ${className}`.trim()}
       style={style}
+      {...rest}
     >
       {children}
     </DevLayoutSection>

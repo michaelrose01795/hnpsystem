@@ -1,7 +1,11 @@
+npm i next@latest
 
+--------
 
-CHECK
-have it so by default the capture screen auto uses the back drives camera not face facing camera etc
+TODO
+make sure the spelling, grammer etc works within all popups text boxes abosultely everythign wtihin the whole repo where the user has to type soemthign etc. 
+
+--------
 
 TODO
 Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.css setting for popup style etc. it needs to be having the theme colour background blur as well as all the button in the top right corner etc the "Review Media" popup content also needs to a deep dive to fix as well as something is correct etc. 
@@ -11,86 +15,90 @@ Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.
 ----check all of these for ui design/style-----
 
 
-CHECk
-Workshop
-
-
--------------------
-
-CHECk
-Reception
-
-
--------------------
-
 TODO
 Admin
 
--------------------
 
-CHECk
-Parts
-
-
--------------------
-
-
-CHECk
-MOT
-
--------------------
-
-
-CHECk
-Valeting
-
--------------------
-
-
-CHECk
-Accounts
-
-
--------------------
-
-CHECk
-Reports
-
--------------------
-
-CHECK 
-/new-order/P00001
-
-CHECK
-Within the "/jobs" page there is an "Order" button within the tab section at the top, this needs to change, remove this order button from the tab section and make a new page which mirrors the current style of the "Order" section and name the page "/Order" so if i put within the url /order it opens up 
-
-CHECK
-Within the "/new-order/P00001" for example, have it os the page full follows the staffgloabl.css setting. orgainse the page to work the best and to have sections correctly with "--theme" colour backgrounds cards etc to make it look near and easy to figure out. /Order page is connected to the "Parts" modual within the sidebar so add that to the parts section. this /order page also links full wihtin the "/deliveries" page as they work together. the /orders page can have collection as well as delivers so make something so it can tell the diff with a status of postage for example. mkae sure everything within the ""/new-order/P00001" page is connected to the data base and all works together etc with the otehr parts page 
-
-CHECK
-Remove the "Orders View Filter Shell | 1.2.2.1.1.1 | key orders-view-filter-shell | file src/components/profile/ProfileWorkTab.js:1917 (dynamic pattern) | route /order | where Orders View Filter Shell | parent orders-view-shell 1.2.2.1.1" card and move the search bar with a filter dropdown for collection or deleviry onto the same row as the search bar. 
+----------
 
 TODO
-QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
-
--------------------
+Clocking within "View details" popup for each uers inise that page, have it so the card whcih is outside the table but insdie the "View details" section is removed, change the "Manual clocking entry" card to "--surface" colour etc
 
 
-TODO
-newsfeed
+----------
+
+TODO 
+Symbols
+
+--------
+
 
 CHECK
-same happens with the catagories dropdown, deep dive to fix this. 
+CHECK NON GLOBAL ON DEV PAGE
+
+
+---------------------
+WEBSITE
+---------------------
 
 TODO
-QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
+/website/dev
+TAB SECTION 
 
-TODO
-"yes make "The sidebar request requires a global navigation change in:
 
-- `src/config/workspace/departments.js`
-- `src/config/workspace/roleDefaults.js`
 
-This will add Orders to the Parts module for Parts and Parts Manager users and affect shared navigation across the app. It cannot be implemented locally because `StaffSidebar` derives its links from this manifest.
+-------
 
-Please confirm that I may make this global navigation change alongside the local `/new-order/[orderNumber]`, `/order`, database API, and `/deliveries` integration work." change"
+CHECK
+/website
+TAB SECTION 
+
+
+-------
+
+CHECK
+/website/login
+TAB SECTION 
+
+
+-------
+
+CHECK
+/website/profile
+TAB SECTION 
+
+
+-------
+
+CHECK
+/website/valuation
+TAB SECTION 
+
+
+-------
+
+CHECK
+/website/available-stock
+TAB SECTION 
+
+
+-------
+
+CHECK
+/website/stock/[reg]
+TAB SECTION 
+
+
+-------
+
+CHECK
+/website/parts-catalog
+TAB SECTION 
+
+
+-------
+
+CHECK
+/website/parts-catalog/[partId]
+TAB SECTION 
+

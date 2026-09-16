@@ -185,7 +185,7 @@ export default function TechJobDetailPageUi(props) {
     formatPrePickLabel,
     getBadgeState,
     getOptionalCount,
-    getPartsStatusStyle,
+    getPartsStatusTone,
     handleAddNote,
     handleCompleteJob,
     handleCompleteVhcClick,
@@ -207,7 +207,6 @@ export default function TechJobDetailPageUi(props) {
     handleTrackerSave,
     handleUpdateRequests,
     handleUpdateRequestStatus,
-    isHeaderCompleteStatus,
     isReopenMode,
     isVhcCompleted,
     jobCard,
@@ -215,7 +214,7 @@ export default function TechJobDetailPageUi(props) {
     jobData,
     jobDocuments,
     jobNumber,
-    jobStatusBadgeStyle,
+    jobStatusBadgeTone,
     newNote,
     notes,
     notesLoading,
@@ -805,20 +804,11 @@ export default function TechJobDetailPageUi(props) {
         gap: "12px",
         flexWrap: "wrap"
       }}>
-              {/* Status pill rides the shared .app-btn shape. Semantic colour
-                  for non-complete states comes from STATUS_BADGE_STYLES — those
-                  background/color tokens are applied inline because .app-btn
-                  does not expose a per-status colour variant. */}
-              <span className={isHeaderCompleteStatus ? "app-btn app-btn--primary" : "app-btn"} style={isHeaderCompleteStatus ? {
-            cursor: "default",
-            letterSpacing: "0.02em"
-          } : {
-            background: jobStatusBadgeStyle.background,
-            color: "var(--text-1)",
-            border: "none",
-            cursor: "default",
-            letterSpacing: "0.02em"
-          }}>
+              {/* Status label, not a control: .app-badge + one tone from the
+                  Badge family. It previously borrowed .app-btn and tinted it
+                  inline, which gave a read-only status the shape of the Clock
+                  Out / Complete Job buttons sitting immediately beside it. */}
+              <span className={`app-badge app-badge--${jobStatusBadgeTone}`}>
                 {techStatusDisplay}
               </span>
               <div style={{
@@ -1354,7 +1344,7 @@ export default function TechJobDetailPageUi(props) {
 
           {/* VHC TAB */}
           {activeTab === "vhc" && <DevLayoutSection as="div" sectionKey="myjob-tab-vhc" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell className="vhc-section-shell">
-              {!activeSection && (showVhcReopenButton ? <DevLayoutSection as="div" sectionKey="myjob-vhc-reopen-banner" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card" style={{
+              {!activeSection && (showVhcReopenButton ? <LayerTheme as="div" sectionKey="myjob-vhc-reopen-banner" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card" style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -1382,7 +1372,7 @@ export default function TechJobDetailPageUi(props) {
                       Reopen VHC
                     </Button>
                   </div>
-                </DevLayoutSection> : <>
+                </LayerTheme> : <>
                   {/* VHC Header with Save Status */}
                   <DevLayoutSection as="div" sectionKey="myjob-vhc-header" sectionType="toolbar" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-toolbar">
                     <div>
@@ -1426,18 +1416,18 @@ export default function TechJobDetailPageUi(props) {
                   </DevLayoutSection>
 
                   {/* TODO: Myjob VHC Assistant remains here but is intentionally hidden from the front end for now. */}
-                  {false && <DevLayoutSection as="div" sectionKey="myjob-vhc-assistant" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+                  {false && <LayerTheme as="div" sectionKey="myjob-vhc-assistant" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                       <VhcAssistantPanel state={vhcAssistantState} title="VHC Assistant (Technician)" chromeless />
-                    </DevLayoutSection>}
+                    </LayerTheme>}
 
                   {!showVhcSummary && <>
                       {/* Mandatory Sections */}
-                      <DevLayoutSection as="div" sectionKey="myjob-vhc-mandatory" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+                      <LayerTheme as="div" sectionKey="myjob-vhc-mandatory" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                     <h3 className="vhc-section-heading" style={{ color: "var(--text-1)" }}>Mandatory Sections</h3>
                     <div className="vhc-card-grid">
 
                   {/* Wheels & Tyres */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-wheels" sectionType="content-card" parentKey="myjob-vhc-mandatory" backgroundToken="control-bg" className="vhc-card vhc-card--mandatory" onClick={() => openSection("wheelsTyres")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-wheels" sectionType="content-card" parentKey="myjob-vhc-mandatory" className="vhc-card vhc-card--mandatory" onClick={() => openSection("wheelsTyres")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Wheels & Tyres</h4>
                       <span className="app-badge app-badge--uppercase" style={getBadgeState(sectionStatus.wheelsTyres)}>
@@ -1445,10 +1435,10 @@ export default function TechJobDetailPageUi(props) {
                       </span>
                     </div>
                     <p className="vhc-card__description">Check tread depth, pressure, and condition</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
 
                   {/* Brakes & Hubs */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-brakes" sectionType="content-card" parentKey="myjob-vhc-mandatory" backgroundToken="control-bg" className="vhc-card vhc-card--mandatory" onClick={() => openSection("brakesHubs")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-brakes" sectionType="content-card" parentKey="myjob-vhc-mandatory" className="vhc-card vhc-card--mandatory" onClick={() => openSection("brakesHubs")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Brakes & Hubs</h4>
                       <span className="app-badge app-badge--uppercase" style={getBadgeState(sectionStatus.brakesHubs)}>
@@ -1456,10 +1446,10 @@ export default function TechJobDetailPageUi(props) {
                       </span>
                     </div>
                     <p className="vhc-card__description">Check pads, discs, and brake system</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
 
                   {/* Service Indicator & Under Bonnet */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-service" sectionType="content-card" parentKey="myjob-vhc-mandatory" backgroundToken="control-bg" className="vhc-card vhc-card--mandatory" onClick={() => openSection("serviceIndicator")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-service" sectionType="content-card" parentKey="myjob-vhc-mandatory" className="vhc-card vhc-card--mandatory" onClick={() => openSection("serviceIndicator")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Service Indicator & Under Bonnet</h4>
                       <span className="app-badge app-badge--uppercase" style={getBadgeState(sectionStatus.serviceIndicator)}>
@@ -1467,12 +1457,12 @@ export default function TechJobDetailPageUi(props) {
                       </span>
                     </div>
                     <p className="vhc-card__description">Service reminder, oil level, under bonnet items</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
                 </div>
-                      </DevLayoutSection>
+                      </LayerTheme>
 
               {/* Additional Checks (Optional) */}
-              <DevLayoutSection as="div" sectionKey="myjob-vhc-additional" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+              <LayerTheme as="div" sectionKey="myjob-vhc-additional" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                 <h3 className="vhc-section-heading" style={{ color: "var(--text-1)" }}>
                   Additional Checks
                   <span style={{
@@ -1487,7 +1477,7 @@ export default function TechJobDetailPageUi(props) {
                 <div className="vhc-card-grid">
 
                   {/* External */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-external" sectionType="content-card" parentKey="myjob-vhc-additional" backgroundToken="control-bg" className="vhc-card" onClick={() => openSection("externalInspection")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-external" sectionType="content-card" parentKey="myjob-vhc-additional" className="vhc-card" onClick={() => openSection("externalInspection")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>External</h4>
                       {getOptionalCount("externalInspection") > 0 && <span className="app-badge app-badge--uppercase" style={{
@@ -1498,10 +1488,10 @@ export default function TechJobDetailPageUi(props) {
                         </span>}
                     </div>
                     <p className="vhc-card__description">Body, lights, glass, mirrors</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
 
                   {/* Internal & Electrics */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-internal" sectionType="content-card" parentKey="myjob-vhc-additional" backgroundToken="control-bg" className="vhc-card" onClick={() => openSection("internalElectrics")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-internal" sectionType="content-card" parentKey="myjob-vhc-additional" className="vhc-card" onClick={() => openSection("internalElectrics")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Internal & Electrics</h4>
                       {getOptionalCount("internalElectrics") > 0 && <span className="app-badge app-badge--uppercase" style={{
@@ -1512,10 +1502,10 @@ export default function TechJobDetailPageUi(props) {
                         </span>}
                     </div>
                     <p className="vhc-card__description">Interior, lights, electrics, controls</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
 
                   {/* Underside */}
-                  <DevLayoutSection as="div" sectionKey="myjob-vhc-card-underside" sectionType="content-card" parentKey="myjob-vhc-additional" backgroundToken="control-bg" className="vhc-card" onClick={() => openSection("underside")}>
+                  <LayerSurface as="div" sectionKey="myjob-vhc-card-underside" sectionType="content-card" parentKey="myjob-vhc-additional" className="vhc-card" onClick={() => openSection("underside")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Underside</h4>
                       {getOptionalCount("underside") > 0 && <span className="app-badge app-badge--uppercase" style={{
@@ -1526,13 +1516,13 @@ export default function TechJobDetailPageUi(props) {
                         </span>}
                     </div>
                     <p className="vhc-card__description">Exhaust, suspension, steering, driveshafts</p>
-                  </DevLayoutSection>
+                  </LayerSurface>
                 </div>
-              </DevLayoutSection>
+              </LayerTheme>
                 </>}
 
               {/* VHC Summary */}
-              {showVhcSummary && <DevLayoutSection as="div" sectionKey="myjob-vhc-summary" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card vhc-content-card--bordered">
+              {showVhcSummary && <LayerTheme as="div" sectionKey="myjob-vhc-summary" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card vhc-content-card--bordered">
                   <div style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -1611,14 +1601,14 @@ export default function TechJobDetailPageUi(props) {
                         No items reported yet. Complete the VHC sections to add items.
                       </p>}
                   </div>
-                </DevLayoutSection>}
+                </LayerTheme>}
                 </>)}
 
               {/* Captured media — read-only viewer so the technician can see the
                   photos / videos they took against concerns during this check. */}
-              {!activeSection && <DevLayoutSection as="div" sectionKey="myjob-vhc-media" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-content-card">
+              {!activeSection && <LayerTheme as="div" sectionKey="myjob-vhc-media" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                   <VhcMediaGallery jobId={resolvedJobId} reloadToken={galleryReloadToken} />
-                </DevLayoutSection>}
+                </LayerTheme>}
 
               {/* VHC Modals */}
               {activeSection === "wheelsTyres" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-wheels" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
@@ -1666,7 +1656,7 @@ export default function TechJobDetailPageUi(props) {
                 </p> : partsRequests.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {partsRequests.map((request) => {
                     const statusLabel = formatRequestStatusLabel(request.status);
-                    const badgeStyle = getPartsStatusStyle(request.status);
+                    const badgeTone = getPartsStatusTone(request.status);
                     const quantity = request.quantity ?? 1;
                     const bookedPart = findBookedPartForRequest(request);
                     const partLabel = bookedPart ? resolveBookedPartName(bookedPart) : resolveRequestPartName(request);
@@ -1693,7 +1683,7 @@ export default function TechJobDetailPageUi(props) {
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Vehicle: {location}</span>
                         {bookedPart && <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Collect: {resolveBookedPartCollectionLocation(bookedPart)}</span>}
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{priority}</span>
-                        <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
+                        <span className={`app-badge app-badge--${badgeTone}`}>{statusLabel}</span>
                       </div>
                       <div style={{ color: "var(--text-1)", fontSize: "12px" }}>Latest update: {latestUpdate}</div>
                       {isExpanded && <div style={{ color: "var(--text-1)", fontSize: "13px", whiteSpace: "pre-wrap" }}>{request.description || "No detail supplied."}</div>}
@@ -1726,7 +1716,7 @@ export default function TechJobDetailPageUi(props) {
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                     {directlyBookedJobParts.map((part) => {
                       const statusLabel = formatRequestStatusLabel(part.status);
-                      const badgeStyle = getPartsStatusStyle(part.status);
+                      const badgeTone = getPartsStatusTone(part.status);
                       const partName = resolveBookedPartName(part);
                       const partNumber = resolveBookedPartNumber(part);
                       const quantityBooked = resolveBookedPartQuantity(part, "quantityRequested", "quantity_requested");
@@ -1745,7 +1735,7 @@ export default function TechJobDetailPageUi(props) {
                           <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Booked: {quantityBooked || 1}</span>
                           <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Allocated: {quantityAllocated}</span>
                           <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Fitted: {quantityFitted}</span>
-                          <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
+                          <span className={`app-badge app-badge--${badgeTone}`}>{statusLabel}</span>
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "8px", color: "var(--text-1)", fontSize: "12px" }}>
                           <span>Collection location: {resolveBookedPartCollectionLocation(part)}</span>
@@ -1767,7 +1757,7 @@ export default function TechJobDetailPageUi(props) {
                 {authorizedPartsLoading ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>Loading approved parts...</p> : <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {authorizedParts.map((part) => {
                     const statusLabel = formatRequestStatusLabel(part.status);
-                    const badgeStyle = getPartsStatusStyle(part.status);
+                    const badgeTone = getPartsStatusTone(part.status);
                     const partName = part.part?.name || part.part_name_snapshot || part.row_description || "Approved part";
                     const canCollect = ["allocated", "pre_picked", "picked", "stock"].includes(String(part.status || "").toLowerCase());
                     return <LayerTheme key={part.id} as="article" sectionKey={`myjob-parts-ready-${part.id}`} sectionType="content-card" parentKey="myjob-parts-ready-approved" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="8px">
@@ -1775,7 +1765,7 @@ export default function TechJobDetailPageUi(props) {
                         <strong style={{ color: "var(--text-1)", fontSize: "15px" }}>{partName}</strong>
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>Qty {part.quantity_requested || 1}</span>
                         <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{part.authorised ? "Approved" : "Ordered"}</span>
-                        <span style={{ ...badgeStyle, color: "var(--text-1)", padding: "5px 10px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: "700", textAlign: "center" }}>{statusLabel}</span>
+                        <span className={`app-badge app-badge--${badgeTone}`}>{statusLabel}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", flexWrap: "wrap", color: "var(--text-1)", fontSize: "12px" }}>
                         <span>Latest update: {formatDateTime(part.updated_at || part.created_at)}</span>
@@ -1925,7 +1915,7 @@ export default function TechJobDetailPageUi(props) {
               fontSize: "14px",
               fontWeight: "600"
             }}>
-                  + Add Note
+                  Add Note
                 </button>
               </DevLayoutSection>
 

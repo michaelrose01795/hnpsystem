@@ -49,6 +49,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 import { useSupportReport } from "@/context/SupportReportContext";
 import { useUser } from "@/context/UserContext";
 import { canViewDiagnostics } from "@/lib/auth/roles";
@@ -64,6 +65,7 @@ import {
   RECOVERY_LEVELS,
   RECOVERY_VARIANTS,
   RECOVERY_ACTIONS,
+  RECOVERY_TONES,
   nextCrashState,
   isCrashLoop,
   resolveRecovery,
@@ -238,8 +240,16 @@ class SupportErrorBoundaryInner extends React.Component {
   }
 }
 
-// The default recovery screen. Borderless surface + token colours + app-btn
-// classes per CLAUDE.md §3. Buttons meet the 44px touch-target rule (§3.6).
+// The default recovery screen. Every visual property lives in the error-recovery
+// family (src/styles/families/error-recovery.css) — this file contributes no
+// inline styling at all, so the screen cannot drift from the design system and
+// the 44px touch-target floor (§3.6) is enforced in one place.
+//
+// Shape: badge (tone from the plan) → headline → one paragraph → the quotable
+// facts (page / section / time / reference + copy) → recovery actions → the
+// quiet "this is already logged" line → the role-gated technical panel. A
+// SECTION-level boundary drops the facts and the hint: the page around it still
+// works, so a full incident block would outweigh the failure it describes.
 function SupportErrorRecovery({
   error,
   componentStack,
@@ -258,6 +268,7 @@ function SupportErrorRecovery({
   // this exact screen instead of growing a parallel visual system.
   plan: planOverride,
 }) {
+  const router = useRouter();
   const { isOpen, captureDiagnostics } = useSupportReport();
   const userCtx = useUser?.();
   const canView =
@@ -267,88 +278,80 @@ function SupportErrorRecovery({
     planOverride || resolveRecovery({ level, variant, error, loopDetected, homeHref, sectionLabel });
   const isSection = level === RECOVERY_LEVELS.SECTION;
 
+  // Layer ladder (CLAUDE.md §3.0a-2). A ROUTE boundary replaces a page's content
+  // INSIDE the --surface page card, so its card takes the --theme rung to read
+  // as a distinct surface rather than dissolving into the card behind it. An APP
+  // boundary sits directly on the app shell and a SECTION boundary sits inside a
+  // --theme section card, so both take --surface. Whatever the card is, anything
+  // nested inside it flips to the other rung.
+  const onThemeRung = level === RECOVERY_LEVELS.ROUTE;
+  const RecoveryCard = onThemeRung ? LayerTheme : LayerSurface;
+  const NestedLayer = onThemeRung ? LayerSurface : LayerTheme;
+
+  const tone = plan.tone || RECOVERY_TONES.DANGER;
+
   return (
     <div
       role="alert"
       aria-live="assertive"
-      style={{
-        // Section boundaries stay compact (the surrounding page still works);
-        // route/app boundaries fill the viewport so the recovery screen reads as
-        // the primary content.
-        minHeight: isSection ? undefined : "60vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: isSection ? "12px" : "24px",
-        width: "100%",
-      }}
+      className={isSection ? "app-recovery app-recovery--section" : "app-recovery"}
     >
-      <LayerSurface
+      <RecoveryCard
+        className={
+          isSection ? "app-recovery__card app-recovery__card--section" : "app-recovery__card"
+        }
         padding={isSection ? "clamp(16px, 4vw, 24px)" : "clamp(24px, 5vw, 40px)"}
         gap={isSection ? "12px" : "16px"}
-        style={{
-          maxWidth: isSection ? "440px" : "520px",
-          width: "100%",
-          textAlign: "center",
-          alignItems: "center",
-        }}
       >
-        {/* Decorative status indicator (not a card/section, so an inline tint is
-            allowed under §3.0 rule 5). */}
+        {/* Decorative status indicator. The tint is the only severity signal in
+            a borderless system, so the plan chooses it rather than this file. */}
         <span
           aria-hidden="true"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: isSection ? "40px" : "48px",
-            height: isSection ? "40px" : "48px",
-            borderRadius: "50%",
-            background: "var(--warning-surface)",
-            color: "var(--warning-dark)",
-            fontSize: isSection ? "1.25rem" : "1.5rem",
-            fontWeight: 700,
-          }}
+          className={[
+            "app-recovery__badge",
+            `app-recovery__badge--${tone}`,
+            isSection && "app-recovery__badge--section",
+          ]
+            .filter(Boolean)
+            .join(" ")}
         >
-          !
+          {plan.icon || "!"}
         </span>
 
-        <h2 style={{ margin: 0, color: "var(--accentText)", fontSize: isSection ? "1.15rem" : "1.4rem" }}>
+        <h2
+          className={
+            isSection ? "app-recovery__title app-recovery__title--section" : "app-recovery__title"
+          }
+        >
           {plan.headline}
         </h2>
-        <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.75, lineHeight: 1.5 }}>{plan.message}</p>
+        <p className="app-recovery__message">{plan.message}</p>
 
-        {/* Reference code — shown to EVERYONE (staff quote it to support; the
-            same code is logged against the private diagnostics). Selectable in
-            one drag. */}
-        {referenceCode && (
-          <p className="app-error-reference">
-            Reference code:{" "}
-            <span className="app-error-reference__code">{referenceCode}</span>
-          </p>
+        {/* The quotable facts. A section boundary skips them — the page around it
+            still works, so a full incident block would be heavier than the
+            failure it is describing. */}
+        {!isSection && (
+          <RecoveryFacts
+            referenceCode={referenceCode}
+            route={router?.asPath}
+            sectionLabel={sectionLabel}
+          />
         )}
 
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "12px",
-            justifyContent: "center",
-            marginTop: "4px",
-          }}
-        >
+        <div className="app-recovery__actions">
           {plan.actions.map((action) => (
             <button
               key={action.id}
               type="button"
               className={TONE_CLASS[action.tone] || TONE_CLASS.secondary}
               onClick={handlers[action.id]}
-              style={{ minHeight: "44px" }}
             >
               {action.label}
             </button>
           ))}
         </div>
+
+        {!isSection && plan.hint && <p className="app-recovery__hint">{plan.hint}</p>}
 
         {/* Diagnostics panel — authorised roles only (canViewDiagnostics), never
             customers or staff-at-large. Collapsed by default. */}
@@ -358,9 +361,10 @@ function SupportErrorRecovery({
             componentStack={componentStack}
             referenceCode={referenceCode}
             captureDiagnostics={captureDiagnostics}
+            Layer={NestedLayer}
           />
         )}
-      </LayerSurface>
+      </RecoveryCard>
 
       {/* When this boundary hosts the report popup (the app-shell boundary whose
           StaffTopbar host is unmounted, or a customer-surface boundary that has
@@ -371,12 +375,100 @@ function SupportErrorRecovery({
   );
 }
 
+/**
+ * The three things a person needs when they ring up about this screen: WHERE it
+ * happened, WHEN it happened, and the code the failure was filed under. Before
+ * this block the reference code was one quiet line and the route/time existed
+ * only inside the private diagnostics bundle, so a staff member describing the
+ * problem had to remember the page themselves.
+ *
+ * The copy button matters more than it looks: the code is the join between what
+ * the user says and what support_error_events already recorded, and a code read
+ * off a screen into a message is the step people get wrong.
+ */
+function RecoveryFacts({ referenceCode, route, sectionLabel }) {
+  const [copied, setCopied] = React.useState(false);
+  // Rendered on the client only. PageErrorScreen server-renders (404/500), and a
+  // timestamp resolved during SSR is both wrong (server clock, server locale)
+  // and a hydration mismatch — so the row appears once mounted, or not at all.
+  const [occurredAt, setOccurredAt] = React.useState(null);
+
+  React.useEffect(() => {
+    try {
+      setOccurredAt(
+        new Date().toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    } catch {
+      setOccurredAt(null);
+    }
+  }, []);
+
+  const copyReference = async () => {
+    try {
+      await navigator.clipboard?.writeText(referenceCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can be blocked; the code stays selectable in one drag.
+      setCopied(false);
+    }
+  };
+
+  if (!referenceCode && !route && !occurredAt) return null;
+
+  return (
+    <dl className="app-recovery-facts">
+      {route && (
+        <>
+          <dt className="app-recovery-facts__label">Page</dt>
+          <dd className="app-recovery-facts__value app-recovery-facts__value--mono">{route}</dd>
+        </>
+      )}
+      {sectionLabel && (
+        <>
+          <dt className="app-recovery-facts__label">Section</dt>
+          <dd className="app-recovery-facts__value">{sectionLabel}</dd>
+        </>
+      )}
+      {occurredAt && (
+        <>
+          <dt className="app-recovery-facts__label">Time</dt>
+          <dd className="app-recovery-facts__value">{occurredAt}</dd>
+        </>
+      )}
+      {referenceCode && (
+        <>
+          <dt className="app-recovery-facts__label">Reference</dt>
+          <dd className="app-recovery-facts__value app-recovery-facts__value--mono">
+            <span className="app-recovery-facts__code">{referenceCode}</span>
+            <button
+              type="button"
+              className="app-btn app-btn--ghost app-btn--xs app-recovery-facts__row-btn"
+              onClick={copyReference}
+            >
+              {copied ? "Copied ✓" : "Copy"}
+            </button>
+          </dd>
+        </>
+      )}
+    </dl>
+  );
+}
+
 // Developer-only technical detail on the recovery screen. Uses text + a
 // box-shadow-free <details>; copies the freshly captured, already-sanitised
 // diagnostics bundle to the clipboard for a bug report.
-function RecoveryDiagnostics({ error, componentStack, referenceCode, captureDiagnostics }) {
+function RecoveryDiagnostics({ error, componentStack, referenceCode, captureDiagnostics, Layer }) {
   const [copied, setCopied] = React.useState(false);
   const component = topComponentFromStack(componentStack);
+  // The rung opposite the recovery card, passed down so the panel alternates
+  // correctly whichever card it is sitting in (§3.0a-2).
+  const PanelLayer = Layer || LayerTheme;
 
   const copyDiagnostics = async () => {
     try {
@@ -392,52 +484,33 @@ function RecoveryDiagnostics({ error, componentStack, referenceCode, captureDiag
   };
 
   return (
-    <details style={{ width: "100%", textAlign: "left", marginTop: "4px" }}>
-      <summary
-        style={{
-          cursor: "pointer",
-          color: "var(--text-1)",
-          opacity: 0.7,
-          fontSize: "0.8rem",
-          fontWeight: 600,
-        }}
-      >
-        Technical details (staff)
-      </summary>
-      <div
-        style={{
-          marginTop: "8px",
-          padding: "10px 12px",
-          borderRadius: "var(--radius-md)",
-          background: "var(--theme)",
-          fontSize: "0.78rem",
-          color: "var(--text-1)",
-          lineHeight: 1.5,
-          wordBreak: "break-word",
-        }}
-      >
-        <div>
-          <strong>Error:</strong> {errorMessage(error)}
+    <details className="app-recovery__details">
+      <summary className="app-recovery__summary">Technical details (staff)</summary>
+      <PanelLayer padding="12px 14px" gap="8px">
+        <div className="app-recovery__panel">
+          <p className="app-recovery__panel-row">
+            <span className="app-recovery__panel-key">Error: </span>
+            <span className="app-recovery__panel-value">{errorMessage(error)}</span>
+          </p>
+          {component && (
+            <p className="app-recovery__panel-row">
+              <span className="app-recovery__panel-key">Component: </span>
+              <span className="app-recovery__panel-value">{component}</span>
+            </p>
+          )}
+          {referenceCode && (
+            <p className="app-recovery__panel-row">
+              <span className="app-recovery__panel-key">Reference: </span>
+              <span className="app-recovery__panel-value">{referenceCode}</span>
+            </p>
+          )}
         </div>
-        {component && (
-          <div>
-            <strong>Component:</strong> {component}
-          </div>
-        )}
-        {referenceCode && (
-          <div>
-            <strong>Reference:</strong> {referenceCode}
-          </div>
-        )}
-        <button
-          type="button"
-          className="app-btn app-btn--ghost"
-          onClick={copyDiagnostics}
-          style={{ marginTop: "8px" }}
-        >
-          {copied ? "Copied ✓" : "Copy diagnostics"}
-        </button>
-      </div>
+        <div>
+          <button type="button" className="app-btn app-btn--ghost app-btn--sm" onClick={copyDiagnostics}>
+            {copied ? "Copied ✓" : "Copy diagnostics"}
+          </button>
+        </div>
+      </PanelLayer>
     </details>
   );
 }

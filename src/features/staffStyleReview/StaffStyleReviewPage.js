@@ -10,6 +10,7 @@ import {
   StaffPagination,
 } from "@/components/ui";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { STAFF_STYLE_REVIEW_STATUSES } from "@/lib/staff-style-review/auditParser";
 import { buildCodexPrompt } from "@/lib/staff-style-review/codexPrompt";
@@ -652,15 +653,10 @@ function FragmentRow({ finding, destination, onNavigate, onReview }) {
         <td>
           <div className="app-layout-toolbar-row app-toolbar--action">
             {destination && (
-              <button
-                type="button"
-                className="app-table-action-btn app-table-action-btn--ghost"
-                onClick={onNavigate}
-                aria-label={`Open ${destination}`}
-                title={`Open ${destination}`}
-              >
-                ↗
-              </button>
+              <SymbolButton
+                symbol="open"
+                label={`Open ${destination}`}
+                onClick={onNavigate} />
             )}
           </div>
         </td>

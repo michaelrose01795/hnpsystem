@@ -1,8 +1,23 @@
 // file location: src/components/VHC/VHCModalShell.js
+//
+// The shared shell for every VHC section modal (Wheels & Tyres, Brakes & Hubs,
+// External, Internal Electrics, Underside, Service Indicator, Pre-Pick, Concern
+// Picker and the VHC panel's own modal).
+//
+// Modal mode renders through PopupModal, so the backdrop and the card are the
+// canonical `.popup-backdrop` / `.popup-card` from staffglobal.css: the
+// accent-tinted, 10px-blurred scrim, --radius-lg, --surface, the
+// --popup-viewport-gap clamp and the portrait/mobile rules all come from the
+// design system instead of the per-domain overlay object this used to portal
+// by hand. Only geometry (width / height / flex layout) is passed in, which is
+// what popupStyleApi permits — it strips every visual style key.
+//
+// Inline mode is NOT a modal: it renders the same header/body/footer in place
+// inside the job-card VHC tab, on a canonical <LayerSurface>.
 import React from "react";
-import { createPortal } from "react-dom";
+import PopupModal from "@/components/popups/popupStyleApi";
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md 3.0)
 import { vhcModalStyles } from "@/styles/appTheme";
-import useBodyModalLock from "@/hooks/useBodyModalLock";
 import Button from "@/components/ui/Button";
 
 export default function VHCModalShell({
@@ -24,43 +39,15 @@ export default function VHCModalShell({
   overlayStyle = null,
   sectionKey = "",
 }) {
-  useBodyModalLock(isOpen && !inlineMode);
-
   const closeButtonColor = "var(--primary)";
   const isBlockingLocked = locked && lockedOverlay;
   if (!isOpen) return null;
 
-  const shellContent = (
-    <div
-      style={
-        inlineMode
-          ? {
-              width: "100%",
-              padding: 0,
-              margin: 0,
-            }
-          : { ...vhcModalStyles.overlay, ...(overlayStyle || {}) }
-      }
-    >
-      <div
-        data-dev-section="1"
-        data-dev-section-key={sectionKey ? `${sectionKey}-container` : undefined}
-        data-dev-section-type="content-card"
-        data-dev-section-parent={sectionKey ? sectionKey : undefined}
-        style={
-          inlineMode
-            ? {
-                ...vhcModalStyles.container({ width, height }),
-                width: "100%",
-                maxWidth: "100%",
-                height: "auto",
-                maxHeight: "none",
-                minHeight: adaptiveHeight ? "auto" : "calc(100vh - 210px)",
-                border: "none",
-              }
-            : vhcModalStyles.container({ width, height })
-        }
-      >
+  // Header / body / footer. In modal mode this sits directly inside the
+  // `.popup-card`, which is already the flex column; the wrapper below only
+  // carries the dev-overlay keys and the inline-mode surface.
+  const shellBody = (
+    <>
         <div
           data-dev-section="1"
           data-dev-section-key={sectionKey ? `${sectionKey}-header` : undefined}
@@ -193,16 +180,59 @@ export default function VHCModalShell({
             </div>
           </div>
         ) : null}
-      </div>
-    </div>
+    </>
   );
 
   if (inlineMode) {
-    return shellContent;
+    return (
+      <LayerSurface
+        data-dev-section="1"
+        data-dev-section-key={sectionKey ? `${sectionKey}-container` : undefined}
+        data-dev-section-type="content-card"
+        data-dev-section-parent={sectionKey ? sectionKey : undefined}
+        style={{
+          ...vhcModalStyles.container({ width, height }),
+          width: "100%",
+          height: "auto",
+          minHeight: adaptiveHeight ? "auto" : "calc(100vh - 210px)",
+        }}
+      >
+        {shellBody}
+      </LayerSurface>
+    );
   }
 
-  if (typeof document === "undefined") return null;
-  return createPortal(shellContent, document.body);
+  return (
+    <PopupModal
+      isOpen={isOpen}
+      onClose={onClose}
+      // A VHC section modal holds unsaved inspection input, so it must not be
+      // dismissable by a stray backdrop click or Escape — same behaviour the
+      // hand-rolled overlay had. Closing goes through the header/footer buttons.
+      closeOnBackdrop={false}
+      closeOnEscape={false}
+      ariaLabel={title}
+      backdropStyle={overlayStyle || undefined}
+      cardStyle={{ ...vhcModalStyles.container({ width, height }) }}
+    >
+      <div
+        data-dev-section="1"
+        data-dev-section-key={sectionKey ? `${sectionKey}-container` : undefined}
+        data-dev-section-type="content-card"
+        data-dev-section-parent={sectionKey ? sectionKey : undefined}
+        style={{
+          flex: "1 1 auto",
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        {shellBody}
+      </div>
+    </PopupModal>
+  );
 }
 
 export const buildModalButton = (variant = "primary", { disabled = false } = {}) => ({

@@ -1,6 +1,25 @@
 // file location: src/features/website/data/team.js
-// The Humphries & Parks team — 21 members across Management, Sales,
+//
+// The Meet the Team block on /website — 21 members across Management, Sales,
 // Aftersales and Admin. Photo URLs sourced from humphriesandparks.net.
+//
+// Code-owned: these two arrays are the ONE place the block comes from. The
+// public page ignores website_team_members / website_team_departments
+// entirely (see codeOwnedContent.js).
+//
+//   - someone joins   append an object to `team` with a `department` that
+//                     matches a `teamDepartments` id
+//   - someone leaves  delete their object — nothing else to update
+//   - a department    add or remove it in `teamDepartments`; a department
+//                     with no members left is not rendered at all, and with
+//                     no members anywhere the whole block comes off the page
+//   - reorder         move the objects; groups render in teamDepartments
+//                     order, members in the order written under each
+//
+// teamDepartments fields: id (matches team[].department), label (the heading).
+// team fields: id (stable React key), department, name, role, photo (URL —
+// a CDN link or a file in /public referenced from the site root). A member
+// with no photo renders as a name-and-role card rather than a broken image.
 
 export const teamDepartments = [
   { id: "management", label: "Management" },

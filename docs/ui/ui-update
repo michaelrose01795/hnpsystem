@@ -203,7 +203,7 @@ HWAT IS THSI PAGE???
 Mobile Technician
 ====================================================
 
-- /mobile/dashboard
+- /dashboard/mobile
 
 
 - /mobile/delivery/[jobNumber]
@@ -263,7 +263,7 @@ Techs
 - /dashboard/workshop
 
 
-- /tech/dashboard
+- /dashboard/tech
 
 
 - /job-cards/myjobs

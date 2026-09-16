@@ -61,18 +61,55 @@ export function useNativeTitleTooltips() {
     // Initial sweep of everything already mounted.
     if (inStaffScope()) convertWithin(document.body);
 
+    // Mutations are queued and drained once per frame rather than converted
+    // inline. A single interaction can produce hundreds of them — collapsing the
+    // sidebar swaps every nav label for an icon and sets a title on each button —
+    // and running a querySelectorAll sweep per mutation landed all of that work
+    // on the first frame of the animation. Draining in one rAF pass, with the
+    // nodes de-duplicated, keeps that off the critical frame.
+    let pendingNodes = new Set();
+    let pendingAttrTargets = new Set();
+    let drainFrame = 0;
+
+    const drain = () => {
+      drainFrame = 0;
+      const nodes = pendingNodes;
+      const attrTargets = pendingAttrTargets;
+      pendingNodes = new Set();
+      pendingAttrTargets = new Set();
+      if (!inStaffScope()) return;
+      nodes.forEach((node) => {
+        // Nodes removed again before the drain no longer need converting.
+        if (node.isConnected) convertWithin(node);
+      });
+      attrTargets.forEach((node) => {
+        if (node.isConnected) convertButton(node);
+      });
+    };
+
+    const scheduleDrain = () => {
+      if (drainFrame) return;
+      drainFrame =
+        typeof window.requestAnimationFrame === "function"
+          ? window.requestAnimationFrame(drain)
+          : window.setTimeout(drain, 16);
+    };
+
     const observer = new MutationObserver((mutations) => {
       if (!inStaffScope()) return;
       mutations.forEach((mutation) => {
         if (mutation.type === "childList") {
-          mutation.addedNodes.forEach((node) => convertWithin(node));
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) pendingNodes.add(node);
+          });
         } else if (mutation.type === "attributes") {
           // A re-render (re)set the title — re-sync it. An empty/removed title
           // is ignored, so the removeAttribute("title") inside convertButton
           // cannot trigger a conversion loop.
-          convertButton(mutation.target);
+          pendingAttrTargets.add(mutation.target);
         }
       });
+      if (pendingNodes.size || pendingAttrTargets.size) scheduleDrain();
     });
 
     observer.observe(document.body, {
@@ -82,7 +119,16 @@ export function useNativeTitleTooltips() {
       attributeFilter: ["title"],
     });
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (drainFrame) {
+        if (typeof window.cancelAnimationFrame === "function") {
+          window.cancelAnimationFrame(drainFrame);
+        } else {
+          window.clearTimeout(drainFrame);
+        }
+      }
+    };
   }, []);
 }
 

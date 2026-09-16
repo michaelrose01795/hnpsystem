@@ -695,11 +695,9 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
     overflow: "hidden"
   };
 
-  const tableStyle = {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "0.9rem"
-  };
+  // Table chrome comes from the global .app-data-table class in
+  // staffglobal.css; the UI applies it directly, so nothing is declared here.
+  const tableStyle = {};
 
   const tableHeaderStyle = {
     textAlign: "left",

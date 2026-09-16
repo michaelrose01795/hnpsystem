@@ -317,7 +317,7 @@ export default function GoodsInPageUi(props) {
             }}>
               <div className="invoice-details-field">
                 <label style={labelStyle}>Supplier</label>
-                <input style={inputStyle} value={invoiceForm.supplierName} onChange={event => handleInvoiceChange("supplierName", event.target.value)} placeholder="Supplier name" />
+                <input className="app-input" style={inputStyle} value={invoiceForm.supplierName} onChange={event => handleInvoiceChange("supplierName", event.target.value)} placeholder="Supplier name" />
                 {invoiceForm.supplierAccountNumber && <small style={{
               color: "var(--text-1)"
             }}>
@@ -326,11 +326,11 @@ export default function GoodsInPageUi(props) {
               </div>
               <div className="invoice-details-field">
                 <label style={labelStyle}>Invoice number</label>
-                <input style={inputStyle} value={invoiceForm.invoiceNumber} onChange={event => handleInvoiceChange("invoiceNumber", event.target.value)} placeholder="INV-001" />
+                <input className="app-input" style={inputStyle} value={invoiceForm.invoiceNumber} onChange={event => handleInvoiceChange("invoiceNumber", event.target.value)} placeholder="INV-001" />
               </div>
               <div className="invoice-details-field">
                 <label style={labelStyle}>Delivery note number</label>
-                <input style={inputStyle} value={invoiceForm.deliveryNoteNumber} onChange={event => handleInvoiceChange("deliveryNoteNumber", event.target.value)} placeholder="DN-001" />
+                <input className="app-input" style={inputStyle} value={invoiceForm.deliveryNoteNumber} onChange={event => handleInvoiceChange("deliveryNoteNumber", event.target.value)} placeholder="DN-001" />
               </div>
               <div className="invoice-details-field">
                 <label style={labelStyle}>Invoice date</label>
@@ -366,7 +366,7 @@ export default function GoodsInPageUi(props) {
               </div>
               <div className="invoice-details-field">
                 <label style={labelStyle}>Supplier contact</label>
-                <input style={inputStyle} value={invoiceForm.supplierContact} onChange={event => handleInvoiceChange("supplierContact", event.target.value)} placeholder="Phone or email" />
+                <input className="app-input" style={inputStyle} value={invoiceForm.supplierContact} onChange={event => handleInvoiceChange("supplierContact", event.target.value)} placeholder="Phone or email" />
               </div>
             </div>
             <div style={splitFieldRowStyle}>
@@ -428,7 +428,7 @@ export default function GoodsInPageUi(props) {
             <div className="add-part-fields-grid">
               <div style={addPartFieldStyle}>
                 <label style={labelStyle}>Part number</label>
-                <input ref={partNumberInputRef} autoComplete="off" style={addPartInputStyle} value={partForm.partNumber} onKeyDown={event => {
+                <input className="app-input" ref={partNumberInputRef} autoComplete="off" style={addPartInputStyle} value={partForm.partNumber} onKeyDown={event => {
               if (event.key === "Enter") {
                 event.preventDefault();
                 setPartSearchOpen(true);
@@ -444,11 +444,11 @@ export default function GoodsInPageUi(props) {
               </div>
               <div style={addPartFieldStyle}>
                 <label style={labelStyle}>Retail price</label>
-                <input style={addPartInputStyle} value={partForm.retailPrice} onChange={event => handlePartChange("retailPrice", event.target.value)} placeholder="0.00" />
+                <input className="app-input" style={addPartInputStyle} value={partForm.retailPrice} onChange={event => handlePartChange("retailPrice", event.target.value)} placeholder="0.00" />
               </div>
               <div style={addPartFieldStyle}>
                 <label style={labelStyle}>Cost price</label>
-                <input style={addPartInputStyle} value={partForm.costPrice} onChange={event => handlePartChange("costPrice", event.target.value)} placeholder="0.00" />
+                <input className="app-input" style={addPartInputStyle} value={partForm.costPrice} onChange={event => handlePartChange("costPrice", event.target.value)} placeholder="0.00" />
               </div>
             </div>
             <div className="add-part-fields-grid add-part-fields-row-span-3">
@@ -458,7 +458,7 @@ export default function GoodsInPageUi(props) {
             zIndex: showBinSuggestions ? 20 : "auto"
           }}>
                 <label style={labelStyle}>Bin location</label>
-                <input type="text" style={addPartInputStyle} value={partForm.binLocation} onChange={event => handlePartChange("binLocation", event.target.value)} onFocus={() => setShowBinSuggestions(true)} onBlur={() => {
+                <input className="app-input" type="text" style={addPartInputStyle} value={partForm.binLocation} onChange={event => handlePartChange("binLocation", event.target.value)} onFocus={() => setShowBinSuggestions(true)} onBlur={() => {
               setTimeout(() => setShowBinSuggestions(false), 120);
             }} placeholder="A1" />
                 {showBinSuggestions && partForm.binLocation.trim() !== "" && <div className="bin-suggestions" style={{
@@ -498,11 +498,11 @@ export default function GoodsInPageUi(props) {
               </div>
               <div style={addPartFieldStyle}>
                 <label style={labelStyle}>Discount code</label>
-                <input style={addPartInputStyle} value={partForm.discountCode} onChange={event => handlePartChange("discountCode", event.target.value)} />
+                <input className="app-input" style={addPartInputStyle} value={partForm.discountCode} onChange={event => handlePartChange("discountCode", event.target.value)} />
               </div>
               <div style={addPartFieldStyle}>
                 <label style={labelStyle}>Description</label>
-                <input type="text" style={addPartInputStyle} value={partForm.description} onChange={event => handlePartChange("description", event.target.value)} placeholder="Description" />
+                <input className="app-input" type="text" style={addPartInputStyle} value={partForm.description} onChange={event => handlePartChange("description", event.target.value)} placeholder="Description" />
               </div>
             </div>
           </div>
@@ -573,7 +573,7 @@ export default function GoodsInPageUi(props) {
                     <div style={fieldGridStyle}>
                       <div>
                         <label style={labelStyle}>Surcharge</label>
-                        <input style={inputStyle} value={partForm.surcharge} onChange={event => handlePartChange("surcharge", event.target.value)} placeholder="0.00" />
+                        <input className="app-input" style={inputStyle} value={partForm.surcharge} onChange={event => handlePartChange("surcharge", event.target.value)} placeholder="0.00" />
                       </div>
                       <div>
                         <label style={labelStyle}>VAT rate</label>
@@ -584,14 +584,14 @@ export default function GoodsInPageUi(props) {
                               {option.label}
                             </option>)}
                         </DropdownField>
-                        {partForm.vatRate === "custom" && <input style={{
+                        {partForm.vatRate === "custom" && <input className="app-input" style={{
                   ...inputStyle,
                   marginTop: "6px"
                 }} value={partForm.vatRateCustomValue} onChange={event => handlePartChange("vatRateCustomValue", event.target.value)} placeholder="Enter custom rate" />}
                       </div>
                       <div>
                         <label style={labelStyle}>Pack size</label>
-                        <input style={inputStyle} value={partForm.packSize} onChange={event => handlePartChange("packSize", event.target.value)} />
+                        <input className="app-input" style={inputStyle} value={partForm.packSize} onChange={event => handlePartChange("packSize", event.target.value)} />
                       </div>
                       <div>
                         <label style={labelStyle}>Sales price tiers</label>
@@ -600,7 +600,7 @@ export default function GoodsInPageUi(props) {
                   gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
                   gap: "8px"
                 }}>
-                          {partForm.salePrices.map((entry, index) => <input key={entry.label} style={inputStyle} placeholder={entry.label} value={entry.price} onChange={event => handleSalePriceChange(index, event.target.value)} />)}
+                          {partForm.salePrices.map((entry, index) => <input className="app-input" key={entry.label} style={inputStyle} placeholder={entry.label} value={entry.price} onChange={event => handleSalePriceChange(index, event.target.value)} />)}
                         </div>
                       </div>
                       <div>
@@ -610,9 +610,9 @@ export default function GoodsInPageUi(props) {
                   gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
                   gap: "8px"
                 }}>
-                          <input style={inputStyle} placeholder="Stock order" value={partForm.purchaseDetails.stockOrder} onChange={event => handleNestedPartChange("purchaseDetails", "stockOrder", event.target.value)} />
-                          <input style={inputStyle} placeholder="VOR cost" value={partForm.purchaseDetails.vorCost} onChange={event => handleNestedPartChange("purchaseDetails", "vorCost", event.target.value)} />
-                          <input style={inputStyle} placeholder="Local cost" value={partForm.purchaseDetails.localCost} onChange={event => handleNestedPartChange("purchaseDetails", "localCost", event.target.value)} />
+                          <input className="app-input" style={inputStyle} placeholder="Stock order" value={partForm.purchaseDetails.stockOrder} onChange={event => handleNestedPartChange("purchaseDetails", "stockOrder", event.target.value)} />
+                          <input className="app-input" style={inputStyle} placeholder="VOR cost" value={partForm.purchaseDetails.vorCost} onChange={event => handleNestedPartChange("purchaseDetails", "vorCost", event.target.value)} />
+                          <input className="app-input" style={inputStyle} placeholder="Local cost" value={partForm.purchaseDetails.localCost} onChange={event => handleNestedPartChange("purchaseDetails", "localCost", event.target.value)} />
                         </div>
                       </div>
                       <div>
@@ -632,18 +632,18 @@ export default function GoodsInPageUi(props) {
                     </div>
                   </LayerSurface>}
                 {activeTab === "dealer" && <div style={fieldGridStyle}>
-                    <input style={inputStyle} placeholder="Dealer code" value={partForm.dealerDetails.dealerCode} onChange={event => handleNestedPartChange("dealerDetails", "dealerCode", event.target.value)} />
-                    <input style={inputStyle} placeholder="Tier" value={partForm.dealerDetails.tier} onChange={event => handleNestedPartChange("dealerDetails", "tier", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Dealer code" value={partForm.dealerDetails.dealerCode} onChange={event => handleNestedPartChange("dealerDetails", "dealerCode", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Tier" value={partForm.dealerDetails.tier} onChange={event => handleNestedPartChange("dealerDetails", "tier", event.target.value)} />
                     <textarea className="app-notes-input" placeholder="Dealer notes" value={partForm.dealerDetails.notes} onChange={event => handleNestedPartChange("dealerDetails", "notes", event.target.value)} />
                   </div>}
                 {activeTab === "stock" && <div style={fieldGridStyle}>
-                    <input style={inputStyle} placeholder="Reorder point" value={partForm.stockDetails.reorderPoint} onChange={event => handleNestedPartChange("stockDetails", "reorderPoint", event.target.value)} />
-                    <input style={inputStyle} placeholder="Bin capacity" value={partForm.stockDetails.binCapacity} onChange={event => handleNestedPartChange("stockDetails", "binCapacity", event.target.value)} />
-                    <input style={inputStyle} placeholder="Alternate location" value={partForm.stockDetails.alternateLocation} onChange={event => handleNestedPartChange("stockDetails", "alternateLocation", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Reorder point" value={partForm.stockDetails.reorderPoint} onChange={event => handleNestedPartChange("stockDetails", "reorderPoint", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Bin capacity" value={partForm.stockDetails.binCapacity} onChange={event => handleNestedPartChange("stockDetails", "binCapacity", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Alternate location" value={partForm.stockDetails.alternateLocation} onChange={event => handleNestedPartChange("stockDetails", "alternateLocation", event.target.value)} />
                   </div>}
                 {activeTab === "user" && <div style={fieldGridStyle}>
-                    <input style={inputStyle} placeholder="Field 1" value={partForm.userDefined.field1} onChange={event => handleNestedPartChange("userDefined", "field1", event.target.value)} />
-                    <input style={inputStyle} placeholder="Field 2" value={partForm.userDefined.field2} onChange={event => handleNestedPartChange("userDefined", "field2", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Field 1" value={partForm.userDefined.field1} onChange={event => handleNestedPartChange("userDefined", "field1", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Field 2" value={partForm.userDefined.field2} onChange={event => handleNestedPartChange("userDefined", "field2", event.target.value)} />
                   </div>}
                 {activeTab === "links" && <div>
                     {partForm.linkMetadata.map((link, index) => <div key={index} style={{
@@ -652,7 +652,7 @@ export default function GoodsInPageUi(props) {
               gap: "8px",
               marginBottom: "8px"
             }}>
-                        <input style={inputStyle} placeholder="Label" value={link.label} onChange={event => {
+                        <input className="app-input" style={inputStyle} placeholder="Label" value={link.label} onChange={event => {
                 const next = [...partForm.linkMetadata];
                 next[index] = {
                   ...next[index],
@@ -663,7 +663,7 @@ export default function GoodsInPageUi(props) {
                   linkMetadata: next
                 }));
               }} />
-                        <input style={inputStyle} placeholder="URL" value={link.url} onChange={event => {
+                        <input className="app-input" style={inputStyle} placeholder="URL" value={link.url} onChange={event => {
                 const next = [...partForm.linkMetadata];
                 next[index] = {
                   ...next[index],
@@ -686,19 +686,19 @@ export default function GoodsInPageUi(props) {
                     </button>
                   </div>}
                 {activeTab === "sales" && <div style={fieldGridStyle}>
-                    <input type="date" style={inputStyle} value={partForm.salesHistory.lastSoldOn} onChange={event => handleNestedPartChange("salesHistory", "lastSoldOn", event.target.value)} />
-                    <input style={inputStyle} placeholder="Last sold price" value={partForm.salesHistory.lastSoldPrice} onChange={event => handleNestedPartChange("salesHistory", "lastSoldPrice", event.target.value)} />
-                    <input style={inputStyle} placeholder="Quantity" value={partForm.salesHistory.lastSoldQty} onChange={event => handleNestedPartChange("salesHistory", "lastSoldQty", event.target.value)} />
+                    <input className="app-input" type="date" style={inputStyle} value={partForm.salesHistory.lastSoldOn} onChange={event => handleNestedPartChange("salesHistory", "lastSoldOn", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Last sold price" value={partForm.salesHistory.lastSoldPrice} onChange={event => handleNestedPartChange("salesHistory", "lastSoldPrice", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Quantity" value={partForm.salesHistory.lastSoldQty} onChange={event => handleNestedPartChange("salesHistory", "lastSoldQty", event.target.value)} />
                   </div>}
                 {activeTab === "audi" && <div style={fieldGridStyle}>
-                    <input style={inputStyle} placeholder="Programme" value={partForm.audiMetadata.programme} onChange={event => handleNestedPartChange("audiMetadata", "programme", event.target.value)} />
-                    <input style={inputStyle} placeholder="Reference" value={partForm.audiMetadata.reference} onChange={event => handleNestedPartChange("audiMetadata", "reference", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Programme" value={partForm.audiMetadata.programme} onChange={event => handleNestedPartChange("audiMetadata", "programme", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Reference" value={partForm.audiMetadata.reference} onChange={event => handleNestedPartChange("audiMetadata", "reference", event.target.value)} />
                     <textarea className="app-notes-input" placeholder="Audi notes" value={partForm.audiMetadata.notes} onChange={event => handleNestedPartChange("audiMetadata", "notes", event.target.value)} />
                   </div>}
                 {activeTab === "additional" && <div style={fieldGridStyle}>
-                    <input style={inputStyle} placeholder="Warranty" value={partForm.additionalFields.warranty} onChange={event => handleNestedPartChange("additionalFields", "warranty", event.target.value)} />
-                    <input style={inputStyle} placeholder="Logistics" value={partForm.additionalFields.logistics} onChange={event => handleNestedPartChange("additionalFields", "logistics", event.target.value)} />
-                    <input style={inputStyle} placeholder="Internal tag" value={partForm.additionalFields.internalTag} onChange={event => handleNestedPartChange("additionalFields", "internalTag", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Warranty" value={partForm.additionalFields.warranty} onChange={event => handleNestedPartChange("additionalFields", "warranty", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Logistics" value={partForm.additionalFields.logistics} onChange={event => handleNestedPartChange("additionalFields", "logistics", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Internal tag" value={partForm.additionalFields.internalTag} onChange={event => handleNestedPartChange("additionalFields", "internalTag", event.target.value)} />
                   </div>}
                 {activeTab === "online" && <div style={fieldGridStyle}>
                     <label style={{
@@ -710,9 +710,9 @@ export default function GoodsInPageUi(props) {
                       <input type="checkbox" checked={partForm.onlineStore.isListed} onChange={event => handleNestedPartChange("onlineStore", "isListed", event.target.checked)} />
                       Visible in online store
                     </label>
-                    <input style={inputStyle} placeholder="Web title" value={partForm.onlineStore.webTitle} onChange={event => handleNestedPartChange("onlineStore", "webTitle", event.target.value)} />
-                    <textarea style={textareaStyle} placeholder="Web description" value={partForm.onlineStore.webDescription} onChange={event => handleNestedPartChange("onlineStore", "webDescription", event.target.value)} />
-                    <input style={inputStyle} placeholder="Online SKU" value={partForm.onlineStore.onlineSku} onChange={event => handleNestedPartChange("onlineStore", "onlineSku", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Web title" value={partForm.onlineStore.webTitle} onChange={event => handleNestedPartChange("onlineStore", "webTitle", event.target.value)} />
+                    <textarea className="app-input" style={textareaStyle} placeholder="Web description" value={partForm.onlineStore.webDescription} onChange={event => handleNestedPartChange("onlineStore", "webDescription", event.target.value)} />
+                    <input className="app-input" style={inputStyle} placeholder="Online SKU" value={partForm.onlineStore.onlineSku} onChange={event => handleNestedPartChange("onlineStore", "onlineSku", event.target.value)} />
                   </div>}
               </div>
             </div>}
@@ -730,17 +730,19 @@ export default function GoodsInPageUi(props) {
           alignItems: "center",
           flexWrap: "nowrap"
         }}>
-              <button className="app-btn app-btn--secondary" onClick={() => {
+              <Button type="button" variant="secondary" disabled={savingPart} onClick={() => {
                 setPartForm(createDefaultPartForm());
                 handlePartChange("partNumber", "");
                 setDuplicateCandidate(null);
                 requestAnimationFrame(() => partNumberInputRef.current?.focus());
-              }} disabled={savingPart}>
+              }}>
                 Clear
-              </button>
-              <button type="button" className="app-btn app-btn--primary" onClick={handleAddPart} disabled={savingPart}>
-                {savingPart ? "Adding..." : "Add part"}
-              </button>
+              </Button>
+              {/* busy replaces the old "Adding..." label: Button owns the
+                  pending state, so the spinner and the disable come together. */}
+              <Button type="button" busy={savingPart} onClick={handleAddPart}>
+                Add part
+              </Button>
             </div>
           </div>
         </LayerTheme>

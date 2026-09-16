@@ -1,0 +1,242 @@
+/* file location: src/styles/families/typing-assist.css
+ *
+ * Canonical home for the Typing Assistant family — spelling / grammar
+ * underlines, the Tab-to-accept ghost word and the suggestion popover drawn
+ * over any text box or textarea in the staff app.
+ *
+ * Variants: overlay, mark (spelling / grammar), ghost, hint, popover
+ * Component: src/components/ui/typingAssist/GlobalTypingAssist.js (mounted once from _app.js)
+ * Controller: src/lib/typingAssist/controller.js
+ * Website skin: `@family typing-assist` in src/styles/custglobal.css
+ *
+ * How it draws on a native field: a <textarea> cannot style a range of its own
+ * text, so a transparent MIRROR of the field is laid exactly over it — same
+ * box, font, padding, wrapping and scroll position, copied from the field's
+ * computed style by the controller. Its text is invisible; only the underlines
+ * and the ghost word paint. It never takes pointer events, so every click and
+ * keystroke still goes to the real field.
+ *
+ * The underline colours come from the global --mark-spelling / --mark-grammar
+ * tokens in theme.css (light and dark values defined there).
+ */
+
+html.staff-scope .app-typing-assist,
+html.staff-scope .app-typing-assist-popover {
+  --typing-assist-spelling: var(--mark-spelling);
+  --typing-assist-grammar: var(--mark-grammar);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Mirror overlay. Geometry (left/top/width/height/padding/font/line-height)
+   is written by the controller on every layout change. z-index 9800 sits above
+   popups and modals so fields inside them are covered too, and below the 9900
+   route-progress bar; the controller hides the mirror whenever something else
+   is painted on top of the field. */
+html.staff-scope .app-typing-assist {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9800;
+  box-sizing: content-box;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  scrollbar-width: none;
+  user-select: none;
+}
+
+html.staff-scope .app-typing-assist::-webkit-scrollbar {
+  display: none;
+}
+
+/* The underline: a straight, solid 2px rule under the word — not the
+   browser's wavy squiggle. Follows the word across a line wrap. */
+html.staff-scope .app-typing-assist__mark {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.28em;
+  text-decoration-skip-ink: none;
+}
+
+html.staff-scope .app-typing-assist__mark--spelling {
+  text-decoration-color: var(--typing-assist-spelling);
+}
+
+html.staff-scope .app-typing-assist__mark--grammar {
+  text-decoration-color: var(--typing-assist-grammar);
+}
+
+/* The mark whose suggestions are open. */
+html.staff-scope .app-typing-assist__mark.is-active {
+  text-decoration-thickness: 3px;
+}
+
+/* Contenteditable editors (the notes widget) cannot be mirrored, so the
+   controller paints their underlines as CSS Custom Highlights. Same straight
+   2px rule; the offset is not available to ::highlight. */
+html.staff-scope ::highlight(typing-assist-spelling) {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--mark-spelling);
+}
+
+html.staff-scope ::highlight(typing-assist-grammar) {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--mark-grammar);
+}
+
+/* Predicted text after the caret. */
+html.staff-scope .app-typing-assist__ghost {
+  color: var(--text-1);
+  -webkit-text-fill-color: currentColor;
+  opacity: 0.42;
+}
+
+/* "Tab" key cap beside the ghost word. Tint + text, no outline (§3.0a). */
+html.staff-scope .app-typing-assist__hint {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+  -webkit-text-fill-color: currentColor;
+  font-family: var(--font-family);
+  font-size: var(--text-caption);
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.4;
+  text-transform: none;
+  vertical-align: middle;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Suggestion popover. The panel is a <LayerSurface>; rows are real Secondary
+   buttons and so are the footer actions, so buttons.css owns their
+   colours. Mouse-down inside the popover is cancelled by the component, so
+   focus — and the caret — never leave the field being corrected. */
+html.staff-scope .app-typing-assist-popover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9810;
+  width: min(300px, calc(100vw - 16px));
+  max-height: min(60vh, 440px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow:
+    0 0 18px rgba(var(--accentMainRgb), 0.32),
+    0 0 44px rgba(var(--accentMainRgb), 0.18);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+html.staff-scope .app-typing-assist-popover.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .app-typing-assist-popover {
+    transition: none;
+  }
+}
+
+html.staff-scope .app-typing-assist-popover__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 2px 4px 0;
+}
+
+/* Kind label led by a short rule in the underline's own colour, so the
+   popover visibly belongs to the line that was clicked. */
+html.staff-scope .app-typing-assist-popover__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+html.staff-scope .app-typing-assist-popover__kind::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--typing-assist-grammar);
+}
+
+html.staff-scope .app-typing-assist-popover__kind--spelling::before {
+  background: var(--typing-assist-spelling);
+}
+
+html.staff-scope .app-typing-assist-popover__message {
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  line-height: 1.4;
+}
+
+html.staff-scope .app-typing-assist-popover__suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html.staff-scope .app-typing-assist-popover__suggestion {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  font-weight: var(--control-font-weight);
+}
+
+/* The most likely correction reads first and heaviest. */
+html.staff-scope .app-typing-assist-popover__suggestion:first-child {
+  font-weight: 700;
+}
+
+html.staff-scope .app-typing-assist-popover__suggestion.is-highlighted:not(:disabled) {
+  --btn-bg: var(--secondary-hover);
+}
+
+html.staff-scope .app-typing-assist-popover__suggestion:focus-visible,
+html.staff-scope .app-typing-assist-popover__action:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .app-typing-assist-popover__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+html.staff-scope .app-typing-assist-popover__action {
+  flex: 1 1 auto;
+}
+
+html.staff-scope .app-typing-assist-popover__empty {
+  padding: 4px;
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — blue, matching the input family it decorates. */
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"] .app-typing-assist-popover {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

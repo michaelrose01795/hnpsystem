@@ -12,6 +12,7 @@ import PopupModal from "@/components/popups/popupStyleApi";
 import { SecurityPanel } from "@/pages/security";
 import { PrivacyPanel } from "@/pages/profile/privacy";
 import { DesktopAppPanel } from "@/components/profile/DesktopAppCard"; // Desktop installer download popup
+import TypingAssistPanel from "@/components/profile/TypingAssistPanel"; // Spelling / grammar / prediction settings popup
 
 export function ProfilePage({
   forcedUserName = null,
@@ -112,6 +113,14 @@ export function ProfilePage({
                 >
                   Desktop App
                 </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setOpenPanel("typing")}
+                >
+                  Typing
+                </Button>
               </div>
             </DevLayoutSection>
           ) : null}
@@ -164,6 +173,13 @@ export function ProfilePage({
         ariaLabel="Desktop app download"
       >
         <DesktopAppPanel onClose={() => setOpenPanel(null)} />
+      </PopupModal>
+      <PopupModal
+        isOpen={openPanel === "typing"}
+        onClose={() => setOpenPanel(null)}
+        ariaLabel="Typing assistant settings"
+      >
+        <TypingAssistPanel />
       </PopupModal>
     </div>;
 

@@ -1,3 +1,4 @@
+import { buildCustomerReportUrl } from "@/lib/vhc/shareCode";
 // file location: src/pages/website/profile.js
 // Customer-facing portal page. Pulls one bundled payload from
 // /api/website/profile (vehicles + jobs + invoices + appointments +
@@ -11,12 +12,10 @@
 // Styling: this page renders inside html.website-scope (applied by
 // useWebsiteScope) so every raw <button>, <input>, <textarea>, <select>
 // inherits the liquid-glass control system defined in custglobal.css.
-// All card / row / badge / tracker / bubble chrome is done with inline
-// styles that reuse the custglobal CSS variables (--txt-bright,
-// --txt-soft, --txt-mute, --accentText, --accentMainRgb,
-// --website-control-height, --website-field-gap) so the page stays
-// consistent with the rest of /website without carrying its own
-// stylesheet.
+// All card / row / badge / tracker / bubble chrome is the ws-portal-*
+// family (@family portal in custglobal.css), so the page reads the same
+// tokens as the rest of /website and repaints with the theme cycle
+// without carrying any inline paint of its own.
 
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
@@ -26,7 +25,9 @@ import { useTheme } from "@/styles/themeProvider";
 import { siteContent } from "@/features/website/data/siteContent";
 import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
 import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
+import WebsiteTopBar from "@/features/website/components/WebsiteTopBar";
 import WebsiteNativeDateTimeInput from "@/features/website/components/WebsiteNativeDateTimeInput";
+import useTypingAssistSettings from "@/hooks/useTypingAssistSettings";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import {
   CONTACT_PREFERENCE_OPTIONS,
@@ -172,389 +173,15 @@ const SERVICE_TYPES = [
   { id: "test_drive", title: "Test drive", hint: "Book a test drive in a specific model.", action: "request_test_drive" },
 ];
 
-// ── Inline style primitives ──────────────────────────────────────
-// Card / row / chip backgrounds use the --website-elev-* tokens from
-// custglobal.css instead of literal white washes, so they re-paint as
-// faint dark washes when the light theme is active and stay visible on
-// the pale surface. Body text uses --txt-bright for the same reason.
-const cardStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 14,
-  padding: "clamp(16px, 3vw, 24px)",
-  background: "var(--website-elev-1)",
-  borderRadius: 18,
-};
-const cardWideStyle = { ...cardStyle, gridColumn: "1 / -1" };
-const cardHeaderStyle = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 12,
-  flexWrap: "wrap",
-};
-const cardTitleStyle = { margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: 0.2, color: "var(--txt-bright)" };
-const cardCountStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  padding: "4px 10px",
-  borderRadius: 999,
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: 0.5,
-  background: "var(--website-elev-4)",
-  color: "var(--txt-soft)",
-};
-const badgeStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  padding: "4px 10px",
-  borderRadius: 999,
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: 0.5,
-  textTransform: "uppercase",
-  background: "var(--website-elev-3)",
-  color: "var(--txt-soft)",
-  whiteSpace: "nowrap",
-};
-const badgePaidStyle = { ...badgeStyle, background: "rgba(34, 197, 94, 0.18)", color: "#86efac" };
-const badgeOpenStyle = { ...badgeStyle, background: "rgba(var(--accentMainRgb), 0.22)", color: "#fca5a5" };
-const emptyStyle = { margin: 0, fontSize: 13, color: "var(--txt-mute)" };
-const successStyle = { margin: 0, fontSize: 12, color: "#86efac" };
-const errorStyle = { margin: 0, fontSize: 12, color: "#fca5a5" };
-const itemListStyle = { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 };
-const itemRowStyle = {
-  display: "grid",
-  gridTemplateColumns: "1fr auto",
-  alignItems: "center",
-  gap: 12,
-  padding: "12px 14px",
-  borderRadius: 12,
-  background: "var(--website-elev-2)",
-};
-const itemTitleStyle = { fontSize: 14, fontWeight: 600, color: "var(--txt-bright)" };
-const itemMetaStyle = { fontSize: 12, color: "var(--txt-mute)", marginTop: 2 };
-const formStyle = { display: "flex", flexDirection: "column", gap: "var(--website-field-gap)" };
-const formRowStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--website-field-gap)" };
-const fieldStyle = { display: "flex", flexDirection: "column", gap: "var(--website-field-gap)", minWidth: 0 };
-const fieldLabelStyle = { fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "var(--txt-mute)" };
-const settingsRowStyle = { display: "flex", flexDirection: "column", gap: 12, paddingTop: 14, marginTop: 6 };
-const settingsRowHeaderStyle = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 12,
-  flexWrap: "wrap",
-};
-const settingsTitleStyle = { fontSize: 14, fontWeight: 600, color: "var(--txt-bright)" };
-const settingsHintStyle = { fontSize: 12, color: "var(--txt-mute)", margin: 0 };
-const tagBaseStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  padding: "4px 10px",
-  borderRadius: 999,
-  fontSize: 11,
-  fontWeight: 600,
-  background: "var(--website-elev-3)",
-  color: "var(--txt-soft)",
-};
-const tagAccentStyle = { ...tagBaseStyle, background: "rgba(var(--accentMainRgb), 0.22)", color: "#fca5a5" };
-const tagOkStyle = { ...tagBaseStyle, background: "rgba(34, 197, 94, 0.18)", color: "#86efac" };
-const balanceHeroStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-  padding: "16px 18px",
-  borderRadius: 14,
-  background: "var(--website-elev-2)",
-};
-const balanceFigureStyle = { fontSize: 28, fontWeight: 800, color: "var(--txt-bright)", letterSpacing: -0.5 };
-const balanceMetaStyle = { fontSize: 12, color: "var(--txt-mute)" };
-const detailGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 };
-const detailFieldStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-  padding: "12px 14px",
-  borderRadius: 12,
-  background: "var(--website-elev-2)",
-};
-const detailLabelStyle = { fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "var(--txt-mute)" };
-const detailValueStyle = { fontSize: 14, color: "var(--txt-bright)" };
-const bubbleBase = { maxWidth: "80%", padding: "10px 14px", borderRadius: 14, fontSize: 13, lineHeight: 1.45, display: "flex", flexDirection: "column", gap: 4 };
-const bubbleCustomerStyle = {
-  ...bubbleBase,
-  alignSelf: "flex-end",
-  background: "linear-gradient(180deg, rgba(var(--accentMainRgb), 0.32) 0%, rgba(var(--accentMainRgb), 0.18) 100%)",
-  color: "#fff",
-};
-const bubbleStaffStyle = {
-  ...bubbleBase,
-  alignSelf: "flex-start",
-  background: "var(--website-elev-3)",
-  color: "var(--txt-bright)",
-};
-const bubbleMetaStyle = { fontSize: 10, opacity: 0.75 };
-const mediaGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 };
-const mediaThumbStyle = {
-  position: "relative",
-  display: "block",
-  aspectRatio: "4 / 3",
-  borderRadius: 12,
-  overflow: "hidden",
-  background: "var(--website-elev-2)",
-};
-const mediaTagStyle = {
-  position: "absolute",
-  top: 8,
-  left: 8,
-  padding: "2px 8px",
-  borderRadius: 999,
-  fontSize: 10,
-  fontWeight: 700,
-  letterSpacing: 0.5,
-  textTransform: "uppercase",
-  background: "rgba(0, 0, 0, 0.55)",
-  color: "#fff",
-};
-const mediaCaptionStyle = {
-  position: "absolute",
-  left: 8,
-  right: 8,
-  bottom: 8,
-  fontSize: 11,
-  color: "#fff",
-  textShadow: "0 1px 4px rgba(0, 0, 0, 0.8)",
-};
-const timelineStyle = { display: "flex", flexDirection: "column", gap: 8 };
-const timelineRowStyle = {
-  display: "grid",
-  gridTemplateColumns: "auto 1fr",
-  alignItems: "baseline",
-  gap: 14,
-  padding: "10px 12px",
-  borderRadius: 10,
-  background: "var(--website-elev-1)",
-};
-const timelineWhenStyle = { fontSize: 11, color: "var(--txt-mute)", whiteSpace: "nowrap" };
-const timelineWhatStyle = { fontSize: 13, color: "var(--txt-bright)" };
-const stmtRowStyle = {
-  display: "grid",
-  gridTemplateColumns: "auto 1fr auto",
-  alignItems: "baseline",
-  gap: 14,
-  padding: "8px 10px",
-  borderRadius: 8,
-  fontSize: 13,
-};
-const stmtMetaStyle = { fontSize: 11, color: "var(--txt-mute)" };
-const cardChipStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-  padding: "12px 14px",
-  borderRadius: 12,
-  background: "var(--website-elev-2)",
-};
-const cardBrandStyle = { fontSize: 13, fontWeight: 700, color: "var(--txt-bright)" };
-const cardLineStyle = { fontSize: 12, color: "var(--txt-soft)" };
-const mileageListStyle = { display: "flex", flexDirection: "column", gap: 8 };
-const mileageRowStyle = {
-  display: "grid",
-  gridTemplateColumns: "auto 1fr auto",
-  alignItems: "center",
-  gap: 12,
-  fontSize: 12,
-  color: "var(--txt-soft)",
-};
-const mileageBarStyle = {
-  flex: 1,
-  height: 6,
-  borderRadius: 999,
-  background: "var(--website-elev-4)",
-  overflow: "hidden",
-};
-const mileageBarFillStyle = (pct) => ({
-  display: "block",
-  height: "100%",
-  width: `${pct}%`,
-  background: "linear-gradient(90deg, rgba(255,90,90,0.9), var(--accentText))",
-});
-const mileageValueStyle = { fontSize: 12, fontWeight: 700, color: "var(--txt-bright)", whiteSpace: "nowrap" };
-const vhcLightStyle = (tone) => ({
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 6,
-  padding: "4px 10px",
-  borderRadius: 999,
-  fontSize: 11,
-  fontWeight: 600,
-  background:
-    tone === "red"
-      ? "rgba(239, 68, 68, 0.18)"
-      : tone === "amber"
-      ? "rgba(245, 158, 11, 0.18)"
-      : "rgba(34, 197, 94, 0.18)",
-  color:
-    tone === "red" ? "#fca5a5" : tone === "amber" ? "#fcd34d" : "#86efac",
-});
-const vhcDotStyle = (tone) => ({
-  width: 8,
-  height: 8,
-  borderRadius: 999,
-  background:
-    tone === "red" ? "#ef4444" : tone === "amber" ? "#f59e0b" : "#22c55e",
-});
-
-const headerStyle = {
-  display: "flex",
-  alignItems: "flex-start",
-  justifyContent: "space-between",
-  gap: 18,
-  flexWrap: "wrap",
-  marginBottom: 24,
-};
-const headerEyebrowStyle = {
-  fontSize: 11,
-  letterSpacing: 1.5,
-  textTransform: "uppercase",
-  color: "var(--accentText)",
-  fontWeight: 700,
-};
-const headerTitleStyle = { margin: "6px 0 4px", fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 800, color: "var(--txt-bright)" };
-const headerSubtitleStyle = { margin: 0, fontSize: 14, color: "var(--txt-soft)", maxWidth: 520 };
-const headerActionsStyle = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" };
-const layoutStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(180px, 220px) minmax(0, 1fr)",
-  gap: 24,
-  alignItems: "start",
-};
-const sideNavStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 6,
-  position: "sticky",
-  top: 16,
-  padding: 12,
-  background: "var(--website-elev-1)",
-  borderRadius: 14,
-};
-const sideNavHeadingStyle = {
-  fontSize: 10,
-  letterSpacing: 1,
-  textTransform: "uppercase",
-  color: "var(--txt-mute)",
-  padding: "4px 10px 8px",
-};
-const sideNavLinkStyle = {
-  display: "block",
-  padding: "8px 12px",
-  borderRadius: 8,
-  fontSize: 13,
-  color: "var(--txt-soft)",
-  textDecoration: "none",
-};
-const contentStackStyle = { display: "flex", flexDirection: "column", gap: 18, minWidth: 0 };
-const gridSplitStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-  gap: 18,
-};
-const trackerStepStyle = (state) => ({
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 6,
-  fontSize: 11,
-  color:
-    state === "done"
-      ? "var(--txt-bright)"
-      : state === "active"
-      ? "var(--accentText)"
-      : "var(--txt-faint)",
-  textAlign: "center",
-});
-const trackerDotStyle = (state) => ({
-  width: 12,
-  height: 12,
-  borderRadius: 999,
-  background:
-    state === "done"
-      ? "linear-gradient(180deg, rgba(255, 90, 90, 0.98), var(--accentText))"
-      : state === "active"
-      ? "var(--accentText)"
-      : "var(--website-elev-4)",
-});
-const serviceGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-  gap: 10,
-};
-const serviceTileStyle = (active) => ({
-  // Inline styles override the global pill chrome from custglobal.css
-  // (button:not(.app-btn)) — service tiles need multi-line content,
-  // left alignment and a square corner, not a 44px capsule.
-  appearance: "none",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "flex-start",
-  justifyContent: "flex-start",
-  gap: 4,
-  minHeight: 0,
-  padding: "14px 16px",
-  textAlign: "left",
-  whiteSpace: "normal",
-  letterSpacing: 0,
-  textTransform: "none",
-  borderRadius: 14,
-  border: "none",
-  cursor: "pointer",
-  color: "var(--txt-bright)",
-  background: active
-    ? "linear-gradient(180deg, rgba(var(--accentMainRgb), 0.32) 0%, rgba(var(--accentMainRgb), 0.18) 100%)"
-    : "var(--website-elev-2)",
-  WebkitBackdropFilter: "none",
-  backdropFilter: "none",
-  boxShadow: active
-    ? "inset 0 0 0 1px rgba(var(--accentMainRgb), 0.5)"
-    : "inset 0 0 0 1px var(--website-elev-3)",
-  transition: "background 0.2s ease",
-});
-const serviceTileTitleStyle = { fontSize: 13, fontWeight: 700, color: "var(--txt-bright)" };
-const serviceTileHintStyle = { fontSize: 11, color: "var(--txt-mute)", lineHeight: 1.4 };
-const toggleRowStyle = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 12,
-  padding: "10px 14px",
-  borderRadius: 12,
-  background: "var(--website-elev-2)",
-  cursor: "pointer",
-};
-const toggleSwitchStyle = (checked) => ({
-  position: "relative",
-  width: 40,
-  height: 22,
-  borderRadius: 999,
-  background: checked
-    ? "linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%)"
-    : "var(--website-elev-4)",
-  flexShrink: 0,
-  transition: "background 0.2s ease",
-});
-const toggleKnobStyle = (checked) => ({
-  position: "absolute",
-  top: 2,
-  left: checked ? 20 : 2,
-  width: 18,
-  height: 18,
-  borderRadius: 999,
-  background: "#fff",
-  transition: "left 0.2s ease",
-});
+// ── Styling ──────────────────────────────────────────────────────
+// Every card / row / badge / tracker / bubble / toggle is a ws-portal-*
+// class in the @family portal block of src/styles/custglobal.css, shown
+// on /website/dev by src/features/website/showcase/sections/PortalShowcase.js.
+// State travels as data-tone / data-state / data-author / data-enabled /
+// aria-pressed / aria-checked; measured values (bar widths, the score
+// ring angle, the tracker column count) are the runtime custom properties
+// --ws-portal-pct, --ws-portal-score and --ws-portal-steps. No colour,
+// padding or type is set inline here.
 
 const PORTAL_DONE_STATUSES = ["delivered", "closed", "completed", "collected", "invoiced"];
 const REPAIR_TIMELINE_STAGES = [
@@ -577,90 +204,6 @@ const ASSISTANT_SUGGESTIONS = [
   "What were my last VHC advisories?",
   "Book me a valet for Saturday morning.",
 ];
-
-const portalSubHeaderStyle = {
-  margin: 0,
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: 0.6,
-  textTransform: "uppercase",
-  color: "var(--accentText)",
-};
-const portalTileStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-  padding: "12px 14px",
-  borderRadius: 12,
-  background: "var(--website-elev-2)",
-};
-const portalTodoStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-  padding: "10px 12px",
-  borderRadius: 12,
-  background: "var(--website-elev-2)",
-};
-const portalTodoTitleStyle = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: 0.6,
-  textTransform: "uppercase",
-  color: "var(--accentText)",
-};
-const portalActionRowStyle = { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" };
-const portalProgressStyle = {
-  height: 8,
-  borderRadius: 999,
-  background: "var(--website-elev-4)",
-  overflow: "hidden",
-};
-const portalProgressFillStyle = (pct) => ({
-  height: "100%",
-  width: `${Math.max(0, Math.min(100, pct))}%`,
-  background: "linear-gradient(90deg, rgba(var(--accentMainRgb), 0.7), var(--accentText))",
-});
-const portalScoreRingStyle = (score) => ({
-  width: 78,
-  height: 78,
-  borderRadius: "50%",
-  background: `conic-gradient(var(--accentText) ${score * 3.6}deg, var(--website-elev-4) 0deg)`,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexShrink: 0,
-});
-const portalScoreInnerStyle = {
-  width: 62,
-  height: 62,
-  borderRadius: "50%",
-  background: "var(--website-elev-1)",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-};
-const portalUploadPlaceholderStyle = {
-  height: 110,
-  borderRadius: 12,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textAlign: "center",
-  padding: "0 8px",
-  fontSize: 11,
-  color: "var(--txt-mute)",
-  background: "var(--website-elev-3)",
-};
-const portalMediaThumbStyle = {
-  height: 72,
-  width: 96,
-  borderRadius: 10,
-  overflow: "hidden",
-  background: "var(--website-elev-3)",
-  flexShrink: 0,
-};
 
 const portalIsOpenJob = (job) => {
   const status = String(job.status || job.completion_status || "").toLowerCase();
@@ -725,13 +268,13 @@ const isValetRequest = (request) =>
 
 function PortalCardHeader({ eyebrow, title, count, action }) {
   return (
-    <div style={cardHeaderStyle}>
+    <div className="ws-portal-card__header">
       <div>
-        {eyebrow ? <div style={headerEyebrowStyle}>{eyebrow}</div> : null}
-        <h2 style={cardTitleStyle}>{title}</h2>
+        {eyebrow ? <div className="ws-portal-eyebrow">{eyebrow}</div> : null}
+        <h2 className="ws-portal-card__title">{title}</h2>
       </div>
-      <div style={portalActionRowStyle}>
-        {count !== undefined && count !== null ? <span style={cardCountStyle}>{count}</span> : null}
+      <div className="ws-portal-action-row">
+        {count !== undefined && count !== null ? <span className="ws-portal-count">{count}</span> : null}
         {action}
       </div>
     </div>
@@ -740,12 +283,12 @@ function PortalCardHeader({ eyebrow, title, count, action }) {
 
 function PortalCard({ id, eyebrow, title, count, action, todo, wide = false, children }) {
   return (
-    <section id={id} style={wide ? cardWideStyle : cardStyle}>
+    <section id={id} className={wide ? "ws-portal-card ws-portal-card--wide" : "ws-portal-card"}>
       <PortalCardHeader eyebrow={eyebrow} title={title} count={count} action={action} />
       {todo ? (
-        <div style={portalTodoStyle}>
-          <span style={portalTodoTitleStyle}>TODO · {todo.label}</span>
-          {todo.detail ? <p style={emptyStyle}>{todo.detail}</p> : null}
+        <div className="ws-portal-todo">
+          <span className="ws-portal-subhead">TODO · {todo.label}</span>
+          {todo.detail ? <p className="ws-portal-empty">{todo.detail}</p> : null}
         </div>
       ) : null}
       {children}
@@ -753,9 +296,9 @@ function PortalCard({ id, eyebrow, title, count, action, todo, wide = false, chi
   );
 }
 
-function PortalButtonLink({ href, children, style }) {
+function PortalButtonLink({ href, children, className = "" }) {
   return (
-    <a className="app-btn" href={href} style={style}>
+    <a className={`app-btn ${className}`} href={href}>
       {children}
     </a>
   );
@@ -763,10 +306,10 @@ function PortalButtonLink({ href, children, style }) {
 
 function ScoreRing({ score = 0 }) {
   return (
-    <div style={portalScoreRingStyle(score)}>
-      <div style={portalScoreInnerStyle}>
-        <span style={{ fontSize: 18, fontWeight: 800, color: "var(--txt-bright)" }}>{score}</span>
-        <span style={{ fontSize: 9, color: "var(--txt-mute)", letterSpacing: 0.4, textTransform: "uppercase" }}>
+    <div className="ws-portal-score" style={{ "--ws-portal-score": `${score * 3.6}deg` }}>
+      <div className="ws-portal-score__inner">
+        <span className="ws-portal-score__value">{score}</span>
+        <span className="ws-portal-score__label">
           health
         </span>
       </div>
@@ -775,28 +318,13 @@ function ScoreRing({ score = 0 }) {
 }
 
 function DetailFieldGrid({ children }) {
-  return <div style={detailGridStyle}>{children}</div>;
+  return <div className="ws-portal-details">{children}</div>;
 }
 
 function NotificationDot({ enabled, label }) {
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        fontSize: 12,
-        color: enabled ? "var(--txt-bright)" : "var(--txt-mute)",
-      }}
-    >
-      <span
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: enabled ? "var(--accentText)" : "var(--website-elev-4)",
-        }}
-      />
+    <span className="ws-portal-notify" data-enabled={enabled ? "true" : "false"}>
+      <span className="ws-portal-notify__dot" />
       {label}
     </span>
   );
@@ -807,12 +335,12 @@ function MediaThumb({ item }) {
   const isVideo = type.startsWith("video") || type === "video";
   const url = item.public_url;
   return (
-    <div style={portalMediaThumbStyle}>
+    <div className="ws-portal-thumb">
       {url && isVideo ? (
-        <video src={url} muted playsInline loop style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <video src={url} muted playsInline loop className="ws-portal-media__fill" />
       ) : url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={url} alt="" className="ws-portal-media__fill" />
       ) : null}
     </div>
   );
@@ -831,15 +359,15 @@ function OwnershipDashboardCard({ vehicles = [] }) {
           "MOT, warranty, service plan and mileage are live. Recall, tyre and battery connections still require third-party APIs.",
       }}
     >
-      {vehicles.length === 0 ? <p style={emptyStyle}>No vehicles are linked to this account yet.</p> : null}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {vehicles.length === 0 ? <p className="ws-portal-empty">No vehicles are linked to this account yet.</p> : null}
+      <div className="ws-portal-flow" >
         {vehicles.map((vehicle) => (
-          <div key={vehicle.vehicle_id || vehicle.id || portalVehicleReg(vehicle)} style={portalTileStyle}>
-            <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+          <div key={vehicle.vehicle_id || vehicle.id || portalVehicleReg(vehicle)} className="ws-portal-tile">
+            <div className="ws-portal-action-row" >
               <ScoreRing score={getHealthScore(vehicle)} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={itemTitleStyle}>{portalVehicleTitle(vehicle)}</span>
-                <span style={badgeStyle}>{portalVehicleReg(vehicle)}</span>
+              <div className="ws-portal-flow" >
+                <span className="ws-portal-item-title">{portalVehicleTitle(vehicle)}</span>
+                <span className="ws-portal-badge">{portalVehicleReg(vehicle)}</span>
               </div>
             </div>
             <DetailFieldGrid>
@@ -858,8 +386,8 @@ function OwnershipDashboardCard({ vehicles = [] }) {
               <DetailField label="Mileage" value={vehicle.mileage ? `${vehicle.mileage} miles` : null} />
             </DetailFieldGrid>
             <div>
-              <h3 style={portalSubHeaderStyle}>Service notes</h3>
-              <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--txt-bright)" }}>
+              <h3 className="ws-portal-subhead">Service notes</h3>
+              <p className="ws-portal-note">
                 {vehicle.service_history || "No service-history note has been stored for this vehicle yet."}
               </p>
             </div>
@@ -879,17 +407,18 @@ function LiveProgressTrackerCard({ jobs = [], customer }) {
   return (
     <PortalCard id="tracker" eyebrow="Tracker" title="Live progress">
       {!active ? (
-        <p style={emptyStyle}>No active workshop job is currently linked to this account.</p>
+        <p className="ws-portal-empty">No active workshop job is currently linked to this account.</p>
       ) : (
-        <div style={portalTileStyle}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-            <span style={itemTitleStyle}>{active.job_number || active.id}</span>
-            <span style={badgeOpenStyle}>{active.status || "Booked"}</span>
-            {active.service_mode === "mobile" ? <span style={badgePaidStyle}>Mobile service</span> : null}
-            {String(active.status || "").toLowerCase().includes("ready") ? <span style={badgePaidStyle}>Ready for collection</span> : null}
+        <div className="ws-portal-tile">
+          <div className="ws-portal-action-row" >
+            <span className="ws-portal-item-title">{active.job_number || active.id}</span>
+            <span className="ws-portal-badge" data-tone="open">{active.status || "Booked"}</span>
+            {active.service_mode === "mobile" ? <span className="ws-portal-badge" data-tone="ok">Mobile service</span> : null}
+            {String(active.status || "").toLowerCase().includes("ready") ? <span className="ws-portal-badge" data-tone="ok">Ready for collection</span> : null}
           </div>
-          <div style={portalProgressStyle}>
-            <div style={portalProgressFillStyle(getProgressPct(active))} />
+          <div className="ws-portal-progress">
+            <div className="ws-portal-progress__fill"
+              style={{ "--ws-portal-pct": `${Math.max(0, Math.min(100, getProgressPct(active)))}%` }} />
           </div>
           <DetailFieldGrid>
             <DetailField label="Vehicle" value={active.vehicle_reg || active.vehicle_make_model} />
@@ -897,8 +426,8 @@ function LiveProgressTrackerCard({ jobs = [], customer }) {
             <DetailField label="Service postcode" value={active.service_postcode} />
           </DetailFieldGrid>
           <div>
-            <h3 style={portalSubHeaderStyle}>Notifications</h3>
-            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
+            <h3 className="ws-portal-subhead">Notifications</h3>
+            <div className="ws-portal-action-row ws-portal-spaced" >
               <NotificationDot enabled={smsEnabled} label="SMS" />
               <NotificationDot enabled={emailEnabled} label="Email" />
               <NotificationDot enabled={false} label="Push" />
@@ -929,42 +458,36 @@ function RepairApprovalTimelineCard({ jobs = [], jobStatusHistory = [] }) {
   return (
     <PortalCard id="tracker-timeline" eyebrow="Live repair" title="Repair approval timeline">
       {!job ? (
-        <p style={emptyStyle}>No job timeline is available for this account yet.</p>
+        <p className="ws-portal-empty">No job timeline is available for this account yet.</p>
       ) : (
-        <div style={portalTileStyle}>
-          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-            <span style={itemTitleStyle}>{job.job_number}</span>
-            <span style={itemMetaStyle}>{[job.vehicle_make_model, job.vehicle_reg].filter(Boolean).join(" · ")}</span>
+        <div className="ws-portal-tile">
+          <div className="ws-portal-action-row" >
+            <span className="ws-portal-item-title">{job.job_number}</span>
+            <span className="ws-portal-item-meta">{[job.vehicle_make_model, job.vehicle_reg].filter(Boolean).join(" · ")}</span>
           </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${REPAIR_TIMELINE_STAGES.length}, 1fr)`,
-              gap: 12,
-            }}
-          >
+          <div className="ws-portal-tracker" style={{ "--ws-portal-steps": String(REPAIR_TIMELINE_STAGES.length) }}>
             {REPAIR_TIMELINE_STAGES.map((stage, idx) => {
               const state = idx < activeIndex ? "done" : idx === activeIndex && events[stage.key] ? "active" : "todo";
               return (
-                <div key={stage.key} style={trackerStepStyle(state)}>
-                  <span style={trackerDotStyle(state)} />
+                <div key={stage.key} className="ws-portal-step" data-state={state}>
+                  <span className="ws-portal-step__dot" />
                   <span>{stage.label}</span>
                 </div>
               );
             })}
           </div>
-          <ul style={itemListStyle}>
+          <ul className="ws-portal-list">
             {REPAIR_TIMELINE_STAGES.map((stage) => {
               const matchingHistory = history.find((row) =>
                 String(row.to_status || "").toLowerCase().includes(stage.key.replace("_", " ")),
               );
               return (
-                <li key={stage.key} style={itemRowStyle}>
+                <li key={stage.key} className="ws-portal-row">
                   <div>
-                    <div style={itemTitleStyle}>{stage.label}</div>
-                    {matchingHistory?.reason ? <div style={itemMetaStyle}>{matchingHistory.reason}</div> : null}
+                    <div className="ws-portal-item-title">{stage.label}</div>
+                    {matchingHistory?.reason ? <div className="ws-portal-item-meta">{matchingHistory.reason}</div> : null}
                   </div>
-                  <span style={timelineWhenStyle}>{formatDateTime(events[stage.key] || matchingHistory?.changed_at) || "Pending"}</span>
+                  <span className="ws-portal-when">{formatDateTime(events[stage.key] || matchingHistory?.changed_at) || "Pending"}</span>
                 </li>
               );
             })}
@@ -1016,22 +539,22 @@ function DigitalServiceHistoryCard({ jobs = [], jobHistory = [], invoices = [], 
       action={<PortalButtonLink href="#messages">Request PDF</PortalButtonLink>}
     >
       {history.length === 0 ? (
-        <p style={emptyStyle}>No completed service history has been recorded for this account yet.</p>
+        <p className="ws-portal-empty">No completed service history has been recorded for this account yet.</p>
       ) : (
-        <ul style={itemListStyle}>
+        <ul className="ws-portal-list">
           {history.map((visit) => (
-            <li key={visit.id} style={itemRowStyle}>
+            <li key={visit.id} className="ws-portal-row">
               <div>
-                <div style={itemTitleStyle}>{visit.type}</div>
-                <div style={itemMetaStyle}>
+                <div className="ws-portal-item-title">{visit.type}</div>
+                <div className="ws-portal-item-meta">
                   {formatDate(visit.date)} · {visit.mileage ? `${visit.mileage} miles` : "mileage not recorded"} · {visit.invoice}
                 </div>
-                {visit.note ? <div style={{ ...itemMetaStyle, marginTop: 6 }}>{visit.note}</div> : null}
+                {visit.note ? <div className="ws-portal-item-meta ws-portal-item-meta--spaced">{visit.note}</div> : null}
               </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                {visit.red > 0 ? <span style={badgeOpenStyle}>{visit.red} red</span> : null}
-                {visit.amber > 0 ? <span style={badgeStyle}>{visit.amber} amber</span> : null}
-                {visit.red === 0 && visit.amber === 0 ? <span style={badgePaidStyle}>No red/amber</span> : null}
+              <div className="ws-portal-action-row ws-portal-actions-end" >
+                {visit.red > 0 ? <span className="ws-portal-badge" data-tone="open">{visit.red} red</span> : null}
+                {visit.amber > 0 ? <span className="ws-portal-badge">{visit.amber} amber</span> : null}
+                {visit.red === 0 && visit.amber === 0 ? <span className="ws-portal-badge" data-tone="ok">No red/amber</span> : null}
               </div>
             </li>
           ))}
@@ -1052,24 +575,24 @@ function MotHistoryCard({ vehicles = [] }) {
         detail: "Stored MOT due dates are live. Full test history, advisories and failures still require the DVLA MOT History connection.",
       }}
     >
-      {vehicles.length === 0 ? <p style={emptyStyle}>No vehicles are linked to this account yet.</p> : null}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {vehicles.length === 0 ? <p className="ws-portal-empty">No vehicles are linked to this account yet.</p> : null}
+      <div className="ws-portal-flow" >
         {vehicles.map((vehicle) => {
           const days = daysUntil(vehicle.mot_due);
           const status = days == null ? "Unknown" : days < 0 ? "Overdue" : days <= 30 ? "Due soon" : "Current";
           return (
-            <div key={vehicle.vehicle_id || vehicle.reg_number} style={portalTileStyle}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <span style={itemTitleStyle}>{portalVehicleTitle(vehicle)}</span>
-                <span style={badgeStyle}>{portalVehicleReg(vehicle)}</span>
+            <div key={vehicle.vehicle_id || vehicle.reg_number} className="ws-portal-tile">
+              <div className="ws-portal-action-row" >
+                <span className="ws-portal-item-title">{portalVehicleTitle(vehicle)}</span>
+                <span className="ws-portal-badge">{portalVehicleReg(vehicle)}</span>
               </div>
-              <ul style={itemListStyle}>
-                <li style={itemRowStyle}>
+              <ul className="ws-portal-list">
+                <li className="ws-portal-row">
                   <div>
-                    <div style={itemTitleStyle}>Current MOT due date</div>
-                    <div style={itemMetaStyle}>{formatDate(vehicle.mot_due) || "Not recorded"}</div>
+                    <div className="ws-portal-item-title">Current MOT due date</div>
+                    <div className="ws-portal-item-meta">{formatDate(vehicle.mot_due) || "Not recorded"}</div>
                   </div>
-                  <span style={status === "Current" ? badgePaidStyle : badgeOpenStyle}>{status}</span>
+                  <span className="ws-portal-badge" data-tone={status === "Current" ? "ok" : "open"}>{status}</span>
                 </li>
               </ul>
             </div>
@@ -1088,16 +611,16 @@ function RecallCheckerCard({ vehicles = [] }) {
       title="Recall checker"
       todo={{ label: "Manufacturer / DVSA recall API not linked yet" }}
     >
-      {vehicles.length === 0 ? <p style={emptyStyle}>No vehicles are linked to this account yet.</p> : null}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {vehicles.length === 0 ? <p className="ws-portal-empty">No vehicles are linked to this account yet.</p> : null}
+      <div className="ws-portal-flow" >
         {vehicles.map((vehicle) => (
-          <div key={vehicle.vehicle_id || vehicle.reg_number} style={portalTileStyle}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={itemTitleStyle}>{portalVehicleTitle(vehicle)}</span>
-              <span style={badgeStyle}>{portalVehicleReg(vehicle)}</span>
-              {vehicle.vin ? <span style={itemMetaStyle}>VIN {vehicle.vin}</span> : null}
+          <div key={vehicle.vehicle_id || vehicle.reg_number} className="ws-portal-tile">
+            <div className="ws-portal-action-row" >
+              <span className="ws-portal-item-title">{portalVehicleTitle(vehicle)}</span>
+              <span className="ws-portal-badge">{portalVehicleReg(vehicle)}</span>
+              {vehicle.vin ? <span className="ws-portal-item-meta">VIN {vehicle.vin}</span> : null}
             </div>
-            <p style={emptyStyle}>Recall status will appear here once the manufacturer / DVSA API connection is in place.</p>
+            <p className="ws-portal-empty">Recall status will appear here once the manufacturer / DVSA API connection is in place.</p>
           </div>
         ))}
       </div>
@@ -1123,8 +646,7 @@ function VhcEnhancementsCard({ jobs = [], vhcByJob = {}, vhcDeclinations = [], v
           String(link.job_number || "") === String(latestJob.job_number || ""),
       )
     : null;
-  const encodedJobNumber = encodeURIComponent(latestJob?.job_number || "");
-  const encodedLinkCode = encodeURIComponent(latestShareLink?.link_code || "");
+  const customerReportUrl = latestShareLink?.link_code ? buildCustomerReportUrl(latestShareLink.link_code) : null;
   const getRouteHref = (kind, liveHref) => (presentationMode ? VHC_PRESENTATION_LINKS[kind] : liveHref);
   const latestMedia = latestJob
     ? vhcMedia.filter((item) => item.job_number === latestJob.job_number).slice(0, 6)
@@ -1138,61 +660,56 @@ function VhcEnhancementsCard({ jobs = [], vhcByJob = {}, vhcDeclinations = [], v
       title="VHC hub"
       action={
         latestJob ? (
-          <div style={portalActionRowStyle}>
-            <PortalButtonLink href={getRouteHref("preview", `/vhc/customer-preview/${encodedJobNumber}`)}>Preview</PortalButtonLink>
-            <PortalButtonLink href={getRouteHref("customerView", `/vhc/customer-view/${encodedJobNumber}`)}>Customer view</PortalButtonLink>
-            {encodedLinkCode ? (
-              <>
-                <PortalButtonLink href={getRouteHref("share", `/vhc/share/${encodedJobNumber}/${encodedLinkCode}`)}>Share link</PortalButtonLink>
-                <PortalButtonLink href={getRouteHref("customer", `/vhc/customer/${encodedJobNumber}/${encodedLinkCode}`)}>Customer link</PortalButtonLink>
-              </>
+          <div className="ws-portal-action-row">
+            {customerReportUrl || presentationMode ? (
+              <PortalButtonLink href={getRouteHref("customer", customerReportUrl)}>View and share VHC</PortalButtonLink>
             ) : null}
           </div>
         ) : null
       }
     >
       {!latestSummary ? (
-        <p style={emptyStyle}>No live VHC is linked to this account yet.</p>
+        <p className="ws-portal-empty">No live VHC is linked to this account yet.</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={gridSplitStyle}>
-            <div style={portalTileStyle}>
-              <div style={balanceHeroStyle}>
-                <span style={detailLabelStyle}>Authorised total this visit</span>
-                <span style={balanceFigureStyle}>{formatCurrency(latestJob.vhc_authorized_total || 0)}</span>
+        <div className="ws-portal-flow" >
+          <div className="ws-portal-split">
+            <div className="ws-portal-tile">
+              <div className="ws-portal-balance">
+                <span className="ws-portal-label">Authorised total this visit</span>
+                <span className="ws-portal-balance__figure">{formatCurrency(latestJob.vhc_authorized_total || 0)}</span>
               </div>
-              <span style={itemMetaStyle}>
+              <span className="ws-portal-item-meta">
                 {latestSummary.green || 0} green · {latestSummary.amber || 0} amber · {latestSummary.red || 0} red.
               </span>
             </div>
-            <div style={portalTileStyle}>
-              <h3 style={portalSubHeaderStyle}>Declined items to revisit</h3>
+            <div className="ws-portal-tile">
+              <h3 className="ws-portal-subhead">Declined items to revisit</h3>
               {declined.length === 0 ? (
-                <p style={emptyStyle}>Nothing declined on the linked VHC.</p>
+                <p className="ws-portal-empty">Nothing declined on the linked VHC.</p>
               ) : (
-                <ul style={itemListStyle}>
+                <ul className="ws-portal-list">
                   {declined.map((item) => (
-                    <li key={item.vhc_id || `${item.job_id}-${item.issue_title}`} style={itemRowStyle}>
+                    <li key={item.vhc_id || `${item.job_id}-${item.issue_title}`} className="ws-portal-row">
                       <div>
-                        <div style={itemTitleStyle}>{item.issue_title || item.section || "VHC item"}</div>
-                        {item.issue_description ? <div style={itemMetaStyle}>{item.issue_description}</div> : null}
+                        <div className="ws-portal-item-title">{item.issue_title || item.section || "VHC item"}</div>
+                        {item.issue_description ? <div className="ws-portal-item-meta">{item.issue_description}</div> : null}
                       </div>
-                      <span style={badgeOpenStyle}>{item.display_status || item.approval_status || "Declined"}</span>
+                      <span className="ws-portal-badge" data-tone="open">{item.display_status || item.approval_status || "Declined"}</span>
                     </li>
                   ))}
                 </ul>
               )}
-              <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Ask us to re-quote</PortalButtonLink>
+              <PortalButtonLink href="#messages" className="ws-portal-action-start" >Ask us to re-quote</PortalButtonLink>
             </div>
           </div>
-          <div style={portalTileStyle}>
-            <h3 style={portalSubHeaderStyle}>Inspection media</h3>
+          <div className="ws-portal-tile">
+            <h3 className="ws-portal-subhead">Inspection media</h3>
             {latestMedia.length ? (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div className="ws-portal-action-row" >
                 {latestMedia.map((item) => <MediaThumb key={item.id} item={item} />)}
               </div>
             ) : (
-              <p style={emptyStyle}>Media will appear once the technician uploads customer-visible VHC photos or video.</p>
+              <p className="ws-portal-empty">Media will appear once the technician uploads customer-visible VHC photos or video.</p>
             )}
           </div>
         </div>
@@ -1213,65 +730,65 @@ function InvoicesPaymentsExtrasCard({ invoicePayments = [], paymentPlans = [], t
           "Payment history, payment plans and account transactions are live where records exist. Digital signature capture still needs a customer-facing workflow.",
       }}
     >
-      <div style={portalTileStyle}>
-        <h3 style={portalSubHeaderStyle}>Payment history</h3>
+      <div className="ws-portal-tile">
+        <h3 className="ws-portal-subhead">Payment history</h3>
         {invoicePayments.length === 0 ? (
-          <p style={emptyStyle}>No invoice payments have been recorded for this account yet.</p>
+          <p className="ws-portal-empty">No invoice payments have been recorded for this account yet.</p>
         ) : (
-          <ul style={itemListStyle}>
+          <ul className="ws-portal-list">
             {invoicePayments.map((payment) => (
-              <li key={payment.payment_id} style={itemRowStyle}>
+              <li key={payment.payment_id} className="ws-portal-row">
                 <div>
-                  <div style={itemTitleStyle}>{formatCurrency(payment.amount)} · {payment.payment_method || "Payment"}</div>
-                  <div style={itemMetaStyle}>{formatDate(payment.payment_date)} · {payment.reference || "No reference"}</div>
+                  <div className="ws-portal-item-title">{formatCurrency(payment.amount)} · {payment.payment_method || "Payment"}</div>
+                  <div className="ws-portal-item-meta">{formatDate(payment.payment_date)} · {payment.reference || "No reference"}</div>
                 </div>
-                <span style={badgePaidStyle}>Paid</span>
+                <span className="ws-portal-badge" data-tone="ok">Paid</span>
               </li>
             ))}
           </ul>
         )}
       </div>
-      <div style={gridSplitStyle}>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Payment plans</h3>
+      <div className="ws-portal-split">
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Payment plans</h3>
           {paymentPlans.length === 0 ? (
-            <p style={emptyStyle}>No active payment plans are linked to this account.</p>
+            <p className="ws-portal-empty">No active payment plans are linked to this account.</p>
           ) : (
-            <ul style={itemListStyle}>
+            <ul className="ws-portal-list">
               {paymentPlans.map((plan) => (
-                <li key={plan.plan_id} style={itemRowStyle}>
+                <li key={plan.plan_id} className="ws-portal-row">
                   <div>
-                    <div style={itemTitleStyle}>{plan.name || plan.description || "Payment plan"}</div>
-                    <div style={itemMetaStyle}>{formatCurrency(plan.balance_due)} balance · next {formatDate(plan.next_payment_date)}</div>
+                    <div className="ws-portal-item-title">{plan.name || plan.description || "Payment plan"}</div>
+                    <div className="ws-portal-item-meta">{formatCurrency(plan.balance_due)} balance · next {formatDate(plan.next_payment_date)}</div>
                   </div>
-                  <span style={String(plan.status).toLowerCase() === "active" ? badgePaidStyle : badgeStyle}>{plan.status}</span>
+                  <span className="ws-portal-badge" data-tone={String(plan.status).toLowerCase() === "active" ? "ok" : undefined}>{plan.status}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Digital signatures</h3>
-          <p style={emptyStyle}>Digital signature records will appear once the signature ledger is connected.</p>
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Digital signatures</h3>
+          <p className="ws-portal-empty">Digital signature records will appear once the signature ledger is connected.</p>
         </div>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Account statement</h3>
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Account statement</h3>
           {transactions.length === 0 ? (
-            <p style={emptyStyle}>No account transactions are linked to this account.</p>
+            <p className="ws-portal-empty">No account transactions are linked to this account.</p>
           ) : (
-            <ul style={itemListStyle}>
+            <ul className="ws-portal-list">
               {transactions.slice(0, 5).map((transaction) => (
-                <li key={transaction.transaction_id} style={itemRowStyle}>
+                <li key={transaction.transaction_id} className="ws-portal-row">
                   <div>
-                    <div style={itemTitleStyle}>{transaction.description || transaction.type}</div>
-                    <div style={itemMetaStyle}>{formatDate(transaction.transaction_date)} · {transaction.job_number || "Account"}</div>
+                    <div className="ws-portal-item-title">{transaction.description || transaction.type}</div>
+                    <div className="ws-portal-item-meta">{formatDate(transaction.transaction_date)} · {transaction.job_number || "Account"}</div>
                   </div>
-                  <span style={badgeStyle}>{formatCurrency(transaction.amount)}</span>
+                  <span className="ws-portal-badge">{formatCurrency(transaction.amount)}</span>
                 </li>
               ))}
             </ul>
           )}
-          <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Request full statement</PortalButtonLink>
+          <PortalButtonLink href="#messages" className="ws-portal-action-start" >Request full statement</PortalButtonLink>
         </div>
       </div>
     </PortalCard>
@@ -1305,16 +822,16 @@ function DocumentsCentreCard({ invoices = [], vhcMedia = [] }) {
         detail: "Invoices and VHC media are live. Customer-uploaded documents still need a customer-scoped index and upload route.",
       }}
     >
-      <div style={portalTileStyle}>
+      <div className="ws-portal-tile">
         {docs.length === 0 ? (
-          <p style={emptyStyle}>No invoice or VHC media documents are linked to this account yet.</p>
+          <p className="ws-portal-empty">No invoice or VHC media documents are linked to this account yet.</p>
         ) : (
-          <ul style={itemListStyle}>
+          <ul className="ws-portal-list">
             {docs.map((doc) => (
-              <li key={doc.id} style={itemRowStyle}>
+              <li key={doc.id} className="ws-portal-row">
                 <div>
-                  <div style={itemTitleStyle}>{doc.name}</div>
-                  <div style={itemMetaStyle}>{doc.meta}</div>
+                  <div className="ws-portal-item-title">{doc.name}</div>
+                  <div className="ws-portal-item-meta">{doc.meta}</div>
                 </div>
                 {doc.href ? <PortalButtonLink href={doc.href}>Open</PortalButtonLink> : null}
               </li>
@@ -1322,9 +839,9 @@ function DocumentsCentreCard({ invoices = [], vhcMedia = [] }) {
           </ul>
         )}
       </div>
-      <div style={portalTileStyle}>
-        <h3 style={portalSubHeaderStyle}>Upload zone</h3>
-        <div style={{ ...portalUploadPlaceholderStyle, height: "auto", minHeight: 88 }}>
+      <div className="ws-portal-tile">
+        <h3 className="ws-portal-subhead">Upload zone</h3>
+        <div className="ws-portal-upload ws-portal-upload--auto">
           Customer uploads will appear here once the upload endpoint is connected.
         </div>
       </div>
@@ -1340,19 +857,19 @@ function SalesShowroomCard() {
       title="Showroom & orders"
       todo={{ label: "Customer-side sales tables for watchlists, reservations, PX and orders not built yet" }}
     >
-      <div style={gridSplitStyle}>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Saved cars & price alerts</h3>
-          <p style={emptyStyle}>Saved cars will appear here once the customer watchlist table is connected.</p>
-          <PortalButtonLink href="/website#cars" style={{ alignSelf: "flex-start" }}>Browse cars</PortalButtonLink>
+      <div className="ws-portal-split">
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Saved cars & price alerts</h3>
+          <p className="ws-portal-empty">Saved cars will appear here once the customer watchlist table is connected.</p>
+          <PortalButtonLink href="/website#cars" className="ws-portal-action-start" >Browse cars</PortalButtonLink>
         </div>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Reservations and orders</h3>
-          <p style={emptyStyle}>Reservations, vehicle orders and delivery countdowns will appear once customer sales records are available.</p>
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Reservations and orders</h3>
+          <p className="ws-portal-empty">Reservations, vehicle orders and delivery countdowns will appear once customer sales records are available.</p>
         </div>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Part-exchange offers</h3>
-          <p style={emptyStyle}>Part-exchange valuations will appear once the sales enquiry workflow is linked to the portal.</p>
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Part-exchange offers</h3>
+          <p className="ws-portal-empty">Part-exchange valuations will appear once the sales enquiry workflow is linked to the portal.</p>
         </div>
       </div>
     </PortalCard>
@@ -1370,67 +887,67 @@ function PartsPortalExtrasCard({ partsJobItems = [], partsRequests = [], partsOr
         detail: "Job parts, parts requests and order cards are live where records exist. VIN fitment and accessory recommendations still require a catalogue API.",
       }}
     >
-      <div style={portalTileStyle}>
-        <h3 style={portalSubHeaderStyle}>VIN lookup</h3>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input type="text" placeholder="Enter VIN or registration" disabled style={{ flex: "1 1 220px", minWidth: 0 }} />
+      <div className="ws-portal-tile">
+        <h3 className="ws-portal-subhead">VIN lookup</h3>
+        <div className="ws-portal-action-row" >
+          <input type="text" placeholder="Enter VIN or registration" disabled className="ws-portal-grow"  />
           <button type="button">Find parts</button>
         </div>
       </div>
-      <div style={gridSplitStyle}>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Job parts</h3>
+      <div className="ws-portal-split">
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Job parts</h3>
           {partsJobItems.length === 0 ? (
-            <p style={emptyStyle}>No job parts are currently linked to this account.</p>
+            <p className="ws-portal-empty">No job parts are currently linked to this account.</p>
           ) : (
-            <ul style={itemListStyle}>
+            <ul className="ws-portal-list">
               {partsJobItems.slice(0, 8).map((item) => (
-                <li key={item.id} style={itemRowStyle}>
+                <li key={item.id} className="ws-portal-row">
                   <div>
-                    <div style={itemTitleStyle}>{partTitle(item)}</div>
-                    <div style={itemMetaStyle}>Qty {item.quantity_requested || 1} · ETA {formatDate(item.eta_date) || "TBC"}</div>
+                    <div className="ws-portal-item-title">{partTitle(item)}</div>
+                    <div className="ws-portal-item-meta">Qty {item.quantity_requested || 1} · ETA {formatDate(item.eta_date) || "TBC"}</div>
                   </div>
-                  <span style={String(item.status).includes("fitted") ? badgePaidStyle : badgeOpenStyle}>{item.status || "Pending"}</span>
+                  <span className="ws-portal-badge" data-tone={String(item.status).includes("fitted") ? "ok" : "open"}>{item.status || "Pending"}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Parts requests</h3>
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Parts requests</h3>
           {partsRequests.length === 0 ? (
-            <p style={emptyStyle}>No parts requests are awaiting action.</p>
+            <p className="ws-portal-empty">No parts requests are awaiting action.</p>
           ) : (
-            <ul style={itemListStyle}>
+            <ul className="ws-portal-list">
               {partsRequests.slice(0, 8).map((request) => (
-                <li key={request.request_id} style={itemRowStyle}>
+                <li key={request.request_id} className="ws-portal-row">
                   <div>
-                    <div style={itemTitleStyle}>{partTitle(request)}</div>
-                    <div style={itemMetaStyle}>Qty {request.quantity || 1} · {formatDate(request.updated_at || request.created_at) || "TBC"}</div>
+                    <div className="ws-portal-item-title">{partTitle(request)}</div>
+                    <div className="ws-portal-item-meta">Qty {request.quantity || 1} · {formatDate(request.updated_at || request.created_at) || "TBC"}</div>
                   </div>
-                  <span style={String(request.status).includes("approved") ? badgePaidStyle : badgeOpenStyle}>{request.status || "Pending"}</span>
+                  <span className="ws-portal-badge" data-tone={String(request.status).includes("approved") ? "ok" : "open"}>{request.status || "Pending"}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
       </div>
-      <div style={portalTileStyle}>
-        <h3 style={portalSubHeaderStyle}>Order tracking</h3>
+      <div className="ws-portal-tile">
+        <h3 className="ws-portal-subhead">Order tracking</h3>
         {partsOrderCards.length === 0 ? (
-          <p style={emptyStyle}>No customer parts orders are linked to this account.</p>
+          <p className="ws-portal-empty">No customer parts orders are linked to this account.</p>
         ) : (
-          <ul style={itemListStyle}>
+          <ul className="ws-portal-list">
             {partsOrderCards.slice(0, 8).map((order) => (
-              <li key={order.id} style={itemRowStyle}>
+              <li key={order.id} className="ws-portal-row">
                 <div>
-                  <div style={itemTitleStyle}>{order.order_number || "Parts order"}</div>
-                  <div style={itemMetaStyle}>
+                  <div className="ws-portal-item-title">{order.order_number || "Parts order"}</div>
+                  <div className="ws-portal-item-meta">
                     {order.vehicle_reg || "Vehicle TBC"} · ETA {formatDate(order.delivery_eta) || "TBC"}
                     {order.delivery_window ? ` · ${order.delivery_window}` : ""}
                   </div>
                 </div>
-                <span style={String(order.delivery_status).includes("delivered") ? badgePaidStyle : badgeOpenStyle}>
+                <span className="ws-portal-badge" data-tone={String(order.delivery_status).includes("delivered") ? "ok" : "open"}>
                   {order.delivery_status || order.status}
                 </span>
               </li>
@@ -1451,30 +968,30 @@ function SmartRepairCard({ bookingRequests = [] }) {
       title="SMART repair & estimates"
       todo={{ label: "Bodyshop estimate workflow and before/after media bucket not wired yet" }}
     >
-      <div style={portalTileStyle}>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--txt-soft)" }}>
+      <div className="ws-portal-tile">
+        <p className="ws-portal-lead">
           Send us photos of scuffs, scratches or dents and we'll respond from the workshop workflow.
         </p>
-        <div style={gridSplitStyle}>
-          <div style={portalUploadPlaceholderStyle}>Upload connection required</div>
-          <div style={portalUploadPlaceholderStyle}>Upload connection required</div>
-          <div style={portalUploadPlaceholderStyle}>Upload connection required</div>
+        <div className="ws-portal-split">
+          <div className="ws-portal-upload">Upload connection required</div>
+          <div className="ws-portal-upload">Upload connection required</div>
+          <div className="ws-portal-upload">Upload connection required</div>
         </div>
-        <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Request estimate</PortalButtonLink>
+        <PortalButtonLink href="#messages" className="ws-portal-action-start" >Request estimate</PortalButtonLink>
       </div>
-      <div style={portalTileStyle}>
-        <h3 style={portalSubHeaderStyle}>Repair requests</h3>
+      <div className="ws-portal-tile">
+        <h3 className="ws-portal-subhead">Repair requests</h3>
         {requests.length === 0 ? (
-          <p style={emptyStyle}>No bodyshop or SMART repair requests are currently linked to this account.</p>
+          <p className="ws-portal-empty">No bodyshop or SMART repair requests are currently linked to this account.</p>
         ) : (
-          <ul style={itemListStyle}>
+          <ul className="ws-portal-list">
             {requests.map((request) => (
-              <li key={request.request_id} style={itemRowStyle}>
+              <li key={request.request_id} className="ws-portal-row">
                 <div>
-                  <div style={itemTitleStyle}>{request.description || "Repair request"}</div>
-                  <div style={itemMetaStyle}>{formatDate(request.submitted_at)}</div>
+                  <div className="ws-portal-item-title">{request.description || "Repair request"}</div>
+                  <div className="ws-portal-item-meta">{formatDate(request.submitted_at)}</div>
                 </div>
-                <span style={badgeOpenStyle}>{request.status || "Pending"}</span>
+                <span className="ws-portal-badge" data-tone="open">{request.status || "Pending"}</span>
               </li>
             ))}
           </ul>
@@ -1493,28 +1010,28 @@ function ValetDetailingCard({ bookingRequests = [] }) {
       title="Valet & detailing"
       todo={{ label: "Valet packages and subscription model not in schema yet" }}
     >
-      <div style={portalTileStyle}>
-        <h3 style={portalSubHeaderStyle}>Your subscription</h3>
-        <p style={emptyStyle}>No valet subscription is linked to this account.</p>
+      <div className="ws-portal-tile">
+        <h3 className="ws-portal-subhead">Your subscription</h3>
+        <p className="ws-portal-empty">No valet subscription is linked to this account.</p>
       </div>
-      <div style={portalTileStyle}>
-        <h3 style={portalSubHeaderStyle}>Valet requests</h3>
+      <div className="ws-portal-tile">
+        <h3 className="ws-portal-subhead">Valet requests</h3>
         {requests.length === 0 ? (
-          <p style={emptyStyle}>No valet or detailing requests are currently linked to this account.</p>
+          <p className="ws-portal-empty">No valet or detailing requests are currently linked to this account.</p>
         ) : (
-          <ul style={itemListStyle}>
+          <ul className="ws-portal-list">
             {requests.map((request) => (
-              <li key={request.request_id} style={itemRowStyle}>
+              <li key={request.request_id} className="ws-portal-row">
                 <div>
-                  <div style={itemTitleStyle}>{request.description || "Valet request"}</div>
-                  <div style={itemMetaStyle}>{formatDate(request.submitted_at)}</div>
+                  <div className="ws-portal-item-title">{request.description || "Valet request"}</div>
+                  <div className="ws-portal-item-meta">{formatDate(request.submitted_at)}</div>
                 </div>
-                <span style={badgeOpenStyle}>{request.status || "Pending"}</span>
+                <span className="ws-portal-badge" data-tone="open">{request.status || "Pending"}</span>
               </li>
             ))}
           </ul>
         )}
-        <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Ask about valet options</PortalButtonLink>
+        <PortalButtonLink href="#messages" className="ws-portal-action-start" >Ask about valet options</PortalButtonLink>
       </div>
     </PortalCard>
   );
@@ -1535,31 +1052,31 @@ function FamilyGarageCard({ customer, vehicles = [] }) {
       action={<PortalButtonLink href="#messages">Request shared access</PortalButtonLink>}
       todo={{ label: "Shared accounts / household schema not built yet" }}
     >
-      <div style={portalTileStyle}>
-        <h3 style={portalSubHeaderStyle}>Members</h3>
-        <ul style={itemListStyle}>
-          <li style={itemRowStyle}>
+      <div className="ws-portal-tile">
+        <h3 className="ws-portal-subhead">Members</h3>
+        <ul className="ws-portal-list">
+          <li className="ws-portal-row">
             <div>
-              <div style={itemTitleStyle}>{customerName}</div>
-              <div style={itemMetaStyle}>
+              <div className="ws-portal-item-title">{customerName}</div>
+              <div className="ws-portal-item-meta">
                 {customer?.email || "No email stored"} · {vehicles.length} vehicle{vehicles.length === 1 ? "" : "s"}
               </div>
             </div>
-            <span style={badgePaidStyle}>Owner</span>
+            <span className="ws-portal-badge" data-tone="ok">Owner</span>
           </li>
         </ul>
       </div>
-      <div style={portalTileStyle}>
-        <h3 style={portalSubHeaderStyle}>Shared vehicles</h3>
+      <div className="ws-portal-tile">
+        <h3 className="ws-portal-subhead">Shared vehicles</h3>
         {vehicles.length === 0 ? (
-          <p style={emptyStyle}>No vehicles are linked to this account yet.</p>
+          <p className="ws-portal-empty">No vehicles are linked to this account yet.</p>
         ) : (
-          <ul style={itemListStyle}>
+          <ul className="ws-portal-list">
             {vehicles.map((vehicle) => (
-              <li key={vehicle.vehicle_id || vehicle.reg_number} style={itemRowStyle}>
+              <li key={vehicle.vehicle_id || vehicle.reg_number} className="ws-portal-row">
                 <div>
-                  <div style={itemTitleStyle}>{portalVehicleReg(vehicle)}</div>
-                  <div style={itemMetaStyle}>{portalVehicleTitle(vehicle)}</div>
+                  <div className="ws-portal-item-title">{portalVehicleReg(vehicle)}</div>
+                  <div className="ws-portal-item-meta">{portalVehicleTitle(vehicle)}</div>
                 </div>
               </li>
             ))}
@@ -1586,48 +1103,48 @@ function SelfServiceToolsCard({ vehicles = [], vhcDeclinations = [] }) {
           "Service-plan fields and VHC advisory reminders are live where records exist. Seasonal reminder automation and loyalty still require tables/workflows.",
       }}
     >
-      <div style={gridSplitStyle}>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Seasonal reminders</h3>
-          <p style={emptyStyle}>Seasonal reminders will appear once reminder rules are connected.</p>
+      <div className="ws-portal-split">
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Seasonal reminders</h3>
+          <p className="ws-portal-empty">Seasonal reminders will appear once reminder rules are connected.</p>
         </div>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Service plans</h3>
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Service plans</h3>
           {servicePlans.length === 0 ? (
-            <p style={emptyStyle}>No service plan is linked to your vehicles.</p>
+            <p className="ws-portal-empty">No service plan is linked to your vehicles.</p>
           ) : (
-            <ul style={itemListStyle}>
+            <ul className="ws-portal-list">
               {servicePlans.map((vehicle) => (
-                <li key={vehicle.vehicle_id || vehicle.reg_number} style={itemRowStyle}>
+                <li key={vehicle.vehicle_id || vehicle.reg_number} className="ws-portal-row">
                   <div>
-                    <div style={itemTitleStyle}>
+                    <div className="ws-portal-item-title">
                       {[vehicle.service_plan_supplier, vehicle.service_plan_type].filter(Boolean).join(" · ") || "Service plan"}
                     </div>
-                    <div style={itemMetaStyle}>{portalVehicleReg(vehicle)} · expires {formatDate(vehicle.service_plan_expiry) || "Not recorded"}</div>
+                    <div className="ws-portal-item-meta">{portalVehicleReg(vehicle)} · expires {formatDate(vehicle.service_plan_expiry) || "Not recorded"}</div>
                   </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Loyalty & referral</h3>
-          <p style={emptyStyle}>Loyalty points and referral rewards will appear once the programme schema is connected.</p>
-          <PortalButtonLink href="#settings" style={{ alignSelf: "flex-start" }}>Refer a friend</PortalButtonLink>
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Loyalty & referral</h3>
+          <p className="ws-portal-empty">Loyalty points and referral rewards will appear once the programme schema is connected.</p>
+          <PortalButtonLink href="#settings" className="ws-portal-action-start" >Refer a friend</PortalButtonLink>
         </div>
-        <div style={portalTileStyle}>
-          <h3 style={portalSubHeaderStyle}>Advisory reminders</h3>
+        <div className="ws-portal-tile">
+          <h3 className="ws-portal-subhead">Advisory reminders</h3>
           {vhcDeclinations.length === 0 ? (
-            <p style={emptyStyle}>No declined VHC advisories are waiting to be revisited.</p>
+            <p className="ws-portal-empty">No declined VHC advisories are waiting to be revisited.</p>
           ) : (
-            <ul style={itemListStyle}>
+            <ul className="ws-portal-list">
               {vhcDeclinations.slice(0, 5).map((item) => (
-                <li key={item.vhc_id || `${item.job_id}-${item.issue_title}`} style={itemRowStyle}>
+                <li key={item.vhc_id || `${item.job_id}-${item.issue_title}`} className="ws-portal-row">
                   <div>
-                    <div style={itemTitleStyle}>{item.issue_title || item.section || "VHC advisory"}</div>
-                    <div style={itemMetaStyle}>{item.issue_description || item.customer_description}</div>
+                    <div className="ws-portal-item-title">{item.issue_title || item.section || "VHC advisory"}</div>
+                    <div className="ws-portal-item-meta">{item.issue_description || item.customer_description}</div>
                   </div>
-                  <span style={badgeOpenStyle}>Revisit</span>
+                  <span className="ws-portal-badge" data-tone="open">Revisit</span>
                 </li>
               ))}
             </ul>
@@ -1647,24 +1164,24 @@ function AiAssistantCard() {
       title="Ownership assistant"
       todo={{ label: "Customer-facing AI assistant endpoint not wired yet" }}
     >
-      <div style={portalTileStyle}>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--txt-soft)" }}>
+      <div className="ws-portal-tile">
+        <p className="ws-portal-lead">
           Ask anything about your vehicle, history or upcoming visits. The assistant will be wired up to live data soon.
         </p>
-        <div style={portalActionRowStyle}>
+        <div className="ws-portal-action-row">
           {ASSISTANT_SUGGESTIONS.map((suggestion) => (
             <button key={suggestion} type="button" onClick={() => setDraft(suggestion)}>
               {suggestion}
             </button>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div className="ws-portal-action-row" >
           <input
             type="text"
             placeholder="Type a question..."
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            style={{ flex: "1 1 220px", minWidth: 0 }}
+            className="ws-portal-grow" 
           />
           <button type="button">Ask</button>
         </div>
@@ -1695,6 +1212,26 @@ export default function CustomerProfilePage() {
   // Theme cycle preference: "light" | "dark" | "system". Defaults to dark
   // (the historic /website look) until the stored choice loads on mount.
   const [websiteThemePref, setWebsiteThemePref] = useState("dark");
+  // Top-bar jump-to links: phone menu + scroll-spy, as on /website.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeId, setActiveId] = useState(SECTIONS[0].id);
+  const closeMenu = () => setMenuOpen(false);
+
+  useEffect(() => {
+    if (status !== "ready" || typeof window === "undefined") return undefined;
+    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean);
+    if (!els.length) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) setActiveId(e.target.id);
+        });
+      },
+      { rootMargin: "-45% 0px -50% 0px" },
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [status]);
 
   useEffect(() => {
     // Force dark mode + red accent for the whole /website/profile experience.
@@ -1963,93 +1500,91 @@ export default function CustomerProfilePage() {
     <>
       <Head>
         <title>{`Your account - ${siteContent.brand.name}`}</title>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: "document.documentElement.setAttribute('data-theme','dark');",
-          }}
-        />
       </Head>
+      <div className="ws-page">
+      <WebsiteTopBar
+        label="Account sections"
+        className="ws-portal-navbar"
+        sessionLoading={status === "loading"}
+        customer={customer}
+        onNavigate={closeMenu}
+        menu={{ open: menuOpen, onToggle: () => setMenuOpen((v) => !v) }}
+        subbar={
+          status !== "loading" && status !== "error" && customer ? (
+            <div data-presentation="website-profile-header" className="ws-portal-topbar">
+              <div>
+                <span className="ws-portal-eyebrow">Customer portal</span>
+                <h1 className="ws-portal-title">Hello, {fullName}</h1>
+                <p className="ws-portal-subtitle">
+                  Your vehicles, jobs, invoices, messages and account
+                  settings — all in one place.
+                </p>
+              </div>
+              <div className="ws-portal-header__actions">
+                <button
+                  type="button"
+                  onClick={cycleWebsiteTheme}
+                  aria-label={`Theme: ${websiteThemePref}. Click to cycle light, dark, system.`}
+                >
+                  {`Theme: ${websiteThemePref.charAt(0).toUpperCase()}${websiteThemePref.slice(1)}`}
+                </button>
+                <Link href="/website" role="button">
+                  Back to site
+                </Link>
+                <button type="button" className="app-btn" onClick={handleLogout}>
+                  Log out
+                </button>
+              </div>
+            </div>
+          ) : null
+        }
+      >
+        <span className="ws-portal-nav__heading">Jump to</span>
+        {SECTIONS.map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            className={activeId === s.id ? "ws-nav-link ws-nav-link--active" : "ws-nav-link"}
+            onClick={closeMenu}
+          >
+            {s.label}
+          </a>
+        ))}
+      </WebsiteTopBar>
       <div
         data-presentation="website-profile"
-        style={{
-          minHeight: "100vh",
-          padding: "clamp(16px, 3vw, 32px) clamp(16px, 4vw, 48px) 96px",
-          color: "var(--txt-bright)",
-        }}
+        className="ws-portal-shell"
       >
-        <main style={{ maxWidth: 1280, margin: "0 auto" }}>
+        <main className="ws-portal-main">
           {status === "loading" ? (
-            <p style={{ fontSize: 14, color: "var(--txt-soft)" }}>
+            <p className="ws-portal-status">
               Loading your account…
             </p>
           ) : status === "error" || !customer ? (
-            <p style={{ fontSize: 14, color: "var(--txt-soft)" }}>
+            <p className="ws-portal-status">
               Could not load your account.{" "}
-              <Link href="/website/login" style={{ color: "var(--accentText)" }}>
+              <Link href="/website/login" className="ws-portal-link">
                 Sign in again
               </Link>
               .
             </p>
           ) : (
             <>
-              <header data-presentation="website-profile-header" style={headerStyle}>
-                <div>
-                  <span style={headerEyebrowStyle}>Customer portal</span>
-                  <h1 style={headerTitleStyle}>Hello, {fullName}</h1>
-                  <p style={headerSubtitleStyle}>
-                    Your vehicles, jobs, invoices, messages and account
-                    settings — all in one place.
-                  </p>
-                </div>
-                <div style={headerActionsStyle}>
-                  <button
-                    type="button"
-                    onClick={cycleWebsiteTheme}
-                    aria-label={`Theme: ${websiteThemePref}. Click to cycle light, dark, system.`}
-                  >
-                    {`Theme: ${websiteThemePref.charAt(0).toUpperCase()}${websiteThemePref.slice(1)}`}
-                  </button>
-                  <Link href="/website" role="button">
-                    Back to site
-                  </Link>
-                  <button type="button" className="app-btn" onClick={handleLogout}>
-                    Log out
-                  </button>
-                </div>
-              </header>
-
-              <div style={layoutStyle}>
-                <aside data-presentation="website-profile-nav" style={sideNavStyle} aria-label="Sections">
-                  <span style={sideNavHeadingStyle}>Jump to</span>
-                  {SECTIONS.map((s) => (
-                    <a key={s.id} href={`#${s.id}`} style={sideNavLinkStyle}>
-                      {s.label}
-                    </a>
-                  ))}
-                </aside>
-
-                <div style={contentStackStyle}>
+              {/* Greeting, actions and jump-to links live in the sticky top bar. */}
+              <div>
+                <div className="ws-portal-stack">
                   {/* ───────── Summary banners ───────── */}
-                  <div id="summary" data-presentation="website-profile-summary" style={gridSplitStyle}>
+                  <div id="summary" data-presentation="website-profile-summary" className="ws-portal-split">
                     {motSoonest ? (
                       <section
-                        className="website-banner"
-                        style={{
-                          gridColumn: "1 / -1",
-                          flexDirection: "column",
-                          alignItems: "stretch",
-                          minHeight: 0,
-                          padding: 16,
-                          gap: 12,
-                        }}
-                      >
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          <span style={{ fontSize: 14, fontWeight: 700 }}>
+                        className="website-banner ws-portal-banner">
+                        <div className="ws-portal-flow" >
+                          <span className="ws-portal-banner__title">
                             {motSoonest.days < 0
                               ? `MOT overdue on ${motSoonest.vehicle.reg_number}`
                               : `MOT due in ${motSoonest.days} day${motSoonest.days === 1 ? "" : "s"} — ${motSoonest.vehicle.reg_number}`}
                           </span>
-                          <span style={{ fontSize: 12, color: "var(--txt-soft)" }}>
+                          <span className="ws-portal-banner__meta">
                             Expires {formatDate(motSoonest.vehicle.mot_due)}
                           </span>
                         </div>
@@ -2070,28 +1605,19 @@ export default function CustomerProfilePage() {
                           Book MOT
                         </button>
                         {actionFlash.mot ? (
-                          <p style={successStyle}>{actionFlash.mot}</p>
+                          <p className="ws-portal-flash">{actionFlash.mot}</p>
                         ) : null}
                       </section>
                     ) : null}
 
                     {serviceDue ? (
                       <section
-                        className="website-banner"
-                        style={{
-                          gridColumn: "1 / -1",
-                          flexDirection: "column",
-                          alignItems: "stretch",
-                          minHeight: 0,
-                          padding: 16,
-                          gap: 12,
-                        }}
-                      >
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          <span style={{ fontSize: 14, fontWeight: 700 }}>
+                        className="website-banner ws-portal-banner">
+                        <div className="ws-portal-flow" >
+                          <span className="ws-portal-banner__title">
                             Service due — {serviceDue.vehicle.reg_number}
                           </span>
-                          <span style={{ fontSize: 12, color: "var(--txt-soft)" }}>
+                          <span className="ws-portal-banner__meta">
                             Last service {serviceDue.months} months ago.
                           </span>
                         </div>
@@ -2112,7 +1638,7 @@ export default function CustomerProfilePage() {
                           Book service
                         </button>
                         {actionFlash.svc ? (
-                          <p style={successStyle}>{actionFlash.svc}</p>
+                          <p className="ws-portal-flash">{actionFlash.svc}</p>
                         ) : null}
                       </section>
                     ) : null}
@@ -2122,10 +1648,10 @@ export default function CustomerProfilePage() {
                       <PortalCard
                         eyebrow="Live job"
                         title={`Live status - ${activeJob.job_number || `Job #${activeJob.id}`}`}
-                        action={<span style={badgeStyle}>{activeJob.status || "-"}</span>}
+                        action={<span className="ws-portal-badge">{activeJob.status || "-"}</span>}
                         wide
                       >
-                        <p style={{ ...itemMetaStyle, margin: 0 }}>
+                        <p className="ws-portal-hint">
                           {[activeJob.vehicle_reg, activeJob.vehicle_make_model]
                             .filter(Boolean)
                             .join(" · ")}
@@ -2146,12 +1672,8 @@ export default function CustomerProfilePage() {
                           const active = getActiveStageIndex(stages);
                           return (
                             <div
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: `repeat(${stages.length}, 1fr)`,
-                                gap: 12,
-                                marginTop: 6,
-                              }}
+                              className="ws-portal-tracker ws-portal-spaced"
+                              style={{ "--ws-portal-steps": String(stages.length) }}
                             >
                               {stages.map((stage, idx) => {
                                 const state =
@@ -2161,8 +1683,8 @@ export default function CustomerProfilePage() {
                                     ? "active"
                                     : "todo";
                                 return (
-                                  <div key={stage.key} style={trackerStepStyle(state)}>
-                                    <span style={trackerDotStyle(state)} />
+                                  <div key={stage.key} className="ws-portal-step" data-state={state}>
+                                    <span className="ws-portal-step__dot" />
                                     <span>{stage.label}</span>
                                   </div>
                                 );
@@ -2175,7 +1697,7 @@ export default function CustomerProfilePage() {
                   </div>
 
                   {/* ───────── Personal details ───────── */}
-                  <section style={cardWideStyle}>
+                  <section className="ws-portal-card">
                     <PortalCardHeader
                       eyebrow="Account"
                       title="Personal details"
@@ -2187,9 +1709,9 @@ export default function CustomerProfilePage() {
                     />
 
                     {editing ? (
-                      <form style={formStyle} onSubmit={handleSaveProfile}>
-                        {saveError ? <p style={errorStyle}>{saveError}</p> : null}
-                        <div style={formRowStyle}>
+                      <form className="ws-portal-form" onSubmit={handleSaveProfile}>
+                        {saveError ? <p className="ws-portal-error">{saveError}</p> : null}
+                        <div className="ws-portal-form-row">
                           <FieldInput
                             label="First name"
                             value={editForm.firstname}
@@ -2201,7 +1723,7 @@ export default function CustomerProfilePage() {
                             onChange={(v) => setEditForm({ ...editForm, lastname: v })}
                           />
                         </div>
-                        <div style={formRowStyle}>
+                        <div className="ws-portal-form-row">
                           <FieldInput
                             label="Mobile"
                             value={editForm.mobile}
@@ -2218,14 +1740,14 @@ export default function CustomerProfilePage() {
                           value={editForm.address}
                           onChange={(v) => setEditForm({ ...editForm, address: v })}
                         />
-                        <div style={formRowStyle}>
+                        <div className="ws-portal-form-row">
                           <FieldInput
                             label="Postcode"
                             value={editForm.postcode}
                             onChange={(v) => setEditForm({ ...editForm, postcode: v })}
                           />
-                          <div style={fieldStyle}>
-                            <label style={fieldLabelStyle}>Contact preference</label>
+                          <div className="ws-portal-field">
+                            <label className="ws-portal-label">Contact preference</label>
                             <WebsiteNativeSelect
                               value={editForm.contact_preference}
                               onChange={(value) =>
@@ -2235,12 +1757,12 @@ export default function CustomerProfilePage() {
                             />
                           </div>
                         </div>
-                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <div className="ws-portal-action-row" >
                           <button
                             type="submit"
-                            className="app-btn"
+                            className="app-btn ws-portal-grow"
                             disabled={saving}
-                            style={{ flex: 1, minWidth: 160 }}
+                            
                           >
                             {saving ? "Saving…" : "Save changes"}
                           </button>
@@ -2256,7 +1778,7 @@ export default function CustomerProfilePage() {
                         </div>
                       </form>
                     ) : (
-                      <div style={detailGridStyle}>
+                      <div className="ws-portal-details">
                         <DetailField label="Name" value={fullName} />
                         <DetailField label="Email" value={customer.email} />
                         <DetailField label="Mobile" value={customer.mobile} />
@@ -2271,31 +1793,36 @@ export default function CustomerProfilePage() {
                     )}
                   </section>
 
+                  {/* ───────── Ownership & live tracking ───────── */}
+                  <OwnershipDashboardCard vehicles={vehicles} />
+                  <LiveProgressTrackerCard jobs={jobs} customer={customer} />
+                  <RepairApprovalTimelineCard jobs={jobs} jobStatusHistory={jobStatusHistory} />
+
                   {/* ───────── Vehicles ───────── */}
-                  <section id="vehicles" style={cardStyle}>
+                  <section id="vehicles" className="ws-portal-card">
                     <PortalCardHeader eyebrow="Garage" title="Your vehicles" count={vehicles.length} />
                     {vehicles.length === 0 ? (
-                      <p style={emptyStyle}>
+                      <p className="ws-portal-empty">
                         No vehicles linked to your account yet. Get in touch and we'll
                         add them.
                       </p>
                     ) : (
-                      <ul style={itemListStyle}>
+                      <ul className="ws-portal-list">
                         {vehicles.map((v) => {
                           const motDays = daysUntil(v.mot_due);
                           const warrantyDays = daysUntil(v.warranty_expiry);
                           return (
                             <li
                               key={v.vehicle_id}
-                              style={{ ...itemRowStyle, gridTemplateColumns: "1fr" }}
+                              className="ws-portal-row ws-portal-row--single"
                             >
                               <div>
-                                <div style={itemTitleStyle}>
+                                <div className="ws-portal-item-title">
                                   {v.reg_number || "—"} ·{" "}
                                   {[v.make, v.model].filter(Boolean).join(" ") ||
                                     "Vehicle"}
                                 </div>
-                                <div style={itemMetaStyle}>
+                                <div className="ws-portal-item-meta">
                                   {[
                                     v.year && `${v.year}`,
                                     v.colour,
@@ -2306,7 +1833,7 @@ export default function CustomerProfilePage() {
                                     .filter(Boolean)
                                     .join(" · ")}
                                 </div>
-                                <div style={{ ...itemMetaStyle, marginTop: 6 }}>
+                                <div className="ws-portal-item-meta ws-portal-item-meta--spaced">
                                   {v.mot_due
                                     ? `MOT ${motDays != null && motDays < 0 ? `overdue (${formatDate(v.mot_due)})` : `due ${formatDate(v.mot_due)}`}`
                                     : "MOT date on file: —"}
@@ -2323,7 +1850,7 @@ export default function CustomerProfilePage() {
                   </section>
 
                   {/* Add vehicle + update mileage */}
-                  <section style={cardStyle}>
+                  <section className="ws-portal-card">
                     <PortalCardHeader eyebrow="Garage tools" title="Update your vehicles" />
                     <UpdateMileageRow
                       vehicles={vehicles}
@@ -2360,16 +1887,16 @@ export default function CustomerProfilePage() {
 
                   {/* Mileage history */}
                   {mileageRows.length > 0 ? (
-                    <section style={cardStyle}>
+                    <section className="ws-portal-card">
                       <PortalCardHeader eyebrow="Mileage" title="Mileage history" />
-                      <div style={mileageListStyle}>
+                      <div className="ws-portal-mileage">
                         {mileageRows.map((row) => (
-                          <div key={row.history_id} style={mileageRowStyle}>
+                          <div key={row.history_id} className="ws-portal-mileage__row">
                             <span>{formatDate(row.recorded_at)}</span>
-                            <span style={mileageBarStyle}>
-                              <span style={mileageBarFillStyle(row.pct)} />
+                            <span className="ws-portal-mileage__bar">
+                              <span className="ws-portal-mileage__fill" style={{ "--ws-portal-pct": `${row.pct}%` }} />
                             </span>
-                            <span style={mileageValueStyle}>
+                            <span className="ws-portal-mileage__value">
                               {Number(row.mileage_at_service).toLocaleString()} mi
                             </span>
                           </div>
@@ -2379,56 +1906,51 @@ export default function CustomerProfilePage() {
                   ) : null}
 
                   {/* ───────── Jobs + VHC ───────── */}
-                  <section id="jobs" style={cardStyle}>
+                  <section id="jobs" className="ws-portal-card">
                     <PortalCardHeader eyebrow="Workshop" title="Jobs & service history" count={jobs.length} />
                     {jobs.length === 0 ? (
-                      <p style={emptyStyle}>No jobs on file yet.</p>
+                      <p className="ws-portal-empty">No jobs on file yet.</p>
                     ) : (
-                      <ul style={itemListStyle}>
+                      <ul className="ws-portal-list">
                         {jobs.slice(0, 20).map((j) => {
                           const vhc = vhcByJob[j.id];
                           return (
-                            <li key={j.id} style={itemRowStyle}>
+                            <li key={j.id} className="ws-portal-row">
                               <div>
-                                <div style={itemTitleStyle}>
+                                <div className="ws-portal-item-title">
                                   {j.job_number || `Job #${j.id}`} · {j.type || "Service"}
                                 </div>
-                                <div style={itemMetaStyle}>
+                                <div className="ws-portal-item-meta">
                                   {[j.vehicle_reg, j.vehicle_make_model, formatDate(j.created_at)]
                                     .filter(Boolean)
                                     .join(" · ")}
                                 </div>
                                 {vhc ? (
                                   <div
-                                    style={{
-                                      display: "flex",
-                                      flexWrap: "wrap",
-                                      gap: 6,
-                                      marginTop: 6,
-                                    }}
+                                    className="ws-portal-action-row ws-portal-spaced" 
                                   >
                                     {vhc.red ? (
-                                      <span style={vhcLightStyle("red")}>
-                                        <span style={vhcDotStyle("red")} />
+                                      <span className="ws-portal-light" data-tone="red">
+                                        <span className="ws-portal-light__dot" />
                                         {vhc.red}
                                       </span>
                                     ) : null}
                                     {vhc.amber ? (
-                                      <span style={vhcLightStyle("amber")}>
-                                        <span style={vhcDotStyle("amber")} />
+                                      <span className="ws-portal-light" data-tone="amber">
+                                        <span className="ws-portal-light__dot" />
                                         {vhc.amber}
                                       </span>
                                     ) : null}
                                     {vhc.green ? (
-                                      <span style={vhcLightStyle("green")}>
-                                        <span style={vhcDotStyle("green")} />
+                                      <span className="ws-portal-light" data-tone="green">
+                                        <span className="ws-portal-light__dot" />
                                         {vhc.green}
                                       </span>
                                     ) : null}
                                   </div>
                                 ) : null}
                               </div>
-                              <span style={badgeStyle}>{j.status || "—"}</span>
+                              <span className="ws-portal-badge">{j.status || "—"}</span>
                             </li>
                           );
                         })}
@@ -2437,16 +1959,16 @@ export default function CustomerProfilePage() {
                   </section>
 
                   {appointments.length > 0 ? (
-                    <section style={cardStyle}>
+                    <section className="ws-portal-card">
                       <PortalCardHeader eyebrow="Bookings" title="Appointments" count={appointments.length} />
-                      <ul style={itemListStyle}>
+                      <ul className="ws-portal-list">
                         {appointments.map((a) => (
-                          <li key={a.appointment_id} style={itemRowStyle}>
+                          <li key={a.appointment_id} className="ws-portal-row">
                             <div>
-                              <div style={itemTitleStyle}>
+                              <div className="ws-portal-item-title">
                                 {formatDateTime(a.scheduled_time)}
                               </div>
-                              <div style={itemMetaStyle}>
+                              <div className="ws-portal-item-meta">
                                 {a.job_id ? `Job #${a.job_id} · ` : ""}
                                 {a.status || "Booked"}
                               </div>
@@ -2457,45 +1979,49 @@ export default function CustomerProfilePage() {
                     </section>
                   ) : null}
 
+                  <DigitalServiceHistoryCard jobs={jobs} jobHistory={jobHistory} invoices={invoices} vhcByJob={vhcByJob} />
+                  <MotHistoryCard vehicles={vehicles} />
+                  <RecallCheckerCard vehicles={vehicles} />
+
                   {/* ───────── Inspections (VHC media + items you declined) ───────── */}
                   {(data.vhcMedia?.length || 0) > 0 ||
                   (data.vhcDeclinations?.length || 0) > 0 ? (
-                    <section id="inspections" style={cardStyle}>
+                    <section id="inspections" className="ws-portal-card">
                       <PortalCardHeader eyebrow="Inspection" title="Inspection photos & video" count={data.vhcMedia?.length || 0} />
                       {(data.vhcMedia?.length || 0) === 0 ? (
-                        <p style={emptyStyle}>
+                        <p className="ws-portal-empty">
                           No media yet — uploaded inspection photos will appear here.
                         </p>
                       ) : (
-                        <div style={mediaGridStyle}>
+                        <div className="ws-portal-media-grid">
                           {(data.vhcMedia || []).slice(0, 16).map((m) => (
                             <a
                               key={m.id}
                               href={m.public_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={mediaThumbStyle}
+                              className="ws-portal-media"
                             >
                               {m.media_type === "video" ? (
                                 <video
                                   src={m.public_url}
                                   muted
                                   preload="metadata"
-                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  className="ws-portal-media__fill"
                                 />
                               ) : (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={m.public_url}
                                   alt={m.context_label || ""}
-                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  className="ws-portal-media__fill"
                                 />
                               )}
-                              <span style={mediaTagStyle}>
+                              <span className="ws-portal-media__tag">
                                 {m.media_type === "video" ? "Video" : "Photo"}
                               </span>
                               {m.context_label ? (
-                                <span style={mediaCaptionStyle}>{m.context_label}</span>
+                                <span className="ws-portal-media__caption">{m.context_label}</span>
                               ) : null}
                             </a>
                           ))}
@@ -2503,21 +2029,21 @@ export default function CustomerProfilePage() {
                       )}
 
                       {(data.vhcDeclinations?.length || 0) > 0 ? (
-                        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                          <p style={settingsHintStyle}>
+                        <div className="ws-portal-flow ws-portal-spaced" >
+                          <p className="ws-portal-hint">
                             Items you previously declined — want to revisit?
                           </p>
-                          <ul style={itemListStyle}>
+                          <ul className="ws-portal-list">
                             {(data.vhcDeclinations || [])
                               .slice(0, 8)
                               .map((d, idx) => (
-                                <li key={`${d.job_id}-${idx}`} style={itemRowStyle}>
+                                <li key={`${d.job_id}-${idx}`} className="ws-portal-row">
                                   <div>
-                                    <div style={itemTitleStyle}>
+                                    <div className="ws-portal-item-title">
                                       {d.issue_title || d.section || "Item"}
                                     </div>
                                     {d.issue_description ? (
-                                      <div style={itemMetaStyle}>{d.issue_description}</div>
+                                      <div className="ws-portal-item-meta">{d.issue_description}</div>
                                     ) : null}
                                   </div>
                                   <button
@@ -2545,26 +2071,28 @@ export default function CustomerProfilePage() {
                     </section>
                   ) : null}
 
+                  <VhcEnhancementsCard jobs={jobs} vhcByJob={vhcByJob} vhcDeclinations={vhcDeclinations} vhcMedia={vhcMedia} vhcShareLinks={data?.vhcShareLinks || []} />
+
                   {/* ───────── Money / Account / Invoices ───────── */}
-                  <div id="invoices" style={gridSplitStyle}>
+                  <div id="invoices" className="ws-portal-split">
                     {accounts.length > 0
                       ? accounts.map((a) => (
-                          <section key={a.account_id} style={cardStyle}>
+                          <section key={a.account_id} className="ws-portal-card">
                             <PortalCardHeader
                               eyebrow="Account"
                               title={`${a.account_type || "Account"} #${a.account_id}`}
-                              action={<span style={badgeStyle}>{a.status || "Active"}</span>}
+                              action={<span className="ws-portal-badge">{a.status || "Active"}</span>}
                             />
-                            <div style={balanceHeroStyle}>
-                              <span style={balanceFigureStyle}>
+                            <div className="ws-portal-balance">
+                              <span className="ws-portal-balance__figure">
                                 {formatCurrency(a.balance)}
                               </span>
-                              <span style={balanceMetaStyle}>
+                              <span className="ws-portal-hint">
                                 Credit limit {formatCurrency(a.credit_limit)} ·{" "}
                                 {a.credit_terms ?? 30}-day terms
                               </span>
                             </div>
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <div className="ws-portal-action-row" >
                               <button
                                 type="button"
                                 onClick={() =>
@@ -2580,7 +2108,7 @@ export default function CustomerProfilePage() {
                               </button>
                             </div>
                             {actionFlash[`stmt-${a.account_id}`] ? (
-                              <p style={successStyle}>
+                              <p className="ws-portal-flash">
                                 {actionFlash[`stmt-${a.account_id}`]}
                               </p>
                             ) : null}
@@ -2588,43 +2116,43 @@ export default function CustomerProfilePage() {
                         ))
                       : null}
 
-                    <section style={cardStyle}>
+                    <section className="ws-portal-card">
                       <PortalCardHeader eyebrow="Billing" title="Invoices" count={invoices.length} />
-                      <div style={balanceHeroStyle}>
-                        <span style={balanceFigureStyle}>
+                      <div className="ws-portal-balance">
+                        <span className="ws-portal-balance__figure">
                           {formatCurrency(outstandingTotal)}
                         </span>
-                        <span style={balanceMetaStyle}>
+                        <span className="ws-portal-hint">
                           Outstanding across {outstandingInvoices.length} invoice
                           {outstandingInvoices.length === 1 ? "" : "s"}
                         </span>
                       </div>
                       {invoices.length === 0 ? (
-                        <p style={emptyStyle}>
+                        <p className="ws-portal-empty">
                           You don't have any invoices on your account yet.
                         </p>
                       ) : (
-                        <ul style={itemListStyle}>
+                        <ul className="ws-portal-list">
                           {invoices.slice(0, 12).map((i) => {
                             const total = i.grand_total ?? i.total;
                             const isPaid =
                               i.paid === true ||
                               (i.payment_status || "").toLowerCase() === "paid";
                             return (
-                              <li key={i.invoice_id} style={itemRowStyle}>
+                              <li key={i.invoice_id} className="ws-portal-row">
                                 <div>
-                                  <div style={itemTitleStyle}>
+                                  <div className="ws-portal-item-title">
                                     {i.invoice_number ||
                                       `Invoice ${i.invoice_id?.slice?.(0, 8) || ""}`}
                                     {i.job_number ? ` · ${i.job_number}` : ""}
                                   </div>
-                                  <div style={itemMetaStyle}>
+                                  <div className="ws-portal-item-meta">
                                     {formatDate(i.created_at)} · {formatCurrency(total)}
                                     {i.due_date ? ` · Due ${formatDate(i.due_date)}` : ""}
                                   </div>
                                 </div>
-                                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                  <span style={isPaid ? badgePaidStyle : badgeOpenStyle}>
+                                <div className="ws-portal-action-row" >
+                                  <span className="ws-portal-badge" data-tone={isPaid ? "ok" : "open"}>
                                     {isPaid ? "Paid" : i.payment_status || "Open"}
                                   </span>
                                   {!isPaid ? (
@@ -2663,24 +2191,24 @@ export default function CustomerProfilePage() {
                       )}
                     </section>
 
-                    <section style={cardStyle}>
+                    <section className="ws-portal-card">
                       <PortalCardHeader eyebrow="Payments" title="Saved payment methods" count={paymentMethods.length} />
                       {paymentMethods.length === 0 ? (
-                        <p style={emptyStyle}>No saved cards on file.</p>
+                        <p className="ws-portal-empty">No saved cards on file.</p>
                       ) : (
-                        <ul style={itemListStyle}>
+                        <ul className="ws-portal-list">
                           {paymentMethods.map((p) => (
-                            <li key={p.method_id} style={cardChipStyle}>
-                              <span style={cardBrandStyle}>
+                            <li key={p.method_id} className="ws-portal-detail">
+                              <span className="ws-portal-chip__brand">
                                 {p.card_brand || "Card"} {p.is_default ? "· Default" : ""}
                               </span>
-                              <span style={cardLineStyle}>
+                              <span className="ws-portal-chip__line">
                                 •••• {p.last4 || "----"} · expires{" "}
                                 {String(p.expiry_month || "").padStart(2, "0")}/
                                 {String(p.expiry_year || "").slice(-2)}
                               </span>
                               {p.nickname ? (
-                                <span style={cardLineStyle}>{p.nickname}</span>
+                                <span className="ws-portal-chip__line">{p.nickname}</span>
                               ) : null}
                             </li>
                           ))}
@@ -2691,17 +2219,9 @@ export default function CustomerProfilePage() {
 
                   {/* Account statement (transactions) */}
                   {(data.transactions?.length || 0) > 0 ? (
-                    <section style={cardStyle}>
+                    <section className="ws-portal-card">
                       <PortalCardHeader eyebrow="Ledger" title="Account statement" count={data.transactions.length} />
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 6,
-                          maxHeight: 360,
-                          overflowY: "auto",
-                        }}
-                      >
+                      <div className="ws-portal-ledger">
                         {data.transactions.slice(0, 40).map((t) => {
                           const isCredit =
                             (t.type || "").toLowerCase() === "credit" ||
@@ -2709,26 +2229,21 @@ export default function CustomerProfilePage() {
                           return (
                             <div
                               key={t.transaction_id}
-                              style={{ ...stmtRowStyle, background: "var(--website-elev-1)" }}
+                              className="ws-portal-ledger__row"
                             >
-                              <span style={stmtMetaStyle}>
+                              <span className="ws-portal-ledger__meta">
                                 {formatDate(t.transaction_date)}
                               </span>
                               <span>
                                 <div>{t.description || t.type}</div>
                                 {t.job_number ? (
-                                  <div style={stmtMetaStyle}>
+                                  <div className="ws-portal-ledger__meta">
                                     {t.job_number}
                                     {t.payment_method ? ` · ${t.payment_method}` : ""}
                                   </div>
                                 ) : null}
                               </span>
-                              <span
-                                style={{
-                                  fontWeight: 700,
-                                  color: isCredit ? "#86efac" : "#fca5a5",
-                                }}
-                              >
+                              <span className="ws-portal-ledger__amount" data-tone={isCredit ? "credit" : "debit"}>
                                 {isCredit ? "−" : ""}
                                 {formatCurrency(Math.abs(Number(t.amount)))}
                               </span>
@@ -2739,21 +2254,15 @@ export default function CustomerProfilePage() {
                     </section>
                   ) : null}
 
+                  <InvoicesPaymentsExtrasCard invoicePayments={invoicePayments} paymentPlans={paymentPlans} transactions={transactions} />
+                  <DocumentsCentreCard invoices={invoices} vhcMedia={vhcMedia} />
+
                   {/* ───────── Messages ───────── */}
-                  <section id="messages" style={cardWideStyle}>
+                  <section id="messages" className="ws-portal-card ws-portal-card--wide">
                     <PortalCardHeader eyebrow="Inbox" title="Messages" count={messages.length} />
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                        maxHeight: 400,
-                        overflowY: "auto",
-                        padding: 4,
-                      }}
-                    >
+                    <div className="ws-portal-thread">
                       {messages.length === 0 ? (
-                        <p style={emptyStyle}>
+                        <p className="ws-portal-empty">
                           No messages yet — drop us a note below and we'll get back to you.
                         </p>
                       ) : (
@@ -2766,10 +2275,11 @@ export default function CustomerProfilePage() {
                           return (
                             <div
                               key={m.event_id}
-                              style={isCustomer ? bubbleCustomerStyle : bubbleStaffStyle}
+                              className="ws-portal-bubble"
+                              data-author={isCustomer ? "customer" : "staff"}
                             >
                               {body}
-                              <span style={bubbleMetaStyle}>
+                              <span className="ws-portal-bubble__meta">
                                 {isCustomer ? "You" : "Humphries & Parks"} ·{" "}
                                 {formatDateTime(m.occurred_at)}
                               </span>
@@ -2787,7 +2297,7 @@ export default function CustomerProfilePage() {
                   </section>
 
                   {/* ───────── Book a service ───────── */}
-                  <section id="book" style={cardStyle}>
+                  <section id="book" className="ws-portal-card">
                     <PortalCardHeader eyebrow="Workshop" title="Book a service" />
                     <BookServiceForm
                       vehicles={vehicles}
@@ -2802,23 +2312,23 @@ export default function CustomerProfilePage() {
                       flash={actionFlash.book}
                     />
                     {bookingRequests.length > 0 ? (
-                      <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                        <p style={settingsHintStyle}>Recent requests</p>
-                        <ul style={itemListStyle}>
+                      <div className="ws-portal-flow ws-portal-spaced" >
+                        <p className="ws-portal-hint">Recent requests</p>
+                        <ul className="ws-portal-list">
                           {bookingRequests.slice(0, 5).map((r) => (
-                            <li key={r.request_id} style={itemRowStyle}>
+                            <li key={r.request_id} className="ws-portal-row">
                               <div>
-                                <div style={itemTitleStyle}>
+                                <div className="ws-portal-item-title">
                                   {r.description || "Booking request"}
                                 </div>
-                                <div style={itemMetaStyle}>
+                                <div className="ws-portal-item-meta">
                                   {formatDate(r.submitted_at)}
                                   {r.estimated_completion
                                     ? ` · ETA ${formatDate(r.estimated_completion)}`
                                     : ""}
                                 </div>
                               </div>
-                              <span style={badgeStyle}>{r.status || "Pending"}</span>
+                              <span className="ws-portal-badge">{r.status || "Pending"}</span>
                             </li>
                           ))}
                         </ul>
@@ -2827,9 +2337,9 @@ export default function CustomerProfilePage() {
                   </section>
 
                   {/* ───────── Our services ───────── */}
-                  <section id="services" style={cardWideStyle}>
+                  <section id="services" className="ws-portal-card ws-portal-card--wide">
                     <PortalCardHeader eyebrow="Requests" title="Our services" />
-                    <p style={settingsHintStyle}>
+                    <p className="ws-portal-hint">
                       Anything we do — pick what you need and we'll come back to you
                       with a quote or callback.
                     </p>
@@ -2843,9 +2353,9 @@ export default function CustomerProfilePage() {
                   </section>
 
                   {/* ───────── Sell your car ───────── */}
-                  <section id="sell" style={cardStyle}>
+                  <section id="sell" className="ws-portal-card">
                     <PortalCardHeader eyebrow="Valuation" title="Sell your car" />
-                    <p style={settingsHintStyle}>
+                    <p className="ws-portal-hint">
                       Any age, any mileage, any make or model. Free valuation, no
                       obligation.
                     </p>
@@ -2863,9 +2373,9 @@ export default function CustomerProfilePage() {
                   </section>
 
                   {/* ───────── Showroom / callback ───────── */}
-                  <section id="showroom" style={cardStyle}>
+                  <section id="showroom" className="ws-portal-card">
                     <PortalCardHeader eyebrow="Sales" title="Showroom" />
-                    <p style={settingsHintStyle}>
+                    <p className="ws-portal-hint">
                       See something you like? Tell us which car and we'll arrange a
                       callback or test drive.
                     </p>
@@ -2880,27 +2390,29 @@ export default function CustomerProfilePage() {
                       }
                       flash={actionFlash.show}
                     />
-                    <div style={{ marginTop: 12 }}>
+                    <div className="ws-portal-spaced" >
                       <Link href="/website#cars">Browse all cars</Link>
                     </div>
                   </section>
 
-                  {/* ───────── Activity timeline ───────── */}
-                  <section id="activity" style={cardStyle}>
+                  {/* ───────── Activity timeline ─────────
+                      Sits after the hub cards so the DOM follows the Jump-to
+                      nav order; the grid packs the cards around it. */}
+                  <section id="activity" className="ws-portal-card">
                     <PortalCardHeader eyebrow="Timeline" title="Activity" count={timeline.length} />
                     {timeline.length === 0 ? (
-                      <p style={emptyStyle}>
+                      <p className="ws-portal-empty">
                         Once you've booked in or had work done, your activity will
                         appear here.
                       </p>
                     ) : (
-                      <div style={timelineStyle}>
+                      <div className="ws-portal-timeline">
                         {timeline.slice(0, 30).map((event) => (
-                          <div key={event.event_id} style={timelineRowStyle}>
-                            <span style={timelineWhenStyle}>
+                          <div key={event.event_id} className="ws-portal-timeline__row">
+                            <span className="ws-portal-when">
                               {formatDate(event.occurred_at)}
                             </span>
-                            <span style={timelineWhatStyle}>
+                            <span className="ws-portal-timeline__what">
                               {humaniseActivity(event)}
                             </span>
                           </div>
@@ -2909,20 +2421,7 @@ export default function CustomerProfilePage() {
                     )}
                   </section>
 
-                  {/* ───────── Expanded ownership-hub sections ─────────
-                      Each card renders its own card surface using whatever
-                      classes the component decides — they're left alone here
-                      so the rest of /website/profile follows custglobal.css
-                      without touching shared portal cards. */}
-                  <OwnershipDashboardCard vehicles={vehicles} />
-                  <LiveProgressTrackerCard jobs={jobs} customer={customer} />
-                  <RepairApprovalTimelineCard jobs={jobs} jobStatusHistory={jobStatusHistory} />
-                  <DigitalServiceHistoryCard jobs={jobs} jobHistory={jobHistory} invoices={invoices} vhcByJob={vhcByJob} />
-                  <MotHistoryCard vehicles={vehicles} />
-                  <RecallCheckerCard vehicles={vehicles} />
-                  <VhcEnhancementsCard jobs={jobs} vhcByJob={vhcByJob} vhcDeclinations={vhcDeclinations} vhcMedia={vhcMedia} vhcShareLinks={data?.vhcShareLinks || []} />
-                  <InvoicesPaymentsExtrasCard invoicePayments={invoicePayments} paymentPlans={paymentPlans} transactions={transactions} />
-                  <DocumentsCentreCard invoices={invoices} vhcMedia={vhcMedia} />
+                  {/* ───────── Sales, parts & extras hub ───────── */}
                   <SalesShowroomCard />
                   <PartsPortalExtrasCard partsJobItems={partsJobItems} partsRequests={partsRequests} partsOrderCards={partsOrderCards} />
                   <SmartRepairCard bookingRequests={bookingRequests} />
@@ -2932,9 +2431,9 @@ export default function CustomerProfilePage() {
                   <AiAssistantCard />
 
                   {/* ───────── Settings / security ───────── */}
-                  <section id="settings" style={cardWideStyle}>
+                  <section id="settings" className="ws-portal-card ws-portal-card--wide">
                     <PortalCardHeader eyebrow="Security" title="Account & security" />
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div className="ws-portal-flow" >
                       <ChangePasswordRow
                         onSuccess={() => flash("pw", "Password updated.")}
                         flash={actionFlash.pw}
@@ -2952,6 +2451,7 @@ export default function CustomerProfilePage() {
                         onSuccess={() => flash("prefs", "Preferences saved.")}
                         flash={actionFlash.prefs}
                       />
+                      <TypingAssistRow />
                       <ReferralRow
                         onSubmit={(payload) =>
                           callAction(
@@ -2991,28 +2491,26 @@ export default function CustomerProfilePage() {
           )}
         </main>
       </div>
+      </div>
     </>
   );
 }
 
 function DetailField({ label, value }) {
   return (
-    <div style={detailFieldStyle}>
-      <span style={detailLabelStyle}>{label}</span>
-      <span style={detailValueStyle}>{value || "—"}</span>
+    <div className="ws-portal-detail">
+      <span className="ws-portal-label">{label}</span>
+      <span className="ws-portal-detail__value">{value || "—"}</span>
     </div>
   );
 }
 
 function FieldInput({ label, value, onChange, type = "text" }) {
-  // type="email" is intentionally collapsed to "text" per custglobal.css —
-  // the customer surface uses one capsule style for all text-shaped input.
-  const inputType = type === "email" ? "text" : type;
   return (
-    <div style={fieldStyle}>
-      <label style={fieldLabelStyle}>{label}</label>
+    <div className="ws-portal-field">
+      <label className="ws-portal-label">{label}</label>
       <input
-        type={inputType}
+        type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -3025,12 +2523,12 @@ function MessageComposer({ onSend, flash }) {
   const [sending, setSending] = useState(false);
   return (
     <>
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+      <div className="ws-portal-compose" >
         <textarea
           placeholder="Type a message…"
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          style={{ flex: 1 }}
+          className="ws-portal-grow" 
         />
         <button
           type="button"
@@ -3046,7 +2544,7 @@ function MessageComposer({ onSend, flash }) {
           Send
         </button>
       </div>
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
     </>
   );
 }
@@ -3058,7 +2556,7 @@ function BookServiceForm({ vehicles, onSubmit, flash }) {
   const [submitting, setSubmitting] = useState(false);
   return (
     <form
-      style={formStyle}
+      className="ws-portal-form"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!description.trim()) return;
@@ -3073,9 +2571,9 @@ function BookServiceForm({ vehicles, onSubmit, flash }) {
         setSubmitting(false);
       }}
     >
-      <div style={formRowStyle}>
-        <div style={fieldStyle}>
-          <label style={fieldLabelStyle}>Vehicle</label>
+      <div className="ws-portal-form-row">
+        <div className="ws-portal-field">
+          <label className="ws-portal-label">Vehicle</label>
           <WebsiteNativeSelect
             value={vehicleId}
             onChange={setVehicleId}
@@ -3086,8 +2584,8 @@ function BookServiceForm({ vehicles, onSubmit, flash }) {
             }))}
           />
         </div>
-        <div style={fieldStyle}>
-          <label style={fieldLabelStyle}>Preferred date</label>
+        <div className="ws-portal-field">
+          <label className="ws-portal-label">Preferred date</label>
           <WebsiteNativeDateTimeInput
             type="date"
             value={preferredDate}
@@ -3096,8 +2594,8 @@ function BookServiceForm({ vehicles, onSubmit, flash }) {
           />
         </div>
       </div>
-      <div style={fieldStyle}>
-        <label style={fieldLabelStyle}>What do you need?</label>
+      <div className="ws-portal-field">
+        <label className="ws-portal-label">What do you need?</label>
         <textarea
           placeholder="e.g. annual service + brake check"
           value={description}
@@ -3111,7 +2609,7 @@ function BookServiceForm({ vehicles, onSubmit, flash }) {
       >
         {submitting ? "Sending…" : "Request booking"}
       </button>
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
     </form>
   );
 }
@@ -3123,11 +2621,11 @@ function ChangePasswordRow({ onSuccess, flash }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   return (
-    <div style={settingsRowStyle}>
-      <div style={settingsRowHeaderStyle}>
+    <div className="ws-portal-settings-row">
+      <div className="ws-portal-card__header">
         <div>
-          <div style={settingsTitleStyle}>Password</div>
-          <p style={settingsHintStyle}>
+          <div className="ws-portal-item-title">Password</div>
+          <p className="ws-portal-hint">
             Change the password you use to sign in here.
           </p>
         </div>
@@ -3137,7 +2635,7 @@ function ChangePasswordRow({ onSuccess, flash }) {
       </div>
       {open ? (
         <form
-          style={formStyle}
+          className="ws-portal-form"
           onSubmit={async (e) => {
             e.preventDefault();
             setError("");
@@ -3167,7 +2665,7 @@ function ChangePasswordRow({ onSuccess, flash }) {
             }
           }}
         >
-          {error ? <p style={errorStyle}>{error}</p> : null}
+          {error ? <p className="ws-portal-error">{error}</p> : null}
           <FieldInput
             label="Current password"
             type="password"
@@ -3185,7 +2683,7 @@ function ChangePasswordRow({ onSuccess, flash }) {
           </button>
         </form>
       ) : null}
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
     </div>
   );
 }
@@ -3197,11 +2695,11 @@ function ChangeEmailRow({ currentEmail, onSuccess, flash }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   return (
-    <div style={settingsRowStyle}>
-      <div style={settingsRowHeaderStyle}>
+    <div className="ws-portal-settings-row">
+      <div className="ws-portal-card__header">
         <div>
-          <div style={settingsTitleStyle}>Email</div>
-          <p style={settingsHintStyle}>{currentEmail || "—"}</p>
+          <div className="ws-portal-item-title">Email</div>
+          <p className="ws-portal-hint">{currentEmail || "—"}</p>
         </div>
         <button type="button" onClick={() => setOpen((o) => !o)}>
           {open ? "Cancel" : "Change"}
@@ -3209,7 +2707,7 @@ function ChangeEmailRow({ currentEmail, onSuccess, flash }) {
       </div>
       {open ? (
         <form
-          style={formStyle}
+          className="ws-portal-form"
           onSubmit={async (e) => {
             e.preventDefault();
             setError("");
@@ -3239,7 +2737,7 @@ function ChangeEmailRow({ currentEmail, onSuccess, flash }) {
             }
           }}
         >
-          {error ? <p style={errorStyle}>{error}</p> : null}
+          {error ? <p className="ws-portal-error">{error}</p> : null}
           <FieldInput label="New email" value={next} onChange={setNext} />
           <FieldInput
             label="Current password"
@@ -3252,7 +2750,7 @@ function ChangeEmailRow({ currentEmail, onSuccess, flash }) {
           </button>
         </form>
       ) : null}
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
     </div>
   );
 }
@@ -3267,15 +2765,15 @@ function NotificationPrefsRow({ initial, onSuccess, flash }) {
   const [motReminders, setMotReminders] = useState(true);
   const [saving, setSaving] = useState(false);
   return (
-    <div style={settingsRowStyle}>
-      <div style={settingsRowHeaderStyle}>
+    <div className="ws-portal-settings-row">
+      <div className="ws-portal-card__header">
         <div>
-          <div style={settingsTitleStyle}>Notifications</div>
-          <p style={settingsHintStyle}>How and when we contact you.</p>
+          <div className="ws-portal-item-title">Notifications</div>
+          <p className="ws-portal-hint">How and when we contact you.</p>
         </div>
       </div>
-      <div style={fieldStyle}>
-        <label style={fieldLabelStyle}>Preferred channel</label>
+      <div className="ws-portal-field">
+        <label className="ws-portal-label">Preferred channel</label>
         <WebsiteNativeSelect
           value={channel}
           onChange={setChannel}
@@ -3328,7 +2826,38 @@ function NotificationPrefsRow({ initial, onSuccess, flash }) {
       >
         {saving ? "Saving…" : "Save preferences"}
       </button>
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
+    </div>
+  );
+}
+
+// Spelling, grammar and Tab word prediction on text boxes (GlobalTypingAssist).
+// Saved on this device straight away — there is nothing to submit.
+function TypingAssistRow() {
+  const { settings, update } = useTypingAssistSettings();
+  return (
+    <div className="ws-portal-settings-row">
+      <div className="ws-portal-card__header">
+        <div>
+          <div className="ws-portal-item-title">Typing assistant</div>
+          <p className="ws-portal-hint">
+            UK English spelling and grammar checks on text boxes, with the next word suggested as you type. Press Tab to
+            accept a suggestion. Runs on this device only.
+          </p>
+        </div>
+      </div>
+      <Toggle label="Typing assistant" checked={settings.enabled} onChange={(value) => update({ enabled: value })} />
+      {settings.enabled ? (
+        <>
+          <Toggle
+            label="Check spelling and grammar"
+            checked={settings.spelling && settings.grammar}
+            onChange={(value) => update({ spelling: value, grammar: value })}
+          />
+          <Toggle label="Flag American spellings" checked={settings.ukSpelling} onChange={(value) => update({ ukSpelling: value })} />
+          <Toggle label="Suggest the next word" checked={settings.predictions} onChange={(value) => update({ predictions: value })} />
+        </>
+      ) : null}
     </div>
   );
 }
@@ -3340,7 +2869,7 @@ function Toggle({ label, checked, onChange }) {
   const toggle = () => onChange(!checked);
   return (
     <div
-      style={toggleRowStyle}
+      className="ws-portal-toggle"
       role="switch"
       aria-checked={checked}
       tabIndex={0}
@@ -3352,9 +2881,9 @@ function Toggle({ label, checked, onChange }) {
         }
       }}
     >
-      <span style={{ fontSize: 13 }}>{label}</span>
-      <span style={toggleSwitchStyle(checked)}>
-        <span style={toggleKnobStyle(checked)} />
+      <span className="ws-portal-toggle__label">{label}</span>
+      <span className="ws-portal-toggle__track">
+        <span className="ws-portal-toggle__knob" />
       </span>
     </div>
   );
@@ -3362,17 +2891,17 @@ function Toggle({ label, checked, onChange }) {
 
 function DataActionsRow({ onExport, onDelete, flashExp, flashDel }) {
   return (
-    <div style={settingsRowStyle}>
-      <div style={settingsRowHeaderStyle}>
+    <div className="ws-portal-settings-row">
+      <div className="ws-portal-card__header">
         <div>
-          <div style={settingsTitleStyle}>Your data</div>
-          <p style={settingsHintStyle}>
+          <div className="ws-portal-item-title">Your data</div>
+          <p className="ws-portal-hint">
             Request a copy of everything we hold, or ask us to remove your
             account.
           </p>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div className="ws-portal-action-row" >
         <button type="button" onClick={onExport}>
           Request data export
         </button>
@@ -3392,8 +2921,8 @@ function DataActionsRow({ onExport, onDelete, flashExp, flashDel }) {
           Request account deletion
         </button>
       </div>
-      {flashExp ? <p style={successStyle}>{flashExp}</p> : null}
-      {flashDel ? <p style={successStyle}>{flashDel}</p> : null}
+      {flashExp ? <p className="ws-portal-flash">{flashExp}</p> : null}
+      {flashDel ? <p className="ws-portal-flash">{flashDel}</p> : null}
     </div>
   );
 }
@@ -3445,17 +2974,12 @@ function ActiveJobTags({ job, bookingRequest, vhcSent }) {
   }
   if (tags.length === 0) return null;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+    <div className="ws-portal-action-row" >
       {tags.map((t) => (
         <span
           key={t.key}
-          style={
-            t.tone === "accent"
-              ? tagAccentStyle
-              : t.tone === "ok"
-              ? tagOkStyle
-              : tagBaseStyle
-          }
+          className="ws-portal-tag"
+          data-tone={t.tone}
         >
           {t.label}
         </span>
@@ -3470,19 +2994,19 @@ function UpdateMileageRow({ vehicles, onSaved, flash }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   return (
-    <div style={settingsRowStyle}>
-      <div style={settingsRowHeaderStyle}>
+    <div className="ws-portal-settings-row">
+      <div className="ws-portal-card__header">
         <div>
-          <div style={settingsTitleStyle}>Update mileage</div>
-          <p style={settingsHintStyle}>
+          <div className="ws-portal-item-title">Update mileage</div>
+          <p className="ws-portal-hint">
             Help us flag the next service at the right time.
           </p>
         </div>
       </div>
-      {error ? <p style={errorStyle}>{error}</p> : null}
-      <div style={formRowStyle}>
-        <div style={fieldStyle}>
-          <label style={fieldLabelStyle}>Vehicle</label>
+      {error ? <p className="ws-portal-error">{error}</p> : null}
+      <div className="ws-portal-form-row">
+        <div className="ws-portal-field">
+          <label className="ws-portal-label">Vehicle</label>
           <WebsiteNativeSelect
             value={vehicleId}
             onChange={setVehicleId}
@@ -3493,8 +3017,8 @@ function UpdateMileageRow({ vehicles, onSaved, flash }) {
             }))}
           />
         </div>
-        <div style={fieldStyle}>
-          <label style={fieldLabelStyle}>Current mileage</label>
+        <div className="ws-portal-field">
+          <label className="ws-portal-label">Current mileage</label>
           <input
             type="number"
             inputMode="numeric"
@@ -3536,7 +3060,7 @@ function UpdateMileageRow({ vehicles, onSaved, flash }) {
       >
         {saving ? "Saving…" : "Save mileage"}
       </button>
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
     </div>
   );
 }
@@ -3597,25 +3121,25 @@ function AddVehicleRow({ onSubmit, flash }) {
   };
 
   return (
-    <div style={settingsRowStyle}>
-      <div style={settingsRowHeaderStyle}>
+    <div className="ws-portal-settings-row">
+      <div className="ws-portal-card__header">
         <div>
-          <div style={settingsTitleStyle}>Add a vehicle</div>
-          <p style={settingsHintStyle}>
+          <div className="ws-portal-item-title">Add a vehicle</div>
+          <p className="ws-portal-hint">
             We'll add this to your account straight away.
           </p>
         </div>
       </div>
-      <div style={formRowStyle}>
-        <div style={fieldStyle}>
-          <label style={fieldLabelStyle}>Registration</label>
-          <div style={{ display: "flex", gap: 10 }}>
+      <div className="ws-portal-form-row">
+        <div className="ws-portal-field">
+          <label className="ws-portal-label">Registration</label>
+          <div className="ws-portal-action-row" >
             <input
               type="text"
               value={reg}
               onChange={(e) => setReg(e.target.value)}
               placeholder="e.g. AB12 CDE"
-              style={{ flex: 1, textTransform: "uppercase" }}
+              className="ws-reg-input"
             />
             <button
               type="button"
@@ -3633,8 +3157,8 @@ function AddVehicleRow({ onSubmit, flash }) {
           onChange={setMakeModel}
         />
       </div>
-      {lookupError ? <p style={errorStyle}>{lookupError}</p> : null}
-      <div style={formRowStyle}>
+      {lookupError ? <p className="ws-portal-error">{lookupError}</p> : null}
+      <div className="ws-portal-form-row">
         <FieldInput
           label="Mileage (optional)"
           value={mileage}
@@ -3664,7 +3188,7 @@ function AddVehicleRow({ onSubmit, flash }) {
       >
         {submitting ? "Adding…" : "Add"}
       </button>
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
     </div>
   );
 }
@@ -3677,21 +3201,23 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
   const [submitting, setSubmitting] = useState(false);
   return (
     <>
-      <div style={serviceGridStyle}>
+      <div className="ws-portal-services">
         {SERVICE_TYPES.map((t) => (
           <button
             key={t.id}
             type="button"
-            style={serviceTileStyle(picked.id === t.id)}
+            className="ws-portal-service"
+            aria-pressed={picked.id === t.id}
             onClick={() => setPicked(t)}
           >
-            <span style={serviceTileTitleStyle}>{t.title}</span>
-            <span style={serviceTileHintStyle}>{t.hint}</span>
+            <span className="ws-portal-service__title">{t.title}</span>
+            <span className="ws-portal-service__hint">{t.hint}</span>
           </button>
         ))}
       </div>
       <form
-        style={{ ...formStyle, marginTop: 14 }}
+        className="ws-portal-form ws-portal-spaced"
+        
         onSubmit={async (e) => {
           e.preventDefault();
           if (!details.trim()) return;
@@ -3711,9 +3237,9 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
           setSubmitting(false);
         }}
       >
-        <div style={formRowStyle}>
-          <div style={fieldStyle}>
-            <label style={fieldLabelStyle}>Vehicle (optional)</label>
+        <div className="ws-portal-form-row">
+          <div className="ws-portal-field">
+            <label className="ws-portal-label">Vehicle (optional)</label>
             <WebsiteNativeSelect
               value={vehicleId}
               onChange={setVehicleId}
@@ -3724,8 +3250,8 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
               }))}
             />
           </div>
-          <div style={fieldStyle}>
-            <label style={fieldLabelStyle}>Preferred date</label>
+          <div className="ws-portal-field">
+            <label className="ws-portal-label">Preferred date</label>
             <WebsiteNativeDateTimeInput
               type="date"
               value={preferredDate}
@@ -3733,8 +3259,8 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
             />
           </div>
         </div>
-        <div style={fieldStyle}>
-          <label style={fieldLabelStyle}>Tell us a bit more</label>
+        <div className="ws-portal-field">
+          <label className="ws-portal-label">Tell us a bit more</label>
           <textarea
             value={details}
             onChange={(e) => setDetails(e.target.value)}
@@ -3748,7 +3274,7 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
         >
           {submitting ? "Sending…" : `Request ${picked.title.toLowerCase()}`}
         </button>
-        {flash ? <p style={successStyle}>{flash}</p> : null}
+        {flash ? <p className="ws-portal-flash">{flash}</p> : null}
       </form>
     </>
   );
@@ -3763,7 +3289,7 @@ function SellCarForm({ onSubmit, flash }) {
   const [submitting, setSubmitting] = useState(false);
   return (
     <form
-      style={formStyle}
+      className="ws-portal-form"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!reg.trim()) return;
@@ -3782,7 +3308,7 @@ function SellCarForm({ onSubmit, flash }) {
         setSubmitting(false);
       }}
     >
-      <div style={formRowStyle}>
+      <div className="ws-portal-form-row">
         <FieldInput label="Registration" value={reg} onChange={setReg} />
         <FieldInput
           label="Make & model"
@@ -3790,15 +3316,15 @@ function SellCarForm({ onSubmit, flash }) {
           onChange={setMakeModel}
         />
       </div>
-      <div style={formRowStyle}>
+      <div className="ws-portal-form-row">
         <FieldInput
           label="Mileage"
           value={mileage}
           onChange={setMileage}
           type="number"
         />
-        <div style={fieldStyle}>
-          <label style={fieldLabelStyle}>Condition</label>
+        <div className="ws-portal-field">
+          <label className="ws-portal-label">Condition</label>
           <WebsiteNativeSelect
             value={condition}
             onChange={setCondition}
@@ -3811,8 +3337,8 @@ function SellCarForm({ onSubmit, flash }) {
           />
         </div>
       </div>
-      <div style={fieldStyle}>
-        <label style={fieldLabelStyle}>Notes (optional)</label>
+      <div className="ws-portal-field">
+        <label className="ws-portal-label">Notes (optional)</label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -3826,7 +3352,7 @@ function SellCarForm({ onSubmit, flash }) {
       >
         {submitting ? "Sending…" : "Get free valuation"}
       </button>
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
     </form>
   );
 }
@@ -3838,7 +3364,7 @@ function ShowroomCallbackForm({ onSubmit, flash }) {
   const [submitting, setSubmitting] = useState(false);
   return (
     <form
-      style={formStyle}
+      className="ws-portal-form"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!interest.trim()) return;
@@ -3855,9 +3381,9 @@ function ShowroomCallbackForm({ onSubmit, flash }) {
       }}
     >
       <FieldInput label="Which vehicle?" value={interest} onChange={setInterest} />
-      <div style={formRowStyle}>
-        <div style={fieldStyle}>
-          <label style={fieldLabelStyle}>Preferred callback</label>
+      <div className="ws-portal-form-row">
+        <div className="ws-portal-field">
+          <label className="ws-portal-label">Preferred callback</label>
           <WebsiteNativeDateTimeInput
             type="date"
             value={callbackDate}
@@ -3873,7 +3399,7 @@ function ShowroomCallbackForm({ onSubmit, flash }) {
       >
         {submitting ? "Sending…" : "Request callback"}
       </button>
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
     </form>
   );
 }
@@ -3884,16 +3410,16 @@ function ReferralRow({ onSubmit, flash }) {
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   return (
-    <div style={settingsRowStyle}>
-      <div style={settingsRowHeaderStyle}>
+    <div className="ws-portal-settings-row">
+      <div className="ws-portal-card__header">
         <div>
-          <div style={settingsTitleStyle}>Refer a friend</div>
-          <p style={settingsHintStyle}>
+          <div className="ws-portal-item-title">Refer a friend</div>
+          <p className="ws-portal-hint">
             Send us a friend who needs us — we'll take it from there.
           </p>
         </div>
       </div>
-      <div style={formRowStyle}>
+      <div className="ws-portal-form-row">
         <FieldInput label="Their name" value={name} onChange={setName} />
         <FieldInput label="Their email" value={email} onChange={setEmail} />
       </div>
@@ -3917,7 +3443,7 @@ function ReferralRow({ onSubmit, flash }) {
       >
         {submitting ? "Sending…" : "Send referral"}
       </button>
-      {flash ? <p style={successStyle}>{flash}</p> : null}
+      {flash ? <p className="ws-portal-flash">{flash}</p> : null}
     </div>
   );
 }

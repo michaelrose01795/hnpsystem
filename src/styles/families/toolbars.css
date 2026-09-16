@@ -50,3 +50,43 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline-offset: 2px;
   box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.32) !important;
 }
+
+/* ========================================================================== */
+/* === Responsive sweep, 2026-09 — breakpoints: src/styles/breakpoints.js  === */
+/* ========================================================================== */
+/*
+ * The container rows (.app-layout-toolbar-row) already wrap, so a toolbar does
+ * not overflow — but wrapping alone leaves a ragged row of differently-sized
+ * buttons, and at the floor a single long-labelled button still overflows
+ * because it cannot shrink below its label.
+ */
+@media (max-width: 640px) {
+  html.staff-scope .app-toolbar--filter,
+  html.staff-scope .app-toolbar--action {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* An action toolbar right-aligns on desktop. Centring is wrong when the
+     buttons have wrapped onto three lines; start-aligned reads as a list. */
+  html.staff-scope .app-toolbar--action {
+    justify-content: flex-start;
+  }
+
+  /* A header row is a title plus actions. Once those stack, space-between
+     pushes them to opposite ends of a tall row with a gap in the middle. */
+  html.staff-scope .app-toolbar--header {
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+}
+
+@media (max-width: 375px) {
+  /* At the floor, toolbar children take the full width rather than wrapping
+     into uneven fragments. Applied to direct children only, so a button group
+     nested inside the toolbar keeps its own internal layout. */
+  html.staff-scope :is(.app-toolbar--filter, .app-toolbar--action) > * {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}

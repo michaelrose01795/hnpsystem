@@ -1,6 +1,7 @@
 // file location: src/components/VHC/ServiceIndicatorDetailsModal.js
 import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md 3.0)
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import { buildConcernRef } from "@/components/VHC/mediaCapture/collectSectionConcerns";
 import Button from "@/components/ui/Button";
@@ -167,7 +168,7 @@ export default function ServiceIndicatorDetailsModal({
     const amberCount = concernsList.filter((concernItem) => concernItem.status === "Amber").length;
     const greenCount = concernsList.filter((concernItem) => concernItem.status === "Green").length;
     return (
-      <div style={concernCardStyle}>
+      <LayerTheme style={concernCardStyle}>
         <div
           style={{
             display: "flex",
@@ -191,7 +192,7 @@ export default function ServiceIndicatorDetailsModal({
               onClick={onAdd}
               style={{ gap: "6px" }}
             >
-              + Add Concern
+              Add Concern
             </Button>
             <span
               style={{
@@ -273,7 +274,7 @@ export default function ServiceIndicatorDetailsModal({
             </div>
           ))}
         </div>
-      </div>
+      </LayerTheme>
     );
   };
 
@@ -419,7 +420,7 @@ export default function ServiceIndicatorDetailsModal({
               Complete all highlighted sections to continue.
             </div>
           ) : null}
-          <div data-dev-section="1" data-dev-section-key="vhc-service-reminder" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={showValidation && missingServiceChoice ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
+          <LayerTheme data-dev-section="1" data-dev-section-key="vhc-service-reminder" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={showValidation && missingServiceChoice ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Service Reminder
             </h3>
@@ -456,9 +457,9 @@ export default function ServiceIndicatorDetailsModal({
               concernsList={concernsBySource.service}
               onAdd={() => openConcernFor("service")}
             />
-          </div>
+          </LayerTheme>
 
-          <div data-dev-section="1" data-dev-section-key="vhc-service-oil" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={showValidation && missingOilStatus ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
+          <LayerTheme data-dev-section="1" data-dev-section-key="vhc-service-oil" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={showValidation && missingOilStatus ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Oil Level
             </h3>
@@ -495,9 +496,9 @@ export default function ServiceIndicatorDetailsModal({
               concernsList={concernsBySource.oil}
               onAdd={() => openConcernFor("oil")}
             />
-          </div>
+          </LayerTheme>
 
-          <div data-dev-section="1" data-dev-section-key="vhc-service-underbonnet" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={{ ...cardShellStyle, gap: "16px" }}>
+          <LayerTheme data-dev-section="1" data-dev-section-key="vhc-service-underbonnet" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={{ ...cardShellStyle, gap: "16px" }}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Under Bonnet Items
             </h3>
@@ -567,7 +568,7 @@ export default function ServiceIndicatorDetailsModal({
                 );
               })}
             </div>
-          </div>
+          </LayerTheme>
         </div>
       </div>
 

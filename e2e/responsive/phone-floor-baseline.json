@@ -1,0 +1,34 @@
+{
+  "/newsfeed": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/messages": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/customers": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/company-accounts": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/archive": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/profile": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/reports/overview": {
+    "clipped": 0,
+    "touch": 0
+  },
+  "/dashboard/workshop": {
+    "clipped": 0,
+    "touch": 0
+  }
+}

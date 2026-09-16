@@ -21,6 +21,7 @@ import CheckSheetPopup from "@/components/popups/CheckSheetPopup";
 import { useTheme } from "@/styles/themeProvider";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
@@ -745,23 +746,6 @@ const statusBadgeStyle = {
   color: "var(--info-dark)",
   fontSize: "12px",
   fontWeight: 600,
-};
-
-const addSectionButtonStyle = {
-  width: "24px",
-  height: "24px",
-  minHeight: "24px",
-  borderRadius: "4px",
-  backgroundColor: "var(--surface)",
-  color: "var(--accent-purple)",
-  fontSize: "12px",
-  lineHeight: 1,
-  fontWeight: 700,
-  cursor: "pointer",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: 0,
 };
 
 const deleteAddedRowButtonStyle = {
@@ -2562,7 +2546,7 @@ function WriteUpForm({
               color: "white",
                         }}
           >
-            ← Back to job
+            Back to job
           </button>
           <div style={{ flex: 1 }}>
             <h1 style={{
@@ -2657,15 +2641,10 @@ function WriteUpForm({
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={addFaultSection}
-                    style={addSectionButtonStyle}
-                    aria-label="Add fault item"
-                    title="Add fault item"
-                  >
-                    +
-                  </button>
+                  <SymbolButton
+                    symbol="add"
+                    label="Add fault item"
+                    onClick={addFaultSection} />
                 </div>
                 <div
                   style={{
@@ -2706,7 +2685,7 @@ function WriteUpForm({
                             ? `Request ${slotMeta.index}`
                             : `Added item ${slotMeta?.index || index + 1}`}
                         </div>
-                        <textarea
+                        <textarea className="app-input"
                           value={stripRequestPrefix(task?.label || "")}
                           onChange={handleRequestLabelChange(slotKey)}
                           rows={2}
@@ -2743,7 +2722,7 @@ function WriteUpForm({
                         onClick={addCauseRow}
                         style={{ ...modernButtonStyle, backgroundColor: "var(--accent-purple)", color: "var(--onAccentText)" }}
                       >
-                        + Add Cause
+                        Add Cause
                       </button>
                     )}
                   </div>
@@ -2768,7 +2747,7 @@ function WriteUpForm({
                                   }))}
                                   style={{ flex: "0 0 38%" }}
                                 />
-                                <textarea
+                                <textarea className="app-input"
                                   placeholder="Describe the cause..."
                                   value={entry.text}
                                   onChange={handleCauseTextChange(entry.id)}
@@ -2801,15 +2780,10 @@ function WriteUpForm({
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <button
-                      type="button"
-                      onClick={addRectificationSection}
-                      style={addSectionButtonStyle}
-                      aria-label="Add rectification item"
-                      title="Add rectification item"
-                    >
-                      +
-                    </button>
+                    <SymbolButton
+                      symbol="add"
+                      label="Add rectification item"
+                      onClick={addRectificationSection} />
                   </div>
                 </div>
                 <div
@@ -2854,7 +2828,7 @@ function WriteUpForm({
                           <div style={{ fontSize: "12px", color: "var(--info)" }}>
                             {rowMeta?.kind === "added" ? `Added item ${rowMeta.index}` : `Authorised ${index + 1}`}
                           </div>
-                          <textarea
+                          <textarea className="app-input"
                             value={stripAuthorizedPrefix(task.label)}
                             onChange={handleTaskLabelChange(taskKey)}
                             rows={2}
@@ -2893,7 +2867,7 @@ function WriteUpForm({
                     {fieldConfig.label}
                   </label>
                     {fieldConfig.type === "textarea" ? (
-                      <textarea
+                      <textarea className="app-input"
                         value={writeUpData[fieldConfig.field]}
                         onChange={handleNoteChange(fieldConfig.field)}
                         style={{
@@ -2906,7 +2880,7 @@ function WriteUpForm({
                         onBlur={(e) => (e.currentTarget.style.borderColor = "var(--input-ring-color)")}
                       />
                     ) : (
-                      <input
+                      <input className="app-input"
                         type="text"
                         value={writeUpData[fieldConfig.field]}
                         onChange={handleInputChange(fieldConfig.field)}

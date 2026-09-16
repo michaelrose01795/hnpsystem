@@ -202,7 +202,7 @@ export default function SidebarGroupAccessModal({
                   disabled={usersLoading || Boolean(usersError) || availableUsers.length === 0}
                   aria-expanded={showAddUser}
                 >
-                  + Add user
+                  Add user
                 </Button>
             ) : null}
           </div>

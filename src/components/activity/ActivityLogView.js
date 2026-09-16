@@ -68,7 +68,7 @@ const RECORD_LINKS = {
   customer: { build: (id) => `/customers/${encodeURIComponent(id)}`, access: "/jobs" },
   invoice: { build: (id) => `/accounts/invoices/${encodeURIComponent(id)}`, access: "/accounts" },
   appointment: { build: () => "/appointments", access: "/appointments" },
-  parts_request: { build: () => "/parts", access: "/parts" },
+  parts_request: { build: () => "/stock-catalogue", access: "/stock-catalogue" },
   vhc_item: { build: (id) => `/job-cards/${encodeURIComponent(id)}`, access: "/jobs" },
 };
 

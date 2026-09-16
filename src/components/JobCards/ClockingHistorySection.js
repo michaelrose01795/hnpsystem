@@ -397,7 +397,7 @@ export default function ClockingHistorySection({
       >
         <div style={{ width: "100%", overflowX: "auto" }}>
           <div style={{ maxHeight: bodyMaxHeight, overflowY: shouldScroll ? "auto" : "visible" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+            <table className="app-data-table">
               <thead>
                 <tr>
                   {[
@@ -457,19 +457,12 @@ export default function ClockingHistorySection({
                       <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line-color)", fontWeight: 600 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <span>{row.technicianName}</span>
+                          {/* Badge family, not a hand-built pill: this row sits
+                              inside an .app-data-table, so .app-badge already
+                              resolves to the dense 32px height the old inline
+                              style was approximating. */}
                           {row.isActive ? (
-                            <span
-                              style={{
-                                fontSize: "0.72rem",
-                                fontWeight: 700,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.08em",
-                                color: "var(--success-dark)",
-                                backgroundColor: "var(--success-surface)",
-                                borderRadius: "var(--radius-pill)",
-                                padding: "3px 8px",
-                              }}
-                            >
+                            <span className="app-badge app-badge--success app-badge--uppercase">
                               Live
                             </span>
                           ) : null}
@@ -551,33 +544,19 @@ export default function ClockingHistorySection({
       </div>
 
       {clockOffTarget && typeof document !== "undefined" ? createPortal(
-        <div
-          onClick={closeClockOffPopup}
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: "var(--z-modal)",
-            padding: "16px",
-          }}
-        >
+        <div className="popup-backdrop" onClick={closeClockOffPopup}>
           <div
+            className="popup-card"
             onClick={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
             style={{
               width: "100%",
               maxWidth: "420px",
-              backgroundColor: "var(--surface)",
-              borderRadius: "var(--radius-lg)",
               padding: "24px",
               display: "flex",
               flexDirection: "column",
               gap: "16px",
-              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.25)",
             }}
           >
             <div>

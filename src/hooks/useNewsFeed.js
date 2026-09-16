@@ -36,6 +36,7 @@ import {
   fetchFeed,
   searchNews,
 } from "@/lib/api/news";
+import { notifyAcknowledgementsChanged } from "@/hooks/useNewsAckBadge";
 import { logFailure } from "@/lib/utils/logFailure";
 
 const EMPTY_FILTERS = {
@@ -260,6 +261,9 @@ export default function useNewsFeed() {
         patchPost(post.id, { isAcknowledged: true });
         try {
           await acknowledgePostRequest(post.id);
+          // Lets the sidebar's News Feed badge drop straight away instead of
+          // waiting for its next read (see hooks/useNewsAckBadge.js).
+          notifyAcknowledgementsChanged();
           pushAlert({ message: "Thanks — your acknowledgement is recorded.", type: "success" });
         } catch (ackError) {
           logFailure("Failed to acknowledge the update:", ackError);

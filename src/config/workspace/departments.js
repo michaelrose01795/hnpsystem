@@ -158,7 +158,7 @@ export const WORKSPACE_DEPARTMENTS = Object.freeze([
   },
   {
     key: "service",
-    label: "Reception",
+    label: "Service",
     category: "departments",
     icon: "service",
     home: "/dashboard/service",
@@ -271,14 +271,14 @@ export const WORKSPACE_DASHBOARD_SHORTCUTS = Object.freeze([
   },
   {
     label: "Tech Dashboard",
-    href: "/tech/dashboard",
+    href: "/dashboard/tech",
     roles: ["techs"],
     description: "Technician personal dashboard with job assignments and clocking",
     department: "workshop",
   },
   {
     label: "Mobile Tech Dashboard",
-    href: "/mobile/dashboard",
+    href: "/dashboard/mobile",
     roles: ["mobile technician"],
     description: "Today's on-site jobs, appointment windows, and parts status for mobile visits",
     department: "workshop",
@@ -357,7 +357,7 @@ export const WORKSPACE_QUICK_ACTIONS = Object.freeze([
   },
   {
     label: "Appointments",
-    href: "/job-cards/appointments",
+    href: "/appointments",
     roles: SERVICE_ACTION_ROLES,
     departments: ["service", "workshop"],
   },
@@ -410,13 +410,11 @@ export const WORKSPACE_PAGE_TABS = Object.freeze([
       { href: "/consumables-tracker", match: "prefix" },
       { href: "/clocking", match: "prefix" },
       { href: "/new-job", match: "prefix" },
-      { href: "/job-cards/appointments", match: "prefix" },
       { href: "/appointments", match: "prefix" },
     ],
     items: [
       { href: "/new-job", label: "Create Job Card", match: "prefix" },
-      { href: "/job-cards/appointments", label: "Appointments", match: "prefix" },
-      { href: "/appointments", label: "Check In", match: "prefix" },
+      { href: "/appointments", label: "Appointments", match: "prefix" },
     ],
   },
   {
@@ -625,10 +623,11 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     category: "departments",
     flag: null,
     items: [
-      // Job Cards deliberately NOT listed here — /jobs belongs to Reception
+      // Job Cards deliberately NOT listed here — /jobs belongs to Service
       // (department-service). The parts desk reaches job data through its own
       // pages, so the Parts module does not duplicate the page button.
       { label: "Orders", href: "/order", roles: ["parts"] },
+      { label: "Create Order", href: "/new-order", roles: ["parts"] },
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts"] },
       { label: "Goods In", href: "/goods-in", roles: ["parts"] },
       { label: "Deliveries", href: "/deliveries", roles: ["parts"] },
@@ -641,8 +640,9 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
     category: "departments",
     flag: null,
     items: [
-      // See the note in the Parts section above — Job Cards stays in Reception.
+      // See the note in the Parts section above — Job Cards stays in Service.
       { label: "Orders", href: "/order", roles: ["parts manager"] },
+      { label: "Create Order", href: "/new-order", roles: ["parts manager"] },
       { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
       { label: "Goods In", href: "/goods-in", roles: ["parts manager"] },
       { label: "Deliveries", href: "/deliveries", roles: ["parts manager"] },
@@ -755,6 +755,20 @@ export const WORKSPACE_NAV_SECTIONS = Object.freeze([
 // cross-group grant — see docs/Workspace Navigation/workspace-group-permissions.md.
 export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
   {
+    department: "service",
+    order: 35,
+    label: "Service Workspace",
+    category: "departments",
+    flag: null,
+    items: [
+      // No `roles` — the customer list inherits the Service group, so every
+      // role assigned that group sees it. Context section rather than
+      // WORKSPACE_NAV_SECTIONS so the byte-identical classic sidebar is
+      // untouched (an un-roled classic item would read as visible to all).
+      { label: "Customers", href: "/customers" },
+    ],
+  },
+  {
     department: "accounts",
     order: 132,
     label: "Accounts Workspace",
@@ -785,37 +799,30 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
   { key: "department-general", label: "General", department: "general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
   {
     key: "department-service",
-    label: "Reception",
+    label: "Service",
     department: "service",
-    hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs"],
+    hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers"],
   },
   {
     key: "department-workshop",
     label: "Workshop",
     department: "workshop",
     hrefs: [
-      // /mobile/dashboard is the Mobile Technician's landing dashboard. It is a
-      // workshop-department page and was previously reachable only through a
-      // role default that named no library module, which put it outside the
-      // library the Module page map claims is complete.
-      "/dashboard/workshop", "/mobile/dashboard", "/clocking", "/consumables-tracker",
-      "/tech/efficiency", "/nextjobs",
+      "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs",
     ],
   },
   {
-    // Tech sits with Workshop: it is the technician's own slice of the same
-    // department. It has no place in the requested rail order because no role
-    // sees both it and every other module at once.
+    // Technician pages share a dedicated module; workspace access stays unchanged.
     key: "department-tech",
     label: "Tech",
     department: "tech",
-    hrefs: ["/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request"],
+    hrefs: ["/dashboard/tech", "/tech", "/consumables-request", "/tech/efficiency", "/dashboard/mobile"],
   },
   {
     key: "department-parts",
     label: "Parts",
     department: "parts",
-    hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/stock-catalogue", "/deliveries", "/goods-in"],
+    hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in"],
   },
   {
     key: "department-management",
@@ -877,7 +884,7 @@ export function sortModulesByLibraryOrder(modules = []) {
 export const WORKSPACE_MODULES = Object.freeze({
   general: [{ key: "communication", label: "Communication", hrefs: ["/newsfeed", "/messages"] }, { key: "operations", label: "Operations", hrefs: ["/tracking", "/archive"] }],
   management: [{ key: "people", label: "People & HR", hrefs: ["/hr/manager"] }, { key: "governance", label: "Governance", hrefs: ["/admin/compliance"] }, { key: "website", label: "Website Operations", hrefs: ["/website-manager"] }],
-  service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }],
+  service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }, { key: "customers", label: "Customers", hrefs: ["/customers"] }],
   workshop: [{ key: "control", label: "Workshop Control", hrefs: ["/nextjobs", "/jobs", "/clocking", "/consumables-tracker"] }, { key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency", "/consumables-request", "/appointments", "/new-job"] }],
   mot: [{ key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency"] }],
   parts: [{ key: "stock", label: "Stock & Receiving", hrefs: ["/stock-catalogue", "/goods-in"] }, { key: "fulfilment", label: "Fulfilment", hrefs: ["/jobs", "/deliveries", "/delivery-planner"] }, { key: "ordering", label: "Ordering", hrefs: ["/order", "/new-order"] }],

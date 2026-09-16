@@ -2,8 +2,7 @@
 import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { Button, StatusMessage } from "@/components/ui";
+import { Button, LayerSurface, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { StatusTag } from "@/components/HR/MetricCard";
 import { CalendarField } from "@/components/ui/calendarAPI";
@@ -11,6 +10,10 @@ import { SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkel
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
 import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
+import EmptyState from "@/components/ui/EmptyState"; // canonical empty-state primitive
+import HrSummaryStrip from "@/components/HR/HrSummaryStrip"; // shared at-a-glance metric strip
+import { buildTrainingSummary } from "@/lib/hr/hrTabSummaries";
 
 export function getServerSideProps() {
   return redirectToHrManagerTab("training");
@@ -33,13 +36,18 @@ function TrainingContent() {
   const { data, isLoading, error } = useHrOperationsData();
   const trainingRenewals = data?.trainingRenewals ?? [];
   const employeeDirectory = data?.employeeDirectory ?? [];
+  const trainingCourses = data?.trainingCourses ?? [];
   const showPresentationMock = isPresentationMode();
+
+  // Everything expiring inside the 90-day renewal horizon, split by urgency so
+  // the lapsed and nearly-lapsed certificates are impossible to miss.
+  const summary = buildTrainingSummary({ trainingRenewals });
 
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <SectionCard
-          sectionKey="hr-training-card-1" parentKey="hr-manager-tab-training" title="Unable to load training data" subtitle="Mock API returned an error.">
+        <SectionCard layer="theme"
+          sectionKey="hr-training-error" parentKey="hr-manager-tab-training" title="Unable to load training data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
       </div>);
@@ -51,6 +59,12 @@ function TrainingContent() {
     label: employee.name
   }));
 
+  const courseOptions = trainingCourses.map((course) => ({
+    value: course.courseId,
+    label: course.title,
+    description: course.category || undefined
+  }));
+
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <SkeletonKeyframes />
@@ -60,29 +74,20 @@ function TrainingContent() {
         </p>
       </header>
 
-      <DevLayoutSection
-        as="section"
-        sectionKey="hr-training-row-1"
-        parentKey="hr-manager-tab-training"
-        sectionType="section-shell"
-        shell
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--layout-card-gap)"
-        }}>
+      {isLoading ? null : <HrSummaryStrip items={summary} parentKey="hr-manager-tab-training" />}
+
+      <SectionCard layer="theme"
+        sectionKey="hr-training-upcoming-expiries" parentKey="hr-manager-tab-training"
+        title="Upcoming Expiries"
+        subtitle="Renew before certificates lapse"
+        action={
+        <Button variant="primary" size="sm">
+            Notify employees
+          </Button>
+        }>
         
-        <SectionCard
-          sectionKey="hr-training-card-2" parentKey="hr-training-row-1"
-          title="Upcoming Expiries"
-          subtitle="Renew before certificates lapse"
-          action={
-          <Button variant="primary" size="sm">
-              Notify employees
-            </Button>
-          }>
-          
-          <div style={{ overflowX: "auto" }}>
+        <LayerSurface padding="var(--space-3)" gap="0">
+          <DataTableShell>
             <table className="app-data-table">
               <thead>
                 <tr>
@@ -95,6 +100,13 @@ function TrainingContent() {
               <tbody>
                 {isLoading ?
                 <TableRowsSkeleton rows={5} cols={4} /> :
+
+                trainingRenewals.length === 0 ?
+                <tr>
+                  <td colSpan={4}>
+                    <EmptyState variant="bare" icon="🎓" title="No renewals due" description="Certifications falling due in the next 90 days appear here." />
+                  </td>
+                </tr> :
 
                 trainingRenewals.map((record) => {
                   const tone =
@@ -113,16 +125,18 @@ function TrainingContent() {
                 }
               </tbody>
             </table>
-          </div>
-        </SectionCard>
+          </DataTableShell>
+        </LayerSurface>
+      </SectionCard>
 
-        <SectionCard
-          sectionKey="hr-training-card-3" parentKey="hr-training-row-1"
-          title="Training Catalogue"
-          subtitle="Courses available to assign">
-          
-          {showPresentationMock ? (
-            <div style={{ overflowX: "auto" }}>
+      <SectionCard layer="theme"
+        sectionKey="hr-training-catalogue" parentKey="hr-manager-tab-training"
+        title="Training Catalogue"
+        subtitle="Courses available to assign">
+        
+        {showPresentationMock ? (
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
               <table className="app-data-table">
                 <thead>
                   <tr>
@@ -143,17 +157,48 @@ function TrainingContent() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          ) : (
-            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-              TODO: Fetch course catalogue from LMS/Supabase. Display course name, duration, mandatory flag, and an "Add course" action.
-            </p>
-          )}
-        </SectionCard>
-      </DevLayoutSection>
+            </DataTableShell>
+          </LayerSurface>
+        ) : trainingCourses.length ? (
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Course</th>
+                    <th>Category</th>
+                    <th>Renewal</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trainingCourses.map((course) => (
+                    <tr key={course.courseId}>
+                      <td style={{ fontWeight: 600 }}>{course.title}</td>
+                      <td>{course.category || "General"}</td>
+                      <td>
+                        {course.renewalIntervalMonths
+                          ? `Every ${course.renewalIntervalMonths} months`
+                          : "No renewal"}
+                      </td>
+                      <td>{course.description || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTableShell>
+          </LayerSurface>
+        ) : isLoading ? null : (
+          <EmptyState
+            icon="🎓"
+            title="No courses in the catalogue"
+            description="Courses appear here with their category and how often they need renewing."
+          />
+        )}
+      </SectionCard>
 
-      <SectionCard
-        sectionKey="hr-training-card-4" parentKey="hr-manager-tab-training" title="Assign Training" subtitle="Send employees on mandatory or optional courses.">
+      <SectionCard layer="theme"
+        sectionKey="hr-training-assign-training" parentKey="hr-manager-tab-training" title="Assign Training" subtitle="Send employees on mandatory or optional courses.">
         <form
           style={{
             display: "grid",
@@ -173,9 +218,8 @@ function TrainingContent() {
             name="course"
             placeholder="Select course"
             defaultValue=""
-            disabled
-            options={[]}
-            helperText="Populate course options from the training catalogue database table." />
+            disabled={courseOptions.length === 0}
+            options={courseOptions} />
           
           <CalendarField label="Due Date" name="dueDate" id="dueDate" />
           <label style={labelStyle}>
@@ -197,33 +241,37 @@ function TrainingContent() {
         </form>
       </SectionCard>
 
-      <SectionCard
-        sectionKey="hr-training-card-5" parentKey="hr-manager-tab-training" title="Training Compliance Snapshot" subtitle="High-level view of overall compliance rates.">
+      <SectionCard layer="theme"
+        sectionKey="hr-training-compliance-snapshot" parentKey="hr-manager-tab-training" title="Training Compliance Snapshot" subtitle="High-level view of overall compliance rates.">
         {showPresentationMock ? (
-          <div style={{ overflowX: "auto" }}>
-            <table className="app-data-table">
-              <thead>
-                <tr>
-                  <th>Department</th>
-                  <th>Compliance</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hrPresentationData.trainingCompliance.map((row) => (
-                  <tr key={row.id}>
-                    <td style={{ fontWeight: 600 }}>{row.department}</td>
-                    <td>{row.compliance}%</td>
-                    <td>{row.status}</td>
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Department</th>
+                    <th>Compliance</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {hrPresentationData.trainingCompliance.map((row) => (
+                    <tr key={row.id}>
+                      <td style={{ fontWeight: 600 }}>{row.department}</td>
+                      <td>{row.compliance}%</td>
+                      <td>{row.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTableShell>
+          </LayerSurface>
         ) : (
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Calculate compliance percentages per department from Supabase training records. Show percentage cards for each department with on-track/behind status.
-          </p>
+          <EmptyState
+            icon="📈"
+            title="No compliance data yet"
+            description="Completion rates per department appear here once training records are recorded against employees."
+          />
         )}
       </SectionCard>
     </div>);

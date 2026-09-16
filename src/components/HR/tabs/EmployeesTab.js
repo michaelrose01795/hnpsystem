@@ -3,6 +3,7 @@
 // Manages employee directory, profiles, and employment details
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
 import Link from "next/link";
 import { useHrEmployeesData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
@@ -14,6 +15,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
+import LayerSurface from "@/components/ui/LayerSurface"; // third rung: nested inside a --theme SectionCard, so --surface (CLAUDE.md 3.0a-2)
 
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
 
@@ -48,17 +50,6 @@ const buildUniqueList = (items = []) => {
     }
   });
   return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
-};
-
-const getInitials = (name = "") => {
-  const parts = String(name || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (!parts.length) return "??";
-  const first = parts[0]?.[0] || "";
-  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : "";
-  return `${first}${last}`.toUpperCase() || "??";
 };
 
 const SAMPLE_PAYLOAD_FIELD_MAP = {
@@ -310,6 +301,22 @@ export default function EmployeesTab() {
   const selectedEmployee = useMemo(
     () => employees.find((emp) => emp.id === selectedEmployeeId) ?? null,
     [employees, selectedEmployeeId]
+  );
+
+  // Line managers are stored as user ids (employeeMeta.lineManagerIds). Resolving
+  // them against the directory we already hold lets the profile panel show the
+  // manager's job title and open their profile, without a second data source.
+  const resolveEmployeeByUserId = useCallback(
+    (userId) => employees.find((emp) => String(emp.userId) === String(userId)) ?? null,
+    [employees]
+  );
+
+  const handleSelectEmployeeByUserId = useCallback(
+    (userId) => {
+      const match = employees.find((emp) => String(emp.userId) === String(userId));
+      if (match) setSelectedEmployeeId(match.id);
+    },
+    [employees]
   );
 
   const employeeSummary = useMemo(() => {
@@ -694,11 +701,10 @@ export default function EmployeesTab() {
         shell
         className="hr-employees-directory-shell"
       >
-        <SectionCard
+        <SectionCard layer="theme"
           sectionKey="hr-employees-directory-card"
           parentKey="hr-employees-directory"
           sectionType="content-card"
-          backgroundToken="surface"
           className="hr-employees-directory-card"
           title=""
           subtitle={null}
@@ -731,7 +737,6 @@ export default function EmployeesTab() {
                 aria-label="Add employee"
                 style={{ gap: "6px" }}
               >
-                <span style={{ fontSize: "1rem", lineHeight: 1, fontWeight: 700 }}>+</span>
                 <span>Add Employee</span>
               </Button>
             </div>
@@ -754,87 +759,75 @@ export default function EmployeesTab() {
             sectionKey="hr-employees-directory-list"
             parentKey="hr-employees-directory-card"
             sectionType="data-table"
-            backgroundToken="accent-surface"
+            backgroundToken="surface"
+            data-dev-card-section="Employee directory table"
             className="hr-employees-list app-table-shell-scroll"
           >
-            <table className="hr-employees-table app-data-table">
-              <thead
-                data-dev-section="1"
-                data-dev-section-key="hr-employees-directory-table-headings"
-                data-dev-section-type="table-headings"
-                data-dev-section-parent="hr-employees-directory-list"
-              >
-                <tr>
-                  <th>Name</th>
-                  <th>Department</th>
-                  <th>Role</th>
-                </tr>
-              </thead>
-              <tbody
-                data-dev-section="1"
-                data-dev-section-key="hr-employees-directory-table-rows"
-                data-dev-section-type="table-rows"
-                data-dev-section-parent="hr-employees-directory-list"
-              >
-                {filteredEmployees.length === 0 && (
-                  <tr>
-                    <td className="hr-employees-empty-row" colSpan={3}>
-                      No employees match the current filters.
-                    </td>
-                  </tr>
-                )}
-                {filteredEmployees.map((employee) => {
-                  const isSelected = employee.id === selectedEmployeeId;
-                  return (
-                    <DevLayoutSection
-                      as="tr"
-                      key={employee.id}
-                      sectionKey={`hr-employee-row-${employee.userId || employee.id}`}
-                      parentKey="hr-employees-directory-table-rows"
-                      sectionType="table-row"
-                      backgroundToken="accent-surface"
-                      tabIndex={0}
-                      onClick={() => setSelectedEmployeeId(employee.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          setSelectedEmployeeId(employee.id);
-                        }
-                      }}
-                      aria-selected={isSelected}
-                      className={`hr-employees-table-row${isSelected ? " is-selected" : ""}`}
-                    >
-                  <td className="hr-employees-person-cell">
-                    <span className="hr-employees-row-avatar">
-                      {getInitials(employee.name)}
-                    </span>
-                    <div className="hr-employees-row-body">
-                    <div className="hr-employees-row-header">
-                      <span className="hr-employees-row-name">
+            <LayerSurface padding="var(--space-3)" gap="0">
+              <DataTableShell>
+                <table className="hr-employees-table app-data-table">
+                  <thead
+                    data-dev-section="1"
+                    data-dev-section-key="hr-employees-directory-table-headings"
+                    data-dev-section-type="table-headings"
+                    data-dev-section-parent="hr-employees-directory-list"
+                  >
+                    <tr>
+                      <th>Name</th>
+                      <th>Department</th>
+                      <th>Role</th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    data-dev-section="1"
+                    data-dev-section-key="hr-employees-directory-table-rows"
+                    data-dev-section-type="table-rows"
+                    data-dev-section-parent="hr-employees-directory-list"
+                  >
+                    {filteredEmployees.length === 0 && (
+                      <tr>
+                        <td className="hr-employees-empty-row" colSpan={3}>
+                          No employees match the current filters.
+                        </td>
+                      </tr>
+                    )}
+                    {filteredEmployees.map((employee) => {
+                      const isSelected = employee.id === selectedEmployeeId;
+                      return (
+                        <DevLayoutSection
+                          as="tr"
+                          key={employee.id}
+                          sectionKey={`hr-employee-row-${employee.userId || employee.id}`}
+                          parentKey="hr-employees-directory-table-rows"
+                          sectionType="table-row"
+                          backgroundToken="accent-surface"
+                          tabIndex={0}
+                          onClick={() => setSelectedEmployeeId(employee.id)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setSelectedEmployeeId(employee.id);
+                            }
+                          }}
+                          aria-selected={isSelected}
+                          className={`hr-employees-table-row${isSelected ? " is-selected" : ""}`}
+                        >
+                      {/* Plain text cells only. A <td> set to display:flex is pulled out
+                          of the table's column model and wrapped in an anonymous table
+                          cell, which produced a dead, un-hoverable block beside the name
+                          and squeezed the Department / Role columns. */}
+                      <td className="hr-employees-person-cell" title={employee.email || undefined}>
                         {employee.name}
-                      </span>
-                      {employee.email ? (
-                        <span className="hr-employees-row-email">{employee.email}</span>
-                      ) : null}
-                    </div>
-                    <span className="hr-employees-row-role">
-                      {employee.department || "Department"} • {employee.jobTitle || employee.role || "Role"}
-                    </span>
-                    <div className="hr-employees-row-meta">
-                      {employee.startDate ? <span>Started {employee.startDate}</span> : null}
-                      {employee.phone ? <span>{employee.phone}</span> : null}
-                      {employee.contractedHours ? <span>{employee.contractedHours} hrs / week</span> : null}
-                    </div>
-                    </div>
-                  </td>
-
-                  <td>{employee.department || "Department"}</td>
-                  <td>{employee.jobTitle || employee.role || "Role"}</td>
-                    </DevLayoutSection>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </td>
+                      <td>{employee.department || "Department"}</td>
+                      <td>{employee.jobTitle || employee.role || "Role"}</td>
+                        </DevLayoutSection>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </DataTableShell>
+            </LayerSurface>
           </DevLayoutSection>
         </SectionCard>
       </DevLayoutSection>
@@ -847,11 +840,13 @@ export default function EmployeesTab() {
         shell
         disableFallback
         className="hr-employees-detail-panel"
-        backgroundToken="accent-surface"
+        data-dev-card-section="Employee detail panel"
       >
         <EmployeeProfilePanel
           employee={selectedEmployee}
           onEdit={selectedEmployee ? handleStartEditEmployee : null}
+          onSelectEmployee={handleSelectEmployeeByUserId}
+          resolveEmployeeByUserId={resolveEmployeeByUserId}
         />
       </DevLayoutSection>
     </div>
@@ -900,7 +895,11 @@ export default function EmployeesTab() {
 
   if (error) {
     return (
-      <SectionCard title="Failed to load employee directory" subtitle="An error occurred.">
+      <SectionCard layer="theme"
+        sectionKey="hr-employees-error"
+        parentKey="hr-manager-tab-employees"
+        title="Failed to load employee directory"
+        subtitle="An error occurred.">
         <span style={{ color: "var(--danger)" }}>{error.message}</span>
       </SectionCard>
     );
@@ -929,7 +928,7 @@ function EmployeeForm({
 
   return (
     <section className="employee-form" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <SectionCard
+      <SectionCard layer="theme"
         title={title}
         subtitle={subtitle}
         action={
@@ -1040,7 +1039,7 @@ function SearchableListDropdown({
 
   return (
     <div ref={dropdownRef} style={{ position: "relative" }}>
-      <input
+      <input className="app-input"
         type="text"
         value={isOpen ? searchTerm : value}
         onChange={(e) => {
@@ -1220,7 +1219,7 @@ function SearchableMultiSelect({
             </button>
           ))
         ) : null}
-        <input
+        <input className="app-input"
           ref={controlInputRef}
           type="text"
           value={searchTerm}
@@ -1352,13 +1351,11 @@ function EmployeeDetailsFields({
   lineManagerOptions = [],
 }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
-  const inputStyle = {
-    padding: "10px",
-    borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--input-ring-color)",
-    background: "var(--surface)",
-    color: "var(--text-1)",
-  };
+  // Control chrome (padding, radius, ring, fill, text colour) comes from the
+  // global .app-input class in staffglobal.css, which every field now carries.
+  // Keeping the old inline clone here would win over the class and re-introduce
+  // the drift. Only the error state below adds anything.
+  const inputStyle = {};
   const applyFieldErrorStyle = (field, baseStyle = inputStyle) =>
     fieldErrors[field]
       ? {
@@ -1403,19 +1400,19 @@ function EmployeeDetailsFields({
         />
         <div style={gridStyle}>
           <FormField label="First Name" errorMessage={fieldErrors.firstName}>
-            <input type="text" value={values.firstName} onChange={update("firstName")} style={applyFieldErrorStyle("firstName")} placeholder="Jordan" />
+            <input className="app-input" type="text" value={values.firstName} onChange={update("firstName")} style={applyFieldErrorStyle("firstName")} placeholder="Jordan" />
           </FormField>
           <FormField label="Last Name" errorMessage={fieldErrors.lastName}>
-            <input type="text" value={values.lastName} onChange={update("lastName")} style={applyFieldErrorStyle("lastName")} placeholder="Reyes" />
+            <input className="app-input" type="text" value={values.lastName} onChange={update("lastName")} style={applyFieldErrorStyle("lastName")} placeholder="Reyes" />
           </FormField>
           <FormField label="Email" errorMessage={fieldErrors.email}>
-            <input type="email" value={values.email} onChange={update("email")} style={applyFieldErrorStyle("email")} placeholder="jordan.reyes@example.com" />
+            <input className="app-input" type="email" value={values.email} onChange={update("email")} style={applyFieldErrorStyle("email")} placeholder="jordan.reyes@example.com" />
           </FormField>
           <FormField label="Phone" errorMessage={fieldErrors.phone}>
-            <input type="tel" value={values.phone} onChange={update("phone")} style={applyFieldErrorStyle("phone")} placeholder="+44 7000 000000" />
+            <input className="app-input" type="tel" value={values.phone} onChange={update("phone")} style={applyFieldErrorStyle("phone")} placeholder="+44 7000 000000" />
           </FormField>
           <FormField label="Extension" errorMessage={fieldErrors.extension}>
-            <input type="text" value={values.extension} onChange={update("extension")} style={applyFieldErrorStyle("extension")} placeholder="212" />
+            <input className="app-input" type="text" value={values.extension} onChange={update("extension")} style={applyFieldErrorStyle("extension")} placeholder="212" />
           </FormField>
         </div>
       </div>
@@ -1429,7 +1426,7 @@ function EmployeeDetailsFields({
         />
         <div style={gridStyle}>
           <FormField label="Department" errorMessage={fieldErrors.department}>
-            <input type="text" value={values.department} onChange={update("department")} style={applyFieldErrorStyle("department")} placeholder="Operations" />
+            <input className="app-input" type="text" value={values.department} onChange={update("department")} style={applyFieldErrorStyle("department")} placeholder="Operations" />
           </FormField>
           <FormField label="Job Title" errorMessage={fieldErrors.jobTitle}>
             <SearchableListDropdown
@@ -1479,7 +1476,7 @@ function EmployeeDetailsFields({
             </div>
           </FormField>
           <FormField label="Contracted Hours / Week" errorMessage={fieldErrors.contractedHours}>
-            <input type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={applyFieldErrorStyle("contractedHours")} />
+            <input className="app-input" type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={applyFieldErrorStyle("contractedHours")} />
           </FormField>
           <FormField label="Line Manager" errorMessage={fieldErrors.lineManagerIds}>
             <SearchableMultiSelect
@@ -1504,13 +1501,13 @@ function EmployeeDetailsFields({
         />
         <div style={gridStyle}>
           <FormField label="Hourly Rate (£)" errorMessage={fieldErrors.hourlyRate}>
-            <input type="number" min="0" step="0.01" value={values.hourlyRate} onChange={update("hourlyRate")} style={applyFieldErrorStyle("hourlyRate")} placeholder="15.50" />
+            <input className="app-input" type="number" min="0" step="0.01" value={values.hourlyRate} onChange={update("hourlyRate")} style={applyFieldErrorStyle("hourlyRate")} placeholder="15.50" />
           </FormField>
           <FormField label="Overtime Rate (£)" errorMessage={fieldErrors.overtimeRate}>
-            <input type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={applyFieldErrorStyle("overtimeRate")} placeholder="23.25" />
+            <input className="app-input" type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={applyFieldErrorStyle("overtimeRate")} placeholder="23.25" />
           </FormField>
           <FormField label="Basic Salary (£)" errorMessage={fieldErrors.annualSalary}>
-            <input
+            <input className="app-input"
               type="number"
               min="0"
               step="0.01"
@@ -1521,10 +1518,10 @@ function EmployeeDetailsFields({
             />
           </FormField>
           <FormField label="Payroll Reference" errorMessage={fieldErrors.payrollNumber}>
-            <input type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={applyFieldErrorStyle("payrollNumber")} placeholder="PAY-001" />
+            <input className="app-input" type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={applyFieldErrorStyle("payrollNumber")} placeholder="PAY-001" />
           </FormField>
           <FormField label="National Insurance No." errorMessage={fieldErrors.nationalInsurance}>
-            <input type="text" value={values.nationalInsurance} onChange={update("nationalInsurance")} style={applyFieldErrorStyle("nationalInsurance")} placeholder="QQ123456C" />
+            <input className="app-input" type="text" value={values.nationalInsurance} onChange={update("nationalInsurance")} style={applyFieldErrorStyle("nationalInsurance")} placeholder="QQ123456C" />
           </FormField>
         </div>
       </div>
@@ -1640,7 +1637,7 @@ function AddressSearchField({ value, onChange }) {
       }}
     >
       <FormField label="Address">
-        <input
+        <input className="app-input"
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -1651,7 +1648,7 @@ function AddressSearchField({ value, onChange }) {
       <div ref={wrapperRef} style={{ position: "relative" }}>
         <FormField label="Search by Postcode">
           <div style={{ position: "relative" }}>
-            <input
+            <input className="app-input"
               type="text"
               value={query}
               onChange={handleQueryChange}
@@ -1770,7 +1767,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
         }}
       >
         <FormField label="Contact Name">
-          <input
+          <input className="app-input"
             type="text"
             value={parsed.name}
             onChange={handleFieldChange("name")}
@@ -1779,7 +1776,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
           />
         </FormField>
         <FormField label="Contact Phone">
-          <input
+          <input className="app-input"
             type="tel"
             value={parsed.phone}
             onChange={handleFieldChange("phone")}
@@ -1788,7 +1785,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
           />
         </FormField>
         <FormField label="Relationship">
-          <input
+          <input className="app-input"
             type="text"
             value={parsed.relationship}
             onChange={handleFieldChange("relationship")}
@@ -1836,7 +1833,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
           not clear any field values.
         </span>
       </div>
-      <textarea
+      <textarea className="app-input"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         rows={6}

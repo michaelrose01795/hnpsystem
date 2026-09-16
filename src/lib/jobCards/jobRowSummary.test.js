@@ -115,7 +115,7 @@ describe("job row operational summary", () => {
 
   it("shows an explicit empty parts state and omits unsupported timing details", () => {
     const summary = buildJobRowSummary({ status: "Booked", vhcRequired: true }, { now });
-    expect(summary.parts).toEqual({ label: "No parts status", tone: "neutral", detail: "" });
+    expect(summary.parts).toEqual({ label: "No parts", tone: "neutral", detail: "" });
     expect(summary.appointmentTime).toBe("");
     expect(summary.promisedLabel).toBe("");
     expect(summary.promisedState).toBeNull();
@@ -138,7 +138,7 @@ describe("job row operational summary", () => {
       partsRequests: [{ status: "on_order" }],
     }, { now });
 
-    expect(summary.parts).toEqual({ label: "Parts on order", tone: "warning", detail: "2 items" });
+    expect(summary.parts).toEqual({ label: "Parts on order", tone: "warning-strong", detail: "2 items" });
   });
 
   it("selects the latest active appointment deterministically", () => {

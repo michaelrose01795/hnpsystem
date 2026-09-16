@@ -1,7 +1,14 @@
 // file location: src/components/NewsFeed/NewsChips.js
 //
-// The small metadata chips a post carries: priority, category, department,
+// The small metadata labels a post carries: priority, category, department,
 // status and source.
+//
+// Shape is the canonical Badge family (.app-badge plus one semantic tone
+// modifier, families/badges.css). The feed used to carry its own
+// .app-news-chip pill - pill-end radius, --text-caption type and its own tone
+// palette - which made a post's status read differently from the same status
+// anywhere else in the app. Nothing news-specific survives except the row that
+// lays the badges out (.app-news-badge-row) and the leading glyph.
 //
 // Tone is always carried by a background tint PLUS a glyph, never by colour
 // alone (CLAUDE.md §3.0a rule 3), so the feed still reads correctly in
@@ -19,16 +26,21 @@ import {
 } from "@/lib/news/constants";
 
 const PRIORITY_TONE = {
-  [PRIORITY_URGENT]: { modifier: "app-news-chip--urgent", glyph: "!" },
-  [PRIORITY_IMPORTANT]: { modifier: "app-news-chip--important", glyph: "!" },
+  [PRIORITY_URGENT]: { modifier: "app-badge--danger", glyph: "!" },
+  [PRIORITY_IMPORTANT]: { modifier: "app-badge--warning", glyph: "!" },
 };
 
-export function NewsChip({ tone = "", glyph = "", children, title }) {
-  const classes = ["app-news-chip", tone].filter(Boolean).join(" ");
+/**
+ * tone is a .app-badge tone modifier, defaulted to --neutral rather than left
+ * blank: a bare .app-badge carries no fill, so a missing tone would render as
+ * loose text instead of a label.
+ */
+export function NewsChip({ tone = "app-badge--neutral", glyph = "", children, title }) {
+  const classes = ["app-badge", tone].filter(Boolean).join(" ");
   return (
     <span className={classes} title={title}>
       {glyph && (
-        <span className="app-news-chip__glyph" aria-hidden="true">
+        <span className="app-news-badge__glyph" aria-hidden="true">
           {glyph}
         </span>
       )}
@@ -52,7 +64,7 @@ export function PriorityChip({ priority }) {
 export function CategoryChip({ category }) {
   const definition = getCategory(category);
   return (
-    <NewsChip tone="app-news-chip--category" glyph={definition.icon}>
+    <NewsChip tone="app-badge--accent-soft" glyph={definition.icon}>
       {definition.label}
     </NewsChip>
   );
@@ -69,7 +81,7 @@ export function DepartmentChips({ departments = [], max = 3 }) {
         <NewsChip key={department}>{department}</NewsChip>
       ))}
       {remaining > 0 && (
-        <NewsChip tone="app-news-chip--muted" title={departments.join(", ")}>
+        <NewsChip tone="app-badge--neutral" title={departments.join(", ")}>
           {`+${remaining} more`}
         </NewsChip>
       )}
@@ -81,7 +93,7 @@ export function DepartmentChips({ departments = [], max = 3 }) {
 export function StatusChip({ status, publishAt }) {
   if (status === STATUS_DRAFT) {
     return (
-      <NewsChip tone="app-news-chip--muted" glyph="✎">
+      <NewsChip tone="app-badge--neutral" glyph="✎">
         Draft
       </NewsChip>
     );
@@ -89,7 +101,7 @@ export function StatusChip({ status, publishAt }) {
   if (status === STATUS_SCHEDULED) {
     return (
       <NewsChip
-        tone="app-news-chip--important"
+        tone="app-badge--warning"
         glyph="⏱"
         title={publishAt ? `Goes live ${new Date(publishAt).toLocaleString("en-GB")}` : undefined}
       >
@@ -99,7 +111,7 @@ export function StatusChip({ status, publishAt }) {
   }
   if (status === STATUS_ARCHIVED) {
     return (
-      <NewsChip tone="app-news-chip--muted" glyph="🗄">
+      <NewsChip tone="app-badge--neutral" glyph="🗄">
         Archived
       </NewsChip>
     );
@@ -110,7 +122,7 @@ export function StatusChip({ status, publishAt }) {
 export function SystemChip({ source }) {
   if (source !== "system") return null;
   return (
-    <NewsChip tone="app-news-chip--muted" glyph="🤖" title="Posted automatically by HNPSystem">
+    <NewsChip tone="app-badge--neutral" glyph="🤖" title="Posted automatically by HNPSystem">
       Automated
     </NewsChip>
   );
@@ -119,11 +131,11 @@ export function SystemChip({ source }) {
 export function AckChip({ requiresAck, isAcknowledged }) {
   if (!requiresAck) return null;
   return isAcknowledged ? (
-    <NewsChip tone="app-news-chip--success" glyph="✓">
+    <NewsChip tone="app-badge--success" glyph="✓">
       Acknowledged
     </NewsChip>
   ) : (
-    <NewsChip tone="app-news-chip--urgent" glyph="!">
+    <NewsChip tone="app-badge--danger" glyph="!">
       Needs acknowledgement
     </NewsChip>
   );
@@ -133,7 +145,7 @@ export function AckChip({ requiresAck, isAcknowledged }) {
 export default function NewsChipRow({ post, showStatus = true }) {
   if (!post) return null;
   return (
-    <div className="app-news-chip-row">
+    <div className="app-news-badge-row">
       <PriorityChip priority={post.priority} />
       <AckChip requiresAck={post.requiresAck} isAcknowledged={post.isAcknowledged} />
       <CategoryChip category={post.category} />

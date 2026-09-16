@@ -73,7 +73,7 @@ function NewBreachForm({ onCreated }) {
   if (!open) {
     return (
       <Button type="button" variant="primary" size="sm" onClick={() => setOpen(true)}>
-        + New Breach Record
+        New Breach Record
       </Button>
     );
   }
@@ -191,16 +191,16 @@ export default function BreachesPage() {
           <p style={{ margin: 0, color: "var(--text-1)" }}>No breaches on record.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+            <table className="app-data-table">
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Detected</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Hours elapsed</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Category</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Severity</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Status</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>ICO ref</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Action</th>
+                  <th>Detected</th>
+                  <th>Hours elapsed</th>
+                  <th>Category</th>
+                  <th>Severity</th>
+                  <th>Status</th>
+                  <th>ICO ref</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,7 +209,7 @@ export default function BreachesPage() {
                   const overdue = elapsed > 72 && !row.ico_notified_at && row.status !== "closed";
                   return (
                     <tr key={row.id}>
-                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.detected_at)}</td>
+                      <td>{fmt(row.detected_at)}</td>
                       <td style={{
                         padding: 8,
                         borderBottom: "var(--separating-line)",
@@ -218,8 +218,8 @@ export default function BreachesPage() {
                       }}>
                         {elapsed}h{overdue ? " ⚠" : ""}
                       </td>
-                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.category || "—"}</td>
-                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                      <td>{row.category || "—"}</td>
+                      <td>
                         <DropdownField
                           value={row.severity || "medium"}
                           disabled={busyId === row.id}
@@ -228,7 +228,7 @@ export default function BreachesPage() {
                           size="sm"
                         />
                       </td>
-                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                      <td>
                         <DropdownField
                           value={row.status}
                           disabled={busyId === row.id}
@@ -237,7 +237,7 @@ export default function BreachesPage() {
                           size="sm"
                         />
                       </td>
-                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                      <td>
                         <input
                           type="text"
                           defaultValue={row.ico_reference || ""}
@@ -255,7 +255,7 @@ export default function BreachesPage() {
                           style={{ minHeight: 32, width: 130 }}
                         />
                       </td>
-                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                      <td>
                         {row.status !== "closed" && (
                           <Button
                             type="button"

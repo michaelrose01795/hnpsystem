@@ -16,6 +16,7 @@
 // attribute contract and `handleCardPointerDown`.
 import React from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
 import CapacitySettingsPopup from "@/components/Clocking/CapacitySettingsPopup";
@@ -24,13 +25,8 @@ import { buildWorkshopCapacitySegments } from "@/lib/capacity/technicianCapacity
 // ===========================================================================
 // Shared style constants (replace the former CSS-module tokens)
 // ===========================================================================
-const LIFT = "0 10px 26px rgba(0, 0, 0, 0.22)";
-const LIFT_SM = "0 4px 12px rgba(0, 0, 0, 0.16)";
 const RADIUS_LG = "var(--radius-lg, 16px)";
 const HAIRLINE_BOTTOM = "inset 0 -1px 0 rgba(var(--accent-base-rgb), 0.14)";
-const HIGHLIGHT_SHADOW =
-  "inset 0 0 0 1px rgba(var(--success-rgb), 0.6), 0 0 0 2px rgba(var(--success-rgb), 0.45), " +
-  LIFT;
 
 // ===========================================================================
 // Presentation helpers (pure display logic — no data fetching)
@@ -175,14 +171,13 @@ function WorkshopQueueCard({
     gap: "7px",
     padding: "12px 14px",
     borderRadius: "var(--radius-md)",
-    // Assigned card turns success-tinted once the technician is clocked onto it.
-    background: assigned && isClockedOn ? "var(--success-surface)" : "var(--surface)",
+    // Search matches and assigned cards with active clocking use a tint without shadows.
+    background: isHighlighted || (assigned && isClockedOn) ? "var(--success-surface)" : "var(--surface)",
     color: "var(--text-1)",
     textAlign: "left",
     cursor: "grab",
     touchAction: "none",
     opacity: isDragging ? 0.5 : 1,
-    boxShadow: isHighlighted ? HIGHLIGHT_SHADOW : LIFT_SM,
     alignSelf: "center",
   };
 
@@ -453,7 +448,7 @@ const WorkshopQueueBoard = React.memo(function WorkshopQueueBoard({ techRows, mo
       gap="0"
       data-presentation="workshop-queue-board"
       data-dev-text-preview={`Workshop queue board ${techRows.length} technicians ${motRows.length} MOT users`}
-      style={{ overflow: "hidden", boxShadow: LIFT }}
+      style={{ overflow: "hidden" }}
     >
       <div
         data-dev-section="1"
@@ -541,9 +536,9 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onAssign, est
               <h3 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "var(--accent-strong)" }}>#{job.jobNumber}</h3>
             </div>
             <div className="app-popup-compact-header__actions wqp-job-modal-header__actions">
-              <button type="button" className="app-btn app-btn--primary" onClick={onOpenJobCard}>Open Job Card</button>
-              <button type="button" className="app-btn app-btn--secondary" onClick={onAssign}>Assign Technician</button>
-              <button type="button" className="app-btn app-btn--secondary" onClick={onClose}>Close</button>
+              <Button type="button" variant="primary" onClick={onOpenJobCard}>Open Job Card</Button>
+              <Button type="button" variant="secondary" onClick={onAssign}>Assign Technician</Button>
+              <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
             </div>
           </header>
 
@@ -888,7 +883,6 @@ export default function WorkshopQueuePlanner({
         gap="0"
         data-dev-text-preview={`Checked In Jobs ${checkedInJobs.length} checked in`}
         style={{
-          boxShadow: LIFT,
           height: checkedInCollapsed ? "44px" : "auto",
           minHeight: checkedInCollapsed ? "44px" : undefined,
           maxHeight: checkedInCollapsed ? "44px" : undefined,
@@ -987,7 +981,7 @@ export default function WorkshopQueuePlanner({
         data-dev-text-preview={`Unassigned Jobs ${outstanding.length} waiting to allocate`}
         style={{
           transition: "box-shadow 0.15s ease, height 0.15s ease",
-          boxShadow: activeDropTarget === "outstanding" ? `${LIFT}, inset 0 0 0 2px var(--primary)` : LIFT,
+          boxShadow: activeDropTarget === "outstanding" ? "inset 0 0 0 2px var(--primary)" : "none",
           height: unassignedCollapsed ? "44px" : "auto",
           minHeight: unassignedCollapsed ? "44px" : undefined,
           maxHeight: unassignedCollapsed ? "44px" : undefined,
@@ -1234,11 +1228,10 @@ export default function WorkshopQueuePlanner({
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
         }
         .wqp-lift {
-          transition: transform 0.14s ease, box-shadow 0.18s ease;
+          transition: transform 0.14s ease;
         }
         .wqp-lift:hover {
           transform: translateY(-2px);
-          box-shadow: ${LIFT};
         }
         .wqp-grab:active {
           cursor: grabbing;

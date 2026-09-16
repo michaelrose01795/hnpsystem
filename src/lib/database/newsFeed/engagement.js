@@ -7,6 +7,7 @@
 // read; an acknowledgement is a deliberate "I have read and understood this"
 // that a manager can chase, and is only ever written from an explicit action.
 
+import { isPostVisibleToDepartments, normalizeDepartments } from "@/lib/news/constants";
 import {
   assertWriteAccess,
   db,
@@ -205,21 +206,44 @@ export async function getAudienceForDepartments(departments = []) {
     .map(formatUser);
 }
 
-/** Everything this user still owes an acknowledgement on. */
-export async function getOutstandingAcknowledgements(userId) {
+/**
+ * Everything this user still owes an acknowledgement on.
+ *
+ * The audience and expiry rules are the same ones getFeed() applies, so this
+ * can never chase a post the viewer is not shown: an update targeted at HR is
+ * not chased from a technician's account, and an expired update stops being
+ * chased at all.
+ *
+ * @param {number} userId
+ * @param {object} [options]
+ * @param {string[]} options.viewerDepartments  departments the viewer may see
+ * @param {boolean}  options.canSeeEverything   all-access / moderator
+ */
+export async function getOutstandingAcknowledgements(
+  userId,
+  { viewerDepartments = [], canSeeEverything = false } = {}
+) {
   const viewerId = toPositiveInt(userId);
   if (!viewerId) return [];
 
+  const nowIso = new Date().toISOString();
+
   const { data: posts, error } = await db
     .from("news_updates")
-    .select("id, title, ack_due_at, published_at, priority, departments")
+    .select("id, title, ack_due_at, published_at, priority, departments, expires_at")
     .eq("requires_ack", true)
     .eq("status", "published")
     .is("deleted_at", null);
 
   throwIf(error, "Failed to load outstanding acknowledgements");
 
-  const ids = uniqueIds((posts || []).map((row) => row.id));
+  const audienceVisible = (posts || []).filter((row) => {
+    if (row.expires_at && row.expires_at <= nowIso) return false;
+    if (canSeeEverything) return true;
+    return isPostVisibleToDepartments(normalizeDepartments(row.departments), viewerDepartments);
+  });
+
+  const ids = uniqueIds(audienceVisible.map((row) => row.id));
   if (!ids.length) return [];
 
   const { data: mine, error: ackError } = await db
@@ -231,7 +255,7 @@ export async function getOutstandingAcknowledgements(userId) {
   throwIf(ackError, "Failed to load your acknowledgements");
 
   const done = new Set((mine || []).map((row) => row.post_id));
-  return (posts || [])
+  return audienceVisible
     .filter((row) => !done.has(row.id))
     .map((row) => ({
       postId: row.id,
@@ -239,8 +263,42 @@ export async function getOutstandingAcknowledgements(userId) {
       ackDueAt: row.ack_due_at,
       publishedAt: row.published_at,
       priority: row.priority,
-      departments: row.departments || [],
+      departments: normalizeDepartments(row.departments),
     }));
+}
+
+/**
+ * The sidebar badge's view of the above: how many updates are outstanding, how
+ * many of those are past their due date, and the due date being chased hardest
+ * — the most overdue one, or failing that the one falling due soonest.
+ *
+ * Only the numbers cross the wire; the sentence is built on the client from
+ * `src/lib/news/format.js` so the wording matches the banner on the post card
+ * exactly and re-reads correctly as the clock moves past a due date.
+ */
+export async function getOutstandingAckSummary(userId, options = {}) {
+  const outstanding = await getOutstandingAcknowledgements(userId, options);
+  if (!outstanding.length) {
+    return { count: 0, overdueCount: 0, dueAt: null, isOverdue: false };
+  }
+
+  const now = Date.now();
+  const dueTimes = outstanding
+    .map((row) => (row.ackDueAt ? new Date(row.ackDueAt).getTime() : null))
+    .filter((time) => Number.isFinite(time));
+
+  const overdueTimes = dueTimes.filter((time) => time < now);
+  const soonestDueTime = dueTimes.length ? Math.min(...dueTimes) : null;
+  // Most overdue first (the earliest past due date); with nothing overdue,
+  // whichever falls due soonest.
+  const dueTime = overdueTimes.length ? Math.min(...overdueTimes) : soonestDueTime;
+
+  return {
+    count: outstanding.length,
+    overdueCount: overdueTimes.length,
+    dueAt: dueTime === null ? null : new Date(dueTime).toISOString(),
+    isOverdue: overdueTimes.length > 0,
+  };
 }
 
 // ---------------------------------------------------------------------------

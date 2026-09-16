@@ -130,7 +130,7 @@ export default function UserClockingHistoryUi(props) {
               maxHeight: "520px",
               overflowY: "auto"
             }}>
-                <table style={tableStyle}>
+                <table className="app-data-table" style={tableStyle}>
                   <thead>
                     <tr>
                       <th style={tableHeaderStyle}>Status</th>

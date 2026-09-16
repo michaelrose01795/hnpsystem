@@ -399,7 +399,7 @@ export default function UserDiagnosticDevPageUi(props) {
   display: "flex",
   flexDirection: "column",
   gap: "var(--page-stack-gap)",
-  alignItems: "flex-start",
+  alignItems: "stretch",
   width: "100%",
   maxWidth: "100%",
   minHeight: "100dvh",
@@ -601,7 +601,7 @@ export default function UserDiagnosticDevPageUi(props) {
           }
           .user-diagnostic-toolbar > button {
             flex: 1 1 100%;
-            min-height: 40px;
+            min-height: 44px;
           }
           .user-diagnostic-diagnostics pre {
             margin-left: 0 !important;

@@ -5591,7 +5591,7 @@ export default function VhcDetailsPanel({
                             fontSize: "12px",
                           }}
                         >
-                          + Add customer description
+                          Add customer description
                         </button>
                       )}
                       {deferredIssueNotes.length > 0 ? (
@@ -8956,7 +8956,7 @@ export default function VhcDetailsPanel({
                           ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                               <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                <table className="app-data-table app-data-table--compact">
                                   <thead>
                                     <tr style={{ background: "var(--theme)", color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "10px" }}>
                                       <th style={{ textAlign: "left", padding: "10px 12px" }}>Part</th>
@@ -9057,7 +9057,7 @@ export default function VhcDetailsPanel({
         }}
       >
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+          <table className="app-data-table">
             <thead>
               <tr
                 style={{
@@ -9669,7 +9669,7 @@ export default function VhcDetailsPanel({
                     onClick={() => handleRowAddMediaClick(concern)}
                     busy={uploading}
                   >
-                    + Add media
+                    Add media
                   </Button>
                   <Button
                     type="button"
@@ -9677,7 +9677,7 @@ export default function VhcDetailsPanel({
                     size="xs"
                     onClick={() => setMoveMediaPickerConcernId((current) => (current === key ? null : key))}
                   >
-                    {pickerOpen ? "Close" : "⇄ Move media"}
+                    {pickerOpen ? "Close" : "Move media"}
                   </Button>
                 </div>
 
@@ -9966,7 +9966,7 @@ export default function VhcDetailsPanel({
                 size="sm"
                 onClick={() => router.push("/jobs")}
               >
-                ← Back
+                Back
               </Button>
             <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
               {/* Button to redirect to car and key tracking page with job details pre-filled */}
@@ -9999,7 +9999,7 @@ export default function VhcDetailsPanel({
                 }}
                 disabled={!job?.job_number}
               >
-                View job card →
+                View job card
               </Button>
             </div>
           </div>

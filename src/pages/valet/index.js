@@ -17,7 +17,7 @@ import { resolveMainStatusId } from "@/lib/status/statusFlow";
 const loadJobStatusService = () => import("@/lib/services/jobStatusService");
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
-import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+import { InlineLoading, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { calculateSmartTechEta } from "@/utils/jobs/calculateSmartTechEta";
 import ValetDashboardUi from "@/components/page-ui/valet/valet-ui"; // Extracted presentation layer.
@@ -447,7 +447,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           }
         }}
         style={{
-          fontSize: "14px",
+          fontSize: "inherit",
           fontWeight: 700,
           color: "var(--accent-purple)",
           minWidth: 0,
@@ -468,7 +468,6 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
       <td>
       <span
         style={{
-          fontSize: "16px",
           fontWeight: 700,
           color: "var(--accent-purple)",
           minWidth: 0,
@@ -483,7 +482,6 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
       <td>
       <span
         style={{
-          fontSize: "14px",
           color: "var(--text-1)",
           minWidth: 0,
           whiteSpace: "nowrap",
@@ -611,7 +609,6 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
       <td style={{ textAlign: "right" }}>
       <span
         style={{
-          fontSize: "13px",
           color: "var(--text-1)",
           fontWeight: 600,
           textAlign: "right",
@@ -1024,7 +1021,7 @@ export default function ValetDashboard() {
 
   }
 
-  return <ValetDashboardUi view="section4" buildChecklist={buildChecklist} CalendarField={CalendarField} DevLayoutSection={DevLayoutSection} LayerTheme={LayerTheme} error={error} etaNow={etaNow} etaSignalsByJobId={etaSignalsByJobId} filteredJobs={filteredJobs} formatDateOnlyLabel={formatDateOnlyLabel} getTodayDateValue={getTodayDateValue} handleToggle={handleToggle} loading={loading} router={router} savingMap={savingMap} SearchBar={SearchBar} searchTerm={searchTerm} selectedDay={selectedDay} setSearchTerm={setSearchTerm} setSelectedDay={setSelectedDay} ValetJobRow={ValetJobRow} valetState={valetState} />;
+  return <ValetDashboardUi view="section4" buildChecklist={buildChecklist} CalendarField={CalendarField} DevLayoutSection={DevLayoutSection} LayerTheme={LayerTheme} error={error} etaNow={etaNow} etaSignalsByJobId={etaSignalsByJobId} filteredJobs={filteredJobs} formatDateOnlyLabel={formatDateOnlyLabel} getTodayDateValue={getTodayDateValue} handleToggle={handleToggle} loading={loading} router={router} savingMap={savingMap} SearchBar={SearchBar} searchTerm={searchTerm} selectedDay={selectedDay} setSearchTerm={setSearchTerm} setSelectedDay={setSelectedDay} TableSkeleton={TableSkeleton} ValetJobRow={ValetJobRow} valetState={valetState} />;
 
 
 

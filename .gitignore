@@ -55,3 +55,4 @@ node_modules/
 
 # Colour-system review screenshots (npm run review:colours)
 /e2e/.colour-review/
+/e2e/.responsive-review/

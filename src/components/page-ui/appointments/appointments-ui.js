@@ -220,6 +220,7 @@ const buildOverflowSlots = (cards) => {
 
 function SchedulerBoard({
   jobs = [],
+  jobsLoading = false,
   selectedDay,
   onSelectDay,
   onOpenDayJobs,
@@ -356,6 +357,7 @@ function SchedulerBoard({
         data-dev-background-token="surface"
         data-dev-text-preview="Workshop scheduler board"
       >
+        {jobsLoading && <SkeletonKeyframes />}
         {/* Scroll viewport — the whole 08:00–17:00 axis fits the card width (no
             horizontal scroll); vertical scroll reveals more day rows in month
             view. Date column + time header stay pinned. */}
@@ -503,6 +505,7 @@ function SchedulerBoard({
                   role="button"
                   tabIndex={0}
                   aria-label="View jobs for this day"
+                  aria-busy={jobsLoading}
                   onClick={() => {
                     if (typeof onOpenDayJobs === "function") {
                       onOpenDayJobs(new Date(date.getTime()));
@@ -537,8 +540,18 @@ function SchedulerBoard({
                     );
                   })}
 
+                  {jobsLoading && (
+                    <div
+                      role="status"
+                      aria-label={`Loading appointments for ${dateKey}`}
+                      style={{ gridColumn: "1 / -1", gridRow: "1 / -1", alignSelf: "center", paddingInline: "var(--layout-card-gap)" }} // Span the existing timeline grid without changing its responsive columns or row height.
+                    >
+                      <SkeletonBlock height="var(--sched-lane-h)" />
+                    </div>
+                  )}
+
                   {/* booking bars */}
-                  {visibleCards.map((card) => {
+                  {!jobsLoading && visibleCards.map((card) => {
                     const meta = SCHED_STATUS_META[card.statusKey] || SCHED_STATUS_META.waiting;
                     // Multi-line tooltip — one fact per line so the full job
                     // detail is easy to scan at a glance on hover.
@@ -593,7 +606,7 @@ function SchedulerBoard({
                     );
                   })}
 
-                  {dayData.overflowSlots.map((slotOverflow) => {
+                  {!jobsLoading && dayData.overflowSlots.map((slotOverflow) => {
                     const slotCards = slotOverflow.cards;
                     const overflowCount = slotCards.length;
                     // Jobs hidden behind the visible stack at this slot.
@@ -1381,6 +1394,7 @@ export default function AppointmentsUi(props) {
               former availability table). Self-contained appt-sched-* styling. */}
           <SchedulerBoard
             jobs={schedulerJobs}
+            jobsLoading={jobsLoading}
             selectedDay={selectedDay}
             onSelectDay={setSelectedDay}
             onOpenDayJobs={handleOpenDayJobs}

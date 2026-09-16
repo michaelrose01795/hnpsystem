@@ -57,9 +57,7 @@ export default function ViewJobCardsUi(props) {
     operationalStatusCounts,
     nextJobsTechnicians,
     onOpenQuickNote,
-    popupCardStyles,
     popupJob,
-    popupOverlayStyles,
     popupPrimaryActionButtonStyle,
     popupQuietActionButtonStyle,
     popupSecondaryActionButtonStyle,
@@ -161,17 +159,11 @@ export default function ViewJobCardsUi(props) {
 
           {/* ✅ Job Popup - Enhanced with all new fields */}
           {popupJob && <>
-              <DevLayoutSection sectionKey="job-cards-view-quick-view-overlay" parentKey="job-cards-view-shell" sectionType="floating-action" style={{
-            ...popupOverlayStyles,
-            zIndex: "var(--z-modal)"
-          }} onClick={() => setPopupJob(null)}>
-              <DevLayoutSection sectionKey="job-cards-view-quick-view-card" parentKey="job-cards-view-quick-view-overlay" sectionType="content-card" onClick={e => e.stopPropagation()} style={{
-              ...popupCardStyles,
+              <DevLayoutSection sectionKey="job-cards-view-quick-view-overlay" parentKey="job-cards-view-shell" sectionType="floating-action" className="popup-backdrop" onClick={() => setPopupJob(null)}>
+              <DevLayoutSection sectionKey="job-cards-view-quick-view-card" parentKey="job-cards-view-quick-view-overlay" sectionType="content-card" className="popup-card" onClick={e => e.stopPropagation()} style={{
               padding: "var(--page-card-padding)",
               maxWidth: "700px",
-              width: "90%",
-              maxHeight: "85vh",
-              overflowY: "auto"
+              width: "90%"
             }}>
               {/* Popup Header */}
               <div style={{

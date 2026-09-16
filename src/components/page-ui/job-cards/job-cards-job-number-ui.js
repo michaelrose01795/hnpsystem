@@ -120,8 +120,6 @@ export default function JobCardDetailPageUi(props) {
     pageStackStyle,
     partsTabCompleteInstant,
     partsWriteUpVhcLockDescription,
-    popupCardStyles,
-    popupOverlayStyles,
     relatedJobs,
     relatedJobsLoading,
     renderError,
@@ -944,16 +942,12 @@ export default function JobCardDetailPageUi(props) {
       </div>
 
       {/* ✅ Link Job Popup */}
-      {isLinkPopupOpen && <div style={{
-      ...popupOverlayStyles,
-      zIndex: "var(--z-modal)"
-    }} onClick={() => {
+      {isLinkPopupOpen && <div className="popup-backdrop" onClick={() => {
       setIsLinkPopupOpen(false);
       setLinkJobInput("");
       setLinkError(null);
     }}>
-          <div style={{
-        ...popupCardStyles,
+          <div className="popup-card" style={{
         maxWidth: "400px",
         padding: "32px",
         display: "flex",

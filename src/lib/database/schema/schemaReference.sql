@@ -198,7 +198,13 @@ CREATE TABLE public.customers (
   contact_preference text DEFAULT 'email'::text,
   updated_at timestamp with time zone DEFAULT now(),
   name text,
-  slug_key text DEFAULT regexp_replace(lower((COALESCE(firstname, ''::text) || COALESCE(lastname, ''::text))), '[^a-z0-9]'::text, ''::text, 'g'::text),
+  -- NOTE: this is a GENERATED column in the live database, not a plain DEFAULT.
+  -- It recomputes itself from firstname + lastname on every write and CANNOT be
+  -- written to: including it in an INSERT or UPDATE — even with the value it
+  -- already holds — fails the whole statement with
+  --   "cannot insert a non-DEFAULT value into column slug_key".
+  -- Never send it; let Postgres derive it.
+  slug_key text GENERATED ALWAYS AS (regexp_replace(lower((COALESCE(firstname, ''::text) || COALESCE(lastname, ''::text))), '[^a-z0-9]'::text, ''::text, 'g'::text)) STORED,
   preferences ARRAY NOT NULL DEFAULT '{}'::text[],
   notes text,
   work_address text,
@@ -1276,6 +1282,7 @@ CREATE TABLE public.parts_order_cards (
   invoice_total numeric DEFAULT 0,
   invoice_status text NOT NULL DEFAULT 'draft'::text CHECK (invoice_status = ANY (ARRAY['draft'::text, 'issued'::text, 'paid'::text, 'cancelled'::text])),
   invoice_notes text,
+  customer_notes text,
   created_by uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
@@ -1327,7 +1334,7 @@ CREATE TABLE public.news_updates (
   view_count integer NOT NULL DEFAULT 0,
   deleted_at timestamp with time zone,
   CONSTRAINT news_updates_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
-  CONSTRAINT news_updates_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES public.users(user_id)
+  CONSTRAINT news_updates_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.news_post_reads (
   post_id uuid NOT NULL,
@@ -1867,4 +1874,42 @@ CREATE TABLE public.user_personal_widgets (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT user_personal_widgets_pkey PRIMARY KEY (id),
   CONSTRAINT user_personal_widgets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+-- Website help chat. Created by supabase/migrations/20260914120000_website_help_chat.sql
+-- (run it in Supabase before using the chat). Server-only: RLS on, no public grants.
+CREATE TABLE public.website_help_chats (
+  chat_id bigint NOT NULL DEFAULT nextval('website_help_chats_chat_id_seq'::regclass),
+  visitor_key text NOT NULL,
+  customer_id uuid,
+  status text NOT NULL DEFAULT 'bot'::text CHECK (status = ANY (ARRAY['bot'::text, 'queued'::text, 'active'::text, 'closed'::text])),
+  title text NOT NULL DEFAULT 'New chat'::text,
+  page_path text,
+  contact_name text,
+  contact_email text,
+  thread_id integer,
+  customer_user_id integer,
+  assigned_user_id integer,
+  queued_at timestamp with time zone,
+  joined_at timestamp with time zone,
+  closed_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT website_help_chats_pkey PRIMARY KEY (chat_id),
+  CONSTRAINT website_help_chats_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT website_help_chats_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES public.message_threads(thread_id),
+  CONSTRAINT website_help_chats_customer_user_id_fkey FOREIGN KEY (customer_user_id) REFERENCES public.users(user_id),
+  CONSTRAINT website_help_chats_assigned_user_id_fkey FOREIGN KEY (assigned_user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.website_help_chat_messages (
+  message_id bigint NOT NULL DEFAULT nextval('website_help_chat_messages_message_id_seq'::regclass),
+  chat_id bigint NOT NULL,
+  author text NOT NULL CHECK (author = ANY (ARRAY['customer'::text, 'assistant'::text, 'system'::text])),
+  content text NOT NULL,
+  links jsonb NOT NULL DEFAULT '[]'::jsonb,
+  suggestions jsonb NOT NULL DEFAULT '[]'::jsonb,
+  offer_handoff boolean NOT NULL DEFAULT false,
+  page_path text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT website_help_chat_messages_pkey PRIMARY KEY (message_id),
+  CONSTRAINT website_help_chat_messages_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.website_help_chats(chat_id)
 );

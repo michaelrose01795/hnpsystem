@@ -12,12 +12,14 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import BrandLogo from "@/components/BrandLogo";
 import { siteContent } from "@/features/website/data/siteContent";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
 import useWebsiteTheme from "@/features/website/hooks/useWebsiteTheme";
 import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
+import WebsiteTopBar from "@/features/website/components/WebsiteTopBar";
 
 const STEP_EMAIL = "email";
 const STEP_SIGNIN = "signin";
@@ -53,6 +55,21 @@ export default function CustomerLoginPage() {
   const [devLoading, setDevLoading] = useState(false);
   const pageTitle = `Sign in - ${siteContent.brand.name}`;
 
+  // Where to land after signing in. Callers that send a customer here
+  // mid-task — the shop basket prompt, for one — pass ?next= so the
+  // customer returns to what they were doing instead of the profile page.
+  // Only same-origin /website paths are honoured, so ?next= can never be
+  // turned into an open redirect.
+  const nextPath = useMemo(() => {
+    const raw = router.query?.next;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (typeof value !== "string") return "/website/profile";
+    if (!value.startsWith("/website") || value.startsWith("//")) {
+      return "/website/profile";
+    }
+    return value;
+  }, [router.query?.next]);
+
   // Skip the page entirely if the user is already signed in.
   useEffect(() => {
     let cancelled = false;
@@ -61,14 +78,14 @@ export default function CustomerLoginPage() {
       .then((data) => {
         if (cancelled) return;
         if (data?.authenticated && data?.customer) {
-          router.replace("/website/profile");
+          router.replace(nextPath);
         }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, nextPath]);
 
   // Pre-fetch the customers list for the dev dropdown.
   useEffect(() => {
@@ -212,7 +229,7 @@ export default function CustomerLoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Could not sign in.");
       }
-      router.replace("/website/profile");
+      router.replace(nextPath);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -235,7 +252,7 @@ export default function CustomerLoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Could not set your password.");
       }
-      router.replace("/website/profile");
+      router.replace(nextPath);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -258,7 +275,7 @@ export default function CustomerLoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Could not create account.");
       }
-      router.replace("/website/profile");
+      router.replace(nextPath);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -282,7 +299,7 @@ export default function CustomerLoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Dev login failed.");
       }
-      router.replace("/website/profile");
+      router.replace(nextPath);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -295,6 +312,18 @@ export default function CustomerLoginPage() {
       <Head>
         <title>{pageTitle}</title>
       </Head>
+      <div className="ws-page">
+      <WebsiteTopBar>
+        <Link href="/website" className="ws-nav-link">
+          Back to site
+        </Link>
+        <Link href="/website/available-stock" className="ws-nav-link">
+          Available stock
+        </Link>
+        <Link href="/website/parts-catalog" className="ws-nav-link">
+          Parts catalogue
+        </Link>
+      </WebsiteTopBar>
       <div className={"authShell"} data-presentation="website-login">
         <main className={"authMain"}>
           <div className={"authCard"} data-presentation="website-login-card">
@@ -304,11 +333,7 @@ export default function CustomerLoginPage() {
               </Link>
 
               <div className={"authBrand"}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={siteContent.brand.logoUrl}
-                  alt={siteContent.brand.name}
-                />
+                <BrandLogo alt={siteContent.brand.name} priority />
               </div>
             </div>
 
@@ -380,7 +405,7 @@ export default function CustomerLoginPage() {
                   </button>
                   <button
                     type="button"
-                    className={`app-btn profileGhostBtn`}
+                    className={"profileGhostBtn"}
                     onClick={resetToEmailStep}
                   >
                     Use a different email
@@ -428,7 +453,7 @@ export default function CustomerLoginPage() {
                   </button>
                   <button
                     type="button"
-                    className={`app-btn profileGhostBtn`}
+                    className={"profileGhostBtn"}
                     onClick={resetToEmailStep}
                   >
                     Use a different email
@@ -452,10 +477,7 @@ export default function CustomerLoginPage() {
                   </div>
                 </div>
                 {error ? <p className={"authError"}>{error}</p> : null}
-                <form
-                  className={`authForm signupForm`}
-                  onSubmit={handleSignup}
-                >
+                <form className={"authForm"} onSubmit={handleSignup}>
                   <div className={"signupPanel"}>
                     <div className={"authRow"}>
                       <div className={"authField"}>
@@ -524,7 +546,7 @@ export default function CustomerLoginPage() {
                         />
                         <button
                           type="button"
-                          className={`app-btn postcodeLookupButton`}
+                          className={"postcodeLookupButton"}
                           onClick={handleAddressLookup}
                           disabled={addressLookupLoading}
                         >
@@ -566,7 +588,7 @@ export default function CustomerLoginPage() {
                         autoComplete="street-address"
                         required
                         readOnly={!addressManual && addressSuggestions.length > 0}
-                        className={`authInput authTextarea`}
+                        className={"authInput"}
                         value={signupExtras.address}
                         onChange={(e) => updateSignupField("address", e.target.value)}
                       />
@@ -598,7 +620,7 @@ export default function CustomerLoginPage() {
                   </button>
                   <button
                     type="button"
-                    className={`app-btn profileGhostBtn`}
+                    className={"profileGhostBtn"}
                     onClick={resetToEmailStep}
                   >
                     Use a different email
@@ -608,8 +630,10 @@ export default function CustomerLoginPage() {
             ) : null}
 
             <p className={"authFootnote"}>
-              By continuing you agree to {siteContent.brand.name}'s privacy and
-              data policy.
+              By continuing you agree to {siteContent.brand.name}'s{" "}
+              <Link href="/website/privacy" className="authFootnoteLink">
+                privacy and data policy.
+              </Link>
             </p>
           </div>
 
@@ -654,6 +678,7 @@ export default function CustomerLoginPage() {
             </div>
           ) : null}
         </main>
+      </div>
       </div>
     </>
   );
