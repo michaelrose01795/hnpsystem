@@ -200,6 +200,12 @@ const MIGRATION_BASELINE = new Map([
 ]);
 
 const CONTROL_TAG_RE = /<(input|textarea|button)\b/;
+// Customer (/website) markup carries its own design system (CLAUDE.md §3.0c),
+// where a raw <button> IS the canonical secondary action. EXCLUDED_PREFIXES
+// covers website-only files, but a shared component can render both skins
+// (e.g. GlobalContextMenu), so also exempt controls whose class is a
+// website-scope class. Those are governed by check-website-design.js instead.
+const WEBSITE_SCOPE_RE = /className=(?:"[^"]*\bwebsite-[\w-]+|'[^']*\bwebsite-[\w-]+|{`[^`]*\bwebsite-[\w-]+|{[^}]*["'`]website-[\w-]+)/;
 // Body of a style={{ ... }} prop, so VISUAL_STYLE_RE is tested against the
 // declarations themselves rather than against neighbouring attribute text.
 const STYLE_BODY_RE = /style=\{\{([\s\S]*?)\}\}/;
@@ -261,6 +267,7 @@ function findViolations(source) {
 
     const tagMatch = openingTag.match(CONTROL_TAG_RE);
     if (!tagMatch) return;
+    if (WEBSITE_SCOPE_RE.test(openingTag)) return;
     const tagName = tagMatch[1].toLowerCase();
 
     if (tagName === "button") {
