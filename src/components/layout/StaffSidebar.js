@@ -447,9 +447,10 @@ export default function Sidebar({
     Boolean(user) && !inPresentationMode && canShowDevPages();
   const canShowDevOverlayControl =
     Boolean(user) && !inPresentationMode && canUseDevOverlay;
-  // Shortcut into the customer-facing site, shown to the same audience as the
-  // Dev / Overlay controls it sits with.
-  const canShowWebsiteLink = canShowDevPagesLink || canShowDevOverlayControl;
+  // Shortcut into the customer-facing site. Not a dev control: every signed-in
+  // staff user gets it in every environment (it sits next to the Dev / Overlay
+  // buttons, but is deliberately not gated on them).
+  const canShowWebsiteLink = Boolean(user) && !inPresentationMode;
   // Per-user sidebar-access override (admin-set snapshot). Skipped in
   // presentation mode (the rail belongs to the demo role, not the real user).
   // When no snapshot exists, snapshotAllowed is null and every filter below is

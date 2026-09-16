@@ -14,6 +14,8 @@ StockSnap allows. Credits are recorded anyway so the source can be re-checked.
 | `cars.webp` | Our Cars | `KEPSFKGIL9` | Headlight detail on a silver car (no visible badge) |
 | `offers.webp` | Latest Offers | `F2QIF4C8DI` | Hand holding out a car key |
 | `shop.webp` | Shop | `4RHOB6RC3S` | Chrome sockets on a red toolbox |
+| `service.webp` | Service & Parts | `D3AFE4D6F8` | Hands working on a red car in a workshop |
+| `motability.webp` | Motability | `G8GSBPQZUB` | Driver at the wheel, hands on the steering wheel |
 
 Source URL pattern: `https://cdn.stocksnap.io/img-thumbs/960w/<ID>.jpg`
 (landing page: `https://stocksnap.io/photo/<ID>`).

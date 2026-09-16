@@ -93,6 +93,8 @@ const SECTION_HEAD_MEDIA = {
   cars: "/images/website/section-heads/cars.webp",
   offers: "/images/website/section-heads/offers.webp",
   shop: "/images/website/section-heads/shop.webp",
+  service: "/images/website/section-heads/service.webp",
+  motability: "/images/website/section-heads/motability.webp",
 };
 
 function SectionHead({ eyebrow, title, lead, center, media }) {
@@ -757,6 +759,7 @@ export default function WebsitePage() {
               eyebrow={row.eyebrow || serviceAndParts.eyebrow}
               title={row.title || serviceAndParts.title}
               lead={row.lead || asList(serviceAndParts.body)[0]}
+              media={SECTION_HEAD_MEDIA.service}
             />
             <div className="ws-service-layout">
               <BenefitCards items={services} />
@@ -813,6 +816,7 @@ export default function WebsitePage() {
               eyebrow={row.eyebrow || motability.eyebrow}
               title={row.title || motability.title}
               lead={row.lead || asList(motability.body)[1]}
+              media={SECTION_HEAD_MEDIA.motability}
             />
 
             {models.length ? (
