@@ -312,7 +312,7 @@ export default function WebsitePage() {
               title="Find your next car at Humphries & Parks"
               lead="Every used car arrives with a 120-point inspection, a minimum 6-month MOT and a free 6-month warranty. New Suzuki, KGM and Mitsubishi available with manufacturer offers."
             />
-            <div className="ws-tabs" role="tablist" aria-label="Filter cars">
+            <div className="ws-segmented" role="tablist" aria-label="Filter cars">
               {[
                 { id: "all", label: "All cars" },
                 { id: "new", label: "New" },
@@ -323,7 +323,7 @@ export default function WebsitePage() {
                   type="button"
                   role="tab"
                   aria-selected={carFilter === tab.id}
-                  className={carFilter === tab.id ? "ws-tab ws-tab--active" : "ws-tab"}
+                  className={carFilter === tab.id ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
                   onClick={() => setCarFilter(tab.id)}
                 >
                   {tab.label}

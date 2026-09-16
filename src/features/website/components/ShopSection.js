@@ -17,7 +17,7 @@
 // through to the catalogue, where the real item carries Add to basket.
 //
 // Styling: .ws-shop-* / .ws-product-* / .ws-basket-summary-* / .ws-finder-*
-// from custglobal.css (@family shop), plus the shared .ws-tabs.
+// from custglobal.css (@family shop), plus the shared .ws-segmented.
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -91,14 +91,14 @@ export default function ShopSection() {
         </div>
       </div>
 
-      <div className="ws-tabs" role="tablist" aria-label="Filter parts" data-presentation="website-shop-filters">
+      <div className="ws-segmented" role="tablist" aria-label="Filter parts" data-presentation="website-shop-filters">
         {tabs.map((c) => (
           <button
             key={c.id}
             type="button"
             role="tab"
             aria-selected={activeCat === c.id}
-            className={activeCat === c.id ? "ws-tab ws-tab--active" : "ws-tab"}
+            className={activeCat === c.id ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
             onClick={() => setActiveCat(c.id)}
           >
             {c.name}
@@ -106,7 +106,7 @@ export default function ShopSection() {
         ))}
       </div>
 
-      <div className="ws-grid--shop" data-presentation="website-shop-products">
+      <div className="ws-grid--shop ws-grid--shop-row" data-presentation="website-shop-products">
         {visible.map((p) => (
           <ProductCard key={p.id} product={p} href={CATALOG_HREF} />
         ))}

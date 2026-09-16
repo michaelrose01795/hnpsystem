@@ -81,15 +81,15 @@ export default function ShopShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Teaser category tabs" note=".ws-tabs · button.ws-tab (--active) — filters the curated tiles">
+      <Row label="Teaser category tabs" note=".ws-segmented · button.ws-segmented-tab (--active) — filters the curated tiles">
         <Frame padded>
           <div className="ws-page">
-            <div className="ws-tabs" role="tablist" aria-label="Filter parts">
-              <button type="button" role="tab" aria-selected className="ws-tab ws-tab--active">
+            <div className="ws-segmented" role="tablist" aria-label="Filter parts">
+              <button type="button" role="tab" aria-selected className="ws-segmented-tab ws-segmented-tab--active">
                 All
               </button>
               {shopCategories.slice(0, 3).map((category) => (
-                <button key={category.id} type="button" role="tab" aria-selected={false} className="ws-tab">
+                <button key={category.id} type="button" role="tab" aria-selected={false} className="ws-segmented-tab">
                   {category.name}
                 </button>
               ))}
@@ -98,10 +98,10 @@ export default function ShopShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Product tiles" note="ProductCard · saving badge + was price · fits · check fitment · low stock · out of stock (Enquire)">
+      <Row label="Product tiles" note=".ws-grid--shop-row (the home page teaser row) · ProductCard · saving badge + was price · fits · check fitment · low stock · out of stock (Enquire)">
         <Frame padded>
           <div className="ws-page">
-            <div className="ws-grid--shop">
+            <div className="ws-grid--shop ws-grid--shop-row">
               {first ? <ProductCard product={first} href="#parts" /> : null}
               {lowStock ? <ProductCard product={lowStock} onAdd={noop} inBasketQty={1} /> : null}
               {unknownFit ? <ProductCard product={unknownFit} onAdd={noop} /> : null}

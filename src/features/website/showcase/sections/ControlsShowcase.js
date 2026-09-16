@@ -9,13 +9,63 @@
 import { useState } from "react";
 import { Row, ShowcaseSection } from "../ShowcasePrimitives";
 
+// The segmented control is the one tab pattern on /website: a 44px track split
+// into equal-width segments. Every customer tab row uses it, so the showcase
+// carries both shapes — full width, and the auto-width variant that shares a row.
+const SEGMENTED_DEMO = [
+  { id: "all", label: "All cars", count: 47 },
+  { id: "new", label: "New", count: 14 },
+  { id: "used", label: "Used", count: 33 },
+];
+const SEGMENTED_AUTO_DEMO = ["Registration", "Choose manually"];
+
 export default function ControlsShowcase({ section }) {
+  const [segment, setSegment] = useState("all");
+  const [autoSegment, setAutoSegment] = useState("Registration");
   const [text, setText] = useState("Michael Rose");
   const [notes, setNotes] = useState("I would like to book my car in for its annual service next week.");
   const [tier, setTier] = useState("standard");
 
   return (
     <ShowcaseSection id="controls" section={section}>
+      <Row
+        label="Segmented control"
+        hint=".ws-segmented · button.ws-segmented-tab (--active) · .ws-segmented--auto"
+        size="wide"
+      >
+        <div className="website-dev-context-pair">
+          <div className="ws-segmented" role="tablist" aria-label="Segmented control, equal width">
+            {SEGMENTED_DEMO.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={segment === tab.id}
+                className={segment === tab.id ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
+                onClick={() => setSegment(tab.id)}
+              >
+                {tab.label}
+                <span className="ws-tab-count">{tab.count}</span>
+              </button>
+            ))}
+          </div>
+          <div className="ws-segmented ws-segmented--auto" role="tablist" aria-label="Segmented control, auto width">
+            {SEGMENTED_AUTO_DEMO.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={autoSegment === tab}
+                className={autoSegment === tab ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
+                onClick={() => setAutoSegment(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Row>
+
       <Row label="Text box" hint="input · placeholder">
         <div className="website-dev-field">
           <label htmlFor="dev-text">Name</label>

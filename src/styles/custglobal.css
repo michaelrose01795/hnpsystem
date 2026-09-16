@@ -145,7 +145,7 @@ html.website-scope {
 
   /* ── /website control surface — the "secondary" material ───────────
      One flat translucent wash plus a 1px hairline ring: the inactive
-     filter-tab look (.ws-tab on /website/available-stock). Every control
+     filter-tab look (.ws-segmented on /website/available-stock). Every control
      that is NOT a primary action wears it — raw <button>, the select and
      date/time triggers, their open menus and option rows, the calendar
      and time-picker surfaces, text inputs and the file picker — so the
@@ -164,6 +164,18 @@ html.website-scope {
   --ws-panel-bg: rgba(14, 14, 19, 0.94) !important;
   --ws-control-ring: rgba(255, 255, 255, 0.10) !important;
   --ws-control-text: var(--txt-bright) !important;
+
+  /* Segmented control (.ws-segmented). The track wears the standard control
+     material — the same --ws-control-bg every 44px customer button wears, so
+     an unselected segment is the white control surface in light mode and the
+     dark control tint in dark mode. Segments run the full track height, so a
+     hover or active fill covers the whole 44px. */
+  --ws-segmented-track: var(--ws-control-bg) !important;
+  --ws-segmented-tab-hover: var(--ws-control-bg-hover) !important;
+  --ws-segmented-gap: 28px !important;
+  --ws-segmented-tab-height: var(--website-control-height) !important;
+  --ws-segmented-tab-radius: var(--website-radius-pill) !important;
+  --ws-segmented-track-padding: 0px !important;
 
   /* ── Page, overlay and state tokens ───────────────────────────────────
      Every colour a customer rule paints with is named here once, and
@@ -477,6 +489,134 @@ html.website-scope button.calendar-api__picker-cell {
   box-shadow: none;
   text-transform: none;
   letter-spacing: var(--website-control-letter-spacing);
+}
+
+
+/* ── Segmented control — the customer twin of the staff tab family
+   (src/styles/families/tabs.css `.app-tab--segmented` + `.app-layout-tab-row`):
+   one 44px track split into equal-width segments, square internal joins and
+   only the two outside ends rounded. Segments run edge to edge — full track
+   height, no inset — so a hover or active fill covers the whole 44px, the
+   way the staff tab row fills its item. Material, colour, ring, typography
+   and motion are the customer system, so it reads as a /website control.
+
+   The track paints its own grey: darker than the card in dark mode, a light
+   grey against the white card in light mode, so the control is always
+   legible as its own object rather than merging into the card behind it.
+   Global on purpose: any customer page reuses these two classes and gets
+   this exact appearance, with no page-specific styling. */
+html.website-scope .ws-segmented {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--website-control-height);
+  padding: var(--ws-segmented-track-padding);
+  border-radius: var(--website-radius-pill);
+  margin-bottom: var(--ws-segmented-gap);
+  background: var(--ws-segmented-track);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
+  overflow: hidden;
+}
+/* Segments drop the capsule, ring and blur they would otherwise inherit
+   from the raw <button> rule — the track carries all of it. They take the
+   full track height so their fill is the full 44px; the type stays the
+   customer control scale. */
+html.website-scope button.ws-segmented-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: var(--ws-segmented-tab-height);
+  padding: 0 14px;
+  border-radius: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  color: var(--txt-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    background var(--website-motion-duration) var(--website-motion-easing),
+    color var(--website-motion-duration) var(--website-motion-easing);
+}
+/* Outer ends only, on the track's own pill so an active end segment fills
+   right into the corner. Internal joins stay square. */
+html.website-scope button.ws-segmented-tab:first-child {
+  border-top-left-radius: var(--ws-segmented-tab-radius);
+  border-bottom-left-radius: var(--ws-segmented-tab-radius);
+}
+html.website-scope button.ws-segmented-tab:last-child {
+  border-top-right-radius: var(--ws-segmented-tab-radius);
+  border-bottom-right-radius: var(--ws-segmented-tab-radius);
+}
+html.website-scope button.ws-segmented-tab:active {
+  transform: none;
+}
+/* Auto-width variant — for a control that shares a row with other content
+   (the parts finder sits on its card title line) rather than owning the row.
+   Segments size to their label instead of splitting the width equally. */
+html.website-scope .ws-segmented--auto {
+  width: auto;
+  margin-bottom: 0;
+}
+html.website-scope .ws-segmented--auto button.ws-segmented-tab {
+  flex: 0 0 auto;
+}
+/* Hairline join between segments — suppressed either side of the active
+   segment so the accent fill reads as one clean block. */
+html.website-scope button.ws-segmented-tab + button.ws-segmented-tab {
+  box-shadow: inset 1px 0 0 var(--ws-control-ring);
+}
+html.website-scope button.ws-segmented-tab:hover {
+  color: var(--ws-control-text);
+  background: var(--ws-segmented-tab-hover);
+}
+html.website-scope button.ws-segmented-tab.ws-segmented-tab--active,
+html.website-scope button.ws-segmented-tab.ws-segmented-tab--active:hover {
+  color: var(--onAccentText);
+  background: var(--accentMain);
+  box-shadow: none;
+}
+html.website-scope button.ws-segmented-tab.ws-segmented-tab--active + button.ws-segmented-tab {
+  box-shadow: none;
+}
+/* Focus is drawn inside the segment: an outer ring would collide with the
+   track edge on the two end segments. */
+html.website-scope button.ws-segmented-tab:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accentMain);
+}
+html.website-scope button.ws-segmented-tab.ws-segmented-tab--active:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--onAccentText);
+}
+/* Count badge matches the .ws-tab treatment: accent wash when idle, the
+   on-accent wash once the segment is active. */
+html.website-scope button.ws-segmented-tab .ws-tab-count {
+  flex: 0 0 auto;
+}
+html.website-scope button.ws-segmented-tab.ws-segmented-tab--active .ws-tab-count {
+  background: var(--website-on-accent-wash);
+}
+/* Phones: tighter inline padding, and segments size to their label and
+   scroll sideways instead of being crushed. A three-segment row still fills
+   the width (flex-grow), a seven-segment one (the review filters) scrolls. */
+@media (max-width: 640px) {
+  html.website-scope .ws-segmented {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  html.website-scope .ws-segmented::-webkit-scrollbar {
+    display: none;
+  }
+  html.website-scope button.ws-segmented-tab {
+    flex: 1 0 auto;
+    padding: 0 12px;
+  }
+  html.website-scope button.ws-segmented-tab .ws-tab-count {
+    margin-left: 6px;
+  }
 }
 
 /* @family controls — form rhythm and the raw <select> fallback */
@@ -2639,6 +2779,9 @@ html.website-scope .ws-page {
     radial-gradient(ellipse 60% 80% at 88% 0%, rgba(var(--accentMainRgb), 0.16), transparent 70%),
     radial-gradient(ellipse 50% 70% at 6% 100%, rgba(var(--accentMainRgb), 0.10), transparent 70%);
   --ws-radius: 18px;
+  /* Scrim over the section-head photography (.ws-head-figure): fades the
+     copy-side edge of the photo into the band behind it. */
+  --ws-head-scrim: linear-gradient(90deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 45%);
   /* Plate behind the manufacturer logos in the footer. The logos are dark
      artwork on transparent PNGs, so on dark they sit on a pale plate; the
      light block below drops it back to the glass card fill. */
@@ -2666,6 +2809,7 @@ html.website-scope[data-website-theme="light"] .ws-page {
   --ws-band-glow:
     radial-gradient(ellipse 60% 80% at 88% 0%, rgba(var(--accentMainRgb), 0.09), transparent 70%),
     radial-gradient(ellipse 50% 70% at 6% 100%, rgba(var(--accentMainRgb), 0.06), transparent 70%);
+  --ws-head-scrim: linear-gradient(90deg, rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0) 45%);
   --ws-logo-plate: var(--ws-card);
 }
 
@@ -2760,6 +2904,61 @@ html.website-scope .ws-head--center {
   margin-right: auto;
   text-align: center;
 }
+/* Section head with decorative photography (.ws-head--media, rendered by
+   SectionHead in WebsitePage.js). The copy keeps its 760px measure and the
+   photo takes the rest of the row, stretched to the copy height — the figure
+   has no height of its own, so the block ends exactly where the copy does and
+   leaves no gap above or below. Desktop only: below 1024px the figure is
+   removed and the head renders exactly as a plain .ws-head, so a phone gives
+   the full width to the copy. */
+html.website-scope .ws-head--media {
+  max-width: none;
+  display: grid;
+  grid-template-columns: minmax(0, 760px) minmax(0, 1fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: stretch;
+}
+html.website-scope .ws-head--media .ws-head-copy {
+  align-self: center;
+  max-width: 760px;
+}
+html.website-scope .ws-head-figure {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ws-radius);
+  background: var(--ws-tint);
+  box-shadow: var(--ws-shadow);
+  /* The photo is a band, not a portrait: a floor keeps it readable when the
+     copy is short, the copy height drives it from there. */
+  min-height: 190px;
+}
+html.website-scope .ws-head-img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Soft fade into the band behind it on the copy side, so the photo reads as
+   part of the section rather than a pasted-on rectangle. */
+html.website-scope .ws-head-figure::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--ws-head-scrim);
+  pointer-events: none;
+}
+@media (max-width: 1023px) {
+  html.website-scope .ws-head--media {
+    display: block;
+    max-width: 760px;
+  }
+  html.website-scope .ws-head-figure {
+    display: none;
+  }
+}
+
 html.website-scope .ws-subhead {
   margin: clamp(28px, 4vw, 44px) 0 18px;
 }
@@ -3842,6 +4041,120 @@ html.website-scope .ws-grid {
 html.website-scope .ws-grid--cards {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
 }
+/* Teaser rows: one row of equal-width cards, never a second row. The column
+   count is fixed per breakpoint — repeat(N, minmax(0, 1fr)) rather than
+   auto-fit, so a filter that returns two results leaves two normal-width
+   cards and empty columns instead of two oversized ones. Cards past the
+   count for the width are hidden. Phone portrait is the one case that
+   stacks, one card per row. */
+html.website-scope .ws-grid--cars-row {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+html.website-scope .ws-grid--cars-row > *:nth-child(n + 2) {
+  display: none;
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  html.website-scope .ws-grid--cars-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  html.website-scope .ws-grid--cars-row > *:nth-child(-n + 2) {
+    display: flex;
+  }
+  html.website-scope .ws-grid--cars-row > *:nth-child(n + 3) {
+    display: none;
+  }
+}
+@media (min-width: 900px) and (max-width: 1279px) {
+  html.website-scope .ws-grid--cars-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  html.website-scope .ws-grid--cars-row > *:nth-child(-n + 3) {
+    display: flex;
+  }
+  html.website-scope .ws-grid--cars-row > *:nth-child(n + 4) {
+    display: none;
+  }
+}
+@media (min-width: 1280px) and (max-width: 1679px) {
+  html.website-scope .ws-grid--cars-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  html.website-scope .ws-grid--cars-row > *:nth-child(-n + 4) {
+    display: flex;
+  }
+  html.website-scope .ws-grid--cars-row > *:nth-child(n + 5) {
+    display: none;
+  }
+}
+@media (min-width: 1680px) {
+  html.website-scope .ws-grid--cars-row {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  html.website-scope .ws-grid--cars-row > *:nth-child(-n + 5) {
+    display: flex;
+  }
+}
+/* Shop tiles are narrower than a vehicle card, so more fit the same width. */
+html.website-scope .ws-grid--shop-row {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+html.website-scope .ws-grid--shop-row > *:nth-child(n + 2) {
+  display: none;
+}
+@media (min-width: 600px) and (max-width: 699px) {
+  html.website-scope .ws-grid--shop-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  html.website-scope .ws-grid--shop-row > *:nth-child(-n + 2) {
+    display: flex;
+  }
+  html.website-scope .ws-grid--shop-row > *:nth-child(n + 3) {
+    display: none;
+  }
+}
+@media (min-width: 700px) and (max-width: 959px) {
+  html.website-scope .ws-grid--shop-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  html.website-scope .ws-grid--shop-row > *:nth-child(-n + 3) {
+    display: flex;
+  }
+  html.website-scope .ws-grid--shop-row > *:nth-child(n + 4) {
+    display: none;
+  }
+}
+@media (min-width: 960px) and (max-width: 1279px) {
+  html.website-scope .ws-grid--shop-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  html.website-scope .ws-grid--shop-row > *:nth-child(-n + 4) {
+    display: flex;
+  }
+  html.website-scope .ws-grid--shop-row > *:nth-child(n + 5) {
+    display: none;
+  }
+}
+@media (min-width: 1280px) and (max-width: 1599px) {
+  html.website-scope .ws-grid--shop-row {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  html.website-scope .ws-grid--shop-row > *:nth-child(-n + 5) {
+    display: flex;
+  }
+  html.website-scope .ws-grid--shop-row > *:nth-child(n + 6) {
+    display: none;
+  }
+}
+@media (min-width: 1600px) {
+  html.website-scope .ws-grid--shop-row {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  html.website-scope .ws-grid--shop-row > *:nth-child(-n + 6) {
+    display: flex;
+  }
+}
 /* Featured reviews: a single snap-scrolling row (ReviewsPanel carousel),
    about three cards across on a desktop and one-and-a-bit on a phone. */
 html.website-scope .ws-grid--reviews {
@@ -3976,43 +4289,6 @@ html.website-scope .ws-offer-foot {
 html.website-scope .ws-offer-expiry {
   font-size: 13px;
   color: var(--txt-mute);
-}
-
-/* ── Filter tabs ─────────────────────────────────────────────────────── */
-html.website-scope .ws-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 28px;
-}
-/* Filter tabs — secondary controls with soft ink until active. */
-html.website-scope button.ws-tab {
-  appearance: none;
-  min-height: var(--website-control-height);
-  padding: 0 20px;
-  border: none;
-  border-radius: var(--website-radius-pill);
-  font-size: var(--website-control-font-size);
-  font-weight: var(--website-control-font-weight);
-  cursor: pointer;
-  color: var(--txt-soft);
-  background: var(--ws-control-bg);
-  box-shadow: inset 0 0 0 1px var(--ws-control-ring);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  transition: background var(--website-motion-duration) var(--website-motion-easing), color var(--website-motion-duration) var(--website-motion-easing);
-}
-html.website-scope button.ws-tab:hover {
-  color: var(--ws-control-text);
-  background: var(--ws-control-bg-hover);
-}
-html.website-scope button.ws-tab.ws-tab--active {
-  color: var(--onAccentText);
-  background: var(--accentMain);
-  box-shadow: none;
-}
-html.website-scope button.ws-tab.ws-tab--active:focus-visible {
-  box-shadow: var(--focus-ring);
 }
 
 /* ── Panels & tick lists ─────────────────────────────────────────────── */
@@ -4208,15 +4484,38 @@ html.website-scope .ws-benefits--compact .ws-muted {
 /* Sell Your Car — intro and compact steps beside the valuation form */
 html.website-scope .ws-sell-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: clamp(16px, 2vw, 24px);
+  /* Two equal halves split by the benefit-card gap, so the steps end on the
+     same line as the second benefit card and the panel starts on the third. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  row-gap: clamp(16px, 2vw, 24px);
+  column-gap: clamp(12px, 1.6vw, 18px);
   align-items: start;
 }
+/* The intro dissolves into the section grid so the heading keeps the left
+   column to itself and the valuation panel starts level with the first step
+   and finishes level with the last one. */
 html.website-scope .ws-sell-intro {
-  min-width: 0;
+  display: contents;
 }
 html.website-scope .ws-sell-intro .ws-head {
-  margin-bottom: 20px;
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+html.website-scope .ws-sell-layout .ws-steps-compact {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  /* Stretch with the panel so the last step finishes level with it. */
+  align-self: stretch;
+  align-content: space-between;
+}
+html.website-scope .ws-sell-layout .ws-valuation-panel,
+html.website-scope .ws-sell-layout > .ws-btn {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: stretch;
 }
 html.website-scope .ws-steps-compact {
   list-style: none;
@@ -4479,6 +4778,17 @@ html.website-scope .ws-specialist-actions {
   html.website-scope .ws-specialist {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* Narrow: heading, steps, then the panel, stacked in one column. */
+  html.website-scope .ws-sell-intro .ws-head,
+  html.website-scope .ws-sell-layout .ws-steps-compact,
+  html.website-scope .ws-sell-layout .ws-valuation-panel,
+  html.website-scope .ws-sell-layout > .ws-btn {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  html.website-scope .ws-sell-layout > .ws-btn {
+    justify-self: start;
+  }
 }
 
 /* ── Timeline ────────────────────────────────────────────────────────── */
@@ -4626,7 +4936,7 @@ html.website-scope .ws-about-copy .ws-benefits {
 
 /* ── Reviews ─────────────────────────────────────────────────────────── */
 /* ReviewsPanel.js. The overall rating beside a card per platform, then the
-   topic filters (.ws-tabs pills) and the featured-quote carousel
+   topic filters (the .ws-segmented control) and the featured-quote carousel
    (.ws-grid--reviews, under Grids). */
 html.website-scope .ws-reviews {
   display: flex;
@@ -4724,7 +5034,8 @@ html.website-scope .ws-reviews-toolbar {
   justify-content: space-between;
   gap: 12px;
 }
-html.website-scope .ws-reviews-toolbar .ws-tabs {
+html.website-scope .ws-reviews-toolbar .ws-segmented {
+  flex: 1 1 260px;
   margin-bottom: 0;
 }
 html.website-scope .ws-review-nav {
@@ -5342,20 +5653,39 @@ html.website-scope .ws-vehicle-badges {
   left: 12px;
   /* Leaves room for the favourite / compare pair on the right. */
   right: 116px;
-  display: flex;
-  /* One row only — a second badge that does not fit is clipped rather than
-     stacking down over the photo. */
-  flex-wrap: nowrap;
+  /* The window the highlights scroll through. One row only — anything wider
+     than the strip is clipped, never stacked down over the photo. */
   overflow: hidden;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
+/* The moving rail. Two identical runs of the badges sit side by side and the
+   rail slides left by exactly one run (hence the trailing gap in the padding),
+   so the first badge follows the last with no jump and no restart. It only
+   runs while the card is on screen — VehicleCard sets data-marquee="run" from
+   an IntersectionObserver — and pauses under the pointer or keyboard focus. */
+html.website-scope .ws-vehicle-badge-track {
+  display: flex;
+  flex-wrap: nowrap;
+  width: max-content;
+  gap: 6px;
+  padding: 0 6px 0 0;
+  margin: 0;
+  list-style: none;
+  animation: ws-badge-marquee 14s linear infinite;
+  animation-play-state: paused;
+}
+html.website-scope .ws-vehicle-badge-track[data-marquee="run"] { animation-play-state: running; }
+html.website-scope .ws-vehicle:hover .ws-vehicle-badge-track,
+html.website-scope .ws-vehicle:focus-within .ws-vehicle-badge-track { animation-play-state: paused; }
+/* One highlight has nothing to cycle through, so it just sits still. */
+html.website-scope .ws-vehicle-badge-track[data-marquee="off"] { animation: none; }
 html.website-scope .ws-vehicle-badges .ws-badge {
   position: static;
   flex: 0 0 auto;
   white-space: nowrap;
+}
+@keyframes ws-badge-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 html.website-scope .ws-vehicle-actions {
   position: absolute;
@@ -5527,8 +5857,11 @@ html.website-scope .ws-cars-search-head {
   justify-content: space-between;
   gap: 12px;
 }
-html.website-scope .ws-cars-search-head .ws-tabs {
-  margin-bottom: 0;
+
+/* The segmented control fills the row, leaving the Filters button on the end;
+   below ~600px the 260px basis drops it onto its own full-width row. */
+html.website-scope .ws-cars-search-head .ws-segmented {
+  flex: 1 1 260px;
 }
 html.website-scope .ws-cars-filters {
   display: grid;
@@ -5695,9 +6028,6 @@ html.website-scope .ws-tab-count {
   color: inherit;
   background: rgba(var(--accentMainRgb), 0.22);
 }
-html.website-scope button.ws-tab.ws-tab--active .ws-tab-count {
-  background: var(--website-on-accent-wash);
-}
 
 /* ── Search page — hero and layout ───────────────────────────────────── */
 html.website-scope .ws-stock-hero {
@@ -5712,9 +6042,9 @@ html.website-scope .ws-stock-head {
   gap: 14px;
   margin-bottom: clamp(20px, 3vw, 28px);
 }
-/* The shared .ws-tabs carries a 28px bottom margin for the home page; inside
-   the stock header the flex gap already provides the rhythm. */
-html.website-scope .ws-stock-head .ws-tabs {
+/* The shared .ws-segmented carries a 28px bottom margin for the home page;
+   inside the stock header the flex gap already provides the rhythm. */
+html.website-scope .ws-stock-head .ws-segmented {
   margin-bottom: 0;
 }
 html.website-scope .ws-stock-layout {
@@ -6180,7 +6510,7 @@ html.website-scope .ws-catalog-search input {
 
 /* ── Find parts for my vehicle (shop/VehicleFinder.js) ─────────────────── */
 /* The tabs, form row, field labels, plate and error line are the shared
-   .ws-tabs / .ws-quick-form / .ws-stock-field / .ws-val-plate / .ws-form-error;
+   .ws-segmented / .ws-quick-form / .ws-stock-field / .ws-val-plate / .ws-form-error;
    only the panel rhythm and the result line are set here. */
 html.website-scope .ws-finder {
   gap: 16px;
@@ -6227,6 +6557,7 @@ html.website-scope .ws-finder-current strong {
 }
 html.website-scope .ws-finder-tabs {
   margin: 0 0 0 auto;
+  width: auto;
 }
 html.website-scope .ws-finder-reg {
   flex: 1 1 220px;

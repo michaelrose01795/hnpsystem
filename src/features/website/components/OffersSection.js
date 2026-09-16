@@ -8,7 +8,7 @@
 // date drops off by itself; when none are left the caller renders nothing
 // (see liveOffers, used by WebsitePage to decide whether the section shows).
 //
-// Styling: .ws-card / .ws-tabs / .ws-badge / .ws-vehicle-brand from the
+// Styling: .ws-card / .ws-segmented / .ws-badge / .ws-vehicle-brand from the
 // marketing family, plus .ws-offer-* in custglobal.css.
 
 import { useMemo, useState } from "react";
@@ -78,14 +78,14 @@ export default function OffersSection({ offers, initialFilter = "all" }) {
 
   return (
     <>
-      <div className="ws-tabs" role="tablist" aria-label="Filter offers">
+      <div className="ws-segmented" role="tablist" aria-label="Filter offers">
         {OFFER_FILTERS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             role="tab"
             aria-selected={filter === tab.id}
-            className={filter === tab.id ? "ws-tab ws-tab--active" : "ws-tab"}
+            className={filter === tab.id ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
             onClick={() => setFilter(tab.id)}
           >
             {tab.label}

@@ -91,14 +91,14 @@ export default function AvailableStockPage({ initialQuery = {} }) {
               directly beneath the button that opened it, rather than above
               the toolbar where it would shove the results out of view. */}
           <div className="ws-stock-head">
-            <div className="ws-tabs" role="tablist" aria-label="New or used">
+            <div className="ws-segmented" role="tablist" aria-label="New or used">
               {CONDITION_TABS.map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   role="tab"
                   aria-selected={filters.condition === tab.id}
-                  className={filters.condition === tab.id ? "ws-tab ws-tab--active" : "ws-tab"}
+                  className={filters.condition === tab.id ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
                   onClick={() => search.update({ condition: tab.id })}
                 >
                   {tab.label}

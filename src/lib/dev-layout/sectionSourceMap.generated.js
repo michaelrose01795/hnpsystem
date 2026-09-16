@@ -715,12 +715,12 @@ export const DEV_LAYOUT_SECTION_SOURCE_MAP = [
   { key: `payslips-page-shell`, file: `src/components/page-ui/accounts/payslips/payslips-ui.js`, line: 80, prop: `sectionKey`, dynamic: false },
   { key: `payslips-table`, file: `src/components/page-ui/accounts/payslips/payslips-ui.js`, line: 132, prop: `sectionKey`, dynamic: false },
   { key: `photo-editor-shape-colour`, file: `src/components/VHC/PhotoEditorModal.js`, line: 432, prop: `sectionKey`, dynamic: false },
-  { key: `profile-account-links`, file: `src/pages/profile/index.js`, line: 83, prop: `sectionKey`, dynamic: false },
-  { key: `profile-active-tab-panel`, file: `src/pages/profile/index.js`, line: 126, prop: `sectionKey`, dynamic: false },
+  { key: `profile-account-links`, file: `src/pages/profile/index.js`, line: 84, prop: `sectionKey`, dynamic: false },
+  { key: `profile-active-tab-panel`, file: `src/pages/profile/index.js`, line: 135, prop: `sectionKey`, dynamic: false },
   { key: `profile-desktop-app-details`, file: `src/components/profile/DesktopAppCard.js`, line: 483, prop: `sectionKey`, dynamic: false },
   { key: `profile-desktop-app-download`, file: `src/components/profile/DesktopAppCard.js`, line: 445, prop: `sectionKey`, dynamic: false },
   { key: `profile-desktop-app-overview`, file: `src/components/profile/DesktopAppCard.js`, line: 402, prop: `sectionKey`, dynamic: false },
-  { key: `profile-page-content`, file: `src/pages/profile/index.js`, line: 49, prop: `sectionKey`, dynamic: false },
+  { key: `profile-page-content`, file: `src/pages/profile/index.js`, line: 50, prop: `sectionKey`, dynamic: false },
   { key: `profile-personal-dashboard-empty-state`, file: `src/components/profile/ProfilePersonalTab.js`, line: 520, prop: `sectionKey`, dynamic: false },
   { key: `profile-personal-dashboard-insights`, file: `src/components/profile/ProfilePersonalTab.js`, line: 508, prop: `sectionKey`, dynamic: false },
   { key: `profile-personal-dashboard-unlocked`, file: `src/components/profile/ProfilePersonalTab.js`, line: 802, prop: `sectionKey`, dynamic: false },
@@ -743,9 +743,9 @@ export const DEV_LAYOUT_SECTION_SOURCE_MAP = [
   { key: `profile-privacy-subject-request`, file: `src/pages/profile/privacy.js`, line: 441, prop: `sectionKey`, dynamic: false },
   { key: `profile-privacy-subject-request-form`, file: `src/pages/profile/privacy.js`, line: 254, prop: `data-dev-section-key`, dynamic: false },
   { key: `profile-privacy-summary`, file: `src/pages/profile/privacy.js`, line: 397, prop: `sectionKey`, dynamic: false },
-  { key: `profile-tab-actions`, file: `src/pages/profile/index.js`, line: 118, prop: `sectionKey`, dynamic: false },
-  { key: `profile-tab-switcher`, file: `src/pages/profile/index.js`, line: 72, prop: `sectionKey`, dynamic: false },
-  { key: `profile-tab-toolbar`, file: `src/pages/profile/index.js`, line: 60, prop: `sectionKey`, dynamic: false },
+  { key: `profile-tab-actions`, file: `src/pages/profile/index.js`, line: 127, prop: `sectionKey`, dynamic: false },
+  { key: `profile-tab-switcher`, file: `src/pages/profile/index.js`, line: 73, prop: `sectionKey`, dynamic: false },
+  { key: `profile-tab-toolbar`, file: `src/pages/profile/index.js`, line: 61, prop: `sectionKey`, dynamic: false },
   { key: `profile-work-attendance-history`, file: `src/components/profile/ProfileWorkTab.js`, line: 2614, prop: `sectionKey`, dynamic: false },
   { key: `profile-work-attendance-history-group`, file: `src/components/profile/ProfileWorkTab.js`, line: 2601, prop: `sectionKey`, dynamic: false },
   { key: `profile-work-attendance-overtime-history`, file: `src/components/profile/ProfileWorkTab.js`, line: 2633, prop: `sectionKey`, dynamic: false },
@@ -1079,4 +1079,4 @@ export const DEV_LAYOUT_SECTION_SOURCE_MAP = [
 ];
 
 // Stable hash of the map above (Help & Diagnostics Phase 5 — code-state pinning).
-export const DEV_LAYOUT_SECTION_SOURCE_MAP_HASH = "1lys2mc";
+export const DEV_LAYOUT_SECTION_SOURCE_MAP_HASH = "1k91len";

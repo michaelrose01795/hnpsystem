@@ -23,7 +23,7 @@ import {
 
 // How many cards the Cars block shows before "Load more vehicles". Also the
 // step each press of that button adds.
-export const FEATURED_VEHICLE_LIMIT = 8;
+export const FEATURED_VEHICLE_LIMIT = 5;
 
 // Card shape — the ONE builder every VehicleCard on the customer site reads
 // (the Cars block, /website/available-stock and the detail page's similar

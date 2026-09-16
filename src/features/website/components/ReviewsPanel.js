@@ -7,7 +7,7 @@
 // Content is code-owned — siteContent.ratings, data/reviews.js, data/team.js —
 // and the rules for reading it live in ../reviews/reviewInsights.js. Styling
 // is custglobal.css @family marketing (.ws-reviews, .ws-rating*, .ws-review*);
-// the filters reuse the .ws-tabs pills and the .ws-tab-count badge.
+// the filters reuse the .ws-segmented pills and the .ws-tab-count badge.
 //
 // Every part is optional: no scored platform drops the overall card, no
 // reviews drops the filters and the track, and a staff name only becomes a
@@ -165,7 +165,7 @@ export default function ReviewsPanel({
       {reviewList.length ? (
         <>
           <div className="ws-reviews-toolbar">
-            <div className="ws-tabs" role="group" aria-label="Filter reviews">
+            <div className="ws-segmented" role="group" aria-label="Filter reviews">
               {filters.map((f) => {
                 const active = f.id === activeFilter?.id;
                 return (
@@ -173,7 +173,7 @@ export default function ReviewsPanel({
                     key={f.id}
                     type="button"
                     aria-pressed={active}
-                    className={active ? "ws-tab ws-tab--active" : "ws-tab"}
+                    className={active ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
                     onClick={() => setFilterId(f.id)}
                   >
                     {f.label}

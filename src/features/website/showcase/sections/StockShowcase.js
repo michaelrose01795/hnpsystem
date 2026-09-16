@@ -16,19 +16,19 @@ import { Frame, Row, ShowcaseSection, Stage } from "../ShowcasePrimitives";
 // Mirrors the Our Cars block in src/features/website/WebsitePage.js, driven by
 // the real search hook so the counts, chips and toggles behave as on the page.
 function OurCarsSearch() {
-  const search = useStockSearch({ pageSize: 2 });
+  const search = useStockSearch({ pageSize: 5 });
   return (
     <div className="ws-page">
       <div className="ws-cars-search">
         <div className="ws-cars-search-head">
-          <div className="ws-tabs" role="tablist" aria-label="New or used">
+          <div className="ws-segmented" role="tablist" aria-label="New or used">
             {CONDITION_TABS.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 role="tab"
                 aria-selected={search.filters.condition === tab.id}
-                className={search.filters.condition === tab.id ? "ws-tab ws-tab--active" : "ws-tab"}
+                className={search.filters.condition === tab.id ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
                 onClick={() => search.update({ condition: tab.id })}
               >
                 {tab.label}
@@ -46,19 +46,16 @@ function OurCarsSearch() {
           <strong>{search.total}</strong> vehicles found
         </p>
       </div>
-      <div className="ws-grid ws-grid--cards">
+      <div className="ws-grid ws-grid--cars-row">
         {search.shownCards.map((card) => (
           <VehicleCard key={card.id} vehicle={card} />
         ))}
       </div>
       <div className="ws-cars-end">
         <p className="ws-section-more-note">
-          Showing {search.shownCards.length} of {search.total} vehicles
+          A selection of our {search.total} vehicles in stock
         </p>
         <div className="ws-cars-end-actions">
-          <button type="button" onClick={search.loadMore}>
-            Load more vehicles
-          </button>
           <a href="#stock" className="ws-btn ws-btn--primary">
             View all cars
           </a>
@@ -117,12 +114,12 @@ export default function StockShowcase({ section }) {
             <section className="ws-section ws-stock-body">
               <div className="ws-container">
                 <div className="ws-stock-head">
-                  <div className="ws-tabs" role="tablist" aria-label="New or used">
-                    <button type="button" role="tab" aria-selected="true" className="ws-tab ws-tab--active">
+                  <div className="ws-segmented" role="tablist" aria-label="New or used">
+                    <button type="button" role="tab" aria-selected="true" className="ws-segmented-tab ws-segmented-tab--active">
                       All
                       <span className="ws-tab-count">24</span>
                     </button>
-                    <button type="button" role="tab" aria-selected="false" className="ws-tab">
+                    <button type="button" role="tab" aria-selected="false" className="ws-segmented-tab">
                       Used
                       <span className="ws-tab-count">18</span>
                     </button>

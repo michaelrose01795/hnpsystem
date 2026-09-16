@@ -13,7 +13,7 @@
 // it over to the catalogue. The make / model lists and the matching rules live
 // in src/lib/parts/vehicleFitment.js.
 //
-// Styling: reuses .ws-tabs, .ws-quick-form, .ws-stock-field, .ws-val-plate and
+// Styling: reuses .ws-segmented, .ws-quick-form, .ws-stock-field, .ws-val-plate and
 // .ws-form-error; .ws-finder-* in custglobal.css (@family shop) for the rest.
 
 import { useEffect, useState } from "react";
@@ -97,14 +97,14 @@ export default function VehicleFinder({ vehicle = {}, onApply, onClear, idPrefix
     <div className="ws-card ws-panel ws-finder">
       <div className="ws-finder-head">
         <h3 className="ws-card-title">Find parts for my vehicle</h3>
-        <div className="ws-tabs ws-finder-tabs" role="tablist" aria-label="How to find your vehicle">
+        <div className="ws-segmented ws-segmented--auto ws-finder-tabs" role="tablist" aria-label="How to find your vehicle">
           {MODES.map((m) => (
             <button
               key={m.id}
               type="button"
               role="tab"
               aria-selected={mode === m.id}
-              className={mode === m.id ? "ws-tab ws-tab--active" : "ws-tab"}
+              className={mode === m.id ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
               onClick={() => setMode(m.id)}
             >
               {m.label}

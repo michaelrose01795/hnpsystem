@@ -207,17 +207,17 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Tabs" hint=".ws-tabs">
+      <Row label="Tabs" hint=".ws-segmented">
         <Frame padded>
           <div className="ws-page">
-            <div className="ws-tabs" role="tablist" aria-label="Showcase tabs">
-              <button type="button" role="tab" aria-selected="true" className="ws-tab ws-tab--active">
+            <div className="ws-segmented" role="tablist" aria-label="Showcase tabs">
+              <button type="button" role="tab" aria-selected="true" className="ws-segmented-tab ws-segmented-tab--active">
                 All cars
               </button>
-              <button type="button" role="tab" aria-selected="false" className="ws-tab">
+              <button type="button" role="tab" aria-selected="false" className="ws-segmented-tab">
                 New
               </button>
-              <button type="button" role="tab" aria-selected="false" className="ws-tab">
+              <button type="button" role="tab" aria-selected="false" className="ws-segmented-tab">
                 Used
               </button>
             </div>
@@ -401,6 +401,16 @@ export default function MarketingShowcase({ section }) {
                   <span className="ws-eyebrow">Left</span>
                   <h3 className="ws-h2">Left-aligned heading</h3>
                   <p className="ws-muted">Muted body copy.</p>
+                </header>
+                <header className="ws-head ws-head--media">
+                  <div className="ws-head-copy">
+                    <span className="ws-eyebrow">With photography</span>
+                    <h3 className="ws-h2">Heading with a section photo</h3>
+                    <p className="ws-lead">The photo fills the empty side of the row on desktop and is dropped below 1024px.</p>
+                  </div>
+                  <div className="ws-head-figure" aria-hidden="true">
+                    <img className="ws-head-img" src="/images/website/section-heads/shop.webp" alt="" loading="lazy" decoding="async" />
+                  </div>
                 </header>
                 <div className="ws-subhead">
                   <h4 className="ws-h3">A sub-heading</h4>

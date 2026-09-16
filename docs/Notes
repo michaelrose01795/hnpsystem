@@ -37,71 +37,68 @@ CHECK
 CHECK NON GLOBAL ON DEV PAGE
 
 
- 
+---------------------
+WEBSITE
 ---------------------
 
 TODO
 /website/dev
+TAB SECTION 
 
 
-CHECK
-make sure that all of the pages, card sections is all 100% useable on all types of devices, make it most feistible for the phone view but also for all devices size and make. 
-
-
-CHECK
-ok so now run a check, make sure every button card, text box calendar picker, colour, shade, annimation, everythign follows whats in the custglobal.css setting already. this is to mkae sure everything is copued and follows the same design everywhere. 
-
-CHECK
-have it so wihtin all the pages its a max of 20px gap between the bottom of the top bar and the page context, make sure this is throughout all of the /website pages.
 
 -------
 
 CHECK
 /website
+TAB SECTION 
 
-CHECK
-error pages not using staffglobal.css setting side etc
-
-CHECK
-fix the "privacy, Terms" button at the bottom of the /website pages, this takes the user tot he staffglobal.css setting side, so the "/profile/privacy" page opens or page not found for the terms button etc Make sure those button takes users to the /website pricay or terms page for customer facing details following the goverment law etc.
 
 -------
 
 CHECK
 /website/login
+TAB SECTION 
 
 
 -------
 
 CHECK
 /website/profile
+TAB SECTION 
+
 
 -------
 
 CHECK
 /website/valuation
+TAB SECTION 
 
 
 -------
 
 CHECK
 /website/available-stock
+TAB SECTION 
+
 
 -------
 
 CHECK
 /website/stock/[reg]
+TAB SECTION 
 
 
 -------
 
 CHECK
 /website/parts-catalog
+TAB SECTION 
 
 
 -------
 
 CHECK
 /website/parts-catalog/[partId]
-
+TAB SECTION 
 

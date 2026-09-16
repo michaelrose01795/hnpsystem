@@ -84,13 +84,37 @@ function Section({ id, tint, children }) {
   );
 }
 
-function SectionHead({ eyebrow, title, lead, center }) {
+// Decorative photography for the section heads whose copy leaves the right
+// half of the row empty on a wide screen. Purely presentational: the <img> is
+// alt="" behind aria-hidden, and the figure is display:none under 1024px
+// (@family marketing in custglobal.css) so a phone keeps the whole width for
+// the copy. Files are CC0 — see public/images/website/section-heads/CREDITS.md.
+const SECTION_HEAD_MEDIA = {
+  cars: "/images/website/section-heads/cars.webp",
+  offers: "/images/website/section-heads/offers.webp",
+  shop: "/images/website/section-heads/shop.webp",
+};
+
+function SectionHead({ eyebrow, title, lead, center, media }) {
   if (!eyebrow && !title && !lead) return null;
-  return (
-    <header className={center ? "ws-head ws-head--center" : "ws-head"}>
+  // A centred head has no empty side to fill, so it never takes the photo.
+  const withMedia = Boolean(media) && !center;
+  const copy = (
+    <>
       {eyebrow ? <span className="ws-eyebrow">{eyebrow}</span> : null}
       {title ? <h2 className="ws-h2">{title}</h2> : null}
       {lead ? <p className="ws-lead">{lead}</p> : null}
+    </>
+  );
+  if (!withMedia) {
+    return <header className={center ? "ws-head ws-head--center" : "ws-head"}>{copy}</header>;
+  }
+  return (
+    <header className="ws-head ws-head--media">
+      <div className="ws-head-copy">{copy}</div>
+      <div className="ws-head-figure" aria-hidden="true">
+        <img className="ws-head-img" src={media} alt="" loading="lazy" decoding="async" />
+      </div>
     </header>
   );
 }
@@ -269,8 +293,9 @@ export default function WebsitePage() {
   // through the same hook as /website/available-stock, so a filter means the
   // same thing on both. A section embed can pin the condition up front (the
   // manager's New and Used tabs are the same block with a different start).
-  // The block is a teaser: FEATURED_VEHICLE_LIMIT cards, more on "Load more
-  // vehicles", and "View all cars" hands the current filters to the search page.
+  // The block is a teaser: a single row of up to FEATURED_VEHICLE_LIMIT cards
+  // (the grid hides the ones that do not fit the width), and "View all cars"
+  // hands the current filters to the search page.
   const carSearch = useStockSearch({
     initialFilters: { condition: sectionPreview?.carFilter || "all" },
     pageSize: FEATURED_VEHICLE_LIMIT,
@@ -503,19 +528,19 @@ export default function WebsitePage() {
     cars: (row) => (
       <PreviewClickTarget key={row.id} {...click("vehicles", "Featured vehicles")}>
         <Section id={row.anchor || "cars"} tint={row.tint}>
-          <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} />
+          <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} media={SECTION_HEAD_MEDIA.cars} />
 
           {/* ---- Search and filter panel ---- */}
           <div className="ws-cars-search">
             <div className="ws-cars-search-head">
-              <div className="ws-tabs" role="tablist" aria-label="New or used">
+              <div className="ws-segmented" role="tablist" aria-label="New or used">
                 {CONDITION_TABS.map((tab) => (
                   <button
                     key={tab.id}
                     type="button"
                     role="tab"
                     aria-selected={carSearch.filters.condition === tab.id}
-                    className={carSearch.filters.condition === tab.id ? "ws-tab ws-tab--active" : "ws-tab"}
+                    className={carSearch.filters.condition === tab.id ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
                     onClick={() => carSearch.update({ condition: tab.id })}
                   >
                     {tab.label}
@@ -582,7 +607,7 @@ export default function WebsitePage() {
           </div>
 
           {carSearch.shownCards.length ? (
-            <div className="ws-grid ws-grid--cards">
+            <div className="ws-grid ws-grid--cars-row">
               {carSearch.shownCards.map((v) => (
                 <VehicleCard key={v.id} vehicle={v} />
               ))}
@@ -605,15 +630,10 @@ export default function WebsitePage() {
           {carSearch.total ? (
             <div className="ws-cars-end">
               <p className="ws-section-more-note">
-                Showing {carSearch.shownCards.length} of {carSearch.total}{" "}
-                {carSearch.total === 1 ? "vehicle" : "vehicles"}
+                A selection of our {carSearch.total}{" "}
+                {carSearch.total === 1 ? "vehicle" : "vehicles"} in stock
               </p>
               <div className="ws-cars-end-actions">
-                {carSearch.hasMore ? (
-                  <button type="button" onClick={carSearch.loadMore}>
-                    Load more vehicles
-                  </button>
-                ) : null}
                 {/* Carries every filter and the sort to the full search. */}
                 <Link
                   href={{ pathname: "/website/available-stock", query: carSearch.query }}
@@ -648,7 +668,7 @@ export default function WebsitePage() {
       liveOffers(offers).length ? (
         <PreviewClickTarget key={row.id} {...click("offers", "Manufacturer offers")}>
           <Section id={row.anchor || "offers"} tint={row.tint}>
-            <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} />
+            <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} media={SECTION_HEAD_MEDIA.offers} />
             <OffersSection offers={offers} />
           </Section>
         </PreviewClickTarget>
@@ -656,7 +676,7 @@ export default function WebsitePage() {
 
     shop: (row) => (
       <Section key={row.id} id={row.anchor || "shop"} tint={row.tint}>
-        <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} />
+        <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} media={SECTION_HEAD_MEDIA.shop} />
         <ShopSection />
       </Section>
     ),
@@ -798,14 +818,14 @@ export default function WebsitePage() {
             {models.length ? (
               <>
                 {brands.length > 1 ? (
-                  <div className="ws-tabs" role="tablist" aria-label="Filter Motability vehicles by brand">
+                  <div className="ws-segmented" role="tablist" aria-label="Filter Motability vehicles by brand">
                     {["all", ...brands].map((b) => (
                       <button
                         key={b}
                         type="button"
                         role="tab"
                         aria-selected={motabilityBrand === b}
-                        className={motabilityBrand === b ? "ws-tab ws-tab--active" : "ws-tab"}
+                        className={motabilityBrand === b ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
                         onClick={() => setMotabilityBrand(b)}
                       >
                         {b === "all" ? "All models" : b}

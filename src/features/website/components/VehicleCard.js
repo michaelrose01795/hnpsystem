@@ -18,7 +18,7 @@
 // A card without an `href` (a legacy website_vehicles row that predates the
 // stock link) still renders, just without the action.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import useVehicleShortlist from "../hooks/useVehicleShortlist";
@@ -69,6 +69,24 @@ export default function VehicleCard({ vehicle, priority = false, shortlist = tru
     .filter(Boolean)
     .join(" · ");
 
+  // The highlights strip is a continuous right-to-left rail: the badges are
+  // rendered twice so the first follows the last seamlessly, and it only turns
+  // over while the card is actually on screen.
+  const cardRef = useRef(null);
+  const [inView, setInView] = useState(false);
+  const cycling = badges.length > 1;
+
+  useEffect(() => {
+    const node = cardRef.current;
+    if (!cycling || !node || typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((entry) => setInView(entry.isIntersecting)),
+      { rootMargin: "0px 0px -10% 0px" }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [cycling]);
+
   const [photo, setPhoto] = useState(0);
   const step = (delta) => setPhoto((current) => (current + delta + images.length) % images.length);
 
@@ -78,7 +96,7 @@ export default function VehicleCard({ vehicle, priority = false, shortlist = tru
   const comparing = canShortlist && isComparing(v.id);
 
   return (
-    <article className="ws-card ws-vehicle" data-linked={v.href ? "true" : "false"}>
+    <article ref={cardRef} className="ws-card ws-vehicle" data-linked={v.href ? "true" : "false"}>
       <div className="ws-vehicle-media">
         {images.length ? (
           <img src={images[photo]} alt={`${name}, photo ${photo + 1} of ${images.length}`} loading={priority ? "eager" : "lazy"} />
@@ -87,13 +105,26 @@ export default function VehicleCard({ vehicle, priority = false, shortlist = tru
         )}
 
         {badges.length ? (
-          <ul className="ws-vehicle-badges" aria-label="Highlights">
-            {badges.map((badge) => (
-              <li key={badge} className="ws-badge">
-                {badge}
-              </li>
-            ))}
-          </ul>
+          <div className="ws-vehicle-badges">
+            <ul
+              className="ws-vehicle-badge-track"
+              aria-label="Highlights"
+              data-marquee={!cycling ? "off" : inView ? "run" : "paused"}
+            >
+              {badges.map((badge) => (
+                <li key={badge} className="ws-badge">
+                  {badge}
+                </li>
+              ))}
+              {cycling
+                ? badges.map((badge) => (
+                    <li key={`repeat-${badge}`} className="ws-badge" aria-hidden="true">
+                      {badge}
+                    </li>
+                  ))
+                : null}
+            </ul>
+          </div>
         ) : null}
 
         {canShortlist ? (
