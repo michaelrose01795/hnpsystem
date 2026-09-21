@@ -189,8 +189,8 @@
     "--website-popover-height": "src/features/website/hooks/useWebsitePopover.js",
     "--website-dev-swatch": "src/features/website/showcase/ShowcasePrimitives.js",
     "--ws-portal-pct": "src/pages/website/profile.js",
-    "--ws-portal-score": "src/pages/website/profile.js",
-    "--ws-portal-steps": "src/pages/website/profile.js"
+    "--ws-portal-score": "src/features/website/profile/ProfilePrimitives.js",
+    "--ws-portal-steps": "src/features/website/profile/ProfileWorkshop.js"
   },
   "tokens": {
     "--website-motion-duration": {

@@ -29,19 +29,19 @@ export const NON_GLOBAL_AUDIT = {
   },
   "non-global-inputs": {
     title: "text inputs and textareas that are not .app-input",
-    total: 62,
-    files: 35,
+    total: 59,
+    files: 34,
     usage: [
       { label: "[jobNumber] (job-cards) — 5", file: "src/pages/job-cards/[jobNumber].js" },
       { label: "parts-goods-in-ui (parts) — 5", file: "src/components/page-ui/parts/parts-goods-in-ui.js" },
       { label: "VhcDetailsPanel (VHC) — 4", file: "src/components/VHC/VhcDetailsPanel.js" },
       { label: "index (goods-in) — 3", file: "src/pages/goods-in/index.js", route: "/goods-in" },
       { label: "InvoicePaymentModal (components) — 3", file: "src/features/invoices/components/InvoicePaymentModal.js" },
-      { label: "TrackingMap (map) — 3", file: "src/features/tracking/map/TrackingMap.js" },
       { label: "[jobNumber] (tech) — 2", file: "src/pages/tech/[jobNumber].js" },
       { label: "EfficiencyTab (Clocking) — 2", file: "src/components/Clocking/EfficiencyTab.js" },
       { label: "parts-deliveries-delivery-id-ui (deliveries) — 2", file: "src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js" },
       { label: "InvoiceBuilderPopup (popups) — 2", file: "src/components/popups/InvoiceBuilderPopup.js" },
+      { label: "BrakesHubsDetailsModal (VHC) — 2", file: "src/components/VHC/BrakesHubsDetailsModal.js" },
     ],
   },
   "non-global-form-labels": {

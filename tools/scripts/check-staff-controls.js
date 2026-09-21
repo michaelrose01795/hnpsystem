@@ -175,7 +175,6 @@ const MIGRATION_BASELINE = new Map([
   ["src/features/roleTreeDemo/components/RoleTreeDemo.js", 1],
   ["src/features/roleTreeDemo/components/sections/InteractiveDemoSection.js", 1],
   ["src/features/staffStyleReview/StaffStyleReviewPage.js", 1],
-  ["src/features/tracking/map/TrackingMap.js", 16],
   ["src/features/vision/components/VisionViews.js", 1],
   ["src/features/websiteManager/panels/SeoPanel.js", 0],
   ["src/pages/admin/compliance/breaches.js", 2],

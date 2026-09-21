@@ -27,6 +27,14 @@ import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // 
 import { WORKSHOP_CONTROLLER_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import useIdleWarm from "@/hooks/useIdleWarm";
 import { logFailure } from "@/lib/utils/logFailure";
+import { buildMapAssignments } from "@/features/tracking/map/trackingMapModel";
+import {
+  getTrackerGroup,
+  getTrackerLocationFlags,
+  getTrackerRiskScore,
+  isDepartedEntry,
+  summariseTrackerEntries,
+} from "@/features/tracking/trackingEntryState";
 
 // Two surfaces on this route render nothing on arrival, and both were the
 // heaviest things in its eager import graph.
@@ -34,17 +42,18 @@ import { logFailure } from "@/lib/utils/logFailure";
 // `LoanCarSchedulePanel` (78 kB of source, plus FuelGauge and the calendar
 // family it pulls in) only mounts when the Loan Cars tab is selected, and that
 // tab only exists for workshop controllers — every other role downloaded it and
-// could never reach it. `TrackingMapModal` only mounts while the Key/Parking
-// map overlay is open.
+// could never reach it. `TrackingSiteMap` only mounts while the Key/Parking
+// tab is showing the Map view; Grid is the default, so the site plan, its
+// space registry and its stylesheet stay out of the first paint.
 //
 // Both are code-split and warmed on idle, so a workshop controller who switches
-// to Loan Cars, or anyone who presses Map, finds the chunk already in cache
+// to Loan Cars, or anyone who switches to Map, finds the chunk already in cache
 // rather than waiting on a request. Same DOM, same effects, same behaviour.
 const loadLoanCarSchedulePanel = () => import("@/components/LoanCars/LoanCarSchedulePanel");
-const loadTrackingMapModal = () => import("@/features/tracking/map/TrackingMapModal");
+const loadTrackingSiteMap = () => import("@/features/tracking/map/TrackingSiteMap");
 
 const LoanCarSchedulePanel = dynamic(loadLoanCarSchedulePanel, { ssr: false });
-const TrackingMapModal = dynamic(loadTrackingMapModal, { ssr: false });
+const TrackingSiteMap = dynamic(loadTrackingSiteMap, { ssr: false });
 
 const CAR_LOCATIONS = [
 { id: "na", label: "N/A" },
@@ -537,8 +546,6 @@ const formatRelativeTime = (timestamp) => {
   return `${days}d ago`;
 };
 
-const TRACKER_OVERDUE_HOURS = 4;
-
 const TRACKER_QUICK_FILTERS = [
 { id: "all", label: "All" },
 { id: "overdue", label: "Overdue" },
@@ -554,87 +561,17 @@ const TRACKER_LOCATION_FILTERS = [
 { key: "workshop-board", value: "workshop-board", label: "Workshop Board" },
 { key: "collection", value: "collection", label: "Collection" },
 { key: "workshop-bays", value: "workshop-bays", label: "Workshop Bays" },
+// Departed vehicles now group separately instead of being scattered through
+// the on-site groups, so they are filterable rather than invisible.
+{ key: "off-site", value: "off-site", label: "Off Site" },
 { key: "other", value: "other", label: "Other locations" },
 { key: "unknown", value: "unknown", label: "Unknown location" }];
 
 
-const normalizeTrackerText = (value = "") => String(value || "").trim().toLowerCase();
-
-const getMovementAgeHours = (entry) => {
-  const updated = new Date(entry?.updatedAt || 0).getTime();
-  if (!updated) return 0;
-  return Math.max(0, (Date.now() - updated) / (1000 * 60 * 60));
-};
-
-const getTrackerLocationFlags = (entry = {}) => {
-  const keyLocation = normalizeTrackerText(normalizeKeyLocationLabel(entry.keyLocation));
-  const vehicleLocation = normalizeTrackerText(entry.vehicleLocation);
-  const status = normalizeTrackerText(entry.status || entry.jobStatus || entry.serviceType);
-  const combined = [keyLocation, vehicleLocation, status].filter(Boolean).join(" ");
-  const missingKey = !keyLocation || keyLocation === "n/a" || keyLocation === "na" || keyLocation === "pending";
-  const missingVehicle = !vehicleLocation || vehicleLocation === "n/a" || vehicleLocation === "na" || vehicleLocation === "unallocated";
-  const isUnknown = missingKey || missingVehicle || combined.includes("unknown");
-  const isWorkshop =
-  combined.includes("workshop") ||
-  combined.includes("red board") ||
-  combined.includes("valet") ||
-  combined.includes("paint") ||
-  combined.includes("prep");
-  const isCollection =
-  combined.includes("collection") ||
-  combined.includes("complete") ||
-  combined.includes("ready for release") ||
-  combined.includes("ready for collection");
-  const isCustomerWaiting =
-  combined.includes("waiting") ||
-  combined.includes("customer waiting") ||
-  combined.includes("waiter");
-  const keysMoved =
-  Boolean(keyLocation) &&
-  keyLocation !== "n/a" &&
-  keyLocation !== "na" &&
-  !keyLocation.includes("service showroom") &&
-  !keyLocation.includes("sales show room");
-  const isOverdue = getMovementAgeHours(entry) >= TRACKER_OVERDUE_HOURS;
-
-  return {
-    isUnknown,
-    isWorkshop,
-    isCollection,
-    isCustomerWaiting,
-    keysMoved,
-    isOverdue,
-    missingKey,
-    missingVehicle
-  };
-};
-
-const getTrackerGroup = (entry = {}) => {
-  const flags = getTrackerLocationFlags(entry);
-  const keyLocation = normalizeTrackerText(normalizeKeyLocationLabel(entry.keyLocation));
-  const vehicleLocation = normalizeTrackerText(entry.vehicleLocation);
-  const combined = [keyLocation, vehicleLocation].filter(Boolean).join(" ");
-
-  if (flags.isUnknown) return { id: "unknown", label: "Unknown Location" };
-  if (flags.isCollection) return { id: "collection", label: "Collection" };
-  if (combined.includes("red board") || combined.includes("cupboard") || keyLocation.includes("workshop")) {
-    return { id: "workshop-board", label: "Workshop Board" };
-  }
-  if (flags.isWorkshop) return { id: "workshop-bays", label: "Workshop Bays" };
-  if (combined.includes("service")) return { id: "service-desk", label: "Service Desk" };
-  return { id: "other", label: "Other Locations" };
-};
-
-const getTrackerRiskScore = (entry = {}) => {
-  const flags = getTrackerLocationFlags(entry);
-  const ageHours = getMovementAgeHours(entry);
-  return (
-    (flags.isUnknown ? 100000 : 0) +
-    (flags.keysMoved ? 50000 : 0) +
-    (flags.isOverdue ? 20000 : 0) +
-    Math.min(19999, Math.round(ageHours * 100))
-  );
-};
+// The classification rules and the summary live in one tested module so the
+// Grid view, the Map view and the unit tests cannot drift. Fixing them there
+// is what corrected "384 off-site / 384 overdue / 64 waiting" — see the
+// header of src/features/tracking/trackingEntryState.js.
 
 const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = false }) => {
   const vehicleMeta = getVehicleSummaryLabel(entry);
@@ -1811,7 +1748,10 @@ export default function TrackingDashboard() {
   const [equipmentHistoryModal, setEquipmentHistoryModal] = useState({ open: false, item: null });
   const [oilStockModal, setOilStockModal] = useState({ open: false, item: null });
   const [oilStockHistoryModal, setOilStockHistoryModal] = useState({ open: false, item: null });
-  const [trackingMapOpen, setTrackingMapOpen] = useState(false); // Key/Parking site-map overlay
+  // Key/Parking renders as either the tracker card grid or the inline site
+  // map. Grid is the default; the switch never leaves /tracking and never
+  // touches the search term or either filter.
+  const [trackerView, setTrackerView] = useState("grid");
   const { dbUserId, user } = useUser();
   const userRoles = useMemo(() => user?.roles || [], [user]);
   const isWorkshopManager = hasAnyRole(userRoles, WORKSHOP_CONTROLLER_ROLES);
@@ -1828,12 +1768,12 @@ export default function TrackingDashboard() {
   }, [isWorkshopManager]);
   const [activeTab, setActiveTab] = useState("tracker");
 
-  // The map overlay is reachable by every role on this page, so its chunk is
+  // The map view is reachable by every role on this page, so its chunk is
   // warmed unconditionally. The loan-car schedule is workshop-controller only
   // and is warmed alongside their other deferred work below — `useIdleWarm`
   // deliberately runs once per mount, and `isWorkshopManager` is still false on
   // the first render while UserContext resolves.
-  useIdleWarm([loadTrackingMapModal]);
+  useIdleWarm([loadTrackingSiteMap]);
   const [equipmentChecks, setEquipmentChecks] = useState(() => cloneList(DEFAULT_EQUIPMENT_CHECKS));
   const [oilChecks, setOilChecks] = useState(() => cloneList(DEFAULT_OIL_CHECKS));
   const [activeTopUpId, setActiveTopUpId] = useState(null);
@@ -2379,26 +2319,29 @@ export default function TrackingDashboard() {
     });
   }, [activeEntries, trackerLocationFilter, trackerQuickFilter, trackerSearchTerm]);
 
-  const trackerSummaryItems = useMemo(() => {
-    const totalActiveJobs = activeEntries.length;
-    const keysMissing = activeEntries.filter((entry) => getTrackerLocationFlags(entry).missingKey).length;
-    const carsOffSite = activeEntries.filter((entry) => {
-      const location = normalizeTrackerText(entry.vehicleLocation);
-      return Boolean(location) && !["n/a", "na", "service", "workshop", "in workshop", "ready for release"].includes(location);
-    }).length;
-    const overdueMovements = activeEntries.filter((entry) => getTrackerLocationFlags(entry).isOverdue).length;
-    const unknownLocations = activeEntries.filter((entry) => getTrackerLocationFlags(entry).isUnknown).length;
-    const customerWaiting = activeEntries.filter((entry) => getTrackerLocationFlags(entry).isCustomerWaiting).length;
-
-    return [
-    { label: "Total Active Jobs", value: totalActiveJobs },
-    { label: "Keys Missing", value: keysMissing },
-    { label: "Cars Off-site", value: carsOffSite },
-    { label: "Overdue Movements", value: overdueMovements },
-    { label: "Unknown Location", value: unknownLocations },
-    { label: "Customer Waiting", value: customerWaiting }];
-
+  // Occupancy comes from the same registry the Map view draws, so the tiles
+  // and the plan can never disagree about how many spaces are taken.
+  const trackerMapping = useMemo(() => {
+    const placed = buildMapAssignments(activeEntries, {
+      getFlags: getTrackerLocationFlags,
+      isDeparted: isDepartedEntry,
+    });
+    return placed.counts;
   }, [activeEntries]);
+
+  const trackerSummaryItems = useMemo(() => {
+    const summary = summariseTrackerEntries(activeEntries, trackerMapping);
+    return [
+    { label: "Active Vehicles", value: summary.activeTracked },
+    { label: "Mapped", value: summary.onSiteMapped },
+    { label: "Unmapped", value: summary.onSiteUnmapped },
+    { label: "Off-site", value: summary.offSite },
+    { label: "Overdue", value: summary.overdue },
+    { label: "Waiting", value: summary.customerWaiting },
+    { label: "Occupied", value: summary.occupiedSpaces },
+    { label: "Available", value: summary.availableSpaces }];
+
+  }, [activeEntries, trackerMapping]);
 
   const filteredEquipmentChecks = useMemo(() => {
     const term = equipmentSearchTerm.trim().toLowerCase();
@@ -2576,11 +2519,76 @@ export default function TrackingDashboard() {
       await loadEntries();
       closeEntryModal();
       setSimplifiedModal({ open: false, initialData: null });
+      return true;
     } catch (saveError) {
       logFailure("Failed to log tracking entry", saveError);
       setError(saveError.message || "Unable to save tracking entry");
+      return false;
     }
   };
+
+  // The shape LocationEntryModal expects. Shared by the tracker card grid and
+  // the site map so both open the same editor on the same record.
+  const openTrackingEntry = (entry) =>
+  openEntryModal("car", {
+    id: entry.id,
+    jobId: entry.jobId,
+    jobNumber: entry.jobNumber,
+    reg: entry.reg,
+    customer: entry.customer,
+    makeModel: entry.makeModel,
+    colour: entry.colour,
+    vehicleDisplay: getVehicleSummaryLabel(entry),
+    serviceType: entry.serviceType,
+    vehicleLocation: entry.vehicleLocation,
+    keyLocation: entry.keyLocation,
+    status: entry.status,
+    keyTip: entry.keyTip,
+    notes: entry.notes,
+    updatedAt: entry.updatedAt
+  });
+
+  // Moving a vehicle from the map is the SAME server-owned write the Update
+  // Location modal performs — one `location_update` through /api/tracking/
+  // next-action, appended to vehicle_tracking_events, followed by the same
+  // snapshot refresh. No key event is sent, so a vehicle move never disturbs
+  // where the keys are recorded. There is no map-specific persistence and no
+  // schema change: the destination is written as the location value the
+  // tracking vocabulary already uses.
+  const handleMapMove = async ({ entry, location, space }) =>
+  handleSave({
+    actionType: "location_update",
+    id: entry.id,
+    jobId: entry.jobId,
+    jobNumber: entry.jobNumber,
+    vehicleId: entry.vehicleId,
+    reg: entry.reg,
+    vehicleLocation: location,
+    notes: `Moved to ${space.siteArea} - ${space.label} from the site map`
+  });
+
+  const handleOpenTrackedJob = (entry) => {
+    if (!entry?.jobNumber) return;
+    router.push(`/job-cards/${encodeURIComponent(entry.jobNumber)}`);
+  };
+
+  // The Map view of the Key/Parking tab. It renders in the same content slot
+  // as the card grid, inside app-layout-page-card > tracking-page, and reads
+  // the same already-filtered entries — never its own fetch.
+  const renderTrackerMap = () =>
+  <TrackingSiteMap
+    entries={filteredActiveEntries}
+    totalEntries={activeEntries.length}
+    loading={loading}
+    getFlags={getTrackerLocationFlags}
+    isDeparted={isDepartedEntry}
+    getVehicleLabel={getVehicleSummaryLabel}
+    formatRelativeTime={formatRelativeTime}
+    onOpenEntry={openTrackingEntry}
+    onMoveVehicle={handleMapMove}
+    onOpenJob={handleOpenTrackedJob}
+    onRefresh={loadEntries}
+    isMobileView={isMobileView} />;
 
   const renderTrackerContent = () =>
   <>
@@ -2596,6 +2604,12 @@ export default function TrackingDashboard() {
         </div>
       </DevLayoutSection>
 
+      {trackerView === "map" ? renderTrackerMap() : renderTrackerGrid()}
+    </>;
+
+  // The Grid view - the tracker card experience, behaviour unchanged.
+  const renderTrackerGrid = () =>
+  <>
       {entries.length === 0 &&
     <DevLayoutSection
       sectionKey="tracking-active-jobs-empty-state"
@@ -2670,23 +2684,7 @@ export default function TrackingDashboard() {
               entry={entry}
               isHighlighted={isHighlighted}
               isMobileView={isMobileView}
-              onClick={() => openEntryModal("car", {
-                id: entry.id,
-                jobId: entry.jobId,
-                jobNumber: entry.jobNumber,
-                reg: entry.reg,
-                customer: entry.customer,
-                makeModel: entry.makeModel,
-                colour: entry.colour,
-                vehicleDisplay: getVehicleSummaryLabel(entry),
-                serviceType: entry.serviceType,
-                vehicleLocation: entry.vehicleLocation,
-                keyLocation: entry.keyLocation,
-                status: entry.status,
-                keyTip: entry.keyTip,
-                notes: entry.notes,
-                updatedAt: entry.updatedAt
-              })} />
+              onClick={() => openTrackingEntry(entry)} />
 
             </DevLayoutSection>);
 
@@ -3285,10 +3283,8 @@ export default function TrackingDashboard() {
       trackerLocationFilters={TRACKER_LOCATION_FILTERS}
       trackerQuickFilter={trackerQuickFilter}
       trackerQuickFilters={TRACKER_QUICK_FILTERS}
-      trackingMapOpen={trackingMapOpen}
-      setTrackingMapOpen={setTrackingMapOpen}
-      TrackingMapModal={TrackingMapModal}
-      handleTrackingMapRefresh={loadEntries}
+      trackerView={trackerView}
+      setTrackerView={setTrackerView}
       TrackingRouteSkeleton={TrackingRouteSkeleton}
     />
   );

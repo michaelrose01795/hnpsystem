@@ -66,10 +66,8 @@ export default function TrackingDashboardUi(props) {
     trackerQuickFilter,
     trackerQuickFilters,
     setTrackerQuickFilter,
-    trackingMapOpen,
-    setTrackingMapOpen,
-    TrackingMapModal,
-    handleTrackingMapRefresh,
+    trackerView,
+    setTrackerView,
     TrackingRouteSkeleton,
   } = props; // receive page logic props.
 
@@ -226,10 +224,23 @@ export default function TrackingDashboardUi(props) {
           minWidth: shouldStackHeaderControls ? "100%" : "max-content",
           whiteSpace: "nowrap"
         }}>
-                  {activeTab === "tracker" && setTrackingMapOpen && (
-                  <Button variant="secondary" size="sm" onClick={() => setTrackingMapOpen(true)}>
-                    Map
-                  </Button>
+                  {activeTab === "tracker" && setTrackerView && (
+                  <div className="tracking-viewswitch" role="group" aria-label="Tracking view">
+                    <Button
+              variant={trackerView === "grid" ? "primary" : "secondary"}
+              size="sm"
+              aria-pressed={trackerView === "grid"}
+              onClick={() => setTrackerView("grid")}>
+                      Grid
+                    </Button>
+                    <Button
+              variant={trackerView === "map" ? "primary" : "secondary"}
+              size="sm"
+              aria-pressed={trackerView === "map"}
+              onClick={() => setTrackerView("map")}>
+                      Map
+                    </Button>
+                  </div>
                   )}
                   {activeTab === "tracker" && (
                   <Button variant="primary" size="sm" onClick={() => openEntryModal("car")}>
@@ -295,7 +306,6 @@ export default function TrackingDashboardUi(props) {
     item: null
   })} />}
 
-      {trackingMapOpen && TrackingMapModal && <TrackingMapModal onClose={() => setTrackingMapOpen(false)} onRefresh={handleTrackingMapRefresh} />}
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

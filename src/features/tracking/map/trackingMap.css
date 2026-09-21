@@ -1,381 +1,593 @@
 /* src/features/tracking/map/trackingMap.css
-   Image-backed layout editor for the /tracking map. Editor sections are
-   rendered from saved data over the site image. Loaded globally via src/pages/_app.js. */
+   Inline dealership site map for /tracking → Key/Parking → Map.
 
-.tracking-map-modal-card {
-  width: min(1180px, calc(100vw - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2)));
-  max-height: calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2));
-  border-radius: 28px;
-  overflow: hidden;
-}
+   Emitted as a route-scoped stylesheet by tools/scripts/emit-route-scoped-css.js
+   and injected on the /tracking route only (see src/pages/_app.js). It is NOT
+   imported by _app directly, so every rule here must be self-sufficient.
 
-.tracking-map-shell {
+   THE PHOTO IS THE MAP. The aerial render is the base layer; bay outlines and
+   vehicles sit over it as light overlays. Nothing here paints an opaque fill
+   across the stage, and the vector fallback plan is drawn only when the photo
+   is absent.
+
+   COLOUR
+   ------
+   Everything except vehicle paint is composited from an existing token with
+   colour-mix, so the map follows the active accent and flips between light and
+   dark without a second palette. Vehicle paint is the deliberate exception: a
+   silver car must read as silver in both themes — the same reasoning that
+   exempts VHC annotation ink.
+
+   BORDERS
+   -------
+   The only border is the row rule on the unmapped list, which uses
+   --separating-line. Bay outlines and the fallback boundary are an inset
+   box-shadow and an SVG stroke. */
+
+html.staff-scope .tracking-map {
+  /* Fallback-plan palette — derived, never literal. */
+  --tmap-ground: color-mix(in srgb, var(--text-1) 14%, var(--surface));
+  --tmap-tarmac: color-mix(in srgb, var(--text-1) 27%, var(--surface));
+  --tmap-highway: color-mix(in srgb, var(--text-1) 38%, var(--surface));
+  --tmap-building: color-mix(in srgb, var(--text-1) 5%, var(--surface));
+  --tmap-container: color-mix(in srgb, var(--text-1) 48%, var(--surface));
+  --tmap-grass: color-mix(in srgb, var(--success) 32%, var(--surface));
+  --tmap-outside: color-mix(in srgb, var(--text-1) 6%, var(--surface));
+  --tmap-marking: color-mix(in srgb, var(--text-1) 42%, var(--surface));
+
+  /* Overlay chrome, tuned to sit over a photograph. */
+  --tmap-bay-ring: rgb(255 255 255 / 0.55);
+  --tmap-bay-fill: rgb(255 255 255 / 0.08);
+
+  /* Vehicle paint. Data about the car, not the theme — see the header note. */
+  --tmap-car-white: rgb(238 241 244);
+  --tmap-car-black: rgb(35 38 43);
+  --tmap-car-silver: rgb(194 200 206);
+  --tmap-car-grey: rgb(135 142 150);
+  --tmap-car-red: rgb(192 57 43);
+  --tmap-car-blue: rgb(43 98 168);
+  --tmap-car-green: rgb(47 125 79);
+  --tmap-car-yellow: rgb(217 165 32);
+  --tmap-car-orange: rgb(210 116 31);
+
   width: 100%;
-  height: min(860px, calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2)));
-  min-height: 0;
-  padding: 24px;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08), transparent 35%),
-    linear-gradient(135deg, rgba(20, 20, 24, 0.94), rgba(10, 10, 12, 0.98));
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  max-width: 100%;
+  min-width: 0;
 }
 
-.tracking-map-toolbar {
+/* ---------------------------------------------------------------- toolbar */
+
+html.staff-scope .tracking-map__toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
   flex-wrap: wrap;
-}
-
-.tracking-map-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.tracking-map-subtitle {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.62);
-}
-
-.tracking-map-actions {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: var(--space-sm);
+  width: 100%;
+  min-width: 0;
 }
 
-.tracking-map-stage {
+html.staff-scope .tracking-map__toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------ body / detail split */
+
+html.staff-scope .tracking-map__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--layout-card-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  html.staff-scope .tracking-map__body--split {
+    grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+    align-items: start;
+  }
+}
+
+/* ------------------------------------------------------------------ stage */
+
+html.staff-scope .tracking-map__frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 1313 / 1070;
-  min-height: 0;
-  flex: 1 1 0;
-  border-radius: 34px;
-  background: #fff url("/images/tracking/site-map-background.png") center / 100% 100% no-repeat;
+  min-width: 0;
+  /* aspect-ratio comes from the reference asset and is set inline. These keep
+     the map usefully large on a desktop without running off a laptop screen,
+     and stop it collapsing on a short viewport. */
+  min-height: 360px;
+  max-height: min(78vh, 860px);
   overflow: hidden;
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.12),
-    inset 0 16px 45px rgba(0, 0, 0, 0.12);
-}
-
-.tracking-map-stage--edit {
+  border-radius: var(--radius-sm);
+  background: var(--tmap-outside);
+  /* Touch drags pan the plan. The page still scrolls everywhere outside the
+     frame, so this does not trap a phone user on the map. */
   touch-action: none;
+  cursor: grab;
 }
 
-.tracking-map-stage--edit .map-item {
-  cursor: move;
+html.staff-scope .tracking-map__frame:active {
+  cursor: grabbing;
 }
 
-.site-boundary {
+html.staff-scope .tracking-map__frame--placing {
+  cursor: crosshair;
+}
+
+html.staff-scope .tracking-map__stage {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  transition: transform 220ms ease;
+  will-change: transform;
 }
 
-.map-item {
+html.staff-scope .tracking-map__overlay {
+  /* Overridden per render with 1/scale; text overlays read it so they do not
+     balloon as the map zooms. */
+  --tmap-inv: 1;
+}
+
+html.staff-scope .tracking-map__photo,
+html.staff-scope .tracking-map__plan,
+html.staff-scope .tracking-map__overlay {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.map-item--selected {
-  outline: 2px dashed #7cc4ff;
-  outline-offset: 2px;
-  z-index: 40;
-}
-
-.map-item-label {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(12, 12, 14, 0.72);
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-  backdrop-filter: blur(10px);
+html.staff-scope .tracking-map__photo {
+  /* contain, never cover: a cropped edge would move every bay off its tarmac. */
+  object-fit: contain;
+  object-position: center;
+  user-select: none;
   pointer-events: none;
 }
 
-.map-resize-handle {
-  position: absolute;
-  right: -10px;
-  bottom: -10px;
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  cursor: nwse-resize;
-  touch-action: none;
-  z-index: 5;
+/* Fallback outline plan — rendered only when the reference photo is missing. */
+html.staff-scope .tracking-map__shape--outside { fill: var(--tmap-outside); }
+html.staff-scope .tracking-map__shape--ground { fill: var(--tmap-ground); }
+html.staff-scope .tracking-map__shape--grass { fill: var(--tmap-grass); }
+html.staff-scope .tracking-map__shape--road { fill: var(--tmap-tarmac); }
+html.staff-scope .tracking-map__shape--highway { fill: var(--tmap-highway); }
+html.staff-scope .tracking-map__shape--building { fill: var(--tmap-building); }
+html.staff-scope .tracking-map__shape--container { fill: var(--tmap-container); }
+
+html.staff-scope .tracking-map__boundary {
+  fill: none;
+  stroke: var(--tmap-marking);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  opacity: 0.55;
 }
 
-.road {
-  position: absolute;
-  background: #30343a;
-  box-shadow: none;
-}
+/* ------------------------------------------------------- bays and vehicles */
+/* Scoped through .tracking-map__overlay so these beat the .app-btn--map-bay
+   chrome reset in families/buttons.css on specificity (0,3,0 vs 0,2,0) rather
+   than on source order: the dev server injects the global stylesheet after
+   this route-scoped link, so order alone is not something this file can rely
+   on. No !important. */
 
-.grass-island {
+html.staff-scope .tracking-map__overlay .tracking-map__space {
   position: absolute;
-  border-radius: 0;
-  background: #5f7244;
-  box-shadow: none;
-}
-
-.fence-line {
-  position: absolute;
-  background:
-    repeating-linear-gradient(90deg, #6f5b3e 0 3px, transparent 3px 14px),
-    linear-gradient(#6f5b3e, #6f5b3e);
-  background-position:
-    0 0,
-    0 50%;
-  background-size:
-    auto 100%,
-    100% 3px;
-  background-repeat:
-    repeat,
-    no-repeat;
-}
-
-.building {
-  position: absolute;
-  border-radius: 6px;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.24) 0 6px,
-      rgba(0, 0, 0, 0.08) 6px 11px
-    ),
-    linear-gradient(180deg, #d7d8d6, #9fa2a2);
-  box-shadow: none;
-}
-
-.map-parking {
-  position: absolute;
-  border-radius: 6px;
-  background: rgba(49, 55, 62, 0.72);
-}
-
-.map-parking-grid {
-  position: absolute;
-  inset: 3px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12px, 1fr));
-  gap: 2px;
-  overflow: hidden;
+  border-radius: 1px;
+  background: var(--tmap-bay-fill);
+  box-shadow: inset 0 0 0 1px var(--tmap-bay-ring);
+  opacity: 0.45;
   pointer-events: none;
 }
 
-.map-parking-space {
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 2px;
-  min-height: 6px;
+html.staff-scope .tracking-map__overlay .tracking-map__space--dim {
+  opacity: 0.15;
 }
 
-.map-vehicle-pin {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: #ff3b30;
-  border: 3px solid #fff;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-  z-index: 30;
-}
-
-.map-vehicle-pin::after {
-  content: attr(data-label);
-  position: absolute;
-  left: 22px;
-  top: -7px;
-  white-space: nowrap;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.72);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.tracking-map-button {
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
+html.staff-scope .tracking-map__overlay .tracking-map__space--target {
+  --btn-bg: color-mix(in srgb, var(--success) 55%, transparent);
+  --btn-color: var(--text-1);
+  --btn-ring: none;
+  min-height: 0;
+  padding: 0;
+  border-radius: 1px;
+  opacity: 1;
+  pointer-events: auto;
   cursor: pointer;
 }
 
-.tracking-map-button:hover {
-  background: rgba(255, 255, 255, 0.14);
+html.staff-scope .tracking-map__overlay .tracking-map__space--target:hover,
+html.staff-scope .tracking-map__overlay .tracking-map__space--target:focus-visible {
+  --btn-bg: var(--success);
+  z-index: 3;
 }
 
-.tracking-map-button:focus-visible {
-  outline: none;
+html.staff-scope .tracking-map__overlay .tracking-map__marker {
+  --btn-bg: transparent;
+  --btn-ring: none;
+  /* The hit area is inflated, but only by less than half the gap between
+     bays. A bigger halo than that covers the NEXT bay’s centre, and the click
+     lands on the wrong car — worse than a small target. Precision beyond this
+     comes from zoom, which goes to 6x. */
+  --tmap-hit: 2px;
+  position: absolute;
+  min-height: 0;
+  padding: 0;
+  border-radius: 1px;
+  cursor: pointer;
+  z-index: 4;
+  transition: scale 140ms ease, filter 140ms ease;
+}
+
+html.staff-scope .tracking-map__overlay .tracking-map__marker::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--tmap-hit, 6px) * -1);
+}
+
+html.staff-scope .tracking-map__car {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0.5px 1px rgb(0 0 0 / 0.45));
+}
+
+html.staff-scope .tracking-map__car-body { fill: var(--tmap-car, var(--tmap-car-silver)); }
+html.staff-scope .tracking-map__car-glass { fill: rgb(0 0 0 / 0.32); }
+
+html.staff-scope .tracking-map__car--white { --tmap-car: var(--tmap-car-white); }
+html.staff-scope .tracking-map__car--black { --tmap-car: var(--tmap-car-black); }
+html.staff-scope .tracking-map__car--silver { --tmap-car: var(--tmap-car-silver); }
+html.staff-scope .tracking-map__car--grey { --tmap-car: var(--tmap-car-grey); }
+html.staff-scope .tracking-map__car--red { --tmap-car: var(--tmap-car-red); }
+html.staff-scope .tracking-map__car--blue { --tmap-car: var(--tmap-car-blue); }
+html.staff-scope .tracking-map__car--green { --tmap-car: var(--tmap-car-green); }
+html.staff-scope .tracking-map__car--yellow { --tmap-car: var(--tmap-car-yellow); }
+html.staff-scope .tracking-map__car--orange { --tmap-car: var(--tmap-car-orange); }
+html.staff-scope .tracking-map__car--unknown { --tmap-car: var(--tmap-car-grey); }
+
+html.staff-scope .tracking-map__overlay .tracking-map__marker:hover {
+  scale: 1.45;
+  z-index: 6;
+}
+
+html.staff-scope .tracking-map__overlay .tracking-map__marker:focus-visible {
   box-shadow: var(--focus-ring);
+  scale: 1.45;
+  z-index: 7;
 }
 
-.tracking-map-button--sm {
-  height: 32px;
-  padding: 0 10px;
-  font-size: 12px;
+html.staff-scope .tracking-map__overlay .tracking-map__marker.is-selected {
+  scale: 1.9;
+  z-index: 8;
 }
 
-.tracking-map-button--primary {
-  background: var(--primary);
-  border-color: transparent;
+/* Status rides as a halo around the car so the paint colour stays true. */
+html.staff-scope .tracking-map__overlay .tracking-map__marker.is-selected .tracking-map__car {
+  filter: drop-shadow(0 0 2px var(--primary)) drop-shadow(0 0 3px var(--primary));
 }
 
-.tracking-map-button--primary:hover {
-  background: var(--primary);
-  filter: brightness(1.1);
+html.staff-scope .tracking-map__overlay .tracking-map__marker--attention .tracking-map__car,
+html.staff-scope .tracking-map__overlay .tracking-map__marker--conflict .tracking-map__car {
+  filter: drop-shadow(0 0 1.5px var(--danger)) drop-shadow(0 0 1.5px var(--danger));
 }
 
-.tracking-map-button--danger {
-  background: rgba(255, 59, 48, 0.25);
-  border-color: rgba(255, 59, 48, 0.4);
+html.staff-scope .tracking-map__overlay .tracking-map__marker--waiting .tracking-map__car {
+  filter: drop-shadow(0 0 1.5px var(--info)) drop-shadow(0 0 1.5px var(--info));
 }
 
-.tracking-map-button--danger:hover {
-  background: rgba(255, 59, 48, 0.38);
+html.staff-scope .tracking-map__overlay .tracking-map__marker--collection .tracking-map__car {
+  filter: drop-shadow(0 0 1.5px var(--success)) drop-shadow(0 0 1.5px var(--success));
 }
 
-.tracking-map-editbar,
-.tracking-map-props {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-  margin-bottom: 12px;
-}
-
-.tracking-map-props {
-  min-height: 52px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.tracking-map-props--empty {
-  align-content: center;
-}
-
-.tracking-map-editbar-spacer {
-  flex: 1 1 auto;
-}
-
-.tracking-map-props-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.tracking-map-field {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.tracking-map-input {
-  height: 32px;
-  width: 74px;
-  padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  font-size: 12px;
-}
-
-.tracking-map-readout {
-  min-width: 54px;
-  height: 32px;
+html.staff-scope .tracking-map__conflict {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  font-size: 12px;
+  border-radius: var(--radius-full);
+  background: var(--danger);
+  color: var(--onAccentText);
+  font-size: 6px;
   font-weight: 700;
+  line-height: 1;
 }
 
-.tracking-map-input--wide {
-  width: 180px;
+/* Compact tooltip — appears on hover AND on keyboard focus. */
+html.staff-scope .tracking-map__tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  translate: -50% 0;
+  padding: 3px 7px;
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  color: var(--text-1);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: var(--shadow-sm);
+  z-index: 9;
+  scale: var(--tmap-inv, 1);
 }
 
-.tracking-map-input:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+html.staff-scope .tracking-map__overlay .tracking-map__marker:hover .tracking-map__tip,
+html.staff-scope .tracking-map__overlay .tracking-map__marker:focus-visible .tracking-map__tip {
+  opacity: 1;
 }
 
-@media (max-width: 900px) {
-  .tracking-map-modal-card {
-    width: calc(100vw - 16px);
-    max-height: calc(100dvh - 16px);
-    border-radius: 18px;
+html.staff-scope .tracking-map__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ area labels */
+
+html.staff-scope .tracking-map__area-label {
+  position: absolute;
+  translate: -50% -100%;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  color: var(--text-1);
+  font-size: clamp(7px, 0.6vw, 11px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  /* A label must never swallow a click meant for a car underneath it. */
+  pointer-events: none;
+  z-index: 2;
+  scale: var(--tmap-inv, 1);
+}
+
+/* -------------------------------------------------------------------- HUD */
+
+html.staff-scope .tracking-map__hud {
+  position: absolute;
+  left: var(--space-xs);
+  bottom: var(--space-xs);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  max-width: calc(100% - var(--space-md));
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------ panels and legend */
+
+html.staff-scope .tracking-map__panel-title {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+html.staff-scope .tracking-map__panel-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.8;
+}
+
+html.staff-scope .tracking-map__detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-xs) var(--space-sm);
+  margin: 0;
+  min-width: 0;
+}
+
+html.staff-scope .tracking-map__detail dt {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-1);
+  opacity: 0.66;
+}
+
+html.staff-scope .tracking-map__detail dd {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--text-1);
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .tracking-map__panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+html.staff-scope .tracking-map__legend {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin: 0;
+  list-style: none;
+}
+
+html.staff-scope .tracking-map__legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  color: var(--text-1);
+}
+
+html.staff-scope .tracking-map__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--text-1) 55%, var(--surface));
+  color: var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+html.staff-scope .tracking-map__chip--attention,
+html.staff-scope .tracking-map__chip--conflict { background: var(--danger); color: var(--onAccentText); }
+html.staff-scope .tracking-map__chip--waiting { background: var(--info); color: var(--onAccentText); }
+html.staff-scope .tracking-map__chip--collection { background: var(--success); color: var(--onAccentText); }
+html.staff-scope .tracking-map__chip--workshop { background: var(--accentText); color: var(--onAccentText); }
+html.staff-scope .tracking-map__chip--empty {
+  background: color-mix(in srgb, var(--text-1) 8%, var(--surface));
+  box-shadow: inset 0 0 0 1px var(--tmap-marking);
+}
+
+/* --------------------------------------------------------- unmapped list */
+
+html.staff-scope .tracking-map__unmapped-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+html.staff-scope .tracking-map__unmapped-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+html.staff-scope .tracking-map__unmapped-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  padding: 4px 0;
+  border-bottom: var(--separating-line);
+}
+
+html.staff-scope .tracking-map__unmapped-reg {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--text-1);
+  min-width: 90px;
+}
+
+html.staff-scope .tracking-map__unmapped-meta {
+  flex: 1 1 200px;
+  min-width: 0;
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+html.staff-scope .tracking-map__unmapped-actions {
+  display: flex;
+  gap: var(--space-xs);
+  flex: 0 0 auto;
+}
+
+html.staff-scope .tracking-map__conflict-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+html.staff-scope .tracking-map__footnote {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.66;
+}
+
+/* -------------------------------------------------------------- responsive */
+
+@media (max-width: 767px) {
+  html.staff-scope .tracking-map__frame {
+    min-height: 300px;
+    max-height: 62vh;
   }
 
-  .tracking-map-shell {
-    height: calc(100dvh - 16px);
-    padding: 12px;
-    border-radius: 18px;
-    min-height: 0;
+  html.staff-scope .tracking-map__toolbar-group {
+    margin-left: 0;
+    width: 100%;
   }
 
-  .tracking-map-toolbar {
-    margin-bottom: 10px;
+  html.staff-scope .tracking-map__overlay .tracking-map__marker {
+    /* A phone gets a little more, still inside the bay pitch. */
+    --tmap-hit: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .tracking-map__stage,
+  html.staff-scope .tracking-map__overlay .tracking-map__marker {
+    transition: none;
   }
 
-  .tracking-map-stage {
-    border-radius: 18px;
+  html.staff-scope .tracking-map__overlay .tracking-map__marker:hover,
+  html.staff-scope .tracking-map__overlay .tracking-map__marker:focus-visible,
+  html.staff-scope .tracking-map__overlay .tracking-map__marker.is-selected {
+    scale: 1;
   }
+}
 
-  .tracking-map-actions,
-  .tracking-map-editbar,
-  .tracking-map-props {
-    gap: 6px;
-  }
+/* ------------------------------------------------- Grid / Map view switch */
+/* One segmented control, not two loose pills. Built from the shared Button so
+   it keeps the 44px control floor (the .tab-api segmented family is 35px on
+   desktop, below the touch target this needs) and its aria-pressed semantics;
+   these rules only join the two segments together. */
 
-  .tracking-map-button {
-    height: 36px;
-    padding: 0 10px;
-    font-size: 12px;
-  }
+html.staff-scope .tracking-viewswitch {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 1px;
+  min-width: 0;
+  border-radius: var(--control-radius);
+  background: color-mix(in srgb, var(--text-1) 12%, transparent);
+  padding: 1px;
+}
 
-  .tracking-map-button--sm,
-  .tracking-map-input,
-  .tracking-map-readout {
-    height: 30px;
-  }
+html.staff-scope .tracking-viewswitch > :first-child {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
 
-  .tracking-map-input--wide {
-    width: min(170px, 50vw);
-  }
-
-  .tracking-map-props {
-    min-height: 50px;
-    padding: 8px 10px;
-  }
-
-  .map-item-label {
-    display: none;
-  }
+html.staff-scope .tracking-viewswitch > :last-child {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }

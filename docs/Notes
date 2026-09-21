@@ -67,38 +67,42 @@ CHECK
 /website/profile
 TAB SECTION 
 
+check new layouet 
 
 -------
 
-CHECK
+DONE
 /website/valuation
-TAB SECTION 
 
 
 -------
 
-CHECK
+DOEN
 /website/available-stock
-TAB SECTION 
-
 
 -------
 
-CHECK
+DOEN
 /website/stock/[reg]
-TAB SECTION 
-
 
 -------
 
 CHECK
 /website/parts-catalog
-TAB SECTION 
+
+check
+layout update
 
 
 -------
 
 CHECK
 /website/parts-catalog/[partId]
-TAB SECTION 
 
+
+TODO
+have it so " Your basket 1 item · £117.99 View basket Checkout " section isnt just in the page but is always in the topbar to the rigth of the logo, add jsut a basket logo symbol in a 44px circile button and thne if its added add a very small quanity count in the bottom right corner overlapping the sybnol a little bit but looking modern still. 
+
+
+TODO
+when scrolling through the /website pages its very laggy, this needs to be fixed 

@@ -208,6 +208,8 @@ export const siteContent = {
       { id: "tyres", icon: "tyre", title: "Tyres", body: "Tyres supplied, fitted and balanced, plus wheel alignment.", request: "Tyres", cta: "Book tyres" },
       { id: "parts", icon: "box", title: "Parts & accessories", body: "Genuine Suzuki and Mitsubishi parts, over the counter or online.", href: "/website/parts-catalog", cta: "Browse parts" },
       { id: "smart-repair", icon: "sparkle", title: "SMART repair", body: "Scuffs, chips and small dents repaired without a full respray.", request: "SMART repair", cta: "Book a repair" },
+      { id: "health-check", icon: "inspect", title: "Vehicle health check", body: "Tyres, brakes, battery and fluids checked for added peace of mind.", request: "Vehicle health check", cta: "Book a health check" },
+      { id: "warranty", icon: "shield", title: "Warranty work", body: "Get help with a warranty concern and advice on the next steps.", request: "Warranty work", cta: "Book a warranty check" },
     ],
     highlights: [
       { id: "technicians", icon: "badge", title: "Manufacturer-trained technicians", body: "Suzuki and Mitsubishi trained, using the latest dealer equipment and software." },

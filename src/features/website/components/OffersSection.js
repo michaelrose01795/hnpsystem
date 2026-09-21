@@ -69,6 +69,7 @@ export function OfferCard({ offer }) {
 
 export default function OffersSection({ offers, initialFilter = "all" }) {
   const [filter, setFilter] = useState(initialFilter);
+  const [visibleCount, setVisibleCount] = useState(5);
   const live = useMemo(() => liveOffers(offers), [offers]);
   const shown = useMemo(
     () => (filter === "all" ? live : live.filter((o) => asList(o.categories).includes(filter))),
@@ -86,15 +87,22 @@ export default function OffersSection({ offers, initialFilter = "all" }) {
             role="tab"
             aria-selected={filter === tab.id}
             className={filter === tab.id ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
-            onClick={() => setFilter(tab.id)}
+            onClick={() => {
+              setFilter(tab.id);
+              setVisibleCount(5);
+            }}
           >
             {tab.label}
           </button>
         ))}
       </div>
       {shown.length ? (
-        <div className="ws-grid ws-grid--cards">
-          {shown.map((o) => (
+        <div
+          className="ws-grid ws-grid--cards"
+          // Local five-column cap matches the ws-grid gap and stacks on smaller screens.
+          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, max(220px, calc((100% - 4 * clamp(16px, 2vw, 24px)) / 5))), 1fr))" }}
+        >
+          {shown.slice(0, visibleCount).map((o) => (
             <OfferCard key={o.id} offer={o} />
           ))}
         </div>
@@ -104,6 +112,13 @@ export default function OffersSection({ offers, initialFilter = "all" }) {
           available.
         </p>
       )}
+      {visibleCount < shown.length ? (
+        <div className="ws-section-more">
+          <button type="button" className="ws-btn ws-btn--secondary" onClick={() => setVisibleCount((count) => count + 5)}>
+            Show more
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

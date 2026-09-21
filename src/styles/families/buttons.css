@@ -609,3 +609,24 @@ html.staff-scope .app-reaction-people__row {
 html.staff-scope .app-reaction-people__row:not(:last-child) {
   border-bottom: var(--separating-line);
 }
+
+/* ========================================================= */
+/* === Shape modifier: site-map bay                        === */
+/* === A /tracking map marker or selectable parking space. === */
+/* === The drawn bay IS the control, so the button chrome  === */
+/* === is removed and the caller owns size and position.   === */
+/* === Position, fill and hit area live in the feature     === */
+/* === stylesheet (features/tracking/map/trackingMap.css). === */
+/* ========================================================= */
+html.staff-scope .app-btn--map-bay {
+  --btn-ring: none;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 0;
+  border-radius: var(--radius-xs);
+  line-height: 1;
+  cursor: pointer;
+}

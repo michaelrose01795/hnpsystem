@@ -1,18 +1,20 @@
 // file location: src/features/website/showcase/sections/PortalShowcase.js
 //
 // /website/dev — @family portal: the /website/profile customer portal. Static
-// markup mirrors src/pages/website/profile.js (the page fetches a bundled
-// customer payload and redirects when signed out, so it cannot be imported).
-// State is shown through the same attributes the page writes: data-tone,
-// data-state, data-author, data-enabled, aria-pressed and aria-checked, plus
-// the runtime custom properties --ws-portal-pct / --ws-portal-score /
-// --ws-portal-steps. The one primary per view is .app-btn; every other button
-// is the raw-<button> secondary.
+// markup mirrors src/pages/website/profile.js and the seven views under
+// src/features/website/profile/ (the page fetches a bundled customer payload
+// and redirects when signed out, so it cannot be imported).
+// State is shown through the same attributes the portal writes: data-tone,
+// data-state, data-author, data-enabled, aria-pressed, aria-checked and
+// aria-selected, plus the runtime custom properties --ws-portal-pct /
+// --ws-portal-score / --ws-portal-steps. The one primary per view is
+// .app-btn; every other button is the raw-<button> secondary.
 
 import { blogPosts } from "@/features/website/data/blogPosts";
 import { Frame, Row, ShowcaseSection } from "../ShowcasePrimitives";
 
-const NAV_LINKS = ["Summary", "Ownership", "Tracker", "Vehicles", "Jobs", "Messages", "Settings"];
+const PORTAL_VIEWS = ["Overview", "Vehicles", "Workshop", "Money", "Messages", "Services", "Account"];
+const VEHICLE_SECTIONS = ["Overview", "Service history", "MOT", "Health check", "Recalls"];
 const STAGES = [
   { key: "booked", label: "Booked", state: "done" },
   { key: "checked_in", label: "Checked in", state: "done" },
@@ -68,14 +70,13 @@ export default function PortalShowcase({ section }) {
 
   return (
     <ShowcaseSection id="portal" section={section}>
-      <Row label="Portal top bar" note=".ws-nav.ws-portal-navbar · .ws-portal-topbar — jump-to links and greeting in the sticky bar">
+      <Row label="Portal top bar" note=".ws-nav.ws-portal-navbar · .ws-portal-topbar — the site links, with the account greeting as a second row">
         <Frame>
           <div className="ws-page">
             <header className="ws-nav ws-portal-navbar">
               <div className="ws-nav-inner">
-                <nav className="ws-nav-links" aria-label="Showcase account sections">
-                  <span className="ws-portal-nav__heading">Jump to</span>
-                  {NAV_LINKS.map((label, index) => (
+                <nav className="ws-nav-links" aria-label="Showcase site links">
+                  {["Cars", "Offers", "Service", "Sell", "Contact"].map((label, index) => (
                     <a key={label} href="#portal" className={index === 0 ? "ws-nav-link ws-nav-link--active" : "ws-nav-link"}>
                       {label}
                     </a>
@@ -85,16 +86,11 @@ export default function PortalShowcase({ section }) {
               <div className="ws-portal-topbar">
                 <div>
                   <span className="ws-portal-eyebrow">Customer portal</span>
-                  <h1 className="ws-portal-title">Hello, Jordan Reyes</h1>
-                  <p className="ws-portal-subtitle">
-                    Your vehicles, jobs, invoices, messages and account settings — all in one place.
-                  </p>
+                  <h1 className="ws-portal-title">Hello, Jordan</h1>
+                  <p className="ws-portal-subtitle">Everything for your vehicles and account in one place.</p>
                 </div>
                 <div className="ws-portal-header__actions">
                   <button type="button">Theme: Dark</button>
-                  <a href="#portal" role="button">
-                    Back to site
-                  </a>
                   <button type="button" className="app-btn ws-portal-action-start">
                     Log out
                   </button>
@@ -105,12 +101,116 @@ export default function PortalShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Portal page" note=".ws-portal-shell · .ws-portal-stack · .ws-portal-banner">
+      <Row
+        label="Portal navigation & view shell"
+        note=".ws-profile-tabs · button.ws-profile-tab[aria-selected] · .ws-profile-subtabs · button.ws-profile-subtab[aria-selected] · .ws-profile-view · .ws-profile-heading"
+      >
+        <Frame padded>
+          <div className="ws-profile-view">
+            <div className="ws-profile-tabs" role="tablist" aria-label="Showcase account areas">
+              {PORTAL_VIEWS.map((label, index) => (
+                <button
+                  key={label}
+                  type="button"
+                  role="tab"
+                  className="ws-profile-tab"
+                  aria-selected={index === 0}
+                  tabIndex={index === 0 ? 0 : -1}
+                >
+                  {label}
+                  {label === "Money" ? <span className="ws-portal-count">2</span> : null}
+                </button>
+              ))}
+            </div>
+            <div className="ws-profile-subtabs" role="tablist" aria-label="Showcase vehicle sections">
+              {VEHICLE_SECTIONS.map((label, index) => (
+                <button
+                  key={label}
+                  type="button"
+                  role="tab"
+                  className="ws-profile-subtab"
+                  aria-selected={index === 0}
+                  tabIndex={index === 0 ? 0 : -1}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="ws-profile-heading">
+              <div>
+                <div className="ws-portal-eyebrow">Workshop</div>
+                <h2 className="ws-profile-heading__title">Your current visit</h2>
+                <p className="ws-portal-hint">Where your car is, right now.</p>
+              </div>
+              <div className="ws-portal-action-row">
+                <button type="button">Message us</button>
+              </div>
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row
+        label="Vehicle picker, snapshot figures & interactive cards"
+        note=".ws-profile-picker · button.ws-profile-chip[aria-pressed] · .ws-profile-stats · .ws-profile-stat · button.ws-profile-card--link"
+      >
+        <Frame padded>
+          <div className="ws-profile-view">
+            <div className="ws-profile-picker">
+              {[
+                { reg: "AB12 CDE", name: "Ford Focus" },
+                { reg: "XY34 ABC", name: "Suzuki Vitara" },
+              ].map((v, index) => (
+                <button key={v.reg} type="button" className="ws-profile-chip" aria-pressed={index === 0}>
+                  <span className="ws-profile-chip__reg">{v.reg}</span>
+                  <span className="ws-profile-chip__name">{v.name}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="ws-portal-split">
+              <button type="button" className="ws-portal-card ws-profile-card--link" aria-label="View your vehicle">
+                <CardHeader eyebrow="Your vehicle" title="Ford Focus" />
+                <div className="ws-portal-action-row">
+                  <span className="ws-portal-badge">AB12 CDE</span>
+                  <span className="ws-portal-badge" data-tone="ok">
+                    MOT valid
+                  </span>
+                </div>
+                <span className="ws-portal-hint">View vehicle →</span>
+              </button>
+              <button type="button" className="ws-portal-card ws-profile-card--link" aria-label="View workshop progress">
+                <CardHeader eyebrow="Workshop" title="In the workshop" />
+                <div className="ws-portal-progress">
+                  <div className="ws-portal-progress__fill" style={{ "--ws-portal-pct": "60%" }} />
+                </div>
+                <span className="ws-portal-hint">View workshop progress →</span>
+              </button>
+            </div>
+
+            <div className="ws-profile-stats">
+              {[
+                { label: "Vehicles", value: "2" },
+                { label: "Outstanding", value: "£182.40" },
+                { label: "Messages", value: "4" },
+                { label: "Next booking", value: "14 Oct 2026" },
+              ].map((stat) => (
+                <button key={stat.label} type="button" className="ws-profile-stat">
+                  <span className="ws-profile-stat__value">{stat.value}</span>
+                  <span className="ws-profile-stat__label">{stat.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </Frame>
+      </Row>
+
+      <Row label="Portal page" note=".ws-portal-shell · .ws-portal-main · .ws-portal-banner">
         <Frame padded>
           <div className="ws-portal-shell">
             <main className="ws-portal-main">
-              <div>
-                <div className="ws-portal-stack">
+              <div className="ws-profile-view">
+                <div>
                   <div className="ws-portal-split">
                     <section className="website-banner ws-portal-banner">
                       <div className="ws-portal-flow">
@@ -157,7 +257,7 @@ export default function PortalShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Cards, lists & badges" note=".ws-portal-card · .ws-portal-row · .ws-portal-badge[data-tone] · .ws-portal-light[data-tone] · .ws-portal-todo">
+      <Row label="Cards, lists & badges" note=".ws-portal-card · .ws-portal-row · .ws-portal-badge[data-tone] · .ws-portal-light[data-tone]">
         <Frame padded>
           <div className="ws-portal-split">
             <section className="ws-portal-card">
@@ -228,19 +328,9 @@ export default function PortalShowcase({ section }) {
                   </a>
                 }
               />
-              <div className="ws-portal-todo">
-                <span className="ws-portal-subhead">TODO · Upload endpoint not wired yet</span>
-                <p className="ws-portal-empty">Invoices and VHC media are live.</p>
-              </div>
-              <div className="ws-portal-tile">
-                <h3 className="ws-portal-subhead">Upload zone</h3>
-                <div className="ws-portal-upload ws-portal-upload--auto">
-                  Customer uploads will appear here once the upload endpoint is connected.
-                </div>
-                <div className="ws-portal-split">
-                  <div className="ws-portal-upload">Upload connection required</div>
-                </div>
-              </div>
+              <p className="ws-portal-empty">
+                You can&apos;t upload your own documents here yet — send them to us in a message.
+              </p>
               <div className="ws-portal-tile">
                 <p className="ws-portal-lead">Send us photos of scuffs, scratches or dents.</p>
                 <div>
@@ -358,7 +448,7 @@ export default function PortalShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Media, timeline & messages" note=".ws-portal-media · .ws-portal-thumb · .ws-portal-timeline · .ws-portal-bubble[data-author]">
+      <Row label="Media, timeline & messages" note=".ws-portal-media · .ws-portal-timeline · .ws-portal-bubble[data-author]">
         <Frame padded>
           <div className="ws-portal-split">
             <section className="ws-portal-card">
@@ -370,12 +460,6 @@ export default function PortalShowcase({ section }) {
                   <span className="ws-portal-media__tag">Photo</span>
                   <span className="ws-portal-media__caption">Front brake disc</span>
                 </a>
-              </div>
-              <div className="ws-portal-action-row">
-                <div className="ws-portal-thumb">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {photo ? <img src={photo} alt="" className="ws-portal-media__fill" /> : null}
-                </div>
               </div>
               <div className="ws-portal-timeline">
                 <div className="ws-portal-timeline__row">

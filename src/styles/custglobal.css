@@ -5399,20 +5399,28 @@ html.website-scope .ws-footer-inner {
   flex-direction: column;
   gap: clamp(20px, 2.5vw, 28px);
 }
+/* A wrapping flex row rather than a fixed grid: the hours, useful-links and
+   legal columns each drop out when their content is empty
+   (WebsiteFooter.js), and flex-grow keeps whichever columns survive spanning
+   the full page width at every size — a fixed 4-track grid would leave dead
+   tracks behind instead. The brand column carries the logo, address, phone
+   and socials, so it starts wider and grows faster than the text columns. */
 html.website-scope .ws-footer-top {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-  gap: 24px clamp(20px, 3vw, 40px);
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(24px, 3vw, 32px) clamp(20px, 3vw, 48px);
+  align-items: flex-start;
 }
 html.website-scope .ws-footer-col {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1 1 190px;
   min-width: 0;
 }
 html.website-scope .ws-footer-col--brand {
   gap: 12px;
+  flex: 1.6 1 280px;
 }
 html.website-scope .ws-footer-heading {
   margin: 0;
@@ -5454,6 +5462,10 @@ html.website-scope .ws-footer-hours {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* The rows are days-left / time-right pairs. On a wide screen the column is
+     far wider than that pair needs, and space-between would fling the two
+     halves apart — cap the list so they stay readable as one line. */
+  max-width: 280px;
 }
 html.website-scope .ws-footer-hours + .ws-footer-hours {
   margin-top: 8px;
@@ -5552,6 +5564,17 @@ html.website-scope .ws-footer-copy {
   font-size: 12px;
   color: var(--txt-faint);
   margin: 0;
+}
+/* Phones: every column takes the whole row, and the opening-hours pair is no
+   longer capped because the column is already as narrow as the screen. */
+@media (max-width: 560px) {
+  html.website-scope .ws-footer-col,
+  html.website-scope .ws-footer-col--brand {
+    flex-basis: 100%;
+  }
+  html.website-scope .ws-footer-hours {
+    max-width: none;
+  }
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────── */
@@ -5857,20 +5880,10 @@ html.website-scope .ws-cars-search-head {
   justify-content: space-between;
   gap: 12px;
 }
-
-/* The segmented control fills the row, leaving the Filters button on the end;
-   below ~600px the 260px basis drops it onto its own full-width row. */
+/* The segmented control fills the row of the Our Cars quick view; below ~600px
+   the 260px basis drops it onto its own full-width row. */
 html.website-scope .ws-cars-search-head .ws-segmented {
   flex: 1 1 260px;
-}
-html.website-scope .ws-cars-filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
-  gap: 14px 16px;
-  align-items: end;
-}
-html.website-scope .ws-cars-filters .ws-filter-toggles {
-  grid-column: 1 / -1;
 }
 html.website-scope .ws-cars-toolbar {
   margin-bottom: clamp(14px, 2vw, 18px);
@@ -6411,8 +6424,7 @@ html.website-scope .ws-stock-spec tr:last-child td {
   }
   /* Collapsed by default on narrow screens — the toolbar toggle above the
      rail opens it, so the panel appears directly under its own button. */
-  html.website-scope .ws-stock-filters[data-open="false"],
-  html.website-scope .ws-cars-filters[data-open="false"] {
+  html.website-scope .ws-stock-filters[data-open="false"] {
     display: none;
   }
   html.website-scope button.ws-stock-filters-toggle,
@@ -6477,7 +6489,11 @@ html.website-scope .ws-stock-spec tr:last-child td {
    (shop/PartsCatalogPage.js). Stacks to one column below tablet width. */
 html.website-scope .ws-shop-front {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  /* The basket column keeps a width of its own — it holds a count, a total
+     and two buttons, none of which read better at 700px — so every extra
+     pixel of a wide screen goes to the finder. The old ratio track did the
+     opposite: at 1920px the side column was half the row. */
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 26%, 380px);
   gap: 16px;
   align-items: start;
   margin-bottom: 24px;
@@ -6485,6 +6501,21 @@ html.website-scope .ws-shop-front {
 @media (max-width: 900px) {
   html.website-scope .ws-shop-front {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Two-column row only: in a narrow side column the basket's buttons take the
+   line beneath the count, so they are equal width and stay a comfortable
+   target. Once the row stacks they go back beside the text, where there is
+   room for them. */
+@media (min-width: 901px) {
+  html.website-scope .ws-shop-side .ws-basket-summary-actions {
+    flex: 1 1 100%;
+  }
+  html.website-scope .ws-shop-side .ws-basket-summary-actions > * {
+    flex: 1 1 130px;
+  }
+  html.website-scope .ws-shop-side .ws-shop-search > .ws-btn {
+    flex: 1 1 100%;
   }
 }
 html.website-scope .ws-shop-side {
@@ -6515,6 +6546,12 @@ html.website-scope .ws-catalog-search input {
 html.website-scope .ws-finder {
   gap: 16px;
   min-width: 0;
+  /* The panel is its own query container, like .ws-quick-panel: its forms
+     stack on the PANEL's width, not the viewport's, so the finder reads the
+     same whether it sits beside the basket on the catalogue or full-width
+     on a phone. This is what activates the shared .ws-quick-form stacking
+     rule below 339px of panel. */
+  container-type: inline-size;
 }
 /* Title and the reg / manual tabs share the top line (tabs pushed right);
    the lead or "Showing parts for" line takes the full line beneath. */
@@ -6523,6 +6560,30 @@ html.website-scope .ws-finder-head {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
+}
+/* Wide panel: the copy takes the left half and the tabs + whichever form is
+   showing take the right, so a desktop-width card is two short columns
+   instead of one tall one with an empty right-hand side. Everything the
+   finder renders after the head — the form, the error line, the DVLA
+   result — flows down the second column.
+   A viewport query, not a container one: an element cannot query its own
+   size, and .ws-finder is a direct grid item of .ws-shop-front. 1280px is
+   the width at which the finder's own box clears ~820px inside its padding. */
+@media (min-width: 1280px) {
+  html.website-scope .ws-finder {
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) minmax(320px, 1fr);
+    align-items: start;
+    column-gap: 24px;
+  }
+  html.website-scope .ws-finder-head {
+    grid-column: 1;
+  }
+  html.website-scope .ws-finder > .ws-quick-form,
+  html.website-scope .ws-finder > .ws-form-error,
+  html.website-scope .ws-finder > .ws-finder-result {
+    grid-column: 2;
+  }
 }
 html.website-scope .ws-finder-head > .ws-card-title {
   margin: 0;
@@ -6561,6 +6622,10 @@ html.website-scope .ws-finder-tabs {
 }
 html.website-scope .ws-finder-reg {
   flex: 1 1 220px;
+  /* A registration is seven characters. Past plate width the box only gets
+     emptier, so the panel's spare width stops here rather than stretching
+     one input across a desktop row. */
+  max-width: 320px;
   min-width: 0;
 }
 html.website-scope .ws-finder-result {
@@ -7196,15 +7261,52 @@ html.website-scope .ws-cart-drawer .ws-basket-notice--ok {
    allows (five across on desktop, down to one on a phone). The selects are
    <WebsiteNativeSelect> and the search box a plain type="search" input, so
    the shared control rules style them; only the grid is set here. */
+/* Explicit column counts, not auto-fit: the search spans every track, so no
+   track is ever empty and auto-fit has nothing to collapse — the filters
+   would sit at their minimum with the right-hand end of the row left dead.
+   Counting the columns per breakpoint keeps 1fr sharing the whole width. */
 html.website-scope .ws-catalog-controls {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
   align-items: end;
   margin-bottom: 14px;
 }
 html.website-scope .ws-catalog-search {
   grid-column: 1 / -1;
+}
+/* Smallest phones: two fields a row leaves ~157px each, and "All
+   manufacturers" — the value every filter starts on — ellipsises. A filter
+   you cannot read the current value of is worse than a longer scroll. */
+@media (max-width: 400px) {
+  html.website-scope .ws-catalog-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (min-width: 640px) {
+  html.website-scope .ws-catalog-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+/* Wide enough that all five filters fit on one line and each still holds its
+   longest label ("All manufacturers") whole — measured at ~173px a field,
+   which is where this breakpoint comes from. */
+@media (min-width: 960px) {
+  html.website-scope .ws-catalog-controls {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+/* Desktop: search and all five filters become one full-width toolbar line.
+   The search keeps the best part of twice a filter's width — it takes a part
+   number, they take a word — so a wide screen widens the controls instead of
+   leaving a 1900px search box sitting over five stubs. */
+@media (min-width: 1400px) {
+  html.website-scope .ws-catalog-controls {
+    grid-template-columns: minmax(240px, 1.7fr) repeat(5, minmax(0, 1fr));
+  }
+  html.website-scope .ws-catalog-search {
+    grid-column: auto;
+  }
 }
 
 html.website-scope .ws-catalog-summary {
@@ -9057,17 +9159,28 @@ html.website-scope button.ws-chat-send {
    Customer portal (src/pages/website/profile.js), rendered on /website/dev by
    src/features/website/showcase/sections/PortalShowcase.js.
 
-   Replaces the inline style objects the page used to carry. Every colour is a
-   token, so the theme cycle button on the page (data-website-theme) repaints
-   the portal from the token blocks alone — there are no light rules here.
+   Two prefixes, one family. `ws-portal-*` is the card / row / badge / tracker
+   / bubble chrome; `ws-profile-*` is the portal SHELL added when the page
+   became seven switchable views (2026-09): the tab group, the in-view
+   subnavigation, the view band, the snapshot figures, the vehicle picker and
+   the card-as-button.
+
+   Every colour is a token, so the theme cycle button on the page
+   (data-website-theme) repaints the portal from the token blocks alone —
+   there are no light rules here.
+
+   Watch the raw-<button> rule in @family controls: `button:not(.app-btn)` is
+   (0,2,2) and outranks a bare `.ws-portal-*` class, so anything that renders
+   as a <button> is selected here as `button.ws-…` and restates what it needs.
 
    State is carried by attributes, never by a second class or inline paint:
      data-tone    badges / tags / VHC lights / ledger amounts
      data-state   tracker steps (done | active | todo)
      data-author  message bubbles (customer | staff)
      data-enabled notification dots
-     aria-pressed service tiles        aria-checked  the settings switch
-   Measured values are runtime custom properties set inline by the page:
+     aria-pressed service tiles, vehicle chips   aria-checked settings switch
+     aria-selected portal tabs and in-view subnavigation
+   Measured values are runtime custom properties set inline by the views:
      --ws-portal-pct (bar fills) · --ws-portal-score (score ring, deg)
      --ws-portal-steps (tracker column count)
 
@@ -9132,20 +9245,11 @@ html.website-scope .ws-portal-header__actions {
 }
 
 /* ── Header in the sticky site top bar (.ws-portal-navbar) ─────────────────
-   /website/profile passes its jump-to links as the bar's links and the
-   greeting + actions as a second row (.ws-portal-topbar), so both stick like
-   the /website nav. Sixteen links outgrow the bar, so they scroll sideways;
-   on a phone they fold into the Menu panel instead. */
-html.website-scope .ws-portal-navbar .ws-nav-links {
-  justify-content: flex-start;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-}
-html.website-scope .ws-portal-navbar .ws-portal-nav__heading {
-  flex: 0 0 auto;
-  padding: 0 6px;
-}
+   /website/profile carries the SAME links as the rest of the site in the bar
+   itself; only the greeting + actions are added, as a second row
+   (.ws-portal-topbar), so both stick like the /website nav. The portal's own
+   seven views are the .ws-profile-tabs group in the page body, not bar links,
+   so this needs no link overrides of its own. */
 html.website-scope .ws-portal-topbar {
   box-sizing: border-box;
   display: flex;
@@ -9163,10 +9267,6 @@ html.website-scope .ws-portal-topbar .ws-portal-title {
 html.website-scope .ws-portal-topbar .ws-portal-subtitle {
   font-size: 13px;
 }
-/* Anchored sections clear the taller two-row bar. */
-html.website-scope .ws-portal-stack [id] {
-  scroll-margin-top: calc(var(--ws-nav-h) + 128px);
-}
 @media (max-width: 640px) {
   html.website-scope .ws-portal-navbar .ws-nav-links--open {
     max-height: calc(100dvh - var(--ws-nav-h) - 24px);
@@ -9178,28 +9278,283 @@ html.website-scope .ws-portal-stack [id] {
   }
 }
 
-/* ── Jump-to heading (shown in the top bar's links) ────────────────────── */
-html.website-scope .ws-portal-nav__heading {
-  padding: 4px 10px 8px;
-  font-size: 10px;
+/* ── Portal navigation (the seven views) ───────────────────────────────────
+   One connected group, not seven loose buttons: a single rounded container
+   with the selected item filled in the customer red. It never wraps — on a
+   phone it scrolls sideways, which keeps the group readable at 375px instead
+   of breaking into a ragged two-line block. */
+html.website-scope .ws-profile-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--website-radius-pill);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  background: var(--website-elev-2);
+  box-shadow: var(--website-specular), 0 0 0 1px var(--ws-line);
+}
+html.website-scope .ws-profile-tabs::-webkit-scrollbar {
+  display: none;
+}
+html.website-scope button.ws-profile-tab {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--website-control-height);
+  padding: 0 var(--website-control-padding-x);
+  border-radius: var(--website-radius-pill);
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
+  white-space: nowrap;
+  color: var(--txt-soft);
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  transition:
+    background var(--website-motion-duration) var(--website-motion-easing),
+    color var(--website-motion-duration) var(--website-motion-easing);
+}
+html.website-scope button.ws-profile-tab:hover {
+  color: var(--txt-bright);
+  background: var(--website-elev-3);
+}
+html.website-scope button.ws-profile-tab[aria-selected="true"],
+html.website-scope button.ws-profile-tab[aria-selected="true"]:hover {
+  /* On the accent fill the label is the on-accent ink, not --txt-bright:
+     --txt-bright flips to near-black in the light theme, which would leave
+     dark text sitting on brand red. */
+  color: var(--website-selected-ink);
+  background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.9) 0%, rgba(var(--accentMainRgb), 0.7) 100%);
+  box-shadow: 0 6px 18px rgba(var(--accentMainRgb), 0.28);
+}
+/* The waiting-items count rides on the accent fill once its tab is selected. */
+html.website-scope button.ws-profile-tab[aria-selected="true"] .ws-portal-count {
+  color: var(--website-selected-ink);
+  background: var(--website-on-accent-wash);
+}
+html.website-scope button.ws-profile-tab:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+/* Secondary navigation inside a view (vehicle sections, Money, Messages,
+   Account). Quieter than the main group: underline-weight, not filled. */
+html.website-scope .ws-profile-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+html.website-scope button.ws-profile-subtab {
+  min-height: var(--website-control-height);
+  padding: 0 var(--website-control-padding-x);
+  border-radius: var(--website-radius-pill);
+  font-size: var(--website-control-font-size);
+  font-weight: var(--website-control-font-weight);
+  letter-spacing: var(--website-control-letter-spacing);
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--txt-soft);
+  background: var(--website-elev-2);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+html.website-scope button.ws-profile-subtab:hover {
+  color: var(--txt-bright);
+  background: var(--website-elev-3);
+}
+html.website-scope button.ws-profile-subtab[aria-selected="true"],
+html.website-scope button.ws-profile-subtab[aria-selected="true"]:hover {
+  color: var(--website-selected-ink);
+  background: var(--website-selected-bg);
+  box-shadow: inset 0 0 0 1px rgba(var(--accentMainRgb), 0.5);
+}
+html.website-scope button.ws-profile-subtab:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+/* ── One portal view ───────────────────────────────────────────────────────
+   A view is a vertical rhythm of bands, not a packed card grid: only one view
+   is on screen, so the page reads top to bottom instead of tiling. */
+html.website-scope .ws-profile-view {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+html.website-scope .ws-profile-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+html.website-scope .ws-profile-heading__title {
+  margin: 2px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--txt-bright);
+}
+
+/* Cards that open another view. The lift on hover is the promise that the
+   whole card is the control; the markup behind it is a real <button>.
+   The raw-<button> rule in @family controls is `button:not(.app-btn)` and so
+   outranks `.ws-portal-card` on specificity — it would turn the card into a
+   centred pill. Every property that rule sets and the card needs differently
+   is therefore restated here, on a selector that ties it and wins on order. */
+html.website-scope button.ws-profile-card--link {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 14px;
+  min-height: 0;
+  padding: clamp(16px, 3vw, 24px);
+  border-radius: var(--website-radius-card);
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  color: var(--txt-bright);
+  background: var(--ws-card);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--website-specular), 0 0 0 1px var(--ws-line), var(--ws-shadow);
+  cursor: pointer;
+  transition:
+    transform var(--website-motion-duration) var(--website-motion-easing),
+    box-shadow var(--website-motion-duration) var(--website-motion-easing);
+}
+html.website-scope button.ws-profile-card--link:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--website-specular), 0 0 0 1px rgba(var(--accentMainRgb), 0.4), var(--ws-shadow);
+}
+html.website-scope button.ws-profile-card--link:active {
+  transform: none;
+}
+html.website-scope button.ws-profile-card--link:focus-visible {
+  box-shadow: var(--website-specular), 0 0 0 1px var(--ws-line), var(--focus-ring);
+}
+
+/* ── Account snapshot figures ──────────────────────────────────────────── */
+html.website-scope .ws-profile-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 10px;
+}
+/* Listed twice on purpose: a figure that opens a view is a <button>, and the
+   raw-<button> rule outranks a lone class selector. The button form of the
+   selector ties it and wins on order, so both render identically. */
+html.website-scope .ws-profile-stat,
+html.website-scope button.ws-profile-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--website-control-height);
+  padding: 14px 16px;
+  border-radius: var(--website-radius-panel);
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  color: var(--txt-bright);
+  background: var(--website-elev-2);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--website-elev-3);
+}
+html.website-scope button.ws-profile-stat:hover {
+  color: var(--txt-bright);
+  background: var(--website-elev-3);
+}
+html.website-scope button.ws-profile-stat:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--website-elev-3), var(--focus-ring);
+}
+html.website-scope .ws-profile-stat__value {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-profile-stat__label {
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--txt-mute);
 }
-/* Card grid: as many ~380px columns as the width allows; dense flow back-fills
-   gaps left by wide cards so the space is packed. Wide cards and split rows
-   (summary banners, money) span the full row. */
-html.website-scope .ws-portal-stack {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
-  grid-auto-flow: row dense;
-  align-items: start;
-  gap: 18px;
-  min-width: 0;
+
+/* ── Vehicle picker ────────────────────────────────────────────────────────
+   Scrolls sideways rather than wrapping, so a garage of six cars does not
+   push the vehicle's own detail below the fold on a phone. */
+html.website-scope .ws-profile-picker {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
 }
-html.website-scope .ws-portal-stack > .ws-portal-split {
-  grid-column: 1 / -1;
+html.website-scope .ws-profile-picker::-webkit-scrollbar {
+  display: none;
 }
+html.website-scope button.ws-profile-chip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: var(--website-control-height);
+  padding: 8px 16px;
+  border-radius: var(--website-radius-panel);
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--txt-soft);
+  background: var(--website-elev-2);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--website-elev-3);
+}
+html.website-scope button.ws-profile-chip:hover {
+  color: var(--txt-bright);
+  background: var(--website-elev-3);
+}
+html.website-scope button.ws-profile-chip[aria-pressed="true"],
+html.website-scope button.ws-profile-chip[aria-pressed="true"]:hover {
+  color: var(--website-selected-ink);
+  background: var(--website-selected-bg);
+  box-shadow: inset 0 0 0 1px rgba(var(--accentMainRgb), 0.5);
+}
+html.website-scope button.ws-profile-chip:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--website-elev-3), var(--focus-ring);
+}
+html.website-scope .ws-profile-chip__reg {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-profile-chip__name {
+  font-size: 11px;
+  color: var(--txt-mute);
+}
+/* The two lines set their own ink, so they need the on-accent flip as well. */
+html.website-scope button.ws-profile-chip[aria-pressed="true"] .ws-profile-chip__reg,
+html.website-scope button.ws-profile-chip[aria-pressed="true"] .ws-profile-chip__name {
+  color: var(--website-selected-ink);
+}
+
 html.website-scope .ws-portal-split {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
@@ -9258,15 +9613,7 @@ html.website-scope .ws-portal-count {
   color: var(--txt-soft);
   background: var(--website-elev-4);
 }
-html.website-scope .ws-portal-todo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: var(--website-radius-tile);
-  background: var(--website-elev-2);
-}
-/* Accent sub-heading inside a card (also the TODO label). */
+/* Accent sub-heading inside a card. */
 html.website-scope .ws-portal-subhead {
   margin: 0;
   font-size: 11px;
@@ -9467,11 +9814,27 @@ html.website-scope .ws-portal-chip__line {
 /* ── Summary banners (on top of .website-banner) ───────────────────────── */
 html.website-scope .ws-portal-banner {
   grid-column: 1 / -1;
+  flex-wrap: wrap;
   flex-direction: column;
   align-items: stretch;
   gap: 12px;
   min-height: 0;
   padding: 16px;
+}
+/* Once there is room, an alert reads as one line — what has happened on the
+   left, what to do about it on the right — instead of a tall stacked block.
+   Three of them on an Overview should still be a strip, not a wall. */
+@media (min-width: 720px) {
+  html.website-scope .ws-portal-banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    padding: 12px 18px;
+  }
+  html.website-scope .ws-portal-banner > .ws-portal-flow {
+    flex: 1 1 auto;
+  }
 }
 html.website-scope .ws-portal-banner__title {
   font-size: 14px;
@@ -9686,31 +10049,6 @@ html.website-scope .ws-portal-media__caption {
   color: var(--website-photo-ink);
   text-shadow: var(--website-photo-shadow);
 }
-html.website-scope .ws-portal-thumb {
-  flex-shrink: 0;
-  width: 96px;
-  height: 72px;
-  overflow: hidden;
-  border-radius: var(--website-radius-tile);
-  background: var(--website-elev-3);
-}
-html.website-scope .ws-portal-upload {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 110px;
-  padding: 0 8px;
-  border-radius: var(--website-radius-tile);
-  font-size: 11px;
-  text-align: center;
-  color: var(--txt-mute);
-  background: var(--website-elev-3);
-}
-html.website-scope .ws-portal-upload--auto {
-  height: auto;
-  min-height: 88px;
-}
-
 /* ── Timeline and ledger ───────────────────────────────────────────────── */
 html.website-scope .ws-portal-timeline {
   display: flex;

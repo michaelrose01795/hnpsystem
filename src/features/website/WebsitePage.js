@@ -58,7 +58,6 @@ import SellValuationPanel from "./components/SellValuationPanel";
 import WorkshopBookingPanel from "./components/WorkshopBookingPanel";
 import MotabilityModelCard from "./components/MotabilityModelCard";
 import WebsiteIcon from "./components/WebsiteIcon";
-import VehicleSearchFilters from "./components/VehicleSearchFilters";
 import VehicleCompareBar from "./components/VehicleCompareBar";
 import WebsiteNativeSelect from "./components/WebsiteNativeSelect";
 import useStockSearch, { CONDITION_TABS } from "./hooks/useStockSearch";
@@ -303,14 +302,15 @@ export default function WebsitePage() {
     pageSize: FEATURED_VEHICLE_LIMIT,
   });
   // The filter grid is collapsed behind a toggle on narrow screens only.
-  const [carFiltersOpen, setCarFiltersOpen] = useState(false);
   const [activeId, setActiveId] = useState("top");
   // Brand filter over the Motability vehicle cards ("all" or a brand name).
   const [motabilityBrand, setMotabilityBrand] = useState("all");
+  const [visibleMotabilityCount, setVisibleMotabilityCount] = useState(5);
   // Which Help & Advice card has its "More info" popup open. Held as an id
   // rather than the article object so a content refresh cannot leave a stale
   // copy of an article on screen.
   const [openArticleId, setOpenArticleId] = useState(null);
+  const [visibleGuideCount, setVisibleGuideCount] = useState(5);
   const [authState, setAuthState] = useState({
     loading: true,
     customer: null,
@@ -532,7 +532,7 @@ export default function WebsitePage() {
         <Section id={row.anchor || "cars"} tint={row.tint}>
           <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} media={SECTION_HEAD_MEDIA.cars} />
 
-          {/* ---- Search and filter panel ---- */}
+          {/* ---- New / used quick view (full filters live on /website/available-stock) ---- */}
           <div className="ws-cars-search">
             <div className="ws-cars-search-head">
               <div className="ws-segmented" role="tablist" aria-label="New or used">
@@ -550,43 +550,7 @@ export default function WebsitePage() {
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                className="ws-stock-filters-toggle"
-                onClick={() => setCarFiltersOpen((v) => !v)}
-                aria-expanded={carFiltersOpen}
-                aria-controls="cars-filters"
-              >
-                {carFiltersOpen ? "Hide filters" : "Filters"}
-                {carSearch.activeChips.length ? (
-                  <span className="ws-tab-count">{carSearch.activeChips.length}</span>
-                ) : null}
-              </button>
             </div>
-
-            <div id="cars-filters" className="ws-cars-filters" data-open={carFiltersOpen ? "true" : "false"}>
-              <VehicleSearchFilters search={carSearch} idPrefix="cars" />
-            </div>
-
-            {carSearch.activeChips.length ? (
-              <div className="ws-chips">
-                {carSearch.activeChips.map((chip) => (
-                  <button
-                    key={chip.key}
-                    type="button"
-                    className="ws-chip ws-chip--clear"
-                    onClick={() => carSearch.update(chip.patch)}
-                  >
-                    {chip.label}
-                    <span aria-hidden="true">×</span>
-                    <span className="ws-sr-only">Remove filter</span>
-                  </button>
-                ))}
-                <button type="button" className="ws-chip ws-chip--clear" onClick={carSearch.clearAll}>
-                  Clear all
-                </button>
-              </div>
-            ) : null}
           </div>
 
           {/* ---- Live count and sort ---- */}
@@ -830,18 +794,36 @@ export default function WebsitePage() {
                         role="tab"
                         aria-selected={motabilityBrand === b}
                         className={motabilityBrand === b ? "ws-segmented-tab ws-segmented-tab--active" : "ws-segmented-tab"}
-                        onClick={() => setMotabilityBrand(b)}
+                        onClick={() => {
+                          setMotabilityBrand(b);
+                          setVisibleMotabilityCount(5);
+                        }}
                       >
                         {b === "all" ? "All models" : b}
                       </button>
                     ))}
                   </div>
                 ) : null}
-                <div className="ws-grid ws-grid--models">
-                  {shownModels.map((m) => (
+                <div
+                  className="ws-grid ws-grid--models"
+                  // Local five-column cap matches the ws-grid gap and stacks on smaller screens.
+                  style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, max(220px, calc((100% - 4 * clamp(16px, 2vw, 24px)) / 5))), 1fr))" }}
+                >
+                  {shownModels.slice(0, visibleMotabilityCount).map((m) => (
                     <MotabilityModelCard key={m.id || `${m.brand}-${m.model}`} model={m} />
                   ))}
                 </div>
+                {visibleMotabilityCount < shownModels.length ? (
+                  <div className="ws-section-more">
+                    <button
+                      type="button"
+                      className="ws-btn ws-btn--secondary"
+                      onClick={() => setVisibleMotabilityCount((count) => count + 5)}
+                    >
+                      Show more
+                    </button>
+                  </div>
+                ) : null}
               </>
             ) : null}
 
@@ -1002,8 +984,12 @@ export default function WebsitePage() {
         <PreviewClickTarget key={row.id} {...click("blog-posts", "Help & advice")}>
           <Section id={row.anchor || "blog"} tint={row.tint}>
             <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} />
-            <div className="ws-grid ws-grid--cards">
-              {asList(blogPosts).map((post) => (
+            <div
+              className="ws-grid ws-grid--cards"
+              // Local five-column cap matches the ws-grid gap and stacks on smaller screens.
+              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, max(220px, calc((100% - 4 * clamp(16px, 2vw, 24px)) / 5))), 1fr))" }}
+            >
+              {asList(blogPosts).slice(0, visibleGuideCount).map((post) => (
                 <article key={post.id} className="ws-card">
                   {post.image ? (
                     <div className="ws-help-media">
@@ -1044,6 +1030,13 @@ export default function WebsitePage() {
                 </article>
               ))}
             </div>
+            {visibleGuideCount < asList(blogPosts).length ? (
+              <div className="ws-section-more">
+                <button type="button" className="ws-btn ws-btn--secondary" onClick={() => setVisibleGuideCount((count) => count + 5)}>
+                  Show more
+                </button>
+              </div>
+            ) : null}
           </Section>
         </PreviewClickTarget>
       ) : null,

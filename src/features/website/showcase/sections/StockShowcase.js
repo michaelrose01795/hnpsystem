@@ -15,6 +15,12 @@ import { Frame, Row, ShowcaseSection, Stage } from "../ShowcasePrimitives";
 
 // Mirrors the Our Cars block in src/features/website/WebsitePage.js, driven by
 // the real search hook so the counts, chips and toggles behave as on the page.
+// The real filter set as the stock page renders it, inside the rail.
+function StockRailFilters() {
+  const search = useStockSearch({ pageSize: 1 });
+  return <VehicleSearchFilters search={search} idPrefix="dev-stock-rail" />;
+}
+
 function OurCarsSearch() {
   const search = useStockSearch({ pageSize: 5 });
   return (
@@ -36,9 +42,6 @@ function OurCarsSearch() {
               </button>
             ))}
           </div>
-        </div>
-        <div className="ws-cars-filters" data-open="true">
-          <VehicleSearchFilters search={search} idPrefix="dev-cars" />
         </div>
       </div>
       <div className="ws-stock-toolbar ws-cars-toolbar">
@@ -177,6 +180,7 @@ export default function StockShowcase({ section }) {
                   <span className="ws-stock-label">Model</span>
                   <WebsiteNativeSelect value="" onChange={() => {}} options={SORTS} placeholder="Any model" />
                 </div>
+                <StockRailFilters />
                 <button type="button" className="ws-stock-filters-done">
                   Show 24 cars
                 </button>

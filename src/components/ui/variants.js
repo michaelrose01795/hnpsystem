@@ -76,6 +76,7 @@ export const UI_FAMILIES = [
       { id: "icon", className: "app-btn--icon", description: "Circular single-glyph button, locked to --control-height." },
       { id: "icon-glyph-lg", className: "app-btn--icon app-btn--glyph-lg", description: "Icon button whose bare glyph (+, ×) fills the circle." },
       { id: "icon-sm", className: "app-btn--icon-sm", description: "Perfect 32px circle for a single glyph sitting beside a 44px control." },
+      { id: "map-bay", className: "app-btn--map-bay", description: "A bay on the /tracking site map - a vehicle marker or a selectable parking space. Chrome removed because the drawn bay is the control; the feature stylesheet owns position, status fill and the enlarged hit area." },
     ],
     customOnly: [
       {
