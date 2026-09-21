@@ -20,7 +20,6 @@ import ShopShell from "./ShopShell";
 import ProductCard, { ProductMedia, StockLine } from "./ProductCard";
 import CartDrawer from "./CartDrawer";
 import BasketAccountNotice from "./BasketAccountNotice";
-import BasketSummary from "./BasketSummary";
 import ShopServiceInfo from "./ShopServiceInfo";
 import useShopCart, { formatGbp } from "../hooks/useShopCart";
 import { fitmentFor } from "@/lib/parts/vehicleFitment";
@@ -139,7 +138,6 @@ export default function PartDetailPage() {
         title={product.name}
         breadcrumb={breadcrumb}
       >
-        <BasketSummary cart={cart} onOpen={() => setDrawerOpen(true)} />
 
         <div className="ws-pdp" data-presentation="website-part-detail">
           <div className="ws-pdp-media">

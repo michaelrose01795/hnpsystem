@@ -1,5 +1,7 @@
 // file location: src/components/page-ui/clocking/clocking-technician-slug-ui.js
 import Link from "next/link";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 export default function UserClockingHistoryUi(props) {
@@ -21,6 +23,7 @@ export default function UserClockingHistoryUi(props) {
     clockInDate,
     clockOutDate,
     deriveStatus,
+    embedded = false,
     entries,
     error,
     formError,
@@ -60,6 +63,8 @@ export default function UserClockingHistoryUi(props) {
     tableWrapperStyle,
   } = props; // receive page logic props.
 
+  const ManualEntryLayer = embedded ? LayerSurface : LayerTheme;
+
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
@@ -87,9 +92,10 @@ export default function UserClockingHistoryUi(props) {
             sectionKey="clocking-technician-live-activity"
             parentKey="app-layout-page-card"
             sectionType="section-shell"
-            shell
-            backgroundToken="theme"
-            style={{
+            shell={!embedded}
+            backgroundToken={embedded ? "" : "theme"}
+            className={embedded ? "app-page-stack" : undefined}
+            style={embedded ? undefined : {
               ...basePanelStyle,
               background: "var(--theme)"
             }}>
@@ -185,17 +191,15 @@ export default function UserClockingHistoryUi(props) {
             </div>
           </DevLayoutSection>
 
-          {isManager && <DevLayoutSection
+          {isManager && <ManualEntryLayer
             as="section"
             sectionKey="clocking-technician-manual-entry"
             parentKey="app-layout-page-card"
             sectionType="section-shell"
             shell
-            backgroundToken="theme"
-            style={{
-              ...basePanelStyle,
-              background: "var(--theme)"
-            }}>
+            radius="var(--radius-xl)"
+            padding="var(--section-card-padding)"
+            gap="var(--layout-card-gap)">
               <header style={{
             display: "flex",
             justifyContent: "space-between",
@@ -256,7 +260,7 @@ export default function UserClockingHistoryUi(props) {
                 {/* Row 1: Clock-in date, Clock-out date, Clock-in time, Clock-out time */}
                 <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))", // Wrap date/time fields to fit narrow popups.
               gap: "16px"
             }}>
                   <CalendarField id="clockInDate" label="Clock-in date" value={clockInDate} onChange={event => {
@@ -274,7 +278,7 @@ export default function UserClockingHistoryUi(props) {
                 {/* Row 2: Job number, Request selector */}
                 <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", // Keep job controls usable on mobile.
               gap: "16px"
             }}>
                   <div style={{
@@ -338,7 +342,7 @@ export default function UserClockingHistoryUi(props) {
                   </button>
                 </div>
               </form>
-            </DevLayoutSection>}
+            </ManualEntryLayer>}
 
           {isManager && lastClockedJobId && lastClockedJobNumber && <ClockingHistorySection jobId={lastClockedJobId} jobNumber={lastClockedJobNumber} requests={[]} jobAllocatedHours={null} refreshSignal={historyRefreshSignal} enableRequestClick={false} title="Clocking history" />}
           </div>

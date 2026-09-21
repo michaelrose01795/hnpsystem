@@ -50,6 +50,25 @@ const writeCart = (items) => {
 const toLines = (items) =>
   items.map((i) => ({ id: i.id, qty: i.qty }));
 
+// The navigation observes the existing basket without starting another account
+// merge or write alongside the shop's cart owner.
+export function useShopCartCount() {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const reload = () => setCount(readCart().reduce(
+      (sum, item) => sum + Math.max(0, Number(item?.qty) || 0), 0
+    ));
+    reload();
+    window.addEventListener(EVENT_NAME, reload);
+    window.addEventListener("storage", reload);
+    return () => {
+      window.removeEventListener(EVENT_NAME, reload);
+      window.removeEventListener("storage", reload);
+    };
+  }, []);
+  return count;
+}
+
 export default function useShopCart() {
   const [items, setItems] = useState([]);
   const { customer, signedIn, loading: sessionLoading } = useCustomerSession();

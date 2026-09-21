@@ -59,11 +59,7 @@ export default function ShopShell({
         </Link>
         {/* Pages that own a basket drawer pass their own button here;
             the rest keep a plain link so the basket is always reachable. */}
-        {navActions || (
-          <Link href="/website/shop?step=basket" className="ws-nav-link">
-            Basket
-          </Link>
-        )}
+        {navActions}
       </WebsiteTopBar>
       <main>
         <section className="ws-section" data-presentation="website-shop-content">

@@ -32,6 +32,8 @@ import { siteContent as staticSiteContent } from "../data/siteContent";
 import { design as staticDesign } from "../data/siteDesign";
 import WebsiteNavActions, { WebsiteDevNavControls } from "./WebsiteNavActions";
 import WebsiteIcon from "./WebsiteIcon";
+import { BasketButton } from "@/features/website/shop/BasketSummary";
+import { useShopCartCount } from "@/features/website/hooks/useShopCart";
 
 // A dropdown of links in a top bar (the home page folds its links with
 // groupNavLinks / NAV_GROUPS from data/siteDesign.js). Controlled: the page
@@ -106,6 +108,7 @@ export default function WebsiteTopBar({
   dataPresentation = "website-nav",
 }) {
   const alt = brandAlt || staticSiteContent.brand?.name || "Humphries & Parks";
+  const basketCount = useShopCartCount();
   const showPhone = design?.showNavPhone !== false;
   const logo = <BrandLogo className="ws-logo" alt={alt} priority />;
 
@@ -122,15 +125,18 @@ export default function WebsiteTopBar({
       data-presentation={dataPresentation}
     >
       <div className="ws-nav-inner">
+        <div className="ws-brand">
         {brandHref.startsWith("#") ? (
-          <a href={brandHref} className="ws-brand" onClick={onNavigate}>
+          <a href={brandHref} onClick={onNavigate}>
             {logo}
           </a>
         ) : (
-          <Link href={brandHref} className="ws-brand" onClick={onNavigate}>
+          <Link href={brandHref} onClick={onNavigate}>
             {logo}
           </Link>
         )}
+        <BasketButton count={basketCount} onNavigate={onNavigate} />
+        </div>
 
         <nav className={linksClassName} aria-label={label}>
           {menu ? children : balanceLinks(children)}

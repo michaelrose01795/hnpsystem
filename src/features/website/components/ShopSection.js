@@ -30,7 +30,6 @@ import {
 } from "../data/shopProducts";
 import ProductCard from "../shop/ProductCard";
 import CartDrawer from "../shop/CartDrawer";
-import BasketSummary from "../shop/BasketSummary";
 import VehicleFinder from "../shop/VehicleFinder";
 import ShopServiceInfo from "../shop/ShopServiceInfo";
 
@@ -64,7 +63,6 @@ export default function ShopSection() {
       <div className="ws-shop-front">
         <VehicleFinder idPrefix="ws-shop-finder" onApply={({ make, model }) => openCatalogue({ make, model })} />
         <div className="ws-shop-side">
-          <BasketSummary cart={cart} onOpen={() => setDrawerOpen(true)} />
           <form
             className="ws-card ws-panel ws-shop-search"
             role="search"

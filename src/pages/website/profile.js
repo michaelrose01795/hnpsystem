@@ -10,9 +10,11 @@
 //
 // Structure (replaced the old 27-section "Jump to" page, 2026-09):
 //   • the /website top bar, so the portal reads as part of the same site
+//   • ProfilePortalNav IN that bar (2026-09): the portal's own seven views are
+//     the bar's middle links, replacing the marketing links (Cars / Offers /
+//     Service / Sell / Contact) a signed-in customer does not need here. The
+//     active view is still mirrored into ?view=.
 //   • a compact account greeting in the bar's second row
-//   • ProfilePortalNav — Overview / Vehicles / Workshop / Money / Messages /
-//     Services / Account, with the active view mirrored into ?view=
 //   • exactly one view rendered beneath it
 //
 // Styling: the page renders inside html.website-scope (useWebsiteScope), so
@@ -120,8 +122,6 @@ export default function CustomerProfilePage() {
   const [saving, setSaving] = useState(false);
   const [actionFlash, setActionFlash] = useState({});
   const [websiteThemePref, setWebsiteThemePref] = useState("dark");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const closeMenu = () => setMenuOpen(false);
 
   // ── Portal state ──────────────────────────────────────────────────────
   // One active view, plus the secondary selection each view remembers. All of
@@ -637,17 +637,18 @@ export default function CustomerProfilePage() {
         <title>{`Your account - ${siteContent.brand.name}`}</title>
       </Head>
       <div className="ws-page">
-        {/* The same top bar every /website page uses: brand, the site's own
-            links, the phone number and the account control. The greeting rides
-            in the bar's second row so it sticks with it. */}
+        {/* The same top bar every /website page uses: brand, the links for the
+            page the visitor is on, the phone number and the account control.
+            Here those middle links ARE the portal's seven views, so changing
+            view never means scrolling back up to a second navigation strip.
+            No `menu` is passed: the tab group has to stay visible on a phone
+            (it scrolls sideways) rather than collapse behind a hamburger. */}
         <WebsiteTopBar
-          label="Site"
+          label="Portal"
           className="ws-portal-navbar"
           dataPresentation="website-profile-nav"
           sessionLoading={status === "loading"}
           customer={customer}
-          onNavigate={closeMenu}
-          menu={{ open: menuOpen, onToggle: () => setMenuOpen((v) => !v) }}
           subbar={
             status === "ready" && customer ? (
               <div data-presentation="website-profile-header" className="ws-portal-topbar">
@@ -674,21 +675,9 @@ export default function CustomerProfilePage() {
             ) : null
           }
         >
-          <Link href="/website#cars" className="ws-nav-link" onClick={closeMenu}>
-            Cars
-          </Link>
-          <Link href="/website#offers" className="ws-nav-link" onClick={closeMenu}>
-            Offers
-          </Link>
-          <Link href="/website#service" className="ws-nav-link" onClick={closeMenu}>
-            Service
-          </Link>
-          <Link href="/website#sell" className="ws-nav-link" onClick={closeMenu}>
-            Sell
-          </Link>
-          <Link href="/website#contact" className="ws-nav-link" onClick={closeMenu}>
-            Contact
-          </Link>
+          {status === "ready" && customer ? (
+            <ProfilePortalNav activeView={activeView} onSelect={openView} counts={tabCounts} />
+          ) : null}
         </WebsiteTopBar>
 
         <div data-presentation="website-profile" className="ws-portal-shell">
@@ -704,18 +693,15 @@ export default function CustomerProfilePage() {
                 .
               </p>
             ) : (
-              <>
-                <ProfilePortalNav activeView={activeView} onSelect={openView} counts={tabCounts} />
-                <div
-                  id={panelId(activeView)}
-                  role="tabpanel"
-                  aria-labelledby={tabId(activeView)}
-                  aria-label={activeLabel}
-                  tabIndex={-1}
-                >
-                  {renderView()}
-                </div>
-              </>
+              <div
+                id={panelId(activeView)}
+                role="tabpanel"
+                aria-labelledby={tabId(activeView)}
+                aria-label={activeLabel}
+                tabIndex={-1}
+              >
+                {renderView()}
+              </div>
             )}
           </main>
         </div>

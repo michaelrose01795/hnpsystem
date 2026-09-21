@@ -21,7 +21,6 @@ import ShopShell from "./ShopShell";
 import ProductCard from "./ProductCard";
 import CartDrawer from "./CartDrawer";
 import BasketAccountNotice from "./BasketAccountNotice";
-import BasketSummary from "./BasketSummary";
 import VehicleFinder from "./VehicleFinder";
 import ShopFilters from "./ShopFilters";
 import ShopServiceInfo from "./ShopServiceInfo";
@@ -100,8 +99,6 @@ export default function PartsCatalogPage() {
           content="Genuine Suzuki and Mitsubishi parts and accessories from Humphries & Parks, West Malling. Search the full catalogue and order online."
         />
       </Head>
-      {/* No navActions: the basket is the summary below, and the top bar keeps
-          its plain Basket link. */}
       <ShopShell
         eyebrow="Parts & Accessories"
         title="The full parts catalogue"
@@ -116,9 +113,6 @@ export default function PartsCatalogPage() {
             onApply={(vehicle) => setQuery({ make: vehicle.make, model: vehicle.model })}
             onClear={() => setQuery({ make: "", model: "" })}
           />
-          <div className="ws-shop-side">
-            <BasketSummary cart={cart} onOpen={() => setDrawerOpen(true)} />
-          </div>
         </div>
 
         <ShopFilters

@@ -40,12 +40,6 @@ import DesignPanel from "./panels/DesignPanel";
 const TABS = [
   { value: "overview", label: "Overview" },
   { value: "preview", label: "Preview" },
-  { value: "content", label: "Pages & sections" },
-  { value: "design", label: "Design & layout" },
-  { value: "shop", label: "Shop" },
-  { value: "media", label: "Media" },
-  { value: "seo", label: "SEO" },
-  { value: "analytics", label: "Analytics" },
   { value: "activity", label: "Activity" },
 ];
 
@@ -64,8 +58,7 @@ export default function WebsiteManager() {
     (typeof user?.username === "string" && user.username.trim()) || "Staff User";
 
   // Initial tab honours ?tab=... so the sidebar / presentation can deep-link
-  // directly to a sub-section ("/website-manager?tab=shop" jumps
-  // straight to the Shop tab on first render).
+  // directly to a visible section (for example, ?tab=preview).
   const initialTabFromQuery =
     typeof router.query?.tab === "string" && VALID_TABS.includes(router.query.tab)
       ? router.query.tab

@@ -12,6 +12,17 @@
 // Styling: .ws-basket-summary-* in custglobal.css (@family shop).
 
 import Link from "next/link";
+import WebsiteIcon from "@/features/website/components/WebsiteIcon";
+
+export function BasketButton({ count = 0, onNavigate }) {
+  return (
+    <Link href="/website/shop?step=basket" className="ws-nav-basket" onClick={onNavigate}
+      aria-label={`Your basket, ${count} ${count === 1 ? "item" : "items"}`}>
+      <WebsiteIcon name="basket" />
+      {count > 0 ? <span className="ws-nav-basket-count" aria-hidden="true">{count > 99 ? "99+" : count}</span> : null}
+    </Link>
+  );
+}
 
 export default function BasketSummary({ cart, onOpen }) {
   const count = cart?.totals?.count || 0;

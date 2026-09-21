@@ -949,11 +949,17 @@ export default function WebsitePage() {
       <PreviewClickTarget key={row.id} {...click("team-members", "Team members")}>
         <Section id={row.anchor || "team"} tint={row.tint}>
           <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} center />
-          {/* Departments sit side by side across the full width. */}
+          {/* Departments stack as full-width bands so every member grid is the same width. */}
           <div className="ws-team-groups">
           {departments.map((dep) => (
             <div key={dep.id} className="ws-team-group">
-              <h3 className="ws-h3">{dep.label}</h3>
+              <div className="ws-team-group-head">
+                <h3 className="ws-h3">{dep.label}</h3>
+                {/* Headcount reads as a label, so the plain muted span is enough. */}
+                <span className="ws-muted">
+                  {dep.members.length} {dep.members.length === 1 ? "person" : "people"}
+                </span>
+              </div>
               <div className="ws-grid ws-grid--team">
                 {dep.members.map((m) => (
                   <article key={m.id} id={`team-member-${m.id}`} className="ws-card ws-member">

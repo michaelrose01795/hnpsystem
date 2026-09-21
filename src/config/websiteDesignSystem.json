@@ -59,7 +59,7 @@
     {
       "id": "portal",
       "title": "Customer Portal",
-      "description": "/website/profile: header and jump-to rail, cards, item rows, badges and VHC lights, the health ring, progress and tracker, money and mileage, media, messages, service tiles and the settings switch."
+      "description": "/website/profile: the top bar carrying the seven view tabs and the account greeting, cards, item rows, badges and VHC lights, the health ring, progress and tracker, money and mileage, media, messages, service tiles and the settings switch."
     },
     {
       "id": "reference",
@@ -268,6 +268,30 @@
     "--website-elev-4": {
       "group": "surface",
       "purpose": "Strongest wash (--ws-card-soft, control hover)."
+    },
+    "--website-card-bg": {
+      "group": "surface",
+      "purpose": "THE customer card fill (.ws-portal-card and the card-as-button). Same value .ws-page gives --ws-card, named at the scope root so a card renders outside a .ws-page too."
+    },
+    "--website-card-ring": {
+      "group": "surface",
+      "purpose": "Hairline around a customer card. Carries the card edge in light mode, where the fill alone is too faint."
+    },
+    "--website-card-shadow": {
+      "group": "surface",
+      "purpose": "Lift under a customer card; softer and shorter in the light theme."
+    },
+    "--website-nested-bg": {
+      "group": "surface",
+      "purpose": "The ONE fill for any surface nested inside a customer card - rows, tiles, details, balances, stats, chips, tabs, bubbles, service tiles."
+    },
+    "--website-nested-bg-hover": {
+      "group": "surface",
+      "purpose": "Hover fill for an interactive nested surface (tab, sub-tab, stat, chip, service tile)."
+    },
+    "--website-nested-ring": {
+      "group": "surface",
+      "purpose": "Hairline around a nested surface. It, not the fill, is what separates a nested panel from its card in light mode."
     },
     "--txt-bright": {
       "group": "ink",

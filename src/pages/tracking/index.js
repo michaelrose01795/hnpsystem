@@ -15,7 +15,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { TrackingRouteSkeleton } from "@/components/ui/RouteSkeletons";
 import { SearchBar } from "@/components/ui/searchBarAPI";
-import { Button, InputField, StatusMessage } from "@/components/ui";
+import { Button, EmptyState, InputField, StatusMessage } from "@/components/ui";
 import PopupModal from "@/components/popups/popupStyleApi";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { addMonths } from "date-fns";
@@ -720,17 +720,16 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
         gap: "var(--layout-card-gap)",
       }}>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", letterSpacing: "0.08em" }}>
-              {type === "car" ? "Parking library" : "Key hook library"}
-            </p>
-            <h2 style={{ margin: "4px 0 0" }}>Search location</h2>
+        {/* Compact popup header convention: one clear title plus actions, no
+            eyebrow label (staffglobal.css .app-popup-compact-header). */}
+        <header className="app-popup-compact-header">
+          <h2>{type === "car" ? "Search parking location" : "Search key location"}</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Close
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
-            ✕
-          </Button>
-        </div>
+        </header>
 
         <SearchBar
           value={query}
@@ -748,39 +747,34 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
             gap: "var(--space-2)"
           }}>
 
+          {/* Each result is a --theme layer on the popup card's --surface, per
+              the layer alternation law. */}
           {filtered.map((option) =>
-          <div
+          <LayerTheme
             key={option.id}
+            padding="var(--space-4)"
+            gap="var(--space-3)"
             style={{
-              padding: "var(--space-4)",
-              borderRadius: "var(--radius-md)",
-              background: "var(--search-surface)",
-              color: "var(--search-text)",
-              display: "flex",
+              flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "center",
-              gap: "var(--space-3)",
               flexWrap: "wrap"
             }}>
 
-              <strong style={{ color: "var(--text-1)" }}>{option.label}</strong>
+              <strong>{option.label}</strong>
               <Button variant="secondary" size="sm" onClick={() => onSelect(option)}>
                 Use location
               </Button>
-            </div>
+            </LayerTheme>
           )}
 
           {filtered.length === 0 &&
-          <div
-            style={{
-              padding: "18px",
-              borderRadius: "var(--radius-md)",
-              textAlign: "center",
-              color: "var(--search-text)"
-            }}>
+          <EmptyState
+            variant="bare"
+            role="status"
+            title="No locations found"
+            description="Try a different search term." />
 
-              No locations found.
-            </div>
           }
         </div>
 
@@ -886,12 +880,38 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           gap: "18px"
         }}>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0 }}>{initialData ? "Edit Equipment/Tools" : "Add Equipment/Tools"}</h2>
-          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
-            ✕
-          </Button>
-        </div>
+        {/* Actions live on the header row: primary first, Close last — the
+            popup action convention in staffglobal.css. */}
+        <header className="app-popup-compact-header">
+          <h2>{initialData ? "Edit Equipment/Tools" : "Add Equipment/Tools"}</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="submit" variant="primary" size="sm">
+              {initialData ? "Save" : "Add"}
+            </Button>
+            {initialData?.id &&
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={() => {
+                if (!initialData?.id) return;
+                setConfirmDialog({
+                  message: "Delete this equipment entry?",
+                  onConfirm: () => {
+                    setConfirmDialog(null);
+                    onDelete?.(initialData.id);
+                  }
+                });
+              }}>
+
+                Delete
+              </Button>
+            }
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </header>
 
         <InputField
           label="Name *"
@@ -929,41 +949,6 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           disabled />
 
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "var(--space-2)",
-            marginTop: "var(--space-2)"
-          }}>
-
-          <div style={{ display: "flex", gap: "var(--space-2)" }}>
-            {initialData?.id &&
-            <Button
-              type="button"
-              variant="danger"
-              onClick={() => {
-                if (!initialData?.id) return;
-                setConfirmDialog({
-                  message: "Delete this equipment entry?",
-                  onConfirm: () => {
-                    setConfirmDialog(null);
-                    onDelete?.(initialData.id);
-                  }
-                });
-              }}>
-
-                Delete
-              </Button>
-            }
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary">
-              {initialData ? "Save" : "Add"}
-            </Button>
-          </div>
-        </div>
       </form>
       <ConfirmationDialog
         isOpen={!!confirmDialog}
@@ -1001,35 +986,32 @@ const EquipmentHistoryModal = ({ item, onClose }) => {
         gap: "var(--layout-card-gap)",
       }}>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-sm)" }}>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Equipment history
-            </p>
-            <h2 style={{ margin: "4px 0 0", color: "var(--accentText)" }}>{item.name}</h2>
+        <header className="app-popup-compact-header">
+          <h2>{item.name} — equipment history</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Close
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
-            ×
-          </Button>
-        </div>
+        </header>
 
-        <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
+        {/* The popup card is the --surface layer, so the detail list flips to
+            --theme rather than stacking surface on surface. */}
+        <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
           {rows.map(([label, value]) =>
           <div
             key={label}
             style={{
               display: "flex",
               justifyContent: "space-between",
-              gap: "var(--space-sm)",
-              color: "var(--text-1)",
-              fontSize: "var(--text-body-sm)"
+              gap: "var(--space-sm)"
             }}>
 
               <span>{label}</span>
               <strong style={{ textAlign: "right" }}>{value}</strong>
             </div>
           )}
-        </LayerSurface>
+        </LayerTheme>
     </PopupModal>);
 
 };
@@ -1112,12 +1094,36 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           gap: "18px"
         }}>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0 }}>{initialData ? "Edit Oil / Stock" : "Add Oil / Stock"}</h2>
-          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
-            ✕
-          </Button>
-        </div>
+        <header className="app-popup-compact-header">
+          <h2>{initialData ? "Edit Oil / Stock" : "Add Oil / Stock"}</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="submit" variant="primary" size="sm">
+              {initialData ? "Save" : "Add"}
+            </Button>
+            {initialData?.id &&
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={() => {
+                if (!initialData?.id) return;
+                setConfirmDialog({
+                  message: "Delete this oil/stock entry?",
+                  onConfirm: () => {
+                    setConfirmDialog(null);
+                    onDelete?.(initialData.id);
+                  }
+                });
+              }}>
+
+                Delete
+              </Button>
+            }
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </header>
 
         <InputField
           label="Title *"
@@ -1162,42 +1168,6 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           disabled />
 
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "var(--space-2)",
-            marginTop: "var(--space-2)",
-            flexWrap: "wrap"
-          }}>
-
-          {initialData?.id &&
-          <Button
-            type="button"
-            variant="danger"
-            onClick={() => {
-              if (!initialData?.id) return;
-              setConfirmDialog({
-                message: "Delete this oil/stock entry?",
-                onConfirm: () => {
-                  setConfirmDialog(null);
-                  onDelete?.(initialData.id);
-                }
-              });
-            }}>
-
-              Delete
-            </Button>
-          }
-          <div style={{ display: "flex", gap: "var(--space-2)", marginLeft: "auto" }}>
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary">
-              {initialData ? "Save" : "Add"}
-            </Button>
-          </div>
-        </div>
       </form>
       <ConfirmationDialog
         isOpen={!!confirmDialog}
@@ -1238,35 +1208,30 @@ const OilStockHistoryModal = ({ item, onClose }) => {
         gap: "var(--layout-card-gap)",
       }}>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-sm)" }}>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Oil / stock history
-            </p>
-            <h2 style={{ margin: "4px 0 0", color: "var(--accentText)" }}>{item.title}</h2>
+        <header className="app-popup-compact-header">
+          <h2>{item.title} — oil / stock history</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Close
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
-            ×
-          </Button>
-        </div>
+        </header>
 
-        <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
+        <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
           {rows.map(([label, value]) =>
           <div
             key={label}
             style={{
               display: "flex",
               justifyContent: "space-between",
-              gap: "var(--space-sm)",
-              color: "var(--text-1)",
-              fontSize: "var(--text-body-sm)"
+              gap: "var(--space-sm)"
             }}>
 
               <span>{label}</span>
               <strong style={{ textAlign: "right" }}>{value}</strong>
             </div>
           )}
-        </LayerSurface>
+        </LayerTheme>
     </PopupModal>);
 
 };
@@ -1364,52 +1329,35 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         gap: "var(--layout-card-gap)",
       }}>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h2 style={{ margin: "0 0 var(--space-xs) 0" }}>Vehicle & Key Tracking</h2>
-            <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>
-              Track vehicle and key locations
-            </p>
+        <header className="app-popup-compact-header">
+          <h2>Vehicle &amp; Key Tracking</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Close
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
-            ✕
-          </Button>
-        </div>
+        </header>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: "var(--space-3)",
-            padding: "var(--space-md)",
-            backgroundColor: "var(--surface)",
-            borderRadius: "var(--radius-sm)"
-          }}>
-
-          <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Job Number</div>
-            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.jobNumber || "—"}</div>
+        {/* Canonical record fields on a --theme layer, per the surface ladder. */}
+        <LayerTheme radius="var(--radius-sm)" padding="var(--space-md)">
+          <div className="app-record-grid">
+            {[
+            ["Job Number", form.jobNumber],
+            ["Registration", form.reg],
+            ["Make & Model", form.makeModel],
+            ["Colour", form.colour],
+            ["Customer", form.customer]].
+            map(([label, value]) =>
+            <div key={label} className="app-record-field">
+                <span className="app-record-field__label">{label}</span>
+                <span className="app-record-field__value">{value || "—"}</span>
+              </div>
+            )}
           </div>
-          <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Registration</div>
-            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.reg || "—"}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Make & Model</div>
-            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.makeModel || "—"}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Colour</div>
-            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.colour || "—"}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Customer</div>
-            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.customer || "—"}</div>
-          </div>
-        </div>
+        </LayerTheme>
 
         <form onSubmit={handleAddLocation} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          <h3 style={{ margin: "0", fontSize: "var(--text-h4)", fontWeight: 600 }}>Add Location</h3>
+          <h3 style={{ margin: "0" }}>Add Location</h3>
 
           <div
             style={{
@@ -1463,8 +1411,8 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           </Button>
         </form>
 
-        <div style={{ height: "1px", backgroundColor: "var(--primary-border)" }} />
-
+        {/* The old 1px rule here painted --primary-border, a banned token that
+            resolves to transparent — it rendered nothing. Borders law, §3.0a. */}
         <Button
           type="button"
           variant={showUpdate ? "primary" : "secondary"}
@@ -1478,7 +1426,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           onSubmit={handleUpdateLocation}
           style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
 
-            <h3 style={{ margin: "0", fontSize: "var(--text-h4)", fontWeight: 600 }}>Update Location</h3>
+            <h3 style={{ margin: "0" }}>Update Location</h3>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
               <DropdownField
@@ -1613,51 +1561,39 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           gap: "18px"
         }}>
 
-        <div>
-          <h2 style={{ margin: 0 }}>{entry || matchedExisting ? "Edit existing" : "Log new"}</h2>
-        </div>
+        <header className="app-popup-compact-header">
+          <h2>{entry || matchedExisting ? "Edit existing" : "Log new"}</h2>
+          <div className="app-popup-compact-header__actions">
+            <Button type="submit" variant="primary" size="sm">
+              Save update
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </header>
 
+        {/* Job identity card. "Last moved" is shown here and nowhere else in
+            this popup. Tiles sit on --theme, so each takes the --surface fill. */}
         <LayerTheme
           radius="var(--radius-sm)"
           padding="12px"
           gap="10px"
           style={{ minWidth: 0 }}>
-          <strong style={{ color: "var(--text-1)", fontSize: "var(--text-h4)", lineHeight: 1.2 }}>
-            Job {form.jobNumber || "Unknown job"}
-          </strong>
-          <dl
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-              gap: "8px 12px",
-              margin: 0,
-              minWidth: 0
-            }}>
+          <h3 className="app-record-heading">Job {form.jobNumber || "Unknown job"}</h3>
+          <div className="app-record-grid">
             {[
-              ["Registration", form.reg || "Unknown reg"],
-              ["Customer", form.customer || "Customer pending"],
-              ["Vehicle", vehicleDisplay || "Make/Model/Colour pending"],
-              ["Last moved", lastMovedLabel]
-            ].map(([label, value]) =>
-            <div key={label} style={{ minWidth: 0 }}>
-              <dt style={{ color: "var(--text-1)", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                {label}
-              </dt>
-              <dd
-                style={{
-                  margin: "2px 0 0",
-                  color: "var(--text-1)",
-                  fontSize: "var(--text-caption)",
-                  fontWeight: 700,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis"
-                }}>
-                {value}
-              </dd>
-            </div>
+            ["Registration", form.reg || "Unknown reg"],
+            ["Customer", form.customer || "Customer pending"],
+            ["Vehicle", vehicleDisplay || "Make/Model/Colour pending"],
+            ["Last moved", lastMovedLabel]].
+            map(([label, value]) =>
+            <div key={label} className="app-record-field">
+                <span className="app-record-field__label">{label}</span>
+                <span className="app-record-field__value">{value}</span>
+              </div>
             )}
-          </dl>
+          </div>
         </LayerTheme>
 
         <div
@@ -1707,26 +1643,6 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
             placeholder="Select key location"
             size="md" />
 
-          <LayerSurface
-            radius="var(--radius-sm)"
-            padding="10px 12px"
-            gap="2px"
-            style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--text-1)" }}>Last moved</p>
-            <strong style={{ color: "var(--text-1)", fontSize: "var(--text-body)", lineHeight: 1.2 }}>
-              {lastMovedLabel}
-            </strong>
-          </LayerSurface>
-
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary">
-            Save update
-          </Button>
         </div>
 
         {/* TODO: Persist vehicle/key updates via API endpoint */}

@@ -22,7 +22,6 @@ const TRAINING_COLUMNS = [ // Canonical column set for training courses.
   "category", // Optional category label.
   "renewal_interval_months", // Renewal frequency in months.
   "created_at", // Timestamp when the course row was created.
-  "updated_at", // Timestamp when the course row was last updated.
 ].join(", "); // Join column names for Supabase selects.
 
 const mapTrainingCourse = (row = {}) => ({ // Convert snake_case course rows into camelCase objects.
@@ -32,7 +31,6 @@ const mapTrainingCourse = (row = {}) => ({ // Convert snake_case course rows int
   category: row.category, // Optional category label.
   renewalIntervalMonths: row.renewal_interval_months, // Numeric renewal interval.
   createdAt: row.created_at, // Creation timestamp.
-  updatedAt: row.updated_at, // Update timestamp.
 }); // Close mapper helper.
 
 const parseInterval = (value) => { // Normalise renewal interval inputs.

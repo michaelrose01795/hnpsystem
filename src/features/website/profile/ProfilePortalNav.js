@@ -5,6 +5,11 @@
 // view in state (mirrored into ?view= on the URL) and renders only that view's
 // panel beneath, so nothing scrolls to an anchor further down a long page.
 //
+// It is rendered INSIDE the site top bar (2026-09): src/pages/website/profile.js
+// passes it to WebsiteTopBar as the bar's middle links, where every other
+// /website page passes its .ws-nav-link row. So it sticks with the bar, and
+// changing view never means scrolling back up to a second navigation strip.
+//
 // Arrow keys, Home and End move between tabs; the customer red selected state
 // and the horizontal scroll on narrow screens come from .ws-profile-tabs /
 // .ws-profile-tab in custglobal.css (@family portal).

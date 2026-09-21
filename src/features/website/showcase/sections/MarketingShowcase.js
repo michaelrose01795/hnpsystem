@@ -688,12 +688,15 @@ export default function MarketingShowcase({ section }) {
         </Frame>
       </Row>
 
-      <Row label="Team" size="md">
+      <Row label="Team" hint=".ws-team-groups · .ws-team-group-head · .ws-grid--team · .ws-member" size="wide">
         <Frame padded>
           <div className="ws-page">
             <div className="ws-team-groups">
             <div className="ws-team-group">
-              <h3 className="ws-h3">Sales</h3>
+              <div className="ws-team-group-head">
+                <h3 className="ws-h3">Sales</h3>
+                <span className="ws-muted">2 people</span>
+              </div>
               <div className="ws-grid ws-grid--team">
                 {["Alex Parks", "Jordan Humphries"].map((name) => (
                   <article key={name} className="ws-card ws-member">

@@ -70,17 +70,32 @@ export default function PortalShowcase({ section }) {
 
   return (
     <ShowcaseSection id="portal" section={section}>
-      <Row label="Portal top bar" note=".ws-nav.ws-portal-navbar · .ws-portal-topbar — the site links, with the account greeting as a second row">
+      <Row
+        label="Portal top bar"
+        note=".ws-nav.ws-portal-navbar · .ws-nav--shop · .ws-profile-tabs in the bar · .ws-portal-topbar — the portal's seven views ARE the bar's middle links, with the account greeting as a second row"
+      >
         <Frame>
           <div className="ws-page">
-            <header className="ws-nav ws-portal-navbar">
+            <header className="ws-nav ws-nav--shop ws-portal-navbar">
               <div className="ws-nav-inner">
-                <nav className="ws-nav-links" aria-label="Showcase site links">
-                  {["Cars", "Offers", "Service", "Sell", "Contact"].map((label, index) => (
-                    <a key={label} href="#portal" className={index === 0 ? "ws-nav-link ws-nav-link--active" : "ws-nav-link"}>
-                      {label}
-                    </a>
-                  ))}
+                <nav className="ws-nav-links ws-nav-links--balanced" aria-label="Showcase account areas">
+                  <div className="ws-nav-links__side ws-nav-links__side--start" />
+                  <div className="ws-profile-tabs" role="tablist" aria-label="Showcase account areas in the bar">
+                    {PORTAL_VIEWS.map((label, index) => (
+                      <button
+                        key={label}
+                        type="button"
+                        role="tab"
+                        className="ws-profile-tab"
+                        aria-selected={index === 0}
+                        tabIndex={index === 0 ? 0 : -1}
+                      >
+                        {label}
+                        {label === "Money" ? <span className="ws-portal-count">2</span> : null}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="ws-nav-links__side ws-nav-links__side--end" />
                 </nav>
               </div>
               <div className="ws-portal-topbar">
@@ -103,25 +118,10 @@ export default function PortalShowcase({ section }) {
 
       <Row
         label="Portal navigation & view shell"
-        note=".ws-profile-tabs · button.ws-profile-tab[aria-selected] · .ws-profile-subtabs · button.ws-profile-subtab[aria-selected] · .ws-profile-view · .ws-profile-heading"
+        note="The same .ws-profile-tabs group standing on its own (it lives in the top bar above) · .ws-profile-subtabs · button.ws-profile-subtab[aria-selected] · .ws-profile-view · .ws-profile-heading"
       >
         <Frame padded>
           <div className="ws-profile-view">
-            <div className="ws-profile-tabs" role="tablist" aria-label="Showcase account areas">
-              {PORTAL_VIEWS.map((label, index) => (
-                <button
-                  key={label}
-                  type="button"
-                  role="tab"
-                  className="ws-profile-tab"
-                  aria-selected={index === 0}
-                  tabIndex={index === 0 ? 0 : -1}
-                >
-                  {label}
-                  {label === "Money" ? <span className="ws-portal-count">2</span> : null}
-                </button>
-              ))}
-            </div>
             <div className="ws-profile-subtabs" role="tablist" aria-label="Showcase vehicle sections">
               {VEHICLE_SECTIONS.map((label, index) => (
                 <button

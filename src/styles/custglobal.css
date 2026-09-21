@@ -143,6 +143,29 @@ html.website-scope {
   --website-elev-3: rgba(255, 255, 255, 0.10) !important;
   --website-elev-4: rgba(255, 255, 255, 0.14) !important;
 
+  /* ── The card material, and the ONE material inside a card ────────────
+     A customer card (--website-card-*) and everything nested inside it
+     (--website-nested-*) are two rungs, named once here.
+
+     They exist because the portal used to pick a rung per component straight
+     off the --website-elev-* ladder: a row took elev-2, a ledger line elev-1,
+     a bubble elev-3, some carried a hairline and some did not. In dark mode
+     that merely looked untidy; in light mode elev-1 (5% black) inside an
+     elev-2 card (6% black) is a 1% step — the panel disappeared. The fill
+     carries the step in dark, the hairline carries it in light, and every
+     nested surface reads the same two, so a card and the things inside it
+     cannot drift apart again.
+
+     The card tokens repeat the .ws-page --ws-card / --ws-line / --ws-shadow
+     values, declared at the scope root so a portal card renders correctly
+     outside a .ws-page as well (the /website/dev showcase). */
+  --website-card-bg: var(--website-elev-2) !important;
+  --website-card-ring: rgba(255, 255, 255, 0.10) !important;
+  --website-card-shadow: 0 18px 44px rgba(0, 0, 0, 0.55) !important;
+  --website-nested-bg: rgba(255, 255, 255, 0.07) !important;
+  --website-nested-bg-hover: rgba(255, 255, 255, 0.12) !important;
+  --website-nested-ring: rgba(255, 255, 255, 0.08) !important;
+
   /* ── /website control surface — the "secondary" material ───────────
      One flat translucent wash plus a 1px hairline ring: the inactive
      filter-tab look (.ws-segmented on /website/available-stock). Every control
@@ -249,7 +272,8 @@ html.website-scope body {
     radial-gradient(ellipse at top left, var(--website-wash-cool), transparent 60%),
     radial-gradient(ellipse at bottom right, var(--website-wash-cool), transparent 60%),
     var(--website-page-bg) !important;
-  background-attachment: fixed !important;
+  /* Scroll with the document: fixed gradients force repainting behind content. */
+  background-attachment: scroll !important;
 }
 
 html.website-scope {
@@ -340,11 +364,10 @@ html.website-scope [role="button"]:not(.app-btn) {
   text-align: center;
   color: var(--ws-control-text);
   background: var(--ws-control-bg);
-  /* Blur is kept so the same declaration block also carries the floating
-     surfaces (menus, calendar) without a second material. Over an opaque
-     page it is a no-op at this alpha. */
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  /* Ordinary controls do not sample the moving page behind them. Floating
+     menus and pickers opt into blur in their own surface rules. */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: none;
   /* Full-pill capsule. Every control shares it — inputs, select, date/time
      triggers and the file picker included. Only the banner keeps
@@ -514,8 +537,8 @@ html.website-scope .ws-segmented {
   border-radius: var(--website-radius-pill);
   margin-bottom: var(--ws-segmented-gap);
   background: var(--ws-segmented-track);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow: inset 0 0 0 1px var(--ws-control-ring);
   overflow: hidden;
 }
@@ -662,8 +685,8 @@ html.website-scope select:not(.app-btn) {
   background-repeat: no-repeat;
   background-position: right 16px center;
   background-size: 12px 8px;
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: none;
   /* Full-pill capsule — the /website button shape. */
   border-radius: var(--website-radius-pill);
@@ -1376,8 +1399,8 @@ html.website-scope textarea:not(.app-btn) {
   line-height: 1;
   color: var(--ws-control-text);
   background: var(--ws-control-bg);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: none;
   /* Text box / textarea share the button capsule shape — the full-pill
      999px corner used by the /website buttons, not the rectangular
@@ -1538,8 +1561,8 @@ html.website-scope input[type="file"]::file-selector-button {
   line-height: 1;
   color: var(--ws-control-text);
   background: var(--ws-control-bg);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: none;
   /* Full-pill capsule — the /website button shape. */
   border-radius: var(--website-radius-pill);
@@ -1786,8 +1809,8 @@ html.website-scope .website-banner {
   text-align: center;
   color: var(--txt-bright);
   background: var(--website-banner-bg);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border: none;
   border-radius: var(--website-control-radius);
   box-shadow: var(--website-banner-shadow);
@@ -2663,6 +2686,16 @@ html.website-scope[data-website-theme="light"] {
   --website-elev-3: rgba(0, 0, 0, 0.085) !important;
   --website-elev-4: rgba(0, 0, 0, 0.11) !important;
 
+  /* Card and nested-surface material on the pale page. The same alpha over
+     white gives roughly half the step it gives over near-black, so the
+     hairlines do the separating here and the fills stay faint — a nested
+     panel must not read as a dirty smudge on a white card. */
+  --website-card-ring: rgba(15, 23, 42, 0.12) !important;
+  --website-card-shadow: 0 14px 34px rgba(15, 23, 42, 0.12) !important;
+  --website-nested-bg: rgba(15, 23, 42, 0.05) !important;
+  --website-nested-bg-hover: rgba(15, 23, 42, 0.09) !important;
+  --website-nested-ring: rgba(15, 23, 42, 0.12) !important;
+
   /* Control material follows the LIGHT --surface (#ffffff): a near-opaque
      white tint for controls, denser still for floating panels (dropdown
      lists, calendar / time picker, basket drawer). The dark base block
@@ -3036,11 +3069,10 @@ html.website-scope .ws-nav {
   position: var(--ws-nav-position, sticky);
   top: 0;
   z-index: 50;
-  /* Glass bar: translucent fill, a stronger blur, the specular top edge, a
-     hairline under it and a soft lift over the page. */
-  background: var(--ws-nav-bg);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  /* Opaque sticky chrome stays readable without sampling every scroll frame. */
+  background: var(--website-page-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow:
     var(--website-specular),
     0 1px 0 var(--ws-line),
@@ -3063,6 +3095,50 @@ html.website-scope .ws-brand {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
+  gap: 10px;
+}
+/* Customer navigation only: fixed touch target with an inset quantity badge. */
+html.website-scope .ws-nav-basket {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--website-control-height);
+  width: var(--website-control-height);
+  height: var(--website-control-height);
+  border-radius: var(--website-radius-pill);
+  background: var(--ws-tint);
+  color: var(--txt-bright);
+  text-decoration: none;
+}
+html.website-scope .ws-nav-basket:hover {
+  background: var(--ws-card);
+  color: var(--accentText);
+}
+html.website-scope .ws-nav-basket:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+html.website-scope .ws-nav-basket-count {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  border-radius: var(--website-radius-pill);
+  background: var(--accentMain);
+  color: var(--onAccentText);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+html.website-scope .ws-brand > a:first-child .ws-logo {
+  max-width: 100%;
+  object-fit: contain;
 }
 html.website-scope .ws-nav-links {
   display: flex;
@@ -3719,8 +3795,8 @@ html.website-scope .ws-hero-proof {
   padding: 6px;
   border-radius: var(--website-radius-panel);
   background: var(--ws-panel-bg);
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
-  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow:
     var(--website-specular),
     0 0 0 1px var(--ws-line),
@@ -3779,8 +3855,8 @@ html.website-scope .ws-trust {
   gap: 6px;
   border-radius: var(--ws-radius);
   background: var(--ws-card);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow:
     var(--website-specular),
     0 0 0 1px var(--ws-line),
@@ -3851,8 +3927,8 @@ html.website-scope button.ws-quick-choice {
   white-space: normal;
   color: var(--txt-bright);
   background: var(--ws-card);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow:
     var(--website-specular),
     0 0 0 1px var(--ws-line);
@@ -4179,12 +4255,12 @@ html.website-scope .ws-grid--team {
 }
 
 /* ── Cards ───────────────────────────────────────────────────────────── */
-/* Frosted-glass card surface: an elevation wash, a backdrop blur, a thin
+/* Scroll-friendly card surface: an elevation wash, a thin
    specular top highlight, a hairline ring and a soft drop shadow. */
 html.website-scope .ws-card {
   background: var(--ws-card);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-radius: var(--ws-radius);
   box-shadow:
     var(--website-specular),
@@ -5168,24 +5244,41 @@ html.website-scope .ws-visit-actions {
 }
 
 /* ── Team ────────────────────────────────────────────────────────────── */
-html.website-scope .ws-team-group {
-  margin-top: clamp(32px, 4vw, 48px);
-}
-/* Departments sit side by side on a wide screen instead of stacking. */
+/* Departments are full-width bands stacked down the page rather than a
+   two-up column layout: every member grid then gets the same width, so the
+   cards are one size and rows fill left to right instead of each department
+   wrapping inside its own narrow column. */
 html.website-scope .ws-team-groups {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
-  gap: clamp(24px, 3vw, 40px) clamp(16px, 2vw, 24px);
-  align-items: start;
+  gap: clamp(28px, 3.5vw, 44px);
 }
+html.website-scope .ws-team-group,
 html.website-scope .ws-team-groups .ws-team-group {
   margin-top: 0;
 }
-html.website-scope .ws-team-groups .ws-grid--team {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+/* Department label and headcount share one line, with the one allowed rule
+   under it so the bands read apart without giving the cards an outline. */
+html.website-scope .ws-team-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding-bottom: 10px;
+  margin-bottom: clamp(16px, 2vw, 22px);
+  border-bottom: var(--separating-line);
 }
-html.website-scope .ws-team-group .ws-h3 {
-  margin-bottom: 18px;
+html.website-scope .ws-team-group-head .ws-h3 {
+  margin: 0;
+  min-width: 0;
+}
+/* Six across at most so faces stay readable on a wide screen; auto-fill (not
+   auto-fit) keeps a short last row at the same card size as the rest. */
+html.website-scope .ws-team-groups .ws-grid--team {
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(100%, max(150px, calc((100% - 5 * clamp(16px, 2vw, 24px)) / 6))), 1fr)
+  );
 }
 html.website-scope .ws-member-photo {
   aspect-ratio: 4 / 3;
@@ -5195,10 +5288,21 @@ html.website-scope .ws-member-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top center;
   display: block;
 }
 html.website-scope .ws-member .ws-card-body {
-  padding: 14px 16px;
+  padding: 12px 14px 14px;
+  display: grid;
+  gap: 2px;
+}
+html.website-scope .ws-member .ws-card-title {
+  font-size: 16px;
+  margin: 0;
+}
+html.website-scope .ws-member .ws-muted {
+  font-size: 13px;
+  line-height: 1.35;
 }
 /* A staff link in a review lands on the member's card (#team-member-<id>). */
 html.website-scope .ws-member {
@@ -5390,9 +5494,11 @@ html.website-scope .ws-jump-link:focus-visible {
    useful links and legal links as columns that wrap as the width falls, then
    the authorised-retailer logos and the regulatory fine print. */
 html.website-scope .ws-footer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
   padding: clamp(32px, 4vw, 48px) 0 24px;
   background: var(--ws-tint);
-  box-shadow: 0 1px 0 var(--ws-line) inset;
 }
 html.website-scope .ws-footer-inner {
   display: flex;
@@ -5421,6 +5527,18 @@ html.website-scope .ws-footer-col {
 html.website-scope .ws-footer-col--brand {
   gap: 12px;
   flex: 1.6 1 280px;
+}
+/* A column's default cross-axis stretch overrides an image's auto width.
+   Keep the wordmark intrinsic, and contain it if the available width shrinks. */
+html.website-scope .ws-footer .ws-logo {
+  align-self: flex-start;
+  flex: none;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: var(--ws-logo-h, 38px);
+  object-fit: contain;
+  object-position: left center;
 }
 html.website-scope .ws-footer-heading {
   margin: 0;
@@ -5523,8 +5641,7 @@ html.website-scope .ws-footer-brands {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px 18px;
-  padding-top: clamp(16px, 2vw, 22px);
-  box-shadow: inset 0 1px 0 var(--ws-line);
+  /* Keep the retailer and legal content within the same uninterrupted footer. */
 }
 html.website-scope .ws-footer-brand-list {
   list-style: none;
@@ -5539,6 +5656,8 @@ html.website-scope .ws-footer-brand {
   align-items: center;
   justify-content: center;
   height: 52px;
+  box-sizing: border-box;
+  max-width: 100%;
   padding: 0 18px;
   border-radius: var(--website-radius-tile);
   background: var(--ws-logo-plate);
@@ -5546,7 +5665,9 @@ html.website-scope .ws-footer-brand {
 html.website-scope .ws-footer-brand img {
   display: block;
   width: auto;
+  max-width: 100%;
   height: 26px;
+  object-fit: contain;
 }
 html.website-scope .ws-footer-base {
   display: flex;
@@ -5612,8 +5733,8 @@ html.website-scope .ws-footer-copy {
 html.website-scope .ws-cars-search,
 html.website-scope .ws-stock-filters {
   background: var(--ws-card);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-radius: var(--ws-radius);
   box-shadow:
     var(--website-specular),
@@ -5729,8 +5850,8 @@ html.website-scope button.ws-vehicle-gallery-btn {
   color: var(--website-photo-ink);
   background: var(--website-scrim);
   box-shadow: none;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 html.website-scope button.ws-vehicle-icon-btn:hover,
 html.website-scope button.ws-vehicle-gallery-btn:hover {
@@ -5789,8 +5910,8 @@ html.website-scope .ws-vehicle-photo-count {
   font-weight: 700;
   color: var(--website-photo-ink);
   background: var(--website-scrim);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 html.website-scope .ws-vehicle-photo-count svg {
   width: 14px;
@@ -5929,8 +6050,8 @@ html.website-scope .ws-compare-bar {
   padding: 12px 12px 12px 20px;
   border-radius: var(--website-radius-dialog);
   background: var(--ws-nav-bg);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow:
     0 0 0 1px var(--ws-line),
     var(--website-overlay-shadow);
@@ -6022,8 +6143,8 @@ html.website-scope .ws-vehicle-condition {
   text-transform: uppercase;
   color: var(--website-photo-ink);
   background: var(--website-scrim);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* ── Tab count badge ─────────────────────────────────────────────────── */
@@ -6497,6 +6618,9 @@ html.website-scope .ws-shop-front {
   gap: 16px;
   align-items: start;
   margin-bottom: 24px;
+}
+html.website-scope .ws-shop-front > :only-child {
+  grid-column: 1 / -1;
 }
 @media (max-width: 900px) {
   html.website-scope .ws-shop-front {
@@ -9245,11 +9369,22 @@ html.website-scope .ws-portal-header__actions {
 }
 
 /* ── Header in the sticky site top bar (.ws-portal-navbar) ─────────────────
-   /website/profile carries the SAME links as the rest of the site in the bar
-   itself; only the greeting + actions are added, as a second row
-   (.ws-portal-topbar), so both stick like the /website nav. The portal's own
-   seven views are the .ws-profile-tabs group in the page body, not bar links,
-   so this needs no link overrides of its own. */
+   The portal's OWN seven views are the bar's middle links (2026-09): the page
+   passes .ws-profile-tabs to WebsiteTopBar where every other page passes its
+   .ws-nav-link row, so switching view never means scrolling back up to a
+   second navigation strip. The greeting + actions are the bar's second row
+   (.ws-portal-topbar), so both stick like the /website nav.
+
+   The page passes no hamburger menu, so the bar is the .ws-nav--shop grid:
+   the tab group stays visible on a phone and scrolls sideways instead of
+   collapsing behind a Menu button. */
+/* The group sits in the balanced grid's centre track, whose min-width is auto
+   — without this it would refuse to shrink and push the actions cluster off
+   the bar instead of scrolling inside itself. */
+html.website-scope .ws-portal-navbar .ws-profile-tabs {
+  min-width: 0;
+  max-width: 100%;
+}
 html.website-scope .ws-portal-topbar {
   box-sizing: border-box;
   display: flex;
@@ -9268,11 +9403,6 @@ html.website-scope .ws-portal-topbar .ws-portal-subtitle {
   font-size: 13px;
 }
 @media (max-width: 640px) {
-  html.website-scope .ws-portal-navbar .ws-nav-links--open {
-    max-height: calc(100dvh - var(--ws-nav-h) - 24px);
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
   html.website-scope .ws-portal-topbar .ws-portal-subtitle {
     display: none;
   }
@@ -9291,8 +9421,8 @@ html.website-scope .ws-profile-tabs {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
-  background: var(--website-elev-2);
-  box-shadow: var(--website-specular), 0 0 0 1px var(--ws-line);
+  background: var(--website-nested-bg);
+  box-shadow: var(--website-specular), inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope .ws-profile-tabs::-webkit-scrollbar {
   display: none;
@@ -9321,7 +9451,7 @@ html.website-scope button.ws-profile-tab {
 }
 html.website-scope button.ws-profile-tab:hover {
   color: var(--txt-bright);
-  background: var(--website-elev-3);
+  background: var(--website-nested-bg-hover);
 }
 html.website-scope button.ws-profile-tab[aria-selected="true"],
 html.website-scope button.ws-profile-tab[aria-selected="true"]:hover {
@@ -9358,14 +9488,14 @@ html.website-scope button.ws-profile-subtab {
   text-transform: none;
   white-space: nowrap;
   color: var(--txt-soft);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: none;
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope button.ws-profile-subtab:hover {
   color: var(--txt-bright);
-  background: var(--website-elev-3);
+  background: var(--website-nested-bg-hover);
 }
 html.website-scope button.ws-profile-subtab[aria-selected="true"],
 html.website-scope button.ws-profile-subtab[aria-selected="true"]:hover {
@@ -9424,10 +9554,10 @@ html.website-scope button.ws-profile-card--link {
   letter-spacing: normal;
   white-space: normal;
   color: var(--txt-bright);
-  background: var(--ws-card);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--website-specular), 0 0 0 1px var(--ws-line), var(--ws-shadow);
+  background: var(--website-card-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: var(--website-specular), 0 0 0 1px var(--website-card-ring), var(--website-card-shadow);
   cursor: pointer;
   transition:
     transform var(--website-motion-duration) var(--website-motion-easing),
@@ -9435,13 +9565,13 @@ html.website-scope button.ws-profile-card--link {
 }
 html.website-scope button.ws-profile-card--link:hover {
   transform: translateY(-2px);
-  box-shadow: var(--website-specular), 0 0 0 1px rgba(var(--accentMainRgb), 0.4), var(--ws-shadow);
+  box-shadow: var(--website-specular), 0 0 0 1px rgba(var(--accentMainRgb), 0.4), var(--website-card-shadow);
 }
 html.website-scope button.ws-profile-card--link:active {
   transform: none;
 }
 html.website-scope button.ws-profile-card--link:focus-visible {
-  box-shadow: var(--website-specular), 0 0 0 1px var(--ws-line), var(--focus-ring);
+  box-shadow: var(--website-specular), 0 0 0 1px var(--website-card-ring), var(--focus-ring);
 }
 
 /* ── Account snapshot figures ──────────────────────────────────────────── */
@@ -9468,17 +9598,17 @@ html.website-scope button.ws-profile-stat {
   letter-spacing: normal;
   white-space: normal;
   color: var(--txt-bright);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: inset 0 0 0 1px var(--website-elev-3);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope button.ws-profile-stat:hover {
   color: var(--txt-bright);
-  background: var(--website-elev-3);
+  background: var(--website-nested-bg-hover);
 }
 html.website-scope button.ws-profile-stat:focus-visible {
-  box-shadow: inset 0 0 0 1px var(--website-elev-3), var(--focus-ring);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring), var(--focus-ring);
 }
 html.website-scope .ws-profile-stat__value {
   font-size: 22px;
@@ -9521,14 +9651,14 @@ html.website-scope button.ws-profile-chip {
   text-transform: none;
   letter-spacing: normal;
   color: var(--txt-soft);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: inset 0 0 0 1px var(--website-elev-3);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope button.ws-profile-chip:hover {
   color: var(--txt-bright);
-  background: var(--website-elev-3);
+  background: var(--website-nested-bg-hover);
 }
 html.website-scope button.ws-profile-chip[aria-pressed="true"],
 html.website-scope button.ws-profile-chip[aria-pressed="true"]:hover {
@@ -9537,7 +9667,7 @@ html.website-scope button.ws-profile-chip[aria-pressed="true"]:hover {
   box-shadow: inset 0 0 0 1px rgba(var(--accentMainRgb), 0.5);
 }
 html.website-scope button.ws-profile-chip:focus-visible {
-  box-shadow: inset 0 0 0 1px var(--website-elev-3), var(--focus-ring);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring), var(--focus-ring);
 }
 html.website-scope .ws-profile-chip__reg {
   font-size: 14px;
@@ -9568,15 +9698,17 @@ html.website-scope .ws-portal-card {
   gap: 14px;
   padding: clamp(16px, 3vw, 24px);
   border-radius: var(--website-radius-card);
-  /* Same card material as the /website .ws-card, so the portal cards stand
-     off the page in both themes (elev-1 was a 5% wash — invisible in light). */
-  background: var(--ws-card);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  /* THE card material — the same one .ws-card paints on /website, named at the
+     scope root so a portal card also renders correctly outside a .ws-page (the
+     /website/dev showcase). Everything nested inside takes --website-nested-*,
+     one rung up, so the card and its contents can never drift apart. */
+  background: var(--website-card-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow:
     var(--website-specular),
-    0 0 0 1px var(--ws-line),
-    var(--ws-shadow);
+    0 0 0 1px var(--website-card-ring),
+    var(--website-card-shadow);
 }
 html.website-scope .ws-portal-card--wide {
   grid-column: 1 / -1;
@@ -9628,7 +9760,8 @@ html.website-scope .ws-portal-tile {
   gap: 10px;
   padding: 12px 14px;
   border-radius: var(--website-radius-tile);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 
 /* ── Copy ──────────────────────────────────────────────────────────────── */
@@ -9708,7 +9841,8 @@ html.website-scope .ws-portal-row {
   gap: 12px;
   padding: 12px 14px;
   border-radius: var(--website-radius-tile);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope .ws-portal-row--single {
   grid-template-columns: 1fr;
@@ -9775,7 +9909,8 @@ html.website-scope .ws-portal-balance {
   gap: 4px;
   padding: 16px 18px;
   border-radius: var(--website-radius-panel);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope .ws-portal-balance__figure {
   font-size: 28px;
@@ -9795,7 +9930,8 @@ html.website-scope .ws-portal-detail {
   gap: 4px;
   padding: 12px 14px;
   border-radius: var(--website-radius-tile);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope .ws-portal-detail__value {
   font-size: 14px;
@@ -9907,7 +10043,7 @@ html.website-scope .ws-portal-score__inner {
   width: 62px;
   height: 62px;
   border-radius: 50%;
-  background: var(--website-elev-1);
+  background: var(--website-nested-bg);
 }
 html.website-scope .ws-portal-score__value {
   font-size: 18px;
@@ -10019,7 +10155,8 @@ html.website-scope .ws-portal-media {
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: var(--website-radius-tile);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope .ws-portal-media__fill {
   width: 100%;
@@ -10062,7 +10199,8 @@ html.website-scope .ws-portal-timeline__row {
   gap: 14px;
   padding: 10px 12px;
   border-radius: var(--website-radius-tile);
-  background: var(--website-elev-1);
+  background: var(--website-nested-bg);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope .ws-portal-timeline__what {
   font-size: 13px;
@@ -10083,7 +10221,8 @@ html.website-scope .ws-portal-ledger__row {
   padding: 8px 10px;
   border-radius: var(--website-radius-chip);
   font-size: 13px;
-  background: var(--website-elev-1);
+  background: var(--website-nested-bg);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope .ws-portal-ledger__meta {
   font-size: 11px;
@@ -10117,11 +10256,13 @@ html.website-scope .ws-portal-bubble {
   font-size: 13px;
   line-height: 1.45;
   color: var(--txt-bright);
-  background: var(--website-elev-3);
+  background: var(--website-nested-bg);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
 }
 html.website-scope .ws-portal-bubble[data-author="customer"] {
   align-self: flex-end;
   background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.32) 0%, rgba(var(--accentMainRgb), 0.18) 100%);
+  box-shadow: inset 0 0 0 1px rgba(var(--accentMainRgb), 0.35);
 }
 html.website-scope .ws-portal-bubble__meta {
   font-size: 10px;
@@ -10152,15 +10293,15 @@ html.website-scope button.ws-portal-service {
   text-transform: none;
   white-space: normal;
   color: var(--txt-bright);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: inset 0 0 0 1px var(--website-elev-3);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
   transition: background var(--website-motion-duration) var(--website-motion-easing);
 }
 html.website-scope button.ws-portal-service:hover {
   color: var(--txt-bright);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg-hover);
 }
 html.website-scope button.ws-portal-service[aria-pressed="true"],
 html.website-scope button.ws-portal-service[aria-pressed="true"]:hover {
@@ -10169,7 +10310,7 @@ html.website-scope button.ws-portal-service[aria-pressed="true"]:hover {
 }
 html.website-scope button.ws-portal-service:focus-visible {
   box-shadow:
-    inset 0 0 0 1px var(--website-elev-3),
+    inset 0 0 0 1px var(--website-nested-ring),
     var(--focus-ring);
 }
 html.website-scope button.ws-portal-service[aria-pressed="true"]:focus-visible {
@@ -10196,7 +10337,8 @@ html.website-scope .ws-portal-toggle {
   gap: 12px;
   padding: 10px 14px;
   border-radius: var(--website-radius-tile);
-  background: var(--website-elev-2);
+  background: var(--website-nested-bg);
+  box-shadow: inset 0 0 0 1px var(--website-nested-ring);
   cursor: pointer;
 }
 html.website-scope .ws-portal-toggle__label {
