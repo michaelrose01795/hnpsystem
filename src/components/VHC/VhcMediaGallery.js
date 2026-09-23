@@ -11,7 +11,9 @@
 // Supabase queries in the component, per CLAUDE.md §5).
 
 import React, { useEffect, useMemo, useState } from "react";
-import { getJobFiles } from "@/lib/database/jobs";
+// Loaded on demand - @/lib/database/jobs resolves the Supabase browser client.
+// getJobFiles runs inside an async loader effect, never during render.
+const loadJobsDb = () => import("@/lib/database/jobs");
 import { buildVhcMediaLibrary } from "@/lib/vhc/buildVhcMediaLibrary";
 
 const THUMB_SIZE = 88;
@@ -208,7 +210,7 @@ export default function VhcMediaGallery({ jobId, reloadToken = 0 }) {
     (async () => {
       setLoading(true);
       setError("");
-      const result = await getJobFiles(jobId);
+      const result = await (await loadJobsDb()).getJobFiles(jobId);
       if (cancelled) return;
       if (result?.success) {
         setFiles(Array.isArray(result.data) ? result.data : []);

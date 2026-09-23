@@ -3,6 +3,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import { INACTIVE_JOB_IDS } from "@/lib/status/statusHelpers";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const SEARCH_LIMIT_PER_TYPE = 15;
 const RESULT_LIMIT = 25;
@@ -275,7 +276,7 @@ const getJobsByCustomerIds = async (customerIds) => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Global search customer job lookup error:", error);
+    logFailure("Global search customer job lookup error:", error);
     return [];
   }
 
@@ -420,7 +421,7 @@ export const searchGlobalRecords = async (term) => {
   const failed = responses.find(([, response]) => response.error);
   if (failed) {
     const [label, response] = failed;
-    console.error(`Global search ${label} error:`, response.error);
+    logFailure(`Global search ${label} error:`, response.error);
     throw new Error(`Failed to run ${label} search`);
   }
 

@@ -3,6 +3,7 @@
 // Handles bucket creation and ensures organized folder structure by job number and media type.
 
 import { supabaseService } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const BUCKET_NAME = "vhc-customer-media";
 const MEDIA_TYPES = {
@@ -113,7 +114,7 @@ export async function uploadVhcMediaFile(file, jobNumber, mediaType) {
     });
 
   if (error) {
-    console.error("❌ VHC media upload failed:", {
+    logFailure("❌ VHC media upload failed:", {
       bucket: BUCKET_NAME,
       storagePath,
       message: error.message,

@@ -5,8 +5,10 @@ import dayjs from "dayjs";
 import { supabase } from "@/lib/database/supabaseClient";
 import { getDatabaseClient } from "@/lib/database/client"; // Use the service client for privileged HR operations.
 import { getDisplayName } from "@/lib/users/displayName";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 import { parseEmployeeMeta } from "@/lib/hr/employeeMeta";
 import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const DEFAULT_ATTENDANCE_LIMIT = 50;
 
@@ -221,7 +223,7 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
   const { data, error } = await query;
 
   if (error) {
-    console.error("❌ getAttendanceLogs error", error);
+    logFailure("❌ getAttendanceLogs error", error);
     throw error;
   }
 
@@ -291,7 +293,7 @@ export async function getAbsenceRecords({ limit = 50 } = {}) {
     .limit(limit);
 
   if (error) {
-    console.error("❌ getAbsenceRecords error", error);
+    logFailure("❌ getAbsenceRecords error", error);
     throw error;
   }
 
@@ -346,7 +348,7 @@ export async function getCurrentOvertimePeriod() {
     .maybeSingle();
 
   if (error && error.code !== "PGRST116") {
-    console.error("❌ getCurrentOvertimePeriod error", error);
+    logFailure("❌ getCurrentOvertimePeriod error", error);
     throw error;
   }
 
@@ -370,7 +372,7 @@ export async function getCurrentOvertimePeriod() {
     .single();
 
   if (createError) {
-    console.error("❌ Failed to auto-create overtime period:", createError);
+    logFailure("❌ Failed to auto-create overtime period:", createError);
     return null;
   }
 
@@ -402,7 +404,7 @@ export async function getOvertimeSummaries() {
     .eq("period_id", period.period_id);
 
   if (error) {
-    console.error("❌ getOvertimeSummaries error", error);
+    logFailure("❌ getOvertimeSummaries error", error);
     throw error;
   }
 
@@ -465,7 +467,7 @@ async function countTableRows(table, column = "*", filters = (query) => query) {
   );
 
   if (error) {
-    console.error(`❌ countTableRows error for ${table}`, error);
+    logFailure(`❌ countTableRows error for ${table}`, error);
     throw error;
   }
 
@@ -504,7 +506,7 @@ async function getAttendanceRate(totalEmployees) {
     .not("clock_in", "is", null);
 
   if (error) {
-    console.error("❌ getAttendanceRate error", error);
+    logFailure("❌ getAttendanceRate error", error);
     throw error;
   }
 
@@ -520,7 +522,7 @@ async function getPerformanceScore() {
     .select("score, status");
 
   if (error) {
-    console.error("❌ getPerformanceScore error", error);
+    logFailure("❌ getPerformanceScore error", error);
     throw error;
   }
 
@@ -554,7 +556,7 @@ async function getTrainingCompliance() {
     .select("status");
 
   if (error) {
-    console.error("❌ getTrainingCompliance error", error);
+    logFailure("❌ getTrainingCompliance error", error);
     throw error;
   }
 
@@ -593,7 +595,7 @@ export async function getUpcomingAbsences(daysAhead = 14) {
     .order("start_date", { ascending: true });
 
   if (error) {
-    console.error("❌ getUpcomingAbsences error", error);
+    logFailure("❌ getUpcomingAbsences error", error);
     throw error;
   }
 
@@ -633,7 +635,7 @@ export async function getActiveWarnings(limit = 5) {
     .limit(limit);
 
   if (error) {
-    console.error("❌ getActiveWarnings error", error);
+    logFailure("❌ getActiveWarnings error", error);
     throw error;
   }
 
@@ -673,7 +675,7 @@ export async function getTrainingRenewals(limit = 5) {
     .limit(limit);
 
   if (error) {
-    console.error("❌ getTrainingRenewals error", error);
+    logFailure("❌ getTrainingRenewals error", error);
     throw error;
   }
 
@@ -701,11 +703,12 @@ export async function getDepartmentPerformance() {
   const { data, error } = await supabase
     .from("users")
     .select("department")
+    .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
     .eq("is_active", true)
     .not("department", "is", null);
 
   if (error) {
-    console.error("❌ getDepartmentPerformance error", error);
+    logFailure("❌ getDepartmentPerformance error", error);
     throw error;
   }
 
@@ -814,7 +817,7 @@ async function getActiveAbsenceMap() {
     .gte("end_date", today);
 
   if (error) {
-    console.error("❌ getActiveAbsenceMap error", error);
+    logFailure("❌ getActiveAbsenceMap error", error);
     throw error;
   }
 
@@ -910,6 +913,7 @@ export async function getEmployeeDirectory() {
   let usersResult = await supabase
     .from("users")
     .select(employeeColumns)
+    .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
     .eq("is_active", true)
     .order("created_at", { ascending: true });
 
@@ -921,6 +925,7 @@ export async function getEmployeeDirectory() {
     usersResult = await supabase
       .from("users")
       .select(employeeColumns.replace(/\s*,?\s*sidebar_access\s*,?/, ","))
+      .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
       .eq("is_active", true)
       .order("created_at", { ascending: true });
     usersResult.data = (usersResult.data || []).map((user) => ({
@@ -932,7 +937,7 @@ export async function getEmployeeDirectory() {
   const { data, error } = usersResult;
 
   if (error) {
-    console.error("❌ getEmployeeDirectory error", error);
+    logFailure("❌ getEmployeeDirectory error", error);
     throw error;
   }
 
@@ -1052,7 +1057,7 @@ export async function getStaffVehiclesWithHistory() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("❌ getStaffVehiclesWithHistory error", error);
+    logFailure("❌ getStaffVehiclesWithHistory error", error);
     throw error;
   }
 
@@ -1073,7 +1078,7 @@ async function fetchUsersByIds(ids = []) {
     .in("user_id", uniqueIds);
 
   if (error) {
-    console.error("❌ fetchUsersByIds error", error);
+    logFailure("❌ fetchUsersByIds error", error);
     throw error;
   }
 
@@ -1144,7 +1149,7 @@ export async function getLeaveRequests({ limit = 50 } = {}) {
     .limit(limit);
 
   if (error) {
-    console.error("❌ getLeaveRequests error", error);
+    logFailure("❌ getLeaveRequests error", error);
     throw error;
   }
 
@@ -1178,6 +1183,7 @@ export async function getLeaveBalances() {
     supabase
       .from("users")
       .select("user_id, first_name, last_name, email, department, employment_type")
+      .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
       .eq("is_active", true),
     supabase
       .from("hr_absences")
@@ -1185,12 +1191,12 @@ export async function getLeaveBalances() {
   ]);
 
   if (usersError) {
-    console.error("❌ getLeaveBalances users error", usersError);
+    logFailure("❌ getLeaveBalances users error", usersError);
     throw usersError;
   }
 
   if (absencesError) {
-    console.error("❌ getLeaveBalances absences error", absencesError);
+    logFailure("❌ getLeaveBalances absences error", absencesError);
     throw absencesError;
   }
 
@@ -1229,7 +1235,7 @@ export async function getPayRateHistory({ limit = 50 } = {}) {
     .limit(limit);
 
   if (error) {
-    console.error("❌ getPayRateHistory error", error);
+    logFailure("❌ getPayRateHistory error", error);
     throw error;
   }
 
@@ -1243,7 +1249,7 @@ export async function getPayRateHistory({ limit = 50 } = {}) {
       .in("payroll_id", payrollIds);
 
     if (payrollError) {
-      console.error("❌ getPayRateHistory payroll error", payrollError);
+      logFailure("❌ getPayRateHistory payroll error", payrollError);
       throw payrollError;
     }
 
@@ -1316,7 +1322,7 @@ export async function getPerformanceReviews(limit = 8) {
     .limit(limit);
 
   if (error) {
-    console.error("❌ getPerformanceReviews error", error);
+    logFailure("❌ getPerformanceReviews error", error);
     throw error;
   }
 

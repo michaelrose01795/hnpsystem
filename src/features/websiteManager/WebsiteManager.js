@@ -4,13 +4,16 @@
 //
 // Page status / SEO / media writes persist via /api/website/*. Per-section
 // content writes are handled directly by PageContentPanel (which loads from
-// /api/website/sections/* on demand). The Live Preview tab embeds /website
-// itself in an iframe with click-to-edit overlays. The Shop tab manages the
-// e-commerce catalog (Phase 4).
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+// /api/website/sections/* on demand). The Visual editor tab embeds /website
+// itself in an iframe with click-to-edit overlays, and the Design & layout tab
+// edits the site chrome (top bar, block running order, visual design) through
+// the website_nav / website_section_layout / website_design tables. The Shop
+// tab manages the e-commerce catalogue.
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
-import Section from "@/components/Section";
+import Button from "@/components/ui/Button";
+import StaffPageHeader from "@/components/ui/StaffPageHeader";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { WEBSITE_PAGES, MEDIA_ASSETS, SEO_ENTRIES, INITIAL_ACTIVITY } from "./websiteData";
 import { makeId } from "./helpers";
@@ -32,16 +35,18 @@ import ActivityPanel from "./panels/ActivityPanel";
 import AnalyticsPanel from "./panels/AnalyticsPanel";
 import LivePreviewPanel from "./panels/LivePreviewPanel";
 import ShopPanel from "./panels/ShopPanel";
+import DesignPanel from "./panels/DesignPanel";
 
 const TABS = [
-  { value: "overview", label: "Pages Overview" },
-  { value: "content", label: "Page Content" },
-  { value: "preview", label: "Live Preview" },
+  { value: "overview", label: "Overview" },
+  { value: "preview", label: "Visual editor" },
+  { value: "content", label: "Pages & sections" },
+  { value: "design", label: "Design & layout" },
   { value: "shop", label: "Shop" },
-  { value: "media", label: "Media Library" },
-  { value: "seo", label: "SEO & Meta" },
+  { value: "media", label: "Media" },
+  { value: "seo", label: "SEO" },
   { value: "analytics", label: "Analytics" },
-  { value: "activity", label: "Activity Log" },
+  { value: "activity", label: "Activity" },
 ];
 
 // Initial fallback data when the API is unreachable. Once the migration is
@@ -83,6 +88,8 @@ export default function WebsiteManager() {
   const [media, setMedia] = useState(() => MEDIA_ASSETS.map((m) => ({ ...m })));
   const [seo, setSeo] = useState(seedSeo);
   const [activity, setActivity] = useState(() => INITIAL_ACTIVITY.map((a) => ({ ...a })));
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   // Load real data from the API on mount.
   useEffect(() => {
@@ -94,6 +101,9 @@ export default function WebsiteManager() {
           fetchMedia().catch(() => null),
           fetchActivity().catch(() => null),
         ]);
+        if ([livePages, liveSeo, liveMedia, liveActivity].every((result) => result === null)) {
+          setLoadError("Live website data could not be loaded. Showing fallback content.");
+        }
         if (Array.isArray(livePages) && livePages.length) {
           setPages(
             livePages.map((p) => ({
@@ -150,7 +160,9 @@ export default function WebsiteManager() {
           );
         }
       } catch {
-        // Silent: the seed-fallback state already populated everything.
+        setLoadError("Live website data could not be loaded. Showing fallback content.");
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
@@ -186,8 +198,9 @@ export default function WebsiteManager() {
 
   // ---- Page status -------------------------------------------------------
   const togglePageStatus = useCallback(
-    (pageKey) => {
+    async (pageKey) => {
       const current = pages.find((x) => x.key === pageKey);
+      if (!current) return;
       const nextStatus = current?.status === "published" ? "draft" : "published";
       setPages((prev) =>
         prev.map((p) =>
@@ -199,10 +212,12 @@ export default function WebsiteManager() {
         current?.name || pageKey,
         current?.name
       );
-      setPageStatusApi(pageKey, nextStatus).catch(() => {
-        // eslint-disable-next-line no-console
-        console.warn("[WebsiteManager] page status save failed");
-      });
+      try {
+        await setPageStatusApi(pageKey, nextStatus);
+      } catch {
+        setPages((prev) => prev.map((p) => (p.key === pageKey ? current : p)));
+        setLoadError(`The ${current.name} publish status could not be saved.`);
+      }
     },
     [pages, stamp, logActivity]
   );
@@ -296,62 +311,95 @@ export default function WebsiteManager() {
   );
 
   return (
-    <>
-      <Section
-        title="Website Manager"
-        subtitle="Add, edit, publish and monitor everything shown on the public Humphries & Parks website — without leaving the staff app."
-      >
-        <TabGroup
-          items={TABS}
-          value={activeTab}
-          onChange={(value) => setActiveTab(value)}
-          ariaLabel="Website Manager sections"
-          layout="wrap"
+    <main className="app-page-shell website-manager">
+      <div className="app-page-stack">
+        <StaffPageHeader
+          title="Website manager"
+          actions={
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => window.open("/website", "_blank", "noopener,noreferrer")}
+            >
+              Open live website
+            </Button>
+          }
         />
-      </Section>
 
-      {activeTab === "overview" && (
-        <OverviewPanel
-          pages={pages}
-          seo={seo}
-          media={media}
-          activity={activity}
-          onTogglePageStatus={togglePageStatus}
-          onOpenPage={(pageKey) => {
-            setActiveTab("content");
-            setInitialContentPage(pageKey);
-          }}
-        />
-      )}
+        {/* The tab strip paints its own container background, so it sits
+            directly on the page stack — wrapping it in a card surface would
+            stack two surfaces (CLAUDE.md §3.0) and read as a boxed-in strip
+            that no other staff page has. */}
+        <div className="website-manager__tabs">
+          <TabGroup
+            items={TABS}
+            value={activeTab}
+            onChange={(value) => {
+              setActiveTab(value);
+              router.replace(
+                { pathname: router.pathname, query: { ...router.query, tab: value } },
+                undefined,
+                { shallow: true, scroll: false }
+              );
+            }}
+            ariaLabel="Website Manager sections"
+          />
+        </div>
 
-      {activeTab === "content" && (
-        <PageContentPanel
-          pages={pages}
-          initialPageKey={initialContentPage}
-          onTogglePageStatus={togglePageStatus}
-        />
-      )}
+        {(loading || loadError) && (
+          <div
+            className={`website-manager__notice${loadError ? " website-manager__notice--warning" : ""}`}
+            role={loadError ? "alert" : "status"}
+          >
+            {loadError || "Loading live website data…"}
+          </div>
+        )}
 
-      {activeTab === "preview" && <LivePreviewPanel />}
+        {activeTab === "overview" && (
+          <OverviewPanel
+            pages={pages}
+            seo={seo}
+            media={media}
+            activity={activity}
+            onTogglePageStatus={togglePageStatus}
+            onOpenPage={(pageKey) => {
+              setActiveTab("content");
+              setInitialContentPage(pageKey);
+            }}
+          />
+        )}
 
-      {activeTab === "shop" && <ShopPanel />}
+        {activeTab === "content" && (
+          <PageContentPanel
+            pages={pages}
+            initialPageKey={initialContentPage}
+            onTogglePageStatus={togglePageStatus}
+          />
+        )}
 
-      {activeTab === "media" && (
-        <MediaPanel
-          media={media}
-          onAddMedia={addMedia}
-          onReplaceMedia={replaceMedia}
-          onDeleteMedia={deleteMedia}
-        />
-      )}
+        {activeTab === "preview" && <LivePreviewPanel />}
 
-      {activeTab === "seo" && (
-        <SeoPanel pages={pages} seo={seo} onUpdateSeo={updateSeo} />
-      )}
+        {activeTab === "design" && <DesignPanel />}
 
-      {activeTab === "analytics" && <AnalyticsPanel />}
+        {activeTab === "shop" && <ShopPanel />}
 
-      {activeTab === "activity" && <ActivityPanel activity={activity} />}
-    </>
+        {activeTab === "media" && (
+          <MediaPanel
+            media={media}
+            onAddMedia={addMedia}
+            onReplaceMedia={replaceMedia}
+            onDeleteMedia={deleteMedia}
+          />
+        )}
+
+        {activeTab === "seo" && (
+          <SeoPanel pages={pages} seo={seo} onUpdateSeo={updateSeo} />
+        )}
+
+        {activeTab === "analytics" && <AnalyticsPanel />}
+
+        {activeTab === "activity" && <ActivityPanel activity={activity} />}
+      </div>
+    </main>
   );
 }

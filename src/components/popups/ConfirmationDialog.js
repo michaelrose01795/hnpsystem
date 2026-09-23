@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 // Plain-string fallback: split a multi-line message into <p> lines so existing
 // callers that pass `confirm("Line 1\nLine 2")` keep rendering the same way.
@@ -16,27 +18,22 @@ const renderMessageLines = (message) => {
 // Falls back to "info" so unknown tones still render a valid tile.
 const TONE_STYLES = {
   info: {
-    background: "var(--theme)",
     label: "var(--info)",
     value: "var(--text-1)",
   },
   success: {
-    background: "var(--success-surface)",
     label: "var(--success)",
     value: "var(--text-1)",
   },
   warning: {
-    background: "var(--warning-surface)",
     label: "var(--warning-dark)",
     value: "var(--text-1)",
   },
   accent: {
-    background: "var(--theme)",
     label: "var(--accentText)",
     value: "var(--text-1)",
   },
   neutral: {
-    background: "var(--surface)",
     label: "var(--text-1)",
     value: "var(--text-1)",
   },
@@ -75,6 +72,24 @@ export default function ConfirmationDialog({
   };
 
   const hasDetails = Array.isArray(details) && details.length > 0;
+  const actionButtons = (
+    <>
+      <Button
+        type="button"
+        variant="primary"
+        onClick={handleConfirm}
+      >
+        {confirmLabel}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={onCancel}
+      >
+        {cancelLabel}
+      </Button>
+    </>
+  );
 
   return (
     <PopupModal
@@ -84,7 +99,6 @@ export default function ConfirmationDialog({
       cardStyle={{
         width: "min(560px, 100%)",
         padding: "var(--space-7)",
-        borderRadius: "var(--radius-xl)",
         display: "flex",
         flexDirection: "column",
         gap: "20px",
@@ -92,21 +106,12 @@ export default function ConfirmationDialog({
     >
       {/* Header: small uppercase eyebrow title + the main prompt */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {title && (
-          <p
-            style={{
-              margin: 0,
-              fontSize: "0.75rem",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--text-1)",
-              opacity: 0.72,
-              fontWeight: 600,
-            }}
-          >
-            {title}
-          </p>
-        )}
+        <div className="app-popup-compact-header">
+          {title && <h2>{title}</h2>}
+          <div className="app-popup-compact-header__actions">
+            {actionButtons}
+          </div>
+        </div>
         {lines.length > 0 && (
           <div>
             {lines.map((line, index) => (
@@ -158,15 +163,13 @@ export default function ConfirmationDialog({
             const label = entry?.label ?? "";
             const value = entry?.value ?? "—";
             return (
-              <div
+              <LayerTheme
                 key={`${label}-${index}`}
+                radius="var(--radius-md)"
+                padding="12px 14px"
+                gap="4px"
                 style={{
-                  background: tone.background,
-                  borderRadius: "var(--radius-md)",
-                  padding: "12px 14px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4px",
+                  minWidth: 0,
                 }}
               >
                 <span
@@ -191,52 +194,12 @@ export default function ConfirmationDialog({
                 >
                   {value}
                 </span>
-              </div>
+              </LayerTheme>
             );
           })}
         </div>
       )}
 
-      {/* Action row */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: "12px",
-          marginTop: "4px",
-        }}
-      >
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            padding: "var(--control-padding)",
-            borderRadius: "var(--radius-sm)",
-            backgroundColor: "var(--surface)",
-            color: "var(--text-1)",
-            cursor: "pointer",
-            fontWeight: 600,
-            minWidth: "96px",
-          }}
-        >
-          {cancelLabel}
-        </button>
-        <button
-          type="button"
-          onClick={handleConfirm}
-          style={{
-            padding: "var(--control-padding)",
-            borderRadius: "var(--radius-sm)",
-            backgroundColor: "var(--primary)",
-            color: "var(--text-2)",
-            cursor: "pointer",
-            fontWeight: 600,
-            minWidth: "96px",
-          }}
-        >
-          {confirmLabel}
-        </button>
-      </div>
     </PopupModal>
   );
 }

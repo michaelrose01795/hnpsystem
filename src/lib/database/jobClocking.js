@@ -2,6 +2,7 @@ import { getDatabaseClient } from "@/lib/database/client";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
 import { recordClientAuditEvent } from "@/lib/audit/client";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const db = getDatabaseClient();
 const TABLE_NAME = "job_clocking";
@@ -99,18 +100,13 @@ const calculateHoursWorked = (clockIn, clockOut) => {
   return Number(hours.toFixed(2));
 };
 
-export const sumJobClockingHours = (entries = []) => {
-  if (!Array.isArray(entries)) {
-    return 0;
-  }
+// Both of these are pure and now live in @/lib/jobClocking/totals so a component
+// that calls them during render does not have to import this module (and with it
+// the Supabase browser client). Re-exported here so every existing import site,
+// including the tests, keeps working unchanged.
+export { sumJobClockingHours, resolveClockingDisplayWindow } from "@/lib/jobClocking/totals";
 
-  const total = entries.reduce((sum, entry) => {
-    const hours = Number(entry?.hoursWorked ?? entry?.hours_worked ?? 0);
-    return Number.isFinite(hours) && hours > 0 ? sum + hours : sum;
-  }, 0);
 
-  return Number(total.toFixed(2));
-};
 
 const formatCustomerName = (customer = {}) => {
   const first =
@@ -217,7 +213,7 @@ const fetchJobsByIds = async (jobIds = []) => {
   const { data, error } = await db.from(JOB_TABLE).select(JOB_COLUMNS).in("id", ids);
 
   if (error) {
-    console.error("Failed to fetch job metadata:", error.message);
+    logFailure("Failed to fetch job metadata:", error.message);
     return new Map();
   }
 
@@ -429,7 +425,7 @@ export const clockInToJob = async (...rawArgs) => {
     ]);
 
     if (timeRecordError) {
-      console.error("Failed to create time record entry:", timeRecordError.message);
+      logFailure("Failed to create time record entry:", timeRecordError.message);
     }
 
     const jobsById = await fetchJobsByIds([jobIdInt]);
@@ -476,7 +472,7 @@ export const clockInToJob = async (...rawArgs) => {
     }
     return { success: true, data: mapped };
   } catch (err) {
-    console.error("clockInToJob error:", err.message);
+    logFailure("clockInToJob error:", err.message);
     return { success: false, error: err.message };
   }
 };
@@ -524,7 +520,7 @@ export const clockOutFromJob = async (...rawArgs) => {
         .limit(1);
 
       if (openError) {
-        console.error("Failed to locate open time record:", openError.message);
+        logFailure("Failed to locate open time record:", openError.message);
       } else if (openRecords && openRecords.length > 0) {
         const openRecord = openRecords[0];
         const hoursWorked = calculateHoursWorked(openRecord.clock_in, clockOutTimestamp);
@@ -538,7 +534,7 @@ export const clockOutFromJob = async (...rawArgs) => {
           .eq("id", openRecord.id);
 
         if (updateError) {
-          console.error("Failed to update time record:", updateError.message);
+          logFailure("Failed to update time record:", updateError.message);
         }
       } else {
         const clockInFallback = data.clock_in || clockOutTimestamp;
@@ -569,7 +565,7 @@ export const clockOutFromJob = async (...rawArgs) => {
         ]);
 
         if (insertError) {
-          console.error("Failed to backfill time record:", insertError.message);
+          logFailure("Failed to backfill time record:", insertError.message);
         }
       }
     }
@@ -610,7 +606,7 @@ export const clockOutFromJob = async (...rawArgs) => {
     }
     return { success: true, data: mapped, hoursWorked: mapped.hoursWorked };
   } catch (err) {
-    console.error("clockOutFromJob error:", err.message);
+    logFailure("clockOutFromJob error:", err.message);
     return { success: false, error: err.message };
   }
 };
@@ -638,7 +634,7 @@ export const getUserActiveJobs = async (rawUserId) => {
     const mapped = data.map((row) => mapClockingRow(row, jobsById.get(row.job_id)));
     return { success: true, data: mapped };
   } catch (err) {
-    console.error("getUserActiveJobs error:", err.message);
+    logFailure("getUserActiveJobs error:", err.message);
     return { success: false, error: err.message, data: [] };
   }
 };
@@ -757,7 +753,7 @@ export const getTechnicianDailySummary = async (rawUserId) => {
       },
     };
   } catch (err) {
-    console.error("getTechnicianDailySummary error:", err.message);
+    logFailure("getTechnicianDailySummary error:", err.message);
     return { success: false, error: err.message };
   }
 };
@@ -818,7 +814,7 @@ export const switchJob = async (...rawArgs) => {
       hoursWorked: clockOutResult.hoursWorked,
     };
   } catch (err) {
-    console.error("switchJob error:", err.message);
+    logFailure("switchJob error:", err.message);
     return { success: false, error: err.message };
   }
 };

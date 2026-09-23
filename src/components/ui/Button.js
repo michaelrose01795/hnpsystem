@@ -81,6 +81,7 @@ export default function Button({
     `app-btn--${variant}`,
     size === "sm" && "app-btn--sm",
     size === "xs" && "app-btn--xs",
+    size === "xxs" && "app-btn--xxs",
     pill && "app-btn--pill",
     busy && "is-busy",
     className,

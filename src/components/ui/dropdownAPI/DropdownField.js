@@ -76,6 +76,7 @@ export default function DropdownField({
   placeholder,
   label,
   disabled = false,
+  hasError = false,
   helperText = "",
   className = "",
   size = "md",
@@ -206,6 +207,7 @@ export default function DropdownField({
       value={dropdownValue}
       onChange={handleDropdownChange}
       disabled={disabled}
+      hasError={hasError}
       helperText={helperText}
       className={className}
       size={size}

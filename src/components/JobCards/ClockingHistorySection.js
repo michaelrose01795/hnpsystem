@@ -3,9 +3,13 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
-import { supabase } from "@/lib/database/supabaseClient";
-import { clockOutFromJob } from "@/lib/database/jobClocking";
+// Loaded on demand - the queries and the realtime channel below all run after
+// mount, so the 213 KB client does not belong in this component's first load.
+import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/realtimeClient";
+import { resolveClockingDisplayWindow } from "@/lib/jobClocking/totals"; // pure helper
+const loadJobClockingDb = () => import("@/lib/database/jobClocking"); // deferred - clock-out handler only
 import { WORK_TYPES as CLOCKING_WORK_TYPES } from "@/lib/status/catalog/clocking";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -68,7 +72,7 @@ export default function ClockingHistorySection({
     setLoading(true);
     setError("");
     try {
-      const { data, error: queryError } = await supabase
+      const { data, error: queryError } = await (await loadSupabaseClient())
         .from("job_clocking")
         .select(`
           id,
@@ -123,7 +127,7 @@ export default function ClockingHistorySection({
 
       setEntries(mapped);
     } catch (err) {
-      console.error("❌ Failed to load job clocking history:", err);
+      logFailure("❌ Failed to load job clocking history:", err);
       setError(err?.message || "Unable to load clocking entries.");
       setEntries([]);
     } finally {
@@ -147,7 +151,7 @@ export default function ClockingHistorySection({
     let isMounted = true;
     const loadAllocatedTotal = async () => {
       try {
-        const { data, error: queryError } = await supabase
+        const { data, error: queryError } = await (await loadSupabaseClient())
           .from("job_requests")
           .select("hours")
           .eq("job_id", jobId);
@@ -160,7 +164,7 @@ export default function ClockingHistorySection({
           setRequestsAllocatedTotal(total > 0 ? Number(total.toFixed(2)) : null);
         }
       } catch (err) {
-        console.error("Failed to load allocated hours total:", err);
+        logFailure("Failed to load allocated hours total:", err);
         if (isMounted) {
           setRequestsAllocatedTotal(null);
         }
@@ -175,7 +179,8 @@ export default function ClockingHistorySection({
   useEffect(() => {
     if (!jobId) return;
     const channelName = `job-clock-history-${jobId}`;
-    const channel = supabase
+    return subscribeWithDeferredClient((supabase) =>
+      supabase
       .channel(channelName)
       .on(
         "postgres_changes",
@@ -189,11 +194,8 @@ export default function ClockingHistorySection({
           fetchEntries();
         }
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      .subscribe()
+    );
   }, [jobId, fetchEntries]);
 
   useEffect(() => {
@@ -249,9 +251,12 @@ export default function ClockingHistorySection({
           : hasRequest
           ? null
           : fallbackJobHours;
-      const liveClockOutValue = entry.clockOut || new Date(liveNow).toISOString();
-      const durationHours = calculateDurationHours(entry.clockIn, liveClockOutValue);
-      const isActive = !entry.clockOut;
+      const { completedClockOut, durationEnd, isActive } = resolveClockingDisplayWindow({
+        clockIn: entry.clockIn,
+        clockOut: entry.clockOut,
+        now: liveNow,
+      });
+      const durationHours = calculateDurationHours(entry.clockIn, durationEnd);
 
       return {
         id: entry.id,
@@ -262,8 +267,8 @@ export default function ClockingHistorySection({
         requestKey: hasRequest ? String(entry.requestId) : "job",
         dateOn: formatDate(entry.clockIn),
         timeOn: formatTime(entry.clockIn),
-        dateOff: formatDate(liveClockOutValue),
-        timeOff: formatTime(liveClockOutValue),
+        dateOff: formatDate(completedClockOut),
+        timeOff: formatTime(completedClockOut),
         timeTaken: durationHours !== null && !Number.isNaN(durationHours) ? Number(durationHours.toFixed(2)) : null,
         isActive,
         rawEntry: entry
@@ -320,7 +325,7 @@ export default function ClockingHistorySection({
     setClockOffSubmitting(true);
     setClockOffError("");
     try {
-      const result = await clockOutFromJob({
+      const result = await (await loadJobClockingDb()).clockOutFromJob({
         userId,
         jobId: targetJobId,
         clockingId,
@@ -331,7 +336,7 @@ export default function ClockingHistorySection({
       setClockOffTarget(null);
       await fetchEntries();
     } catch (err) {
-      console.error("Clock off failed:", err);
+      logFailure("Clock off failed:", err);
       setClockOffError(err?.message || "Failed to clock off.");
     } finally {
       setClockOffSubmitting(false);
@@ -411,7 +416,7 @@ export default function ClockingHistorySection({
                         position: "sticky",
                         top: 0,
                         backgroundColor: "var(--surface)",
-                        borderBottom: "1px solid var(--separating-line)",
+                        borderBottom: "1px solid var(--separating-line-color)",
                         textAlign: "left",
                         fontSize: "0.75rem",
                         letterSpacing: "0.08em",
@@ -449,7 +454,7 @@ export default function ClockingHistorySection({
                         cursor: row.isActive ? "pointer" : "default",
                       }}
                     >
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)", fontWeight: 600 }}>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line-color)", fontWeight: 600 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <span>{row.technicianName}</span>
                           {row.isActive ? (
@@ -473,7 +478,7 @@ export default function ClockingHistorySection({
                       <td
                         style={{
                           padding: "12px 14px",
-                          borderBottom: "1px solid var(--separating-line)",
+                          borderBottom: "1px solid var(--separating-line-color)",
                           color: enableRequestClick ? "var(--primary)" : "var(--text-1)",
                           fontWeight: enableRequestClick ? 600 : 500,
                           cursor: enableRequestClick ? "pointer" : "default"
@@ -493,14 +498,14 @@ export default function ClockingHistorySection({
                       >
                         {row.requestLabel}
                       </td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>{row.dateOn}</td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>{row.timeOn}</td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>{row.dateOff}</td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>{row.timeOff}</td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line-color)" }}>{row.dateOn}</td>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line-color)" }}>{row.timeOn}</td>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line-color)" }}>{row.dateOff}</td>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line-color)" }}>{row.timeOff}</td>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line-color)" }}>
                         {row.timeTaken !== null ? `${row.timeTaken.toFixed(2)}h` : "—"}
                       </td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line-color)" }}>
                         {row.requestHours !== null ? `${row.requestHours.toFixed(2)}h` : "—"}
                       </td>
                     </tr>
@@ -514,7 +519,7 @@ export default function ClockingHistorySection({
                       colSpan={7}
                       style={{
                         padding: "12px 14px",
-                        borderTop: "1px solid var(--separating-line)",
+                        borderTop: "1px solid var(--separating-line-color)",
                         fontWeight: 600,
                         textAlign: "right",
                         color: "var(--grey-accent)"
@@ -525,7 +530,7 @@ export default function ClockingHistorySection({
                     <td
                       style={{
                         padding: "12px 14px",
-                        borderTop: "1px solid var(--separating-line)",
+                        borderTop: "1px solid var(--separating-line-color)",
                         fontWeight: 600,
                         color: "var(--text-1)"
                       }}
@@ -629,7 +634,7 @@ export default function ClockingHistorySection({
                   borderRadius: "var(--control-radius-xs)",
                   border: "none",
                   backgroundColor: "var(--primary)",
-                  color: "#ffffff",
+                  color: "var(--onAccentText)",
                   fontWeight: 700,
                   letterSpacing: "0.02em",
                   cursor: clockOffSubmitting ? "wait" : "pointer",

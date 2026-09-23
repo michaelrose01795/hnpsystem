@@ -23,11 +23,10 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
+  badgeClass,
   KeyValue,
   KeyValueGrid,
   EmptyState,
-  DevButton,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
@@ -65,7 +64,7 @@ function PerformanceView() {
       <Panel
         title="Performance"
         subtitle={updatedAt ? `Live session profile · captured ${updatedAt.toLocaleTimeString()}` : "Profiling…"}
-        actions={<DevButton small onClick={refresh}>Recapture</DevButton>}
+        actions={<button type="button" onClick={refresh} className="app-btn app-btn--secondary app-btn--sm">Recapture</button>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="TTFB" value={fmtMs(m.ttfbMs)} tone="accentText" />
@@ -84,16 +83,16 @@ function PerformanceView() {
           endpoints.map((e) => (
             <SubSurface key={e.endpoint} style={{ flexDirection: "row", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-sm)", color: "var(--text-1)", wordBreak: "break-word" }}>{e.endpoint}</div>
-                <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+                <div style={{ fontFamily: "var(--font-family-mono)", fontSize: "var(--text-body-sm)", color: "var(--text-1)", wordBreak: "break-word" }}>{e.endpoint}</div>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
                   {Object.entries(e.statuses).map(([s, c]) => `${s}×${c}`).join(" · ")}
                 </div>
               </div>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-                <Pill label={`×${e.count}`} tone="warning-base" strong />
-                {e.avgMs != null && <Pill label={`avg ${e.avgMs}ms`} tone="text-1" />}
-                {e.maxMs != null && <Pill label={`max ${e.maxMs}ms`} tone={e.maxMs > 1000 ? "danger-base" : "text-1"} />}
-                {e.serverErrors > 0 && <Pill label={`${e.serverErrors}× 5xx`} tone="danger-base" strong />}
+                <span className="app-badge app-badge--warning-strong">{`×${e.count}`}</span>
+                {e.avgMs != null && <span className="app-badge app-badge--neutral">{`avg ${e.avgMs}ms`}</span>}
+                {e.maxMs != null && <span className={badgeClass(e.maxMs > 1000 ? "danger-base" : "text-1")}>{`max ${e.maxMs}ms`}</span>}
+                {e.serverErrors > 0 && <span className="app-badge app-badge--danger-strong">{`${e.serverErrors}× 5xx`}</span>}
               </div>
             </SubSurface>
           ))
@@ -113,17 +112,17 @@ function PerformanceView() {
                   gridTemplateColumns: "auto 1fr auto",
                   gap: "10px",
                   alignItems: "baseline",
-                  borderBottom: "1px solid var(--separating-line)",
+                  borderBottom: "1px solid var(--separating-line-color)",
                   padding: "6px 0",
                 }}
               >
-                <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6, whiteSpace: "nowrap" }}>
+                <span style={{ fontFamily: "var(--font-family-mono)", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6, whiteSpace: "nowrap" }}>
                   {t.ts ? new Date(t.ts).toLocaleTimeString() : "—"}
                 </span>
                 <span style={{ color: `var(--${t.tone})`, fontSize: "var(--text-body-sm)", wordBreak: "break-word" }}>
                   {t.status} · {t.method} {t.path}
                 </span>
-                <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6 }}>{t.ms != null ? `${t.ms}ms` : ""}</span>
+                <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>{t.ms != null ? `${t.ms}ms` : ""}</span>
               </div>
             ))}
           </div>

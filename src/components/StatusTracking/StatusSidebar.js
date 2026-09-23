@@ -9,6 +9,7 @@ import { buildSmartSummary } from '@/lib/status/smartSummaryBuilder'; // Summary
 import { enhanceTimeline } from '@/lib/status/timelineEnhancer'; // Timeline enhancement pipeline
 import { getAllTrackerFlags } from '@/config/trackerFlags'; // Feature flags for tracker enhancements
 import { supabase } from '@/lib/database/supabaseClient'; // Supabase client for real-time subscriptions
+import { logFailure } from "@/lib/utils/logFailure";
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
@@ -99,7 +100,7 @@ export default function StatusSidebar({
         setSearchResults(Array.isArray(data.jobs) ? data.jobs : []);
       } catch (error) {
         if (error.name !== 'AbortError') {
-          console.error('Tracker search failed:', error);
+          logFailure('Tracker search failed:', error);
           setSearchResults([]);
         }
       } finally {
@@ -186,7 +187,7 @@ export default function StatusSidebar({
       }
       setSearchError(data.error || 'Job not found');
     } catch (error) {
-      console.error('Error fetching status history:', error);
+      logFailure('Error fetching status history:', error);
       setSearchError('Failed to load job data');
     }
     return false;
@@ -484,7 +485,7 @@ export default function StatusSidebar({
         style={panelStyle}
       >
         {/* Header */}
-        <div className="app-section-card" style={{
+        <div className={isVerticalPhone ? undefined : "app-section-card"} style={{
           color: 'var(--text-1)',
           padding: compactMode ? '10px 12px' : '0 16px',
           borderRadius: isDocked ? 'var(--radius-md) var(--radius-md) 0 0' : '0',
@@ -686,7 +687,7 @@ export default function StatusSidebar({
         </div>
 
         {/* Content area: the overlay panel owns scrolling so page scroll does not move the tracker. */}
-        <div className="app-page-stack" style={{
+        <div className="app-page-stack status-sidebar__scroll-region" style={{
           overflowY: 'auto',
           overflowX: 'hidden',
           flex: 1,
@@ -696,14 +697,14 @@ export default function StatusSidebar({
         }}>
           {/* Show message when no job selected */}
           {!jobId ? (
-            <div className="app-section-card" style={{ 
+            <div className={isVerticalPhone ? undefined : "app-section-card"} style={{
               display: 'flex', 
               flexDirection: 'column', 
               alignItems: 'center', 
               justifyContent: 'center', 
               height: '100%', 
               textAlign: 'center', 
-              color: 'var(--grey-accent-light)' 
+              color: 'var(--surfaceTextMuted)' 
             }}>
               <p style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--grey-accent-dark)' }}>
                 No Job Selected

@@ -3,7 +3,7 @@
 
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { HR_CORE_ROLES, normalizeRoles } from "@/lib/auth/roles";
+import { HR_CORE_ROLES, hasAllAccessRole, normalizeRoles } from "@/lib/auth/roles";
 
 /**
  * Wrap API route handlers with a role guard to enforce Keycloak-based RBAC.
@@ -58,6 +58,13 @@ export function withRoleGuard(handler, { allow = [], authorize } = {}) {
     }
 
     const roles = normalizeRoles(session.user?.roles ?? []);
+
+    // The All Access demo login (synthetic role, minted only by the gated login
+    // shortcut) satisfies every endpoint guard so a demonstration can load the
+    // data behind every page from one session.
+    if (hasAllAccessRole(roles)) {
+      return handler(req, res, session);
+    }
 
     const isAllowed =
       typeof authorize === "function"

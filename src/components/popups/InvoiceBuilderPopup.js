@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import Popup from "./Popup";
 import { normalizeRequests } from "@/lib/jobCards/utils";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const formatCurrency = (value) => {
   const amount = Number(value) || 0;
@@ -305,7 +307,7 @@ export default function InvoiceBuilderPopup({
           : "Invoice saved to job documents."
       );
     } catch (error) {
-      console.error("Share invoice failed:", error);
+      logFailure("Share invoice failed:", error);
       setShareFeedback(error.message);
     } finally {
       setIsSharing(false);
@@ -409,7 +411,7 @@ export default function InvoiceBuilderPopup({
                     display: "grid",
                     gridTemplateColumns: "2fr 1fr 1fr 1fr",
                     padding: "12px",
-                    borderTop: "1px solid var(--separating-line)",
+                    borderTop: "1px solid var(--separating-line-color)",
                     fontSize: "14px"
                   }}
                 >
@@ -472,23 +474,16 @@ export default function InvoiceBuilderPopup({
             <label style={{ fontSize: "12px", color: "var(--text-1)" }}>
               VAT rate
             </label>
-            <select
+            <DropdownField
               value={vatRate}
               onChange={(event) => setVatRate(Number(event.target.value))}
-              style={{
-                width: "100%",
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                padding: "10px",
-                fontSize: "14px",
-                marginTop: "6px",
-                background: "var(--surface)"
-              }}
-            >
-              <option value={0}>0%</option>
-              <option value={0.05}>5%</option>
-              <option value={0.2}>20%</option>
-            </select>
+              options={[
+                { value: 0, label: "0%" },
+                { value: 0.05, label: "5%" },
+                { value: 0.2, label: "20%" },
+              ]}
+              style={{ width: "100%", marginTop: "6px" }}
+            />
           </div>
         </section>
 
@@ -640,7 +635,7 @@ export default function InvoiceBuilderPopup({
             </div>
             <div
               style={{
-                borderTop: "1px solid var(--separating-line)",
+                borderTop: "1px solid var(--separating-line-color)",
                 marginTop: "8px",
                 paddingTop: "8px",
                 display: "flex",

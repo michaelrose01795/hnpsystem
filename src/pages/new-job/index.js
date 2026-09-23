@@ -3,26 +3,43 @@
 // ✅ Database linked through /src/lib/database
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
+import dynamic from "next/dynamic";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
 import { flushSync } from "react-dom";
 import { useRouter } from "next/router"; // for navigation
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useJobs } from "@/context/JobsContext"; // import jobs context
 import { useUser } from "@/context/UserContext"; // import user context for signature + uploads
 import { isMobileTechnician } from "@/lib/auth/roles"; // role helper to gate mobile-mechanic-only saves
-import {
-  addCustomerToDatabase,
-  checkCustomerExists,
-  getCustomerById,
-  getCustomerVehicles,
-  updateCustomer } from
-"@/lib/database/customers";
-import { getVehicleByReg } from "@/lib/database/vehicles";
-import { getJobByNumber } from "@/lib/database/jobs";
-import { createFullJobBatch } from "@/lib/services/createJobService"; // consolidated job creation service
-import { supabase } from "@/lib/database/supabaseClient"; // import supabase client for signature lookups
-import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
-import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
+// Loaded on demand - both modules resolve the Supabase browser client.
+//
+// Every function imported from them is called from an async submit/lookup
+// handler (customer select, save edits, contact preference, reg lookup), never
+// during render, so deferring them keeps /new-job off the 213 KB client while
+// leaving behaviour identical.
+const loadCustomersDb = () => import("@/lib/database/customers");
+const loadVehiclesDb = () => import("@/lib/database/vehicles");
+const loadJobsDb = () => import("@/lib/database/jobs"); // deferred - only used by the prime-job lookup below
+const loadCreateJobService = () => import("@/lib/services/createJobService"); // deferred - runs only from handleSaveJob
+// Loaded on demand — 213 KB of @supabase/supabase-js.
+//
+// This page uses the browser client for exactly two things: uploading a
+// signature image and saving the check-sheet file, both inside async submit
+// handlers (handleSignatureUpload / saveCheckSheetData). It opens no realtime
+// channel, so nothing here needs the client to render. Importing it statically
+// put the whole client in /new-job's first load — the heaviest page in the app
+// and the one with the most Speed Insights samples.
+//
+// Same pattern as useMessagesBadge and StaffLayout, which already defer it.
+const loadSupabase = async () => (await import("@/lib/database/supabaseClient")).supabase;
+// Deferred modal. It is only rendered behind `showNewCustomer &&` in the UI
+// layer, but importing it statically pulled lib/database/customers - and with
+// it the 213 KB Supabase browser client - into /new-job's first load. Same
+// next/dynamic treatment the global modals in _app.js already use.
+const NewCustomerPopup = dynamic(() => import("@/components/popups/NewCustomerPopup"), { ssr: false });
+// Deferred for the same reason as NewCustomerPopup above - rendered only behind
+// `showExistingCustomer &&`, but statically reached the Supabase client.
+const ExistingCustomerPopup = dynamic(() => import("@/components/popups/ExistingCustomerPopup"), { ssr: false });
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
 import QuestionPromptsPopup from "@/components/JobCards/QuestionPromptsPopup";
@@ -33,6 +50,22 @@ import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
 import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
 import CreateJobCardPageUi from "@/components/page-ui/job-cards/create/job-cards-create-ui"; // Extracted presentation layer.
 import { reportError, reportSuccess, reportWarning } from "@/lib/notifications/report"; // Phase 3 reporting helpers (Phase 10 migration).
+import { logFailure } from "@/lib/utils/logFailure";
+
+// Wait for a pause in typing before looking a registration up in the database.
+const VEHICLE_LOOKUP_DEBOUNCE_MS = 400;
+
+// Static form schema. Module-level so its identity never changes; it has no
+// dependency on component state.
+const CUSTOMER_FIELD_DEFINITIONS = [
+  { label: "First Name", field: "firstName", type: "text", placeholder: "" },
+  { label: "Last Name", field: "lastName", type: "text", placeholder: "" },
+  { label: "Email", field: "email", type: "email", placeholder: "" },
+  { label: "Mobile", field: "mobile", type: "tel", placeholder: "" },
+  { label: "Telephone", field: "telephone", type: "tel", placeholder: "" },
+  { label: "Address", field: "address", type: "textarea", placeholder: "" },
+  { label: "Contact Preference", field: "contactPreference", type: "multi-select" },
+];
 
 const PAYMENT_TYPE_OPTIONS = [
 { value: "Customer", label: "Customer" },
@@ -206,12 +239,29 @@ export default function CreateJobCardPage() {
 
   // Persist pending uploads whenever they change so a refresh or tab close
   // doesn't orphan the temp storage objects.
+  // Tracks the last persisted uploaded-file set so the effect below can skip the
+  // (synchronous, main-thread) localStorage write when nothing has changed.
+  const lastPendingUploadsSignatureRef = useRef(null);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const snapshot = jobTabs.
       map((tab) => ({ id: tab.id, uploadedFiles: tab.uploadedFiles || [] })).
       filter((entry) => entry.uploadedFiles.length > 0);
+
+      // This effect depends on `jobTabs`, and ALL of the form's state lives in
+      // jobTabs — so it re-ran on every keystroke anywhere on the page and did a
+      // JSON.stringify plus a synchronous localStorage write each time.
+      // localStorage writes block the main thread, so that landed directly on
+      // the interaction path. Uploaded files change rarely, so compare a cheap
+      // signature first and only touch storage when it actually differs.
+      const signature = snapshot
+        .map((entry) => `${entry.id}:${entry.uploadedFiles.length}`)
+        .join("|");
+      if (signature === lastPendingUploadsSignatureRef.current) return;
+      lastPendingUploadsSignatureRef.current = signature;
+
       if (snapshot.length === 0) {
         window.localStorage.removeItem(PENDING_UPLOADS_STORAGE_KEY);
       } else {
@@ -248,13 +298,23 @@ export default function CreateJobCardPage() {
   const setJobDetections = (val) => updateCurrentTab({ jobDetections: val });
   const uploadedFiles = currentTab.uploadedFiles;
   const setUploadedFiles = (val) => updateCurrentTab({ uploadedFiles: typeof val === "function" ? val(currentTab.uploadedFiles) : val });
-  const visibleJobDetections = jobDetections.filter((d) => d.sourceText);
-  const populatedRequests = requests.
-  map((request, index) => ({
-    index,
-    text: String(request?.text || "").trim()
-  })).
-  filter((request) => request.text);
+  // Memoised: both are handed down as props, so recomputing them on every render
+  // gave the child sections a new array identity on every keystroke anywhere on
+  // the page — re-rendering them even when their own data had not changed.
+  const visibleJobDetections = useMemo(
+    () => jobDetections.filter((d) => d.sourceText),
+    [jobDetections]
+  );
+  const populatedRequests = useMemo(
+    () =>
+      requests
+        .map((request, index) => ({
+          index,
+          text: String(request?.text || "").trim()
+        }))
+        .filter((request) => request.text),
+    [requests]
+  );
 
   // Shared state (same across all tabs)
   const [cosmeticDamagePresent, setCosmeticDamagePresent] = useState(false); // track whether cosmetic damage observed
@@ -472,7 +532,7 @@ export default function CreateJobCardPage() {
 
     const fetchPrimeJob = async () => {
       console.log("📋 Sub-job mode: fetching prime job", primeJobNumber);
-      const result = await getJobByNumber(primeJobNumber);
+      const result = await (await loadJobsDb()).getJobByNumber(primeJobNumber);
       if (result.success && result.data) {
         setPrimeJobData(result.data);
         setIsSubJobMode(true);
@@ -509,7 +569,7 @@ export default function CreateJobCardPage() {
 
         console.log("✅ Prime job loaded for sub-job creation:", result.data.jobNumber);
       } else {
-        console.error("❌ Failed to fetch prime job:", primeJobNumber);
+        logFailure("❌ Failed to fetch prime job:", primeJobNumber);
         setIsSubJobMode(false);
         setPrimeJobData(null);
       }
@@ -588,7 +648,7 @@ export default function CreateJobCardPage() {
           });
         }
       } catch (err) {
-        console.error("fromEvent prefill failed:", err);
+        logFailure("fromEvent prefill failed:", err);
       }
     };
 
@@ -684,7 +744,7 @@ export default function CreateJobCardPage() {
         })
       });
     } catch (error) {
-      console.error("Failed to persist preset default hours", error);
+      logFailure("Failed to persist preset default hours", error);
     }
   };
 
@@ -705,21 +765,16 @@ export default function CreateJobCardPage() {
     setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
   }; // append new empty request
 
-  const jobCardSelectorOptions = jobTabs.map((tab, index) => ({
-    id: tab.id,
-    index,
-    label: `Job${index + 1}`
-  }));
+  const jobCardSelectorOptions = useMemo(
+    () => jobTabs.map((tab, index) => ({ id: tab.id, index, label: `Job${index + 1}` })),
+    [jobTabs]
+  );
   const hasLinkedJobCards = jobCardSelectorOptions.length > 1;
 
-  const customerFieldDefinitions = [
-  { label: "First Name", field: "firstName", type: "text", placeholder: "" },
-  { label: "Last Name", field: "lastName", type: "text", placeholder: "" },
-  { label: "Email", field: "email", type: "email", placeholder: "" },
-  { label: "Mobile", field: "mobile", type: "tel", placeholder: "" },
-  { label: "Telephone", field: "telephone", type: "tel", placeholder: "" },
-  { label: "Address", field: "address", type: "textarea", placeholder: "" },
-  { label: "Contact Preference", field: "contactPreference", type: "multi-select" }];
+  // (CUSTOMER_FIELD_DEFINITIONS is a module constant — see the top of the file.
+  // It was previously rebuilt as a fresh array on every render of this page and
+  // handed to the customer form as a prop, so every keystroke anywhere on the
+  // page changed its identity and re-rendered the whole customer section.)
 
 
   // remove a request from the list by index
@@ -800,20 +855,28 @@ export default function CreateJobCardPage() {
 
     const lookupVehicle = async () => {
       try {
-        const storedVehicle = await getVehicleByReg(regTrimmed); // query Supabase for existing vehicle row
+        const storedVehicle = await (await loadVehiclesDb()).getVehicleByReg(regTrimmed); // query Supabase for existing vehicle row
         lastVehicleLookupRef.current = regTrimmed; // mark lookup as completed for this reg
         if (!cancelled && storedVehicle) {
           hydrateVehicleFromRecord(storedVehicle, { notifyCustomer: false }); // hydrate local form state
         }
       } catch (err) {
-        console.error("Automatic vehicle lookup failed", err); // log lookup failures without blocking user
+        logFailure("Automatic vehicle lookup failed", err); // log lookup failures without blocking user
       }
     };
 
-    lookupVehicle();
+    // Debounced. This effect keys on `vehicle.reg`, which changes on every
+    // keystroke, so it previously issued a browser-to-Postgres query per
+    // character from the third onwards — typing a 7-character UK plate fired
+    // five lookups, each of which could resolve late and write state (and so
+    // re-render this page) while the user was still typing. The
+    // `lastVehicleLookupRef` guard only suppressed repeats of the SAME reg, not
+    // the prefixes on the way to it. One lookup per pause instead.
+    const handle = setTimeout(lookupVehicle, VEHICLE_LOOKUP_DEBOUNCE_MS);
 
     return () => {
       cancelled = true; // prevent state updates after unmount or reg change
+      clearTimeout(handle);
     };
   }, [vehicle.reg, hydrateVehicleFromRecord]);
 
@@ -850,7 +913,7 @@ export default function CreateJobCardPage() {
         contact_preference: nextPreferences.length ? nextPreferences.join(", ") : "email"
       };
 
-      const result = await updateCustomer(customer.id, updatePayload);
+      const result = await (await loadCustomersDb()).updateCustomer(customer.id, updatePayload);
       if (!result?.success || !result?.data) {
         throw new Error(result?.error?.message || "Failed to update contact preference.");
       }
@@ -859,7 +922,7 @@ export default function CreateJobCardPage() {
       setCustomer(normalized);
       setCustomerForm(normalized);
     } catch (err) {
-      console.error("❌ Error updating contact preference:", err);
+      logFailure("❌ Error updating contact preference:", err);
       showNotification("customer", "error", `✗ ${err.message || "Failed to update contact preference"}`);
       setCustomerForm((prev) => ({ ...prev, contactPreference: previousPreferences }));
     } finally {
@@ -935,7 +998,7 @@ export default function CreateJobCardPage() {
         contact_preference: toNullable(customerForm.contactPreference) || "email"
       };
 
-      const result = await updateCustomer(customer.id, updatePayload);
+      const result = await (await loadCustomersDb()).updateCustomer(customer.id, updatePayload);
 
       if (!result?.success || !result?.data) {
         throw new Error(result?.error?.message || "Failed to update customer.");
@@ -945,7 +1008,7 @@ export default function CreateJobCardPage() {
       setCustomer(normalized);
       showNotification("customer", "success", "✓ Customer details updated!");
     } catch (err) {
-      console.error("❌ Error updating customer:", err);
+      logFailure("❌ Error updating customer:", err);
       showNotification("customer", "error", `✗ ${err.message || "Failed to update customer"}`);
     } finally {
       setIsSavingCustomer(false);
@@ -1041,6 +1104,7 @@ export default function CreateJobCardPage() {
       return;
     }
 
+    const supabase = await loadSupabase(); // deferred client — handler-time only
     setIsUploadingSignature(true);
     try {
       const ext = file.name?.split(".").pop() || "png";
@@ -1078,6 +1142,7 @@ export default function CreateJobCardPage() {
       return; // nothing to save when no sheet selected
     }
 
+    const supabase = await loadSupabase(); // deferred client — handler-time only
     try {
       const ext = checkSheetFile.name?.split(".").pop() || "png";
       const storagePath = `jobs/${jobId}/checksheets/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
@@ -1151,7 +1216,7 @@ export default function CreateJobCardPage() {
 
       if (providedId) {// when popup sent an ID we just hydrate the row
         console.log("Existing customer selected by ID:", providedId);
-        const hydratedCustomer = await getCustomerById(providedId);
+        const hydratedCustomer = await (await loadCustomersDb()).getCustomerById(providedId);
         const recordToUse = hydratedCustomer || customerData;
         resolvedCustomer = normalizeCustomerRecord(recordToUse);
         if (!resolvedCustomer?.id) {
@@ -1174,19 +1239,19 @@ export default function CreateJobCardPage() {
           contact_preference: customerData.contactPreference || customerData.contact_preference || "email"
         };
 
-        const { exists, customer: existingCustomer } = await checkCustomerExists(
+        const { exists, customer: existingCustomer } = await (await loadCustomersDb()).checkCustomerExists(
           normalizedPayload.email,
           normalizedPayload.mobile
         );
 
         if (exists && existingCustomer?.id) {
           console.log("Customer already exists in database:", existingCustomer);
-          const hydratedCustomer = await getCustomerById(existingCustomer.id);
+          const hydratedCustomer = await (await loadCustomersDb()).getCustomerById(existingCustomer.id);
           const recordToUse = hydratedCustomer || existingCustomer;
           resolvedCustomer = normalizeCustomerRecord(recordToUse);
         } else {
           console.log("Customer not found, creating new customer...");
-          const insertedCustomer = await addCustomerToDatabase(normalizedPayload);
+          const insertedCustomer = await (await loadCustomersDb()).addCustomerToDatabase(normalizedPayload);
           resolvedCustomer = normalizeCustomerRecord(insertedCustomer);
           showNotification("customer", "success", "✓ New customer saved successfully!");
         }
@@ -1198,7 +1263,7 @@ export default function CreateJobCardPage() {
 
       setCustomer(resolvedCustomer);
       try {
-        const vehicles = await getCustomerVehicles(resolvedCustomer.id);
+        const vehicles = await (await loadCustomersDb()).getCustomerVehicles(resolvedCustomer.id);
         const latestVehicle = vehicles?.[0];
         if (latestVehicle) {
           setVehicle({
@@ -1220,7 +1285,7 @@ export default function CreateJobCardPage() {
       setShowNewCustomer(false);
       setShowExistingCustomer(false);
     } catch (err) {
-      console.error("❌ Error saving customer:", err);
+      logFailure("❌ Error saving customer:", err);
       showNotification("customer", "error", `✗ Error: ${err.message || "Could not save customer"}`);
     }
   };
@@ -1242,7 +1307,7 @@ export default function CreateJobCardPage() {
     try {
       const regUpper = requestedRegistration; // keep this request tied to the registration that initiated it
 
-      const storedVehicle = await getVehicleByReg(regUpper); // attempt pulling existing vehicle from Supabase first
+      const storedVehicle = await (await loadVehiclesDb()).getVehicleByReg(regUpper); // attempt pulling existing vehicle from Supabase first
 
       if (currentVehicleRegistrationRef.current !== requestedRegistration) {
         return;
@@ -1288,7 +1353,7 @@ export default function CreateJobCardPage() {
         try {
           data = JSON.parse(responseText);
         } catch (parseErr) {
-          console.error("DVLA API response JSON parse error:", parseErr);
+          logFailure("DVLA API response JSON parse error:", parseErr);
           throw new Error("DVLA API returned malformed data");
         }
       }
@@ -1336,7 +1401,7 @@ export default function CreateJobCardPage() {
       if (currentVehicleRegistrationRef.current !== requestedRegistration) {
         return;
       }
-      console.error("Error fetching vehicle data from DVLA:", err); // log error
+      logFailure("Error fetching vehicle data from DVLA:", err); // log error
       setError(`Error: ${err.message}`); // store error message
     } finally {
       setIsLoadingVehicle(false); // always stop loading state
@@ -1388,7 +1453,7 @@ export default function CreateJobCardPage() {
       console.log("✓ All validations passed. Starting save job process via createJobService...");
 
       // ===== DATABASE OPERATIONS PHASE (via service layer) =====
-      const batchResult = await createFullJobBatch({
+      const batchResult = await (await loadCreateJobService()).createFullJobBatch({
         customer: { // normalized customer object
           id: customer.id,
           firstName: customerForm.firstName,
@@ -1423,7 +1488,8 @@ export default function CreateJobCardPage() {
             accessNotes: ""
           } :
           null,
-          mobileUserId: dbUserId || null
+          mobileUserId: dbUserId || null,
+          bookedBy: dbUserId || null
         }
       });
 
@@ -1455,7 +1521,7 @@ export default function CreateJobCardPage() {
 
       // Refresh jobs cache
       if (typeof fetchJobs === "function") {
-        fetchJobs().catch((err) => console.error("❌ Error refreshing jobs:", err));
+        fetchJobs().catch((err) => logFailure("❌ Error refreshing jobs:", err));
       }
 
       // If we were created from a customer-portal request, mark the
@@ -1485,7 +1551,7 @@ export default function CreateJobCardPage() {
             });
           }
         } catch (processErr) {
-          console.error("Failed to process customer request:", processErr);
+          logFailure("Failed to process customer request:", processErr);
         }
       }
 
@@ -1526,11 +1592,11 @@ export default function CreateJobCardPage() {
         throw new Error('Failed to link uploaded files');
       }
     } catch (err) {
-      console.error("Error linking files to job:", err);
+      logFailure("Error linking files to job:", err);
     }
   };
 
-  return <CreateJobCardPageUi view="section1" activeTabIndex={activeTabIndex} addNewJobTab={addNewJobTab} captureTempUploadMetadata={captureTempUploadMetadata} cosmeticDamagePresent={cosmeticDamagePresent} cosmeticNotes={cosmeticNotes} customer={customer} customerFieldDefinitions={customerFieldDefinitions} customerForm={customerForm} customerNotification={customerNotification} dbUserId={dbUserId} detectJobTypesForRequests={detectJobTypesForRequests} DevLayoutSection={DevLayoutSection} DocumentsUploadPopup={DocumentsUploadPopup} DropdownField={DropdownField} error={error} ExistingCustomerPopup={ExistingCustomerPopup} handleAddRequest={handleAddRequest} handleCancelCustomerEdit={handleCancelCustomerEdit} handleCustomerFieldChange={handleCustomerFieldChange} handleCustomerSelect={handleCustomerSelect} handleFetchVehicleData={handleFetchVehicleData} handlePaymentTypeChange={handlePaymentTypeChange} handleRemoveRequest={handleRemoveRequest} handleRequestChange={handleRequestChange} handleSaveCustomerEdits={handleSaveCustomerEdits} handleSaveJob={handleSaveJob} handleStartCustomerEdit={handleStartCustomerEdit} handleTimeChange={handleTimeChange} hasLinkedJobCards={hasLinkedJobCards} isCustomerEditing={isCustomerEditing} isLoadingVehicle={isLoadingVehicle} isMobileMechanic={isMobileMechanic} isSavingCustomer={isSavingCustomer} isSubJobMode={isSubJobMode} jobCardSelectorOptions={jobCardSelectorOptions} jobCategories={jobCategories} jobDetections={jobDetections} jobSource={jobSource} jobTabs={jobTabs} MobileMechanicEligibility={MobileMechanicEligibility} NewCustomerPopup={NewCustomerPopup} newCustomerPrefill={newCustomerPrefill} normalizeHoursToTwoDecimals={normalizeHoursToTwoDecimals} PAYMENT_TYPE_OPTIONS={PAYMENT_TYPE_OPTIONS} persistPresetDefaultHours={persistPresetDefaultHours} populatedRequests={populatedRequests} primeJobData={primeJobData} questionPromptsIndex={questionPromptsIndex} QuestionPromptsPopup={QuestionPromptsPopup} removeJobTab={removeJobTab} RequestPresetAutosuggestInput={RequestPresetAutosuggestInput} requests={requests} router={router} setActiveTabIndex={setActiveTabIndex} setCosmeticDamagePresent={setCosmeticDamagePresent} setCosmeticNotes={setCosmeticNotes} setCustomer={setCustomer} setCustomerNotification={setCustomerNotification} setIsMobileMechanic={setIsMobileMechanic} setJobCategories={setJobCategories} setJobDetections={setJobDetections} setJobSource={setJobSource} setNewCustomerPrefill={setNewCustomerPrefill} setQuestionPromptsIndex={setQuestionPromptsIndex} setRequests={setRequests} setShowDetectedRequestsPopup={setShowDetectedRequestsPopup} setShowDocumentsPopup={setShowDocumentsPopup} setShowExistingCustomer={setShowExistingCustomer} setShowNewCustomer={setShowNewCustomer} setVehicle={setVehicle} setVehicleNotification={setVehicleNotification} setVhcRequired={setVhcRequired} setWaitingStatus={setWaitingStatus} setWashRequired={setWashRequired} showDetectedRequestsPopup={showDetectedRequestsPopup} showDocumentsPopup={showDocumentsPopup} showExistingCustomer={showExistingCustomer} showNewCustomer={showNewCustomer} toggleContactPreference={toggleContactPreference} uploadedFiles={uploadedFiles} vehicle={vehicle} vehicleNotification={vehicleNotification} vehicleSectionRef={vehicleSectionRef} vhcRequired={vhcRequired} visibleJobDetections={visibleJobDetections} waitingStatus={waitingStatus} washRequired={washRequired} />;
+  return <CreateJobCardPageUi view="section1" activeTabIndex={activeTabIndex} addNewJobTab={addNewJobTab} captureTempUploadMetadata={captureTempUploadMetadata} cosmeticDamagePresent={cosmeticDamagePresent} cosmeticNotes={cosmeticNotes} customer={customer} customerFieldDefinitions={CUSTOMER_FIELD_DEFINITIONS} customerForm={customerForm} customerNotification={customerNotification} dbUserId={dbUserId} detectJobTypesForRequests={detectJobTypesForRequests} DevLayoutSection={DevLayoutSection} DocumentsUploadPopup={DocumentsUploadPopup} DropdownField={DropdownField} error={error} ExistingCustomerPopup={ExistingCustomerPopup} handleAddRequest={handleAddRequest} handleCancelCustomerEdit={handleCancelCustomerEdit} handleCustomerFieldChange={handleCustomerFieldChange} handleCustomerSelect={handleCustomerSelect} handleFetchVehicleData={handleFetchVehicleData} handlePaymentTypeChange={handlePaymentTypeChange} handleRemoveRequest={handleRemoveRequest} handleRequestChange={handleRequestChange} handleSaveCustomerEdits={handleSaveCustomerEdits} handleSaveJob={handleSaveJob} handleStartCustomerEdit={handleStartCustomerEdit} handleTimeChange={handleTimeChange} hasLinkedJobCards={hasLinkedJobCards} isCustomerEditing={isCustomerEditing} isLoadingVehicle={isLoadingVehicle} isMobileMechanic={isMobileMechanic} isSavingCustomer={isSavingCustomer} isSubJobMode={isSubJobMode} jobCardSelectorOptions={jobCardSelectorOptions} jobCategories={jobCategories} jobDetections={jobDetections} jobSource={jobSource} jobTabs={jobTabs} MobileMechanicEligibility={MobileMechanicEligibility} NewCustomerPopup={NewCustomerPopup} newCustomerPrefill={newCustomerPrefill} normalizeHoursToTwoDecimals={normalizeHoursToTwoDecimals} PAYMENT_TYPE_OPTIONS={PAYMENT_TYPE_OPTIONS} persistPresetDefaultHours={persistPresetDefaultHours} populatedRequests={populatedRequests} primeJobData={primeJobData} questionPromptsIndex={questionPromptsIndex} QuestionPromptsPopup={QuestionPromptsPopup} removeJobTab={removeJobTab} RequestPresetAutosuggestInput={RequestPresetAutosuggestInput} requests={requests} router={router} setActiveTabIndex={setActiveTabIndex} setCosmeticDamagePresent={setCosmeticDamagePresent} setCosmeticNotes={setCosmeticNotes} setCustomer={setCustomer} setCustomerNotification={setCustomerNotification} setIsMobileMechanic={setIsMobileMechanic} setJobCategories={setJobCategories} setJobDetections={setJobDetections} setJobSource={setJobSource} setNewCustomerPrefill={setNewCustomerPrefill} setQuestionPromptsIndex={setQuestionPromptsIndex} setRequests={setRequests} setShowDetectedRequestsPopup={setShowDetectedRequestsPopup} setShowDocumentsPopup={setShowDocumentsPopup} setShowExistingCustomer={setShowExistingCustomer} setShowNewCustomer={setShowNewCustomer} setVehicle={setVehicle} setVehicleNotification={setVehicleNotification} setVhcRequired={setVhcRequired} setWaitingStatus={setWaitingStatus} setWashRequired={setWashRequired} showDetectedRequestsPopup={showDetectedRequestsPopup} showDocumentsPopup={showDocumentsPopup} showExistingCustomer={showExistingCustomer} showNewCustomer={showNewCustomer} toggleContactPreference={toggleContactPreference} uploadedFiles={uploadedFiles} vehicle={vehicle} vehicleNotification={vehicleNotification} vehicleSectionRef={vehicleSectionRef} vhcRequired={vhcRequired} visibleJobDetections={visibleJobDetections} waitingStatus={waitingStatus} washRequired={washRequired} />;
 
 
 

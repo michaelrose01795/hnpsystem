@@ -44,19 +44,32 @@ export function getShellBootstrap({ userKey = null, force = false } = {}) {
   if (!force && isFresh()) return Promise.resolve(cached);
   if (inflight) return inflight;
 
-  inflight = fetch("/api/shell/bootstrap", { credentials: "include" })
+  // Pin the key this request was issued for. Dropping `inflight` above does not
+  // cancel the request it referred to, so without this the previous user's
+  // in-flight response could still land and be written into the cache under the
+  // NEW user's key — exactly the cross-user read this module promises to
+  // prevent. The response is still returned to whoever awaited it; it is only
+  // barred from being cached against somebody else.
+  const issuedForUserKey = key;
+  const request = fetch("/api/shell/bootstrap", { credentials: "include" })
     .then(async (response) => {
       if (!response.ok) return null;
       const payload = await response.json().catch(() => null);
       if (!payload?.success) return null;
-      cached = payload.data || null;
-      cachedAt = Date.now();
-      return cached;
+      const data = payload.data || null;
+      if (issuedForUserKey === cachedForUserKey) {
+        cached = data;
+        cachedAt = Date.now();
+      }
+      return data;
     })
     .catch(() => null)
     .finally(() => {
-      inflight = null;
+      // Only clear the slot if it is still ours; a later request for a different
+      // user may already have claimed it.
+      if (inflight === request) inflight = null;
     });
+  inflight = request;
 
   return inflight;
 }

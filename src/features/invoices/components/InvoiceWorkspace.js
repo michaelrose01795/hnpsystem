@@ -15,6 +15,7 @@ import InvoicePaymentModal from "@/features/invoices/components/InvoicePaymentMo
 import { buildInvoiceRequestRows } from "@/features/invoices/lib/buildInvoiceRequestRows";
 import { useProformaOverrideEditor } from "@/features/invoices/components/ProformaOverrideModal";
 import { isInvoiceRowPaid, isInvoicePaid, isInvoiceCancelled } from "@/lib/status/statusHelpers";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Number(value || 0));
@@ -277,7 +278,7 @@ export default function InvoiceWorkspace({
       }
       setNotesStatus("Saved");
     } catch (error) {
-      console.error("Failed to save invoice notes", error);
+      logFailure("Failed to save invoice notes", error);
       setNotesStatus(error.message || "Failed to save notes");
     } finally {
       setNotesSaving(false);

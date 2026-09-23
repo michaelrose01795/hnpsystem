@@ -11,6 +11,7 @@ import {
   normalizeApprovalStatus,
   resolveSectionType,
 } from "@/lib/vhc/shared";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const resolveJobId = async (jobNumber) => {
   const { data: jobRow, error } = await supabase
@@ -220,7 +221,7 @@ export const syncHealthCheckToCanonicalVhc = async ({ job_number, vhcData, labou
         savedRows.push(saved.row);
       }
     } catch (itemError) {
-      console.error(`[syncHealthCheckToCanonicalVhc] Failed to save "${rowPayload.category}":`, itemError.message);
+      logFailure(`[syncHealthCheckToCanonicalVhc] Failed to save "${rowPayload.category}":`, itemError.message);
     }
   }
 

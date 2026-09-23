@@ -1,8 +1,9 @@
 // file location: src/pages/api/job-cards/[jobNumber]/share-link.js
 import { createClient } from "@supabase/supabase-js";
-import crypto from "crypto";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { resolveSharedVhcReport } from "@/lib/vhc/sharedReport";
+import { generateShareCode } from "@/lib/vhc/shareCode";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -13,9 +14,9 @@ if (!supabaseUrl || !serviceRoleKey) {
 
 const dbClient = createClient(supabaseUrl, serviceRoleKey);
 
-// Generate a unique link code (alphanumeric, 12 characters)
+// Customer-facing share code — see @/lib/vhc/shareCode for the alphabet and why.
 function generateLinkCode() {
-  return crypto.randomBytes(9).toString("base64url").slice(0, 12);
+  return generateShareCode();
 }
 
 // Check if a link is expired (24 hours)
@@ -45,135 +46,16 @@ async function getIdentity(rawJobNumber, res) {
 // GET is public: validation is by linkCode (the link itself is the secret),
 // so a customer following a share URL on any device — no auth cookies — can
 // load their VHC report.
+// The public read path lives in @/lib/vhc/sharedReport so getServerSideProps on
+// the customer page can run exactly the same resolution without an internal HTTP
+// hop. This handler is now just the HTTP translation of it — same statuses, same
+// payloads, same viewed_at side effect.
 async function publicGetHandler(req, res) {
-  const { jobNumber: rawJobNumber } = req.query;
-  const identity = await getIdentity(rawJobNumber, res);
-  if (!identity) return;
-  const canonicalJobNumber = identity.job_number;
-
-  {
-    const { linkCode } = req.query;
-
-    if (!linkCode) {
-      return res.status(400).json({ success: false, error: "Link code is required" });
-    }
-
-    try {
-      // Look up the share link
-      const { data: shareLink, error: linkError } = await dbClient
-        .from("job_share_links")
-        .select("*")
-        .eq("job_number", canonicalJobNumber)
-        .eq("link_code", linkCode)
-        .maybeSingle();
-
-      if (linkError) {
-        console.error("Error fetching share link:", linkError);
-        return res.status(500).json({ success: false, error: "Failed to validate link" });
-      }
-
-      if (!shareLink) {
-        return res.status(404).json({ success: false, error: "Link not found or invalid" });
-      }
-
-      // Check if link is expired
-      if (isLinkExpired(shareLink.created_at)) {
-        return res.status(410).json({ success: false, error: "Link has expired" });
-      }
-
-      if (!shareLink.viewed_at) {
-        const { error: viewedError } = await dbClient
-          .from("job_share_links")
-          .update({ viewed_at: new Date().toISOString() })
-          .eq("id", shareLink.id);
-
-        if (viewedError) {
-          console.warn("Failed to mark VHC share link as viewed:", viewedError.message);
-        }
-      }
-
-      // Fetch the job row first (simpler queries are more reliable)
-      const { data: jobRow, error: jobRowError } = await dbClient
-        .from("jobs")
-        .select(`
-          *,
-          customer:customer_id(*),
-          vehicle:vehicle_id(*)
-        `)
-        .eq("id", identity.id)
-        .maybeSingle();
-
-      if (jobRowError) {
-        console.error("Error fetching job row:", jobRowError);
-        const details = process.env.NODE_ENV !== 'production' ? (jobRowError && jobRowError.message ? jobRowError.message : JSON.stringify(jobRowError, Object.getOwnPropertyNames(jobRowError))) : undefined;
-        return res.status(500).json({ success: false, error: "Failed to fetch job data", details });
-      }
-
-      if (!jobRow) {
-        return res.status(404).json({ success: false, error: "Job not found" });
-      }
-
-      // Fetch related collections separately to avoid complex nested-select failures.
-      // Use Promise.all so requests are parallel, then inspect errors and return partial results with warnings.
-      const [vhcChecksRes, partsRes, filesRes] = await Promise.all([
-        dbClient
-          .from("vhc_checks")
-          .select(
-            `vhc_id, job_id, section, issue_description, customer_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, note_text, pre_pick_location, request_id, display_id`
-          )
-          .eq("job_id", jobRow.id),
-        dbClient
-          .from("parts_job_items")
-          .select(
-            `id, part_id, quantity_requested, quantity_allocated, quantity_fitted, status, origin, vhc_item_id, unit_cost, unit_price, request_notes, created_at, updated_at, authorised, stock_status, labour_hours, part:part_id(id, part_number, name, unit_price)`
-          )
-          .eq("job_id", jobRow.id),
-        dbClient
-          .from("job_files")
-          .select(`file_id, file_name, file_url, file_type, folder, uploaded_at`)
-          .eq("job_id", jobRow.id),
-      ]);
-
-      const warnings = [];
-      if (vhcChecksRes.error) {
-        console.error("Error fetching vhc_checks:", vhcChecksRes.error);
-        warnings.push("vhc_checks");
-      }
-      if (partsRes.error) {
-        console.error("Error fetching parts_job_items:", partsRes.error);
-        warnings.push("parts_job_items");
-      }
-      if (filesRes.error) {
-        console.error("Error fetching job_files:", filesRes.error);
-        warnings.push("job_files");
-      }
-
-      const jobData = {
-        ...jobRow,
-        vhc_checks: (vhcChecksRes.data) || [],
-        parts_job_items: (partsRes.data) || [],
-        job_files: (filesRes.data) || [],
-      };
-
-      return res.status(200).json({
-        success: true,
-        valid: true,
-        jobData,
-        warnings: warnings.length ? warnings : undefined,
-        debug: process.env.NODE_ENV !== 'production' ? { vhcChecksError: vhcChecksRes.error, partsError: partsRes.error, filesError: filesRes.error } : undefined,
-        expiresAt: new Date(new Date(shareLink.created_at).getTime() + 24 * 60 * 60 * 1000).toISOString(),
-      });
-    } catch (error) {
-      console.error("Error validating share link:", error);
-      // Return detailed error info in development to aid debugging
-      if (process.env.NODE_ENV !== 'production') {
-        return res.status(500).json({ success: false, error: "Internal server error", details: String(error.message || error), stack: error.stack });
-      }
-      return res.status(500).json({ success: false, error: "Internal server error" });
-    }
-  }
-
+  const { jobNumber, linkCode } = req.query;
+  const { status, body } = await resolveSharedVhcReport({ jobNumber, linkCode });
+  return res.status(status).json(body);
 }
+// POST stays role-guarded: only staff can mint share links.
 
 // POST stays role-guarded: only staff can mint share links.
 async function protectedPostHandler(req, res, session) {

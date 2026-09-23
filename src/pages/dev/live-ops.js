@@ -16,8 +16,7 @@ import { useSupportReport } from "@/context/SupportReportContext";
 import {
   Panel,
   SubSurface,
-  Pill,
-  DevButton,
+  badgeClass,
   EmptyState,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
@@ -43,14 +42,14 @@ function EventRow({ time, primary, secondary, tone }) {
         gap: "10px",
         alignItems: "baseline",
         // Row rule uses the ONLY allowed list separator token (Border Law).
-        borderBottom: "1px solid var(--separating-line)",
+        borderBottom: "1px solid var(--separating-line-color)",
         padding: "6px 0",
       }}
     >
       <span
         style={{
-          fontFamily: "var(--font-mono, ui-monospace, monospace)",
-          fontSize: "var(--text-body-xs)",
+          fontFamily: "var(--font-family-mono)",
+          fontSize: "var(--text-caption)",
           color: "var(--text-1)",
           opacity: 0.6,
           whiteSpace: "nowrap",
@@ -63,7 +62,7 @@ function EventRow({ time, primary, secondary, tone }) {
           {primary}
         </span>
         {secondary ? (
-          <span style={{ display: "block", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6, wordBreak: "break-word" }}>
+          <span style={{ display: "block", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6, wordBreak: "break-word" }}>
             {secondary}
           </span>
         ) : null}
@@ -135,12 +134,12 @@ function LiveOpsView() {
         subtitle={updatedAt ? `Updated ${updatedAt.toLocaleTimeString()} · refreshes every ${POLL_MS / 1000}s` : "Starting live feed…"}
         actions={
           <>
-            <DevButton small onClick={() => setPaused((p) => !p)}>
+            <button type="button" onClick={() => setPaused((p) => !p)} className="app-btn app-btn--secondary app-btn--sm">
               {paused ? "Resume" : "Pause"}
-            </DevButton>
-            <DevButton small onClick={() => { refresh(); probeHealth(); }}>
+            </button>
+            <button type="button" onClick={() => { refresh(); probeHealth(); }} className="app-btn app-btn--secondary app-btn--sm">
               Refresh
-            </DevButton>
+            </button>
           </>
         }
       >
@@ -156,13 +155,7 @@ function LiveOpsView() {
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
               {checkEntries.map(([name, check]) => (
-                <Pill
-                  key={name}
-                  label={`${name}: ${check?.status || "?"}`}
-                  tone={HEALTH_TONE[check?.status] || "text-1"}
-                  title={check?.note || ""}
-                  strong
-                />
+                <span key={name} title={check?.note || ""} className={badgeClass(HEALTH_TONE[check?.status] || "text-1", true)}>{`${name}: ${check?.status || "?"}`}</span>
               ))}
             </div>
           )}

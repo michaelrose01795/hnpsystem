@@ -93,9 +93,8 @@ export default function KpiPanel({ kpi, filter, withTrend = true, withDrilldown 
         {withDrilldown && kpi.hasDrilldown && !loading && !notImplemented && (
           <button
             type="button"
-            className="app-btn app-btn--secondary"
+            className="app-btn app-btn--secondary app-btn--xs"
             onClick={() => setOpen((o) => !o)}
-            style={{ fontSize: "0.74rem", padding: "4px 10px" }}
           >
             {open ? "Hide records" : "View records"}
           </button>

@@ -7,11 +7,11 @@ export default function LoginPageUi(props) {
     Button,
     LoginCard,
     LoginDropdown,
-    PageSkeleton,
     allUsers,
     allowDevUserSelection,
     closeResetModal,
     email,
+    handleAllAccessLogin,
     errorMessage,
     handleDbLogin,
     handleDevLogin,
@@ -19,6 +19,7 @@ export default function LoginPageUi(props) {
     handleLoginIdentityInput,
     handlePasswordReset,
     handlePresentationSelect,
+    isRedirecting,
     isResettingPassword,
     loadingDevUsers,
     loginFullName,
@@ -44,9 +45,6 @@ export default function LoginPageUi(props) {
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
-    case "section1":
-      return <PageSkeleton />; // render extracted page section.
-
     case "section2":
       return <>
       <div
@@ -56,11 +54,12 @@ export default function LoginPageUi(props) {
           overflowY: "auto"
         }}>
         <div
+          data-login-panels
           style={{
             width: "min(calc(520px + var(--login-dev-panel-width) + var(--login-dev-panel-gap)), 100%)",
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
-            alignItems: "center",
+            alignItems: "stretch",
             justifyItems: "center",
             gap: "var(--login-dev-panel-gap)"
           }}>
@@ -71,25 +70,24 @@ export default function LoginPageUi(props) {
                 className="login-logo"
                 priority
                 sizes="(max-width: 390px) 200px, (max-width: 640px) 230px, (max-width: 820px) 380px, 452px"
-                recolor={false}
               />
             </div>
             <LoginCard className="login-card--auth" title="Login">
-              <form onSubmit={handleDbLogin} className="login-form">
+              <form onSubmit={handleDbLogin} className="login-form" aria-busy={isRedirecting}>
                 <div className="login-identity-grid" aria-label="Login user lookup">
                   <label className="login-field login-identity-field" htmlFor="loginFullName">
                     <span className="login-label">Full name</span>
-                    <input id="loginFullName" name="fullName" type="text" autoComplete="name" placeholder="Enter full name" value={loginFullName} onChange={e => handleLoginIdentityInput("name", e.target.value)} className="app-input" />
+                    <input id="loginFullName" name="fullName" type="text" autoComplete="name" placeholder="Enter full name" value={loginFullName} onChange={e => handleLoginIdentityInput("name", e.target.value)} className="app-input" disabled={isRedirecting} />
                   </label>
 
                   <label className="login-field login-identity-field" htmlFor="loginUserId">
                     <span className="login-label">User id</span>
-                    <input id="loginUserId" name="userId" type="text" inputMode="numeric" placeholder="Enter user id" value={loginUserId} onChange={e => handleLoginIdentityInput("id", e.target.value)} className="app-input" />
+                    <input id="loginUserId" name="userId" type="text" inputMode="numeric" placeholder="Enter user id" value={loginUserId} onChange={e => handleLoginIdentityInput("id", e.target.value)} className="app-input" disabled={isRedirecting} />
                   </label>
 
                   <label className="login-field login-identity-field login-identity-field--email" htmlFor="email">
                     <span className="login-label">Email</span>
-                    <input id="email" name="email" type="email" autoComplete="username" placeholder="Enter email" value={email} onChange={e => handleLoginIdentityInput("email", e.target.value)} className="app-input" required />
+                    <input id="email" name="email" type="email" autoComplete="username" placeholder="Enter email" value={email} onChange={e => handleLoginIdentityInput("email", e.target.value)} className="app-input" required disabled={isRedirecting} />
                   </label>
                 </div>
 
@@ -97,7 +95,7 @@ export default function LoginPageUi(props) {
                   <label htmlFor="password" className="login-label">
                     Password
                   </label>
-                  <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} className="app-input" required />
+                  <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} className="app-input" required disabled={isRedirecting} />
                 </div>
 
                 {errorMessage && <p className="login-error" role="alert">
@@ -105,10 +103,10 @@ export default function LoginPageUi(props) {
                   </p>}
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--layout-card-gap)" }}> {/* Local 50/50 login actions; no shared layout primitive matches this row. */}
-                  <Button type="submit" variant="primary" style={{ width: "100%" }}>
-                    Login
+                  <Button type="submit" variant="primary" style={{ width: "100%" }} disabled={isRedirecting}>
+                    {isRedirecting ? "Signing in..." : "Login"}
                   </Button>
-                  <Button type="button" variant="secondary" onClick={openResetModal} style={{ width: "100%" }}>
+                  <Button type="button" variant="secondary" onClick={openResetModal} style={{ width: "100%" }} disabled={isRedirecting}>
                     Reset password
                   </Button>
                 </div>
@@ -125,20 +123,102 @@ export default function LoginPageUi(props) {
                   </p>
 
 
-                  <Button type="button" onClick={handleDevLogin} variant="primary" style={{
+                  <Button type="button" onClick={handleDevLogin} variant="primary" disabled={isRedirecting} style={{
               width: "100%"
             }}>
-                    Dev Login
+                    {isRedirecting ? "Signing in..." : "Dev Login"}
                   </Button>
                 </div>
               </LoginCard>
             </div>}
         </div>
+        <style jsx global>{`
+          @media (min-width: 1100px) {
+            html.staff-scope [data-login-panels] {
+              grid-template-columns: minmax(0, 520px) minmax(0, var(--login-dev-panel-width)) !important;
+              grid-template-rows: auto auto;
+              column-gap: var(--login-dev-panel-gap) !important;
+              row-gap: 1.4rem !important;
+            }
+
+            html.staff-scope [data-login-panels] > .login-center-stage {
+              display: contents !important;
+            }
+
+            html.staff-scope [data-login-panels] .login-brand {
+              grid-column: 1;
+              grid-row: 1;
+              justify-self: center;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--auth {
+              grid-column: 1;
+              grid-row: 2;
+              height: 100%;
+            }
+
+            html.staff-scope [data-login-panels] .login-dev-panel {
+              grid-column: 2;
+              grid-row: 2;
+              align-self: stretch !important;
+              margin-top: 0 !important;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--auth > div,
+            html.staff-scope [data-login-panels] .login-card--dev,
+            html.staff-scope [data-login-panels] .login-card--dev > div {
+              height: 100% !important;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-card-inner,
+            html.staff-scope [data-login-panels] .login-card--dev .login-dev-content {
+              flex: 1;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dev-content {
+              gap: 0;
+              position: relative;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown {
+              gap: 0;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .dropdown-api__label {
+              font-size: 0.85rem;
+              font-weight: 600;
+              line-height: 1.35;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown > :nth-child(1) {
+              margin-bottom: 14px;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown > :nth-child(2) {
+              margin-bottom: 22px;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown > :nth-child(3) .dropdown-api__label {
+              margin-bottom: 4px;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-dropdown {
+              margin-bottom: 20px;
+            }
+
+            html.staff-scope [data-login-panels] .login-card--dev .login-loading-text {
+              position: absolute;
+              bottom: calc(var(--control-height) + 3px);
+              left: 0;
+              margin: 0;
+            }
+          }
+        `}</style>
         {allowDevUserSelection && <LayerSurface
           as="section"
           aria-label="Manager preview guide"
           radius="var(--radius-xl)"
-          padding="var(--section-card-padding)"
+          padding="10px var(--section-card-padding) var(--section-card-padding)"
           style={{
             width: "min(1280px, calc(100% - 32px))",
             alignSelf: "center",
@@ -159,35 +239,46 @@ export default function LoginPageUi(props) {
                   Thank you for taking the time to look at the system I have been creating
                 </h2>
                 <p style={{
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   margin: "8px 0 0"
                 }}>
                   Please have a play with the system and explore how it supports each department.
                 </p>
                 <p style={{
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   margin: "8px 0 0"
                 }}>
                   <strong>Note:</strong> All data and information in this demonstration is completely made up and nothing is real. You can use the system normally and explore it safely.
                 </p>
               </div>
               <div>
-                <h3 style={{
-                  color: "var(--text-1)",
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  margin: 0
-                }}>
-                  What to do
-                </h3>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "var(--layout-card-gap)",
+                  flexWrap: "wrap"
+                }}> {/* Heading and its action on one line; layout-only, no shared toolbar primitive matches this row. */}
+                  <h3 style={{
+                    color: "var(--text-1)",
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    margin: 0
+                  }}>
+                    What to do
+                  </h3>
+                  <Button type="button" variant="primary" onClick={handleAllAccessLogin} disabled={isRedirecting}>
+                    {isRedirecting ? "Signing in..." : "All access"}
+                  </Button>
+                </div>
                 <p style={{
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   margin: "8px 0 0"
                 }}>
                   In Developer Login, open the first dropdown. Select <strong>Retail</strong>, then choose Workshop Manager, Parts Manager, Techs, Valet Service, or Service. You can also select <strong>Sales</strong>, then choose Admin Manager.
                 </p>
                 <p style={{
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   margin: "8px 0 0"
                 }}>
                   Once you are logged in, click your role at the bottom of the sidebar, below <strong>Account</strong>, to open your profile page.

@@ -592,22 +592,25 @@ export default function StockCataloguePageUi(props) {
                                 </div>
                               </td>
                               <td style={{ verticalAlign: "middle" }}>
-                                <select className="app-input" value={part.status} onChange={event => handleJobPartUpdate(part.id, {
-                        status: event.target.value
-                      })}>
-                                  {JOB_PART_STATUSES.map(statusValue => <option key={statusValue} value={statusValue}>
-                                      {statusValue.replace(/_/g, " ")}
-                                    </option>)}
-                                </select>
+                                <DropdownField
+                                  ariaLabel="Job part status"
+                                  size="sm"
+                                  value={part.status}
+                                  options={JOB_PART_STATUSES.map(statusValue => ({
+                                    value: statusValue,
+                                    label: statusValue.replace(/_/g, " "),
+                                  }))}
+                                  onChange={event => handleJobPartUpdate(part.id, { status: event.target.value })}
+                                />
                               </td>
                               <td style={{ verticalAlign: "middle" }}>
-                                <select className="app-input" value={part.pre_pick_location || ""} onChange={event => handleJobPartUpdate(part.id, {
-                        prePickLocation: event.target.value
-                      })}>
-                                  {PRE_PICK_OPTIONS.map(option => <option key={option.value} value={option.value}>
-                                      {option.label}
-                                    </option>)}
-                                </select>
+                                <DropdownField
+                                  ariaLabel="Pre-pick location"
+                                  size="sm"
+                                  value={part.pre_pick_location || ""}
+                                  options={PRE_PICK_OPTIONS}
+                                  onChange={event => handleJobPartUpdate(part.id, { prePickLocation: event.target.value })}
+                                />
                               </td>
                               <td style={{
                       verticalAlign: "middle",
@@ -775,24 +778,36 @@ export default function StockCataloguePageUi(props) {
           display: "flex",
           gap: "8px"
         }}>
-              <select className="app-input" value={filterType} onChange={e => {
-            setFilterType(e.target.value);
-            setStatusFilter("all");
-            setLocationFilter("all");
-          }} style={{ minWidth: "140px", width: "auto" }}>
-                <option value="status">Filter by Status</option>
-                <option value="location">Filter by Location</option>
-                <option value="category">Filter by Category</option>
-                <option value="supplier">Filter by Supplier</option>
-              </select>
+              <DropdownField
+                ariaLabel="Choose which catalogue filter to apply"
+                value={filterType}
+                options={[
+                  { value: "status", label: "Filter by Status" },
+                  { value: "location", label: "Filter by Location" },
+                  { value: "category", label: "Filter by Category" },
+                  { value: "supplier", label: "Filter by Supplier" },
+                ]}
+                onChange={e => {
+                  setFilterType(e.target.value);
+                  setStatusFilter("all");
+                  setLocationFilter("all");
+                }}
+                style={{ minWidth: "140px", width: "auto" }}
+              />
 
-              {filterType === "status" && <select className="app-input" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ minWidth: "140px", width: "auto" }}>
-                  <option value="all">All Status</option>
-                  <option value="low_stock">Low Stock</option>
-                  <option value="in_stock">Good Stock</option>
-                  <option value="high_stock">High Stock</option>
-                  <option value="back_order">Back Order</option>
-                </select>}
+              {filterType === "status" && <DropdownField
+                ariaLabel="Filter catalogue by stock status"
+                value={statusFilter}
+                options={[
+                  { value: "all", label: "All Status" },
+                  { value: "low_stock", label: "Low Stock" },
+                  { value: "in_stock", label: "Good Stock" },
+                  { value: "high_stock", label: "High Stock" },
+                  { value: "back_order", label: "Back Order" },
+                ]}
+                onChange={e => setStatusFilter(e.target.value)}
+                style={{ minWidth: "140px", width: "auto" }}
+              />}
 
               {filterType === "location" && <div style={{
             position: "relative"
@@ -885,9 +900,9 @@ export default function StockCataloguePageUi(props) {
         overflowX: "auto"
       }}>
             {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory loading state" style={{
-          color: "var(--grey-accent-light)"
+          color: "var(--surfaceTextMuted)"
         }}>Loading inventory...</div> : inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory empty state" style={{
-          color: "var(--grey-accent-light)"
+          color: "var(--surfaceTextMuted)"
         }}>No parts found. Refine your search.</div> : <>
                 <table className="app-data-table app-data-table--rounded" data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory results table" style={{
             ...tableStyle,

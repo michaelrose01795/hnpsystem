@@ -70,7 +70,6 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
     height: "100%",
     minHeight: 0,
     color: palette.textPrimary,
-    border: "1px solid var(--accent-border)",
     boxShadow: "none",
   };
 

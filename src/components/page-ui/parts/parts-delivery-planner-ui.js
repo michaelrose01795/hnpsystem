@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/parts/parts-delivery-planner-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 
 export default function PartsDeliveryPlannerPageUi(props) {
   const {
@@ -113,7 +114,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
           padding: "10px 18px",
           border: "none",
           background: "var(--primary)",
-          color: "var(--surface)",
+          color: "var(--onAccentText)",
           fontWeight: 600,
           cursor: "pointer"
         }}>
@@ -321,18 +322,11 @@ export default function PartsDeliveryPlannerPageUi(props) {
               fontWeight: 600,
               marginBottom: "4px"
             }}>Filter by day</span>
-                  <select value={selectedDate} onChange={event => setSelectedDate(event.target.value)} style={{
-              padding: "8px 10px",
-              borderRadius: "var(--radius-xs)",
-              border: "none",
-              fontSize: "0.9rem",
-              color: "var(--primary-selected)"
-            }}>
-                    <option value="">All days</option>
-                    {dateOptions.map(option => <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>)}
-                  </select>
+                  <DropdownField
+                    value={selectedDate}
+                    onChange={event => setSelectedDate(event.target.value)}
+                    options={[{ value: "", label: "All days" }, ...dateOptions]}
+                  />
                 </label>
                 {selectedDate && <button type="button" onClick={() => setSelectedDate("")} style={{
             padding: "8px 14px",
@@ -494,7 +488,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 borderRadius: "var(--radius-sm)",
                 padding: "10px 18px",
                 background: "var(--primary)",
-                color: "var(--surface)",
+                color: "var(--onAccentText)",
                 fontWeight: 600,
                 cursor: "pointer"
               }}>
@@ -505,7 +499,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
               </form>
               {collectionSearchMessage && <p style={{
           margin: 0,
-          color: collectionSearchSuccess ? "var(--success, #297C3B)" : "var(--danger)",
+          color: collectionSearchSuccess ? "var(--success)" : "var(--danger)",
           fontWeight: 600
         }}>
                   {collectionSearchMessage}

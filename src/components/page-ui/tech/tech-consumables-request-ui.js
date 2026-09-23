@@ -113,7 +113,7 @@ export default function TechConsumableRequestPageUi(props) {
           padding: "var(--control-padding)",
           borderRadius: "var(--control-radius)",
           background: "var(--primary)",
-          color: "var(--surface)",
+          color: "var(--onAccentText)",
           fontWeight: 600,
           textDecoration: "none"
         }}>
@@ -166,7 +166,7 @@ export default function TechConsumableRequestPageUi(props) {
             border: "none",
             borderRadius: "var(--control-radius)",
             padding: "8px",
-            background: "var(--surfaceest)",
+            background: "var(--surface)",
             display: "flex",
             flexDirection: "column",
             gap: "6px"

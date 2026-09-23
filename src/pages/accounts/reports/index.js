@@ -8,6 +8,7 @@ import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer prim
 import { REPORT_PERIODS } from "@/config/accounts";
 import { exportToCsv } from "@/utils/exportUtils";
 import AccountsReportsPageUi from "@/components/page-ui/accounts/reports/accounts-reports-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const REPORT_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER"];
 
@@ -53,7 +54,7 @@ export default function AccountsReportsPage() {
           yearly: payload.yearly || {}
         });
       } catch (error) {
-        console.error("Failed to load account reports", error);
+        logFailure("Failed to load account reports", error);
       } finally {
         setLoading(false);
       }

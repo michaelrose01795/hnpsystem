@@ -10,8 +10,8 @@
 // identity block, the Pinned Shortcuts strip and the standalone (screen-reader)
 // Notifications region were removed. The remaining capability is laid out, left
 // to right, as: Live KPI Widgets → Role-specific Quick Actions (incl. all
-// technician controls) → Smart Insight → Continue Where You Left Off → Most-Used
-// Pages → Global Search & Help. Height, styling, spacing, tokens and the shell
+// technician controls) → Smart Insight → Most-Used Pages → Global Search &
+// Help. Height, styling, spacing, tokens and the shell
 // are unchanged; only the content and its ordering/width balance moved.
 //
 // Most-Used Pages: the Live KPI + Smart Insight "stats" no longer flex-grow apart
@@ -21,6 +21,7 @@
 import React from "react";
 import Link from "next/link";
 import GlobalSearch from "@/components/GlobalSearch";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import SupportControl from "@/components/support/SupportControl";
 import { DropdownField } from "@/components/ui/dropdownAPI";
@@ -92,8 +93,10 @@ export default function StaffTopbar({
   onStatusChange,
   navigationItems,
   userRoles = [],
-  // Continue-Where-You-Left-Off (Phase 2.3): the resume target or null.
-  resumeItem = null,
+  // All Access demo login only ({ value, options, onChange }). Present → the bar
+  // renders the "view bar as user" picker where Create User normally sits. Null
+  // for every other session, which keeps the button exactly as it was.
+  userPreview = null,
   overlay = false,
   // Bubbled up so StaffLayout can lock the auto-hide topbar open while the global
   // search is in use (focused or its results list showing).
@@ -102,11 +105,18 @@ export default function StaffTopbar({
   // the page card can react to the bar's folded state. The refs + computed
   // styles arrive here as props; this component is purely presentational.
   wrapperRef = null,
+  wrapperClassName = "",
   barRef = null,
   wrapperStyle = undefined,
   barStyle = undefined,
 }) {
   const resolvedKpis = Array.isArray(kpis) ? kpis : [];
+
+  // The technician workflow controls act on the *logged-in* session. They are
+  // shown but inert in the demo deck, and equally inert while the All Access bar
+  // is being previewed as somebody else — the preview is a look at their bar,
+  // not a licence to clock them on or start their jobs.
+  const inertActions = presentationShell || Boolean(userPreview?.value);
 
   // Smart Insight rotates through the applicable prompts — pauses on hover/focus,
   // content-only, no size change. The current prompt is split into count + label
@@ -142,7 +152,7 @@ export default function StaffTopbar({
   return (
     <div
       ref={wrapperRef}
-      className="app-topbar-dock"
+      className={["app-topbar-dock", wrapperClassName].filter(Boolean).join(" ")}
       style={{ overflow: "visible", ...wrapperStyle, ...overlayStyle }}
     >
     <DevLayoutSection
@@ -245,9 +255,9 @@ export default function StaffTopbar({
             <div className="app-topbar-action-group" style={actionGroupStyle}>
               <DropdownField
                 className="app-topbar-dropdown app-topbar-dropdown--status"
-                value={presentationShell ? CLOCKING_STATUSES.WAITING_FOR_JOB : status}
+                value={inertActions ? CLOCKING_STATUSES.WAITING_FOR_JOB : status}
                 onChange={(e) => {
-                  if (presentationShell) return; // demo deck — don't mutate real session
+                  if (inertActions) return; // demo deck / user preview — don't mutate real session
                   onStatusChange(e.target.value);
                 }}
               >
@@ -258,7 +268,7 @@ export default function StaffTopbar({
                 <option>{CLOCKING_STATUSES.WORKSHOP_MAINTENANCE}</option>
                 <option>{CLOCKING_STATUSES.MEETING_TRAINING}</option>
               </DropdownField>
-              {!presentationShell && currentJob?.jobNumber ? (
+              {!inertActions && currentJob?.jobNumber ? (
                 <Link
                   href={`/tech/${currentJob.jobNumber}`}
                   prefetch={false}
@@ -274,7 +284,7 @@ export default function StaffTopbar({
               <button
                 type="button"
                 onClick={() => {
-                  if (presentationShell) return;
+                  if (inertActions) return;
                   onStartJob();
                 }}
                 className="app-btn app-btn--secondary"
@@ -315,29 +325,7 @@ export default function StaffTopbar({
           </div>
         )}
 
-        {/* 4 — Continue Where You Left Off (Phase 2.3). Its own section now, after
-            Smart Insight; on tablet it wraps to the next row under the actions. */}
-        {resumeItem && (
-          <div
-            className="app-topbar-action-group"
-            style={{
-              ...actionGroupStyle,
-              flex: isVerticalPhone ? "0 0 auto" : isTablet ? "1 1 100%" : "0 1 auto",
-              minWidth: isVerticalPhone ? "max-content" : 0,
-            }}
-          >
-            <Link
-              href={resumeItem.href}
-              prefetch={false}
-              className="app-btn app-btn--secondary"
-              title={`Resume ${resumeItem.type}: ${resumeItem.label}`}
-            >
-              {`Resume: ${resumeItem.label}`}
-            </Link>
-          </div>
-        )}
-
-        {/* 5 — Most-Used Pages + Global Search & Help. Hidden on tablet/mobile
+        {/* 4 — Most-Used Pages + Global Search & Help. Hidden on tablet/mobile
             (search is shown below the tab buttons there). The whole cluster is
             pushed hard-right via marginLeft:auto — the "stats" sections no longer
             grow, so this replaces the previous grow-to-fill behaviour and keeps
@@ -351,7 +339,7 @@ export default function StaffTopbar({
               gap: "10px",
               minWidth: 0,
               justifyContent: "flex-end",
-              // Pins the cluster to the right edge. The KPI/insight/resume sections
+              // Pins the cluster to the right edge. The KPI/insight sections
               // are content-sized (no longer flex-grow), so an explicit auto margin
               // — not a growing neighbour — is what holds this to the far right.
               marginLeft: isVerticalPhone ? 0 : "auto",
@@ -430,9 +418,35 @@ export default function StaffTopbar({
               </div>
             )}
 
-            {userRoles.includes("admin manager") && (
+            {/* All Access demo login: the Create User button is replaced by a
+                picker of every staff user in the database. Choosing one renders
+                this bar as that user would see it (their KPIs, Smart Insight,
+                technician controls and role-gated buttons) so a demo can step
+                through the roles without logging out. Presentation only — it
+                changes nothing outside this bar. StaffLayout passes it only for
+                the All Access session, so every other user keeps the button. */}
+            {userPreview && (
+              <div style={{ flexShrink: 0, width: "14rem", minWidth: 0 }}>
+                <DropdownField
+                  className="app-topbar-dropdown"
+                  aria-label="View top bar as user"
+                  placeholder="View bar as…"
+                  value={userPreview.value || ""}
+                  options={[
+                    { value: "", label: "All Access (me)", description: "The demo session's own bar" },
+                    ...(userPreview.options || []),
+                  ]}
+                  onChange={(event) => userPreview.onChange(event.target.value)}
+                />
+              </div>
+            )}
+
+            {/* Shown for a real admin manager, and while the demo bar previews
+                one; the demo session's OWN bar shows the picker in its place. */}
+            {(userRoles.includes("admin manager") ||
+              (!userPreview && hasAllAccessRole(userRoles))) && (
               <Link
-                href="/admin/users"
+                href="/hr/manager?tab=employees"
                 prefetch={false}
                 className="app-btn app-btn--primary"
               >

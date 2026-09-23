@@ -23,6 +23,11 @@ import { timeline as staticTimeline } from "../data/timeline";
 import { brands as staticBrands } from "../data/brands";
 import { blogPosts as staticBlogPosts } from "../data/blogPosts";
 import { partsContent as staticPartsContent } from "../data/partsContent";
+import {
+  navLinks as staticNavLinks,
+  sectionLayout as staticSectionLayout,
+  design as staticDesign,
+} from "../data/siteDesign";
 import { PREVIEW_MESSAGE_TYPES } from "./useWebsitePreviewMode";
 
 const STATIC_FALLBACK = {
@@ -38,6 +43,9 @@ const STATIC_FALLBACK = {
   timeline: staticTimeline,
   brands: staticBrands,
   blogPosts: staticBlogPosts,
+  navLinks: staticNavLinks,
+  sectionLayout: staticSectionLayout,
+  design: staticDesign,
 };
 
 export default function useWebsiteContent() {
@@ -364,6 +372,57 @@ function applyLivePatch(prev, sectionKey, payload, rowId) {
       return next;
     }
 
+    /* ------------------- site builder (chrome) ------------------ */
+
+    case "nav": {
+      const list = ensureList(prev.navLinks).slice();
+      applyRowPatch(list, rowId, payload, (row) => ({
+        id: row.id,
+        label: row.label,
+        href: row.href,
+        filter: row.filter || null,
+      }));
+      next.navLinks = list;
+      return next;
+    }
+
+    case "section-layout": {
+      const list = ensureList(prev.sectionLayout).slice();
+      applyRowPatch(list, rowId, payload, (row) => ({
+        id: row.id,
+        label: row.label,
+        anchor: row.anchor || row.id,
+        eyebrow: row.eyebrow || null,
+        title: row.title || null,
+        lead: row.lead || null,
+        tint: Boolean(row.tint),
+      }));
+      next.sectionLayout = list;
+      return next;
+    }
+
+    // Design is a singleton, so the whole draft maps straight onto the design
+    // slot. Columns absent from the draft keep their current value.
+    case "design":
+      next.design = {
+        ...prev.design,
+        accentHex: payload.accent_hex ?? prev.design?.accentHex,
+        accentHoverHex: payload.accent_hover_hex ?? prev.design?.accentHoverHex,
+        defaultTheme: payload.default_theme ?? prev.design?.defaultTheme,
+        containerWidth: payload.container_width ?? prev.design?.containerWidth,
+        cornerRadius: payload.corner_radius ?? prev.design?.cornerRadius,
+        buttonRadius: payload.button_radius ?? prev.design?.buttonRadius,
+        sectionSpacing: payload.section_spacing ?? prev.design?.sectionSpacing,
+        navHeight: payload.nav_height ?? prev.design?.navHeight,
+        logoHeight: payload.logo_height ?? prev.design?.logoHeight,
+        headingFont: payload.heading_font ?? prev.design?.headingFont,
+        navSticky: payload.nav_sticky ?? prev.design?.navSticky,
+        showNavPhone: payload.show_nav_phone ?? prev.design?.showNavPhone,
+        showNavAccount: payload.show_nav_account ?? prev.design?.showNavAccount,
+        showBrandStrip: payload.show_brand_strip ?? prev.design?.showBrandStrip,
+      };
+      return next;
+
     default:
       return prev;
   }
@@ -390,8 +449,23 @@ function mergeWithFallback(live, fallback) {
     const v = live[key];
     if (!Array.isArray(v) || v.length === 0) out[key] = fallback[key];
   };
-  ["vehicles", "offers", "reviews", "team", "teamDepartments", "timeline", "brands", "blogPosts"].forEach(
-    fillEmpty
-  );
+  [
+    "vehicles",
+    "offers",
+    "reviews",
+    "team",
+    "teamDepartments",
+    "timeline",
+    "brands",
+    "blogPosts",
+    // Builder collections. An empty array here means the builder migration has
+    // not been applied (or every row is draft) — fall back rather than render
+    // a site with no navigation and no sections.
+    "navLinks",
+    "sectionLayout",
+  ].forEach(fillEmpty);
+  // Design is a singleton and comes back null when the table is missing.
+  // Field-level merge so a partially-populated row still gets sane defaults.
+  out.design = { ...fallback.design, ...(live.design || {}) };
   return out;
 }

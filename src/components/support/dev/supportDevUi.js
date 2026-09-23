@@ -19,38 +19,33 @@ const toneVar = (tone) => `var(--${tone || "text-1"})`;
 const toneTint = (tone, pct = 16) => `color-mix(in srgb, ${toneVar(tone)} ${pct}%, transparent)`;
 
 // ---------------------------------------------------------------------------
-// Pill / Badge — inline status chips (non-surface: tinted background only).
+// Badge classes — the dev platform addresses a colour by its theme token NAME
+// ("a tone"). This maps that name onto the canonical Badge family variant in
+// staffglobal.css. There is no local badge styling: every chip on every dev
+// page is an .app-badge.
 // ---------------------------------------------------------------------------
-export function Pill({ label, tone = "text-1", title, strong = false, style }) {
-  return (
-    <span
-      title={title}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "4px",
-        padding: "2px 8px",
-        borderRadius: "var(--radius-sm, 6px)",
-        fontSize: "var(--text-body-xs, 11px)",
-        fontWeight: strong ? 700 : 600,
-        lineHeight: 1.6,
-        color: toneVar(tone),
-        background: toneTint(tone),
-        whiteSpace: "nowrap",
-        ...style,
-      }}
-    >
-      {label}
-    </span>
-  );
+export function badgeClass(tone, strong = false) {
+  const key = tone || "text-1";
+  const variant =
+    key === "accentText"
+      ? strong ? "accent-strong" : "accent-soft"
+      : key === "success-base"
+      ? strong ? "success-strong" : "success"
+      : key === "warning-base"
+      ? strong ? "warning-strong" : "warning"
+      : key === "danger-base"
+      ? strong ? "danger-strong" : "danger"
+      : "neutral";
+  return `app-badge app-badge--${variant}`;
 }
+
 
 export function BadgeRow({ badges = [], style }) {
   if (!badges.length) return null;
   return (
     <span style={{ display: "inline-flex", flexWrap: "wrap", gap: "6px", ...style }}>
       {badges.map((b) => (
-        <Pill key={b.key} label={b.label} tone={b.tone} strong />
+        <span key={b.key} className={badgeClass(b.tone, true)}>{b.label}</span>
       ))}
     </span>
   );
@@ -148,12 +143,12 @@ export function KeyValue({ label, value, mono = false, tone }) {
   if (value === undefined || value === null || value === "") return null;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "minmax(120px, 30%) 1fr", gap: "var(--space-sm)", alignItems: "baseline" }}>
-      <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.75, textTransform: "uppercase", letterSpacing: "0.03em" }}>{label}</div>
+      <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.75, textTransform: "uppercase", letterSpacing: "0.03em" }}>{label}</div>
       <div
         style={{
           fontSize: "var(--text-body-sm)",
           color: tone ? toneVar(tone) : "var(--text-1)",
-          fontFamily: mono ? "var(--font-mono, ui-monospace, monospace)" : "inherit",
+          fontFamily: mono ? "var(--font-family-mono)" : "inherit",
           wordBreak: "break-word",
         }}
       >
@@ -185,8 +180,8 @@ export function StatCard({ label, value, tone = "accentText", hint, onClick, act
       }}
     >
       <div style={{ fontSize: "var(--text-h2, 24px)", fontWeight: 800, color: toneVar(tone), lineHeight: 1.1 }}>{value}</div>
-      <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.85 }}>{label}</div>
-      {hint ? <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.55 }}>{hint}</div> : null}
+      <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.85 }}>{label}</div>
+      {hint ? <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.55 }}>{hint}</div> : null}
     </LayerSurface>
   );
 }
@@ -235,36 +230,10 @@ export function LoadingBlock({ rows = 3, height = 44 }) {
 // ---------------------------------------------------------------------------
 // Buttons — ghost + solid, 44px touch targets.
 // ---------------------------------------------------------------------------
-export function DevButton({ children, onClick, variant = "ghost", tone = "accentText", disabled, title, type = "button", small = false }) {
-  const solid = variant === "solid";
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      className={solid ? "app-btn app-btn--primary" : "app-btn app-btn--ghost"}
-      style={{
-        minHeight: small ? 32 : 44,
-        padding: small ? "4px 10px" : "8px 14px",
-        borderRadius: "var(--radius-md)",
-        fontSize: "var(--text-body-sm)",
-        fontWeight: 600,
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1,
-        color: solid ? "var(--accentText-contrast, #fff)" : toneVar(tone),
-        background: solid ? toneVar(tone) : toneTint(tone, 10),
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Copy-to-clipboard button (client). Acknowledges via AlertContext.
 // ---------------------------------------------------------------------------
-export function CopyButton({ text, label = "Copy", copiedLabel = "Copied", small = true, tone = "accentText" }) {
+export function CopyButton({ text, label = "Copy", copiedLabel = "Copied", small = true }) {
   const { pushAlert } = useAlerts();
   const [done, setDone] = useState(false);
   const onCopy = useCallback(async () => {
@@ -277,9 +246,9 @@ export function CopyButton({ text, label = "Copy", copiedLabel = "Copied", small
     }
   }, [text, pushAlert]);
   return (
-    <DevButton onClick={onCopy} small={small} tone={tone} title="Copy to clipboard">
+    <button type="button" onClick={onCopy} title="Copy to clipboard" className={`app-btn app-btn--secondary${small ? " app-btn--sm" : ""}`}>
       {done ? copiedLabel : label}
-    </DevButton>
+    </button>
   );
 }
 
@@ -304,8 +273,8 @@ export function SourceRef({ file, line, style }) {
       }}
       title="Copy source path"
       style={{
-        fontFamily: "var(--font-mono, ui-monospace, monospace)",
-        fontSize: "var(--text-body-xs)",
+        fontFamily: "var(--font-family-mono)",
+        fontSize: "var(--text-caption)",
         color: "var(--accentText)",
         background: toneTint("accentText", 10),
         borderRadius: "var(--radius-sm, 6px)",
@@ -329,7 +298,7 @@ export function ConfidenceBar({ value = 0, label = "Confidence" }) {
   const tone = pct >= 66 ? "success-base" : pct >= 33 ? "warning-base" : "danger-base";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.8 }}>
         <span>{label}</span>
         <span>{Math.round(pct)}%</span>
       </div>

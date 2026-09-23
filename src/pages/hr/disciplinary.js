@@ -8,6 +8,11 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import HrDisciplinaryIncidentsUi from "@/components/page-ui/hr/hr-disciplinary-ui"; // Extracted presentation layer.
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
+import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+
+export function getServerSideProps() {
+  return redirectToHrManagerTab("disciplinary");
+}
 
 function DisciplinaryContent() {
   const showPresentationMock = isPresentationMode();

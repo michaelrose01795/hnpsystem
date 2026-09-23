@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { supabaseService } from "@/lib/database/supabaseClient";
 import { sanitiseAuditData } from "@/lib/audit/privacy";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 
 const requireServiceClient = () => {
   if (!supabaseService) {
@@ -305,6 +306,7 @@ export async function listAuditFilterOptions({ department = null } = {}) {
   let userQuery = requireServiceClient()
     .from("users")
     .select("user_id, first_name, last_name, role, department")
+    .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
     .order("first_name");
   let sessionQuery = requireServiceClient()
     .from("audit_sessions")

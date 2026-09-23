@@ -34,6 +34,7 @@ import SearchBar from "@/components/ui/searchBarAPI/SearchBar";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import useIsMobile from "@/hooks/useIsMobile";
 import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ---- shared text styles (mirrors the Service History tab redesign) ---- */
 const eyebrowStyle = {
@@ -333,7 +334,7 @@ export default function NotesTabNew({
         onNotesChange(nextNotes);
       }
     } catch (err) {
-      console.error("Failed to load notes:", err);
+      logFailure("Failed to load notes:", err);
       setError("Failed to load notes");
     } finally {
       setLoading(false);
@@ -367,7 +368,7 @@ export default function NotesTabNew({
         setError(result.error?.message || "Failed to create note");
       }
     } catch (err) {
-      console.error("Failed to add note:", err);
+      logFailure("Failed to add note:", err);
       setError("Failed to add note");
     } finally {
       setSavingNewNote(false);
@@ -397,7 +398,7 @@ export default function NotesTabNew({
         setError(result.error?.message || "Failed to update note");
       }
     } catch (err) {
-      console.error("Failed to update note:", err);
+      logFailure("Failed to update note:", err);
       setError("Failed to update note");
     }
   };
@@ -423,7 +424,7 @@ export default function NotesTabNew({
         setError(result.error?.message || "Failed to toggle visibility");
       }
     } catch (err) {
-      console.error("Failed to toggle visibility:", err);
+      logFailure("Failed to toggle visibility:", err);
       setError("Failed to toggle visibility");
     }
   };
@@ -448,7 +449,7 @@ export default function NotesTabNew({
         setError(result.error?.message || "Failed to add viewer");
       }
     } catch (err) {
-      console.error("Failed to add viewer:", err);
+      logFailure("Failed to add viewer:", err);
       setError("Failed to add viewer");
     }
   };
@@ -463,7 +464,7 @@ export default function NotesTabNew({
         setError(result.error?.message || "Failed to remove viewer");
       }
     } catch (err) {
-      console.error("Failed to remove viewer:", err);
+      logFailure("Failed to remove viewer:", err);
       setError("Failed to remove viewer");
     }
   };
@@ -487,7 +488,7 @@ export default function NotesTabNew({
         setError(result.error?.message || "Failed to delete note");
       }
     } catch (err) {
-      console.error("Failed to delete note:", err);
+      logFailure("Failed to delete note:", err);
       setError("Failed to delete note");
     }
   };
@@ -563,7 +564,7 @@ export default function NotesTabNew({
       }
       await loadNotes();
     } catch (err) {
-      console.error("Failed to link note:", err);
+      logFailure("Failed to link note:", err);
       setError("Failed to link note");
     }
   };

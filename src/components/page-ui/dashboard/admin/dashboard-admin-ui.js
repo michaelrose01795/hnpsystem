@@ -44,7 +44,7 @@ export default function AdminDashboardUi(props) {
                 subtitle="Jobs, appointments, and parts throughput"
               >
                 {loading ? (
-                  <p style={{ color: "var(--info)" }}>Loading system stats...</p>
+                  <p style={{ color: "var(--text-1)" }}>Loading system stats...</p>
                 ) : error ? (
                   <p style={{ color: "var(--primary)" }}>{error}</p>
                 ) : (
@@ -82,7 +82,7 @@ export default function AdminDashboardUi(props) {
                 subtitle="Last 7 days"
               >
                 {loading ? (
-                  <p style={{ color: "var(--info)" }}>Counting new users...</p>
+                  <p style={{ color: "var(--text-1)" }}>Counting new users...</p>
                 ) : (
                   <MetricCard
                     parentKey="dashboard-admin-auto-content-card-2"
@@ -102,7 +102,7 @@ export default function AdminDashboardUi(props) {
                 subtitle="Next 7 days"
               >
                 {loading ? (
-                  <p style={{ color: "var(--info)" }}>Loading holiday requests...</p>
+                  <p style={{ color: "var(--text-1)" }}>Loading holiday requests...</p>
                 ) : (
                   <HolidayList holidays={data.holidays} />
                 )}
@@ -116,7 +116,7 @@ export default function AdminDashboardUi(props) {
                 subtitle="Latest alerts"
               >
                 {loading ? (
-                  <p style={{ color: "var(--info)" }}>Loading notices...</p>
+                  <p style={{ color: "var(--text-1)" }}>Loading notices...</p>
                 ) : (
                   <NoticeList notices={data.notices} />
                 )}

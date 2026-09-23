@@ -2119,6 +2119,16 @@ html.website-scope .ws-page {
   --ws-maxw: 1200px;
   --ws-nav-h: 66px;
   --ws-radius: 18px;
+
+  /* Site-builder tokens. WebsitePage overwrites these inline on .ws-page from
+     the website_design row (see src/features/website/data/siteDesign.js). The
+     values here are the pre-builder hard-coded ones, so an unconfigured site
+     — or one rendered before /api/website/content resolves — is unchanged. */
+  --ws-btn-radius: 999px;
+  --ws-logo-h: 38px;
+  --ws-section-pad: clamp(56px, 8vw, 104px);
+  --ws-nav-position: sticky;
+  --ws-heading-font: var(--font-family-base, inherit);
 }
 
 /* ── Page tokens — light repaint ─────────────────────────────────────── */
@@ -2131,7 +2141,7 @@ html.website-scope[data-website-theme="light"] .ws-page {
 
 /* ── Logo theme swap — white logo on dark, dark logo on light ────────── */
 html.website-scope .ws-logo {
-  height: 38px;
+  height: var(--ws-logo-h, 38px);
   width: auto;
   display: block;
 }
@@ -2156,7 +2166,7 @@ html.website-scope .ws-container {
   padding: 0 clamp(18px, 4vw, 40px);
 }
 html.website-scope .ws-section {
-  padding: clamp(56px, 8vw, 104px) 0;
+  padding: var(--ws-section-pad, clamp(56px, 8vw, 104px)) 0;
   scroll-margin-top: calc(var(--ws-nav-h) + 16px);
 }
 html.website-scope .ws-section--tint {
@@ -2195,6 +2205,14 @@ html.website-scope .ws-h3 {
   margin: 0;
   color: var(--txt-bright);
 }
+/* Heading typeface. --ws-heading-font defaults to the body stack, so this is a
+   no-op until /website-manager -> Design picks a different heading font. */
+html.website-scope .ws-h1,
+html.website-scope .ws-h2,
+html.website-scope .ws-h3,
+html.website-scope .ws-card-title {
+  font-family: var(--ws-heading-font, inherit);
+}
 html.website-scope .ws-lead {
   font-size: clamp(16px, 1.5vw, 19px);
   line-height: 1.6;
@@ -2229,7 +2247,7 @@ html.website-scope .ws-btn {
   gap: 8px;
   min-height: 46px;
   padding: 0 22px;
-  border-radius: 999px;
+  border-radius: var(--ws-btn-radius, 999px);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.2px;
@@ -2258,7 +2276,7 @@ html.website-scope .ws-btn--ghost:hover {
 
 /* ── Top navigation ──────────────────────────────────────────────────── */
 html.website-scope .ws-nav {
-  position: sticky;
+  position: var(--ws-nav-position, sticky);
   top: 0;
   z-index: 50;
   background: var(--ws-nav-bg);

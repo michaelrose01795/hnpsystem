@@ -3,6 +3,7 @@
 // file location: src/lib/database/vehicles.js
 import { supabase } from "@/lib/database/supabaseClient";
 import { buildRegistrationWriteFields } from "@/lib/canonical/fields";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ============================================
    GET VEHICLE BY REGISTRATION
@@ -13,7 +14,7 @@ export const getVehicleByReg = async (regNumber) => {
   console.log("🔍 getVehicleByReg:", regNumber); // debug log
   
   if (!regNumber) {
-    console.error("❌ Registration number required");
+    logFailure("❌ Registration number required");
     return null;
   }
 
@@ -64,7 +65,7 @@ export const getVehicleByReg = async (regNumber) => {
     .maybeSingle();
 
   if (error) {
-    console.error("❌ getVehicleByReg error:", error);
+    logFailure("❌ getVehicleByReg error:", error);
     return null;
   }
 
@@ -110,7 +111,7 @@ export const getAllVehicles = async (limit = 100, offset = 0) => {
     .range(offset, offset + limit - 1);
 
   if (error) {
-    console.error("❌ getAllVehicles error:", error);
+    logFailure("❌ getAllVehicles error:", error);
     return { data: [], count: 0 };
   }
 
@@ -165,7 +166,7 @@ export const getVehicleById = async (vehicleId) => {
     .single();
 
   if (error) {
-    console.error("❌ getVehicleById error:", error);
+    logFailure("❌ getVehicleById error:", error);
     return null;
   }
 
@@ -220,7 +221,7 @@ export const getVehicleMaintenanceHistory = async (vehicleId) => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("❌ getVehicleMaintenanceHistory error:", error);
+    logFailure("❌ getVehicleMaintenanceHistory error:", error);
     return [];
   }
 
@@ -293,7 +294,7 @@ export const createOrUpdateVehicle = async (vehicleData) => {
       return { success: true, data, updated: false };
     }
   } catch (error) {
-    console.error("❌ createOrUpdateVehicle error:", error);
+    logFailure("❌ createOrUpdateVehicle error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -306,7 +307,7 @@ export const getVehicleByVin = async (vin) => {
   console.log("🔍 getVehicleByVin:", vin); // debug log
   
   if (!vin) {
-    console.error("❌ VIN is required");
+    logFailure("❌ VIN is required");
     return null;
   }
 
@@ -346,7 +347,7 @@ export const getVehicleByVin = async (vin) => {
     .maybeSingle();
 
   if (error) {
-    console.error("❌ getVehicleByVin error:", error);
+    logFailure("❌ getVehicleByVin error:", error);
     return null;
   }
 
@@ -401,7 +402,7 @@ export const searchVehicles = async (searchTerm) => {
     .limit(20);
 
   if (error) {
-    console.error("❌ searchVehicles error:", error);
+    logFailure("❌ searchVehicles error:", error);
     return [];
   }
 
@@ -434,7 +435,7 @@ export const updateVehicle = async (vehicleId, updates) => {
     console.log("✅ Vehicle updated successfully:", data);
     return { success: true, data };
   } catch (error) {
-    console.error("❌ updateVehicle error:", error);
+    logFailure("❌ updateVehicle error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -469,7 +470,7 @@ export const deleteVehicle = async (vehicleId) => {
     console.log("✅ Vehicle deleted successfully");
     return { success: true };
   } catch (error) {
-    console.error("❌ deleteVehicle error:", error);
+    logFailure("❌ deleteVehicle error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -497,7 +498,7 @@ export const linkVehicleToCustomer = async (vehicleId, customerId) => {
     console.log("✅ Vehicle linked to customer successfully:", data);
     return { success: true, data };
   } catch (error) {
-    console.error("❌ linkVehicleToCustomer error:", error);
+    logFailure("❌ linkVehicleToCustomer error:", error);
     return { success: false, error: { message: error.message } };
   }
 };

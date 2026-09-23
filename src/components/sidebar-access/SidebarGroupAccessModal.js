@@ -276,7 +276,7 @@ export default function SidebarGroupAccessModal({
                     {orderedItems.map((item, itemIndex) => (
                       <React.Fragment key={`${user.id}-${item.href}`}>
                       {moduleByHref.get(item.href) && (itemIndex === 0 || moduleByHref.get(orderedItems[itemIndex - 1]?.href) !== moduleByHref.get(item.href)) ? (
-                        <strong style={{ fontSize: "var(--text-body-xs)", color: "var(--accentText)" }}>{moduleByHref.get(item.href)} — inherited from group unless unchecked</strong>
+                        <strong style={{ fontSize: "var(--text-caption)", color: "var(--accentText)" }}>{moduleByHref.get(item.href)} — inherited from group unless unchecked</strong>
                       ) : null}
                       <label key={`${user.id}-${item.href}`} style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: 44, cursor: isAssigned ? "pointer" : "default" }}>
                         <input

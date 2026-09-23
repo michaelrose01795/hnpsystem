@@ -4,6 +4,7 @@
 // Falls back silently on error — code-generated text remains the source of truth.
 
 import { useState, useEffect, useRef } from "react"; // React hooks
+import { logFailure } from "@/lib/utils/logFailure";
 
 export function useAiEnhancement(summary, flags) {
   const [refined, setRefined] = useState(null); // Refined data from AI or null
@@ -52,7 +53,7 @@ export function useAiEnhancement(summary, flags) {
           setRefined(null); // No refinement available
         }
       } catch (err) {
-        console.error("AI enhancement failed:", err.message); // Log error silently
+        logFailure("AI enhancement failed:", err.message); // Log error silently
         setError(err.message); // Store error for debugging
         setRefined(null); // Fall back to code-generated text
       } finally {

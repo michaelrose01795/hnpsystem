@@ -129,11 +129,11 @@ export default function NewPage() {
                 data-dev-section-parent="newpage-table"
               >
                 <tr style={{ textAlign: "left", color: "var(--surfaceTextMuted)" }}>
-                  <th style={{ padding: "10px 12px 10px 0", borderBottom: "1px solid var(--separating-line)" }}>Reference</th>
-                  <th style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line)" }}>Department</th>
-                  <th style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line)" }}>Owner</th>
-                  <th style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line)" }}>Test Item</th>
-                  <th style={{ padding: "10px 0 10px 12px", borderBottom: "1px solid var(--separating-line)" }}>Status</th>
+                  <th style={{ padding: "10px 12px 10px 0", borderBottom: "1px solid var(--separating-line-color)" }}>Reference</th>
+                  <th style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line-color)" }}>Department</th>
+                  <th style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line-color)" }}>Owner</th>
+                  <th style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line-color)" }}>Test Item</th>
+                  <th style={{ padding: "10px 0 10px 12px", borderBottom: "1px solid var(--separating-line-color)" }}>Status</th>
                 </tr>
               </thead>
               <tbody
@@ -144,19 +144,19 @@ export default function NewPage() {
               >
                 {visibleRows.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: "10px 12px 10px 0", borderBottom: "1px solid var(--separating-line)", fontWeight: 700 }}>
+                    <td style={{ padding: "10px 12px 10px 0", borderBottom: "1px solid var(--separating-line-color)", fontWeight: 700 }}>
                       {row.id}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line)" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line-color)" }}>
                       {formatDepartment(row.department)}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line)" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line-color)" }}>
                       {row.owner}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line)" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--separating-line-color)" }}>
                       {row.task}
                     </td>
-                    <td style={{ padding: "10px 0 10px 12px", borderBottom: "1px solid var(--separating-line)" }}>
+                    <td style={{ padding: "10px 0 10px 12px", borderBottom: "1px solid var(--separating-line-color)" }}>
                       {row.status}
                     </td>
                   </tr>

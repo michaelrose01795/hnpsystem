@@ -9,6 +9,7 @@
 // Webpack (used by Next.js) supports JSON imports natively without the import assertion
 // eslint-disable-next-line import/no-unresolved
 import knowledgeIndex from "./knowledgeIndex.json";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -311,6 +312,7 @@ function normaliseRole(role) {
 function userCanAccess(entry, userRoles) {
   if (!entry.roles || entry.roles.length === 0) return true;
   const normalised = (userRoles || []).map(normaliseRole);
+  if (hasAllAccessRole(normalised)) return true; // All Access demo login
   return entry.roles.some((r) => normalised.includes(normaliseRole(r)));
 }
 
@@ -535,7 +537,7 @@ function answerWhy(topEntry, allEntries, userRoles, rawQuery) {
 
     if (!accessible) {
       parts.push(`**${topEntry.title}** is restricted to: ${accessDesc}.`);
-      parts.push("Your current role does not include access to this section. To gain access, ask an Admin Manager to update your role in User Admin (/admin/users).");
+      parts.push("Your current role does not include access to this section. Ask an Admin Manager to update your role in HR Manager > Employees.");
     } else {
       parts.push(`You should have access to **${topEntry.title}**. It is available to ${accessDesc}.`);
       parts.push("If you cannot see it, try logging out and back in, or contact an Admin Manager to verify your role is correctly set.");

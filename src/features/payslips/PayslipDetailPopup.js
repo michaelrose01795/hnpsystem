@@ -339,7 +339,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
           >
             <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Gross pay</span>
-              <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #2e7d32)" }}>
+              <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success)" }}>
                 {formatCurrency(payslip.grossPay)}
               </span>
             </LayerTheme>
@@ -351,7 +351,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
             </LayerTheme>
             <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Net pay</span>
-              <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accentText, var(--accent))" }}>
+              <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accentText)" }}>
                 {formatCurrency(payslip.netPay)}
               </span>
             </LayerTheme>

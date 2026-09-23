@@ -6,6 +6,11 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { Button, LayerTheme, StatusMessage } from "@/components/ui"; // LayerTheme: canonical layer primitive (see CLAUDE.md §3.0)
 import { StatusTag } from "@/components/HR/MetricCard";
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+
+export function getServerSideProps() {
+  return redirectToHrManagerTab("leave");
+}
 
 // Structured skeleton body used inside each SectionCard while leave data loads.
 // Rendered in place of the table rows / list rows so the outer page shell —

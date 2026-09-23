@@ -1,22 +1,485 @@
 /* file location: src/styles/features/website-manager.css
-   Staff-side Website Manager editor chrome (src/features/websiteManager/panels/
-   LivePreviewPanel.js — the /website-manager route).
+   Staff-side Website Manager chrome (src/features/websiteManager/** — the
+   /website-manager route).
 
-   These three rules previously lived at the bottom of custglobal.css, deliberately
-   OUTSIDE `html.website-scope`, because the editor renders in the staff app rather
-   than the public marketing scope. That made custglobal.css load-bearing for a
-   staff route, which is why it had to stay in the global _app import.
+   These rules previously lived at the bottom of custglobal.css, deliberately
+   OUTSIDE `html.website-scope`, because the editor renders in the staff app
+   rather than the public marketing scope. That made custglobal.css
+   load-bearing for a staff route, which is why it had to stay in the global
+   _app import.
 
    custglobal.css is now loaded only by routes that call `useWebsiteScope()`
-   (see src/features/website/hooks/useWebsiteScope.js), so these staff rules move
-   into the staff system here — which is also what CLAUDE.md §3.0b requires
+   (see src/features/website/hooks/useWebsiteScope.js), so these staff rules
+   live in the staff system here — which is also what CLAUDE.md §3.0b requires
    ("/website is a separate system … never mix the two"). Imported from
-   staffglobal.css alongside features/vhc.css. */
+   staffglobal.css alongside features/vhc.css.
+
+   Everything below is token-only: spacing from --space-*, colour from the
+   staff palette, no raw hex, no !important, no borders outside the five
+   permitted ring/line tokens (CLAUDE.md §3.0a). The panels carry NO one-off
+   inline visual styling — if a panel needs a look, it gets a class here. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   The surface ladder inside this tool  (CLAUDE.md §3.0, §3.0a-2)
+   ══════════════════════════════════════════════════════════════════════════
+
+   The cards themselves are already correct — they are <Section> /
+   <LayerSurface> / <LayerTheme> and alternate as they nest:
+
+     app shell            --page-shell-bg
+       <Section>          --surface     (LayerSurface + .app-section-card)
+         <LayerTheme>     --theme       stat tiles, editors, media cards
+           <LayerSurface> --surface     object-list rows, search preview
+
+   What did NOT alternate were the tool's own *recessed* elements — the
+   notice strip, the analytics bar track, the image placeholder, the preview
+   iframe matte. Each had one hard-coded fill, so the same class read correctly
+   on a --surface card and vanished on a --theme one (a --theme notice inside a
+   --theme editor, a --surface bar track on a --surface section: zero step, and
+   in a borderless system the step is the only separation there is).
+
+   --wm-recess-bg carries the fill one rung below whatever contains it, and
+   flips with the ladder. Every recessed element reads it instead of naming a
+   rung, so it is right wherever it is placed.
+
+   NOTE on the second block: families/cards.css re-binds the control tokens
+   back to the accent fill for a card nested inside a --theme layer, but its
+   inner selector list predates <LayerSurface> and does not include
+   `.app-layer-surface`. Without the re-bind, a Button inside an object-list
+   row (a LayerSurface inside the editor's LayerTheme) keeps the on-theme
+   control fill — which is --surface — on a --surface row, and disappears.
+   Scoped to .website-manager here rather than patched globally, since
+   families/cards.css is a canonical source that governs every staff page. */
+
+.website-manager {
+  /* Directly on the page shell. */
+  --wm-recess-bg: var(--surface);
+}
+
+html.staff-scope .website-manager :is(.app-layer-surface, .app-section-card) {
+  --wm-recess-bg: var(--theme);
+}
+
+html.staff-scope .website-manager .app-layer-theme {
+  --wm-recess-bg: var(--surface);
+}
+
+html.staff-scope .website-manager .app-layer-theme .app-layer-surface {
+  --wm-recess-bg: var(--theme);
+  --primary-control-bg: var(--secondary);
+  --primary-control-bg-hover: var(--secondary-hover);
+  --primary-control-bg-active: var(--secondary-pressed);
+  --tab-item-bg: var(--secondary);
+  --tab-item-bg-hover: var(--secondary-hover);
+  --tab-container-bg: var(--secondary);
+  --searchbar-clear-bg: var(--secondary);
+  --searchbar-clear-hover-bg: var(--secondary-hover);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Page shell
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Outer page padding. Matches the `8px 8px 32px` every other staff page uses
+   (CLAUDE.md §3.5) — as a class rather than an inline style so the page shell
+   carries no one-off visual styling. */
+.app-page-shell.website-manager {
+  padding: var(--space-sm) var(--space-sm) var(--space-xl);
+}
+
+.website-manager .app-page-header {
+  margin: 0;
+}
+
+/* The tab strip paints its own container background (--tab-container-bg), so
+   it must NOT be wrapped in a card surface — two stacked surfaces read as a
+   double-bordered box. It sits directly on the page stack like every other
+   staff page's tab row. */
+.website-manager__tabs {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.website-manager__notice {
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--wm-recess-bg);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+.website-manager__notice--warning {
+  background: var(--warning-surface);
+  color: var(--warning-dark);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Toolbars and control rows
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.website-manager__toolbar,
+.website-manager__actions,
+.website-manager__row-actions,
+.website-manager__chip-row,
+.website-manager__preview-toolbar,
+.website-manager__editor-header,
+.website-manager__editor-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.website-manager__toolbar,
+.website-manager__actions,
+.website-manager__preview-toolbar {
+  gap: var(--space-3);
+}
+
+/* Search box in a filter toolbar grows; the dropdown beside it does not. */
+.website-manager__toolbar .app-input {
+  flex: 1 1 16rem;
+  min-width: 12rem;
+}
+
+.website-manager__toolbar-filter {
+  flex: 0 0 auto;
+  min-width: 11rem;
+}
+
+.website-manager__preview-toolbar {
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.website-manager__preview-toolbar > .tab-api:first-child {
+  flex: 1 1 38rem;
+}
+
+.website-manager__preview-toolbar > .tab-api:nth-child(2) {
+  flex: 0 0 auto;
+}
+
+.website-manager__editor-header {
+  justify-content: space-between;
+}
+
+.website-manager__row-actions {
+  gap: var(--space-1);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Stat tiles
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.website-manager__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+  gap: var(--layout-card-gap);
+}
+
+.website-manager__stat-label {
+  font-size: var(--text-caption);
+  color: var(--text-1);
+}
+
+.website-manager__stat-value {
+  font-size: var(--text-h2);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--accentText);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Schema editor
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.website-manager__editor,
+.website-manager__field,
+.website-manager__image-field-controls,
+.website-manager__repeater {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.website-manager__editor-title {
+  font-weight: 700;
+  color: var(--accentText);
+}
+
+.website-manager__label {
+  color: var(--text-1);
+  font-size: var(--text-label);
+  font-weight: var(--control-label-weight);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+
+.website-manager__label--sm {
+  font-size: var(--text-caption);
+}
+
+.website-manager__textarea {
+  resize: vertical;
+}
+
+.website-manager__repeater-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.website-manager__repeater-row--end {
+  justify-content: flex-end;
+}
+
+.website-manager__list-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+/* Boolean + colour field pairs */
+.website-manager__bool,
+.website-manager__color {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+.website-manager__color .app-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The native colour well. It carries `.app-input` so the staff-control guard
+   sees a canonical control and it inherits the standard height and ring; the
+   descendant selector below out-specifies `html.staff-scope .app-input`
+   (0,3,1 vs 0,2,1) to square it off and drop the text padding. No outline is
+   painted here — the ring comes from .app-input (CLAUDE.md §3.0a). */
+html.staff-scope .website-manager__color .website-manager__color-swatch {
+  flex: 0 0 auto;
+  width: var(--control-height);
+  min-width: var(--control-height);
+  padding: var(--space-1);
+  cursor: pointer;
+}
+
+html.staff-scope .website-manager__color-swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+html.staff-scope .website-manager__color-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: var(--radius-xs);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Image / media
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.website-manager__image-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6rem;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.website-manager__image-preview {
+  width: 6rem;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--wm-recess-bg);
+}
+
+.website-manager__media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+  gap: var(--layout-card-gap);
+}
+
+.website-manager__media-card {
+  min-width: 0;
+}
+
+.website-manager__media-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.website-manager__media-thumb {
+  display: block;
+  width: 100%;
+  height: 9.5rem;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.website-manager__media-placeholder {
+  width: 100%;
+  height: 9.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.website-manager__media-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.website-manager__media-actions > * {
+  flex: 1 1 0;
+  text-align: center;
+}
+
+/* Label-wrapped file inputs — the visible control is an .app-btn label, so it
+   needs the pointer the real <button> would have had. */
+.website-manager__file-label {
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Meta / muted text and table cells
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.website-manager__meta,
+.website-manager__cell-muted {
+  color: var(--text-1);
+}
+
+.website-manager__meta {
+  font-size: var(--text-caption);
+}
+
+.website-manager__cell-mono {
+  color: var(--text-1);
+  font-family: var(--font-family-mono);
+}
+
+.website-manager__cell-strong {
+  font-weight: 600;
+}
+
+.website-manager__cell-nowrap {
+  white-space: nowrap;
+}
+
+.website-manager__cell-right {
+  text-align: right;
+}
+
+.website-manager__table-scroll {
+  overflow-x: auto;
+}
+
+.website-manager__bullets {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Analytics bar list — data-visualisation primitives, not card surfaces, so
+   the track/fill fills are exempt from the surface rules (CLAUDE.md §3.0).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.website-manager__bars,
+.website-manager__bar-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.website-manager__bars {
+  gap: var(--space-3);
+}
+
+.website-manager__bar-row {
+  gap: var(--space-1);
+}
+
+.website-manager__bar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-body-sm);
+}
+
+.website-manager__bar-track {
+  height: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--wm-recess-bg);
+  overflow: hidden;
+}
+
+.website-manager__bar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SEO
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.website-manager__field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.website-manager__field-row > .website-manager__field {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.website-manager__field-row > .website-manager__field--wide {
+  flex: 2 1 20rem;
+}
+
+.website-manager__counter--over {
+  color: var(--warning-dark);
+}
+
+.website-manager__search-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-body-sm);
+}
+
+.website-manager__search-preview strong {
+  color: var(--accentText);
+  font-size: var(--text-body);
+}
+
+.website-manager__search-preview-url {
+  color: var(--success-dark);
+  overflow-wrap: anywhere;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Visual editor / builder split panes
+   ══════════════════════════════════════════════════════════════════════════ */
 
 .ws-editor-split {
   display: grid;
-  grid-template-columns: minmax(320px, 420px) 1fr;
-  gap: 16px;
+  grid-template-columns: minmax(20rem, 26rem) minmax(0, 1fr);
+  gap: var(--layout-card-gap);
   align-items: start;
 }
 
@@ -29,15 +492,98 @@
 .ws-editor-pane {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--layout-card-gap);
   position: sticky;
   top: 12px;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
 }
 
+.ws-editor-preview {
+  width: 100%;
+  margin-inline: auto;
+  transition: max-width 200ms ease;
+}
+
 .ws-editor-preview iframe {
   width: 100%;
-  border-radius: 8px;
-  background: var(--theme);
+  height: min(78dvh, 52rem);
+  min-height: 36rem;
+  display: block;
+  border-radius: var(--radius-sm);
+  background: var(--wm-recess-bg);
+}
+
+.ws-editor-preview--tablet {
+  max-width: 48rem;
+}
+
+.ws-editor-preview--mobile {
+  max-width: 24rem;
+}
+
+/* Design tab: settings form on the left, live site on the right. Shorter than
+   the visual editor's preview because the design controls are the focus. */
+.website-manager__design-split {
+  display: grid;
+  grid-template-columns: minmax(20rem, 28rem) minmax(0, 1fr);
+  gap: var(--layout-card-gap);
+  align-items: start;
+}
+
+.website-manager__design-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.website-manager__design-split iframe {
+  width: 100%;
+  height: min(64dvh, 44rem);
+  min-height: 28rem;
+  display: block;
+  border-radius: var(--radius-sm);
+  background: var(--wm-recess-bg);
+}
+
+@media (max-width: 1024px) {
+  .website-manager__design-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Mobile
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  .website-manager__tabs .tab-api,
+  .website-manager__preview-toolbar .tab-api {
+    width: max-content;
+    flex-wrap: nowrap;
+  }
+
+  .website-manager__preview-toolbar {
+    overflow-x: auto;
+  }
+
+  .website-manager__image-field {
+    grid-template-columns: 1fr;
+  }
+
+  .website-manager__image-preview {
+    width: 100%;
+    max-height: 12rem;
+    aspect-ratio: 16 / 9;
+  }
+
+  .ws-editor-pane {
+    position: static;
+    max-height: none;
+  }
+
+  .ws-editor-preview iframe {
+    min-height: 32rem;
+  }
 }

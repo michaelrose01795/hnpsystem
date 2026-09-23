@@ -90,7 +90,7 @@ export default function CustomerPreviewPageUi(props) {
           <button onClick={handleBack} style={{
       padding: "12px 24px",
       background: "var(--primary)",
-      color: "var(--surface)",
+      color: "var(--onAccentText)",
       border: "none",
       borderRadius: "var(--radius-sm)",
       fontWeight: 600,
@@ -205,7 +205,7 @@ export default function CustomerPreviewPageUi(props) {
           padding: "10px 20px",
           background: "var(--surface)",
           color: "var(--accent-purple)",
-          border: "1px solid var(--ghostbutton-ring)",
+          border: "1px solid var(--ghostbutton-ring-color)",
           borderRadius: "var(--radius-sm)",
           fontWeight: 600,
           cursor: "pointer",

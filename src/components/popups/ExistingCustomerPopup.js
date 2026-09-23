@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
 import StatusMessage from "@/components/ui/StatusMessage";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -45,7 +46,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
         setSearchStatus("success");
       } catch (error) {
         if (cancelled) return;
-        console.error("Existing customer search failed:", error);
+        logFailure("Existing customer search failed:", error);
         setCustomerList([]);
         setSearchStatus("error");
       }

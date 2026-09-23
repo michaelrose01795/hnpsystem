@@ -18,6 +18,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import AccountsListPageUi from "@/components/page-ui/accounts/accounts-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const ALLOWED_ROLES = [
 "ADMIN",
@@ -93,7 +94,7 @@ export default function AccountsListPage() {
       setAccounts(payload.data || []);
       setPagination((prev) => ({ ...prev, total: payload.pagination?.total || prev.total }));
     } catch (error) {
-      console.error("Failed to load accounts", error);
+      logFailure("Failed to load accounts", error);
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ export default function AccountsListPage() {
         }
       }
     } catch (error) {
-      console.error("Failed to load linked financial records", error);
+      logFailure("Failed to load linked financial records", error);
     } finally {
       setLinkedLoading(false);
     }

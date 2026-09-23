@@ -16,6 +16,7 @@
 // (job_clocking: user_id, job_number, clock_out, work_type).
 
 import { supabase } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Returns the set of staff currently on a job, newest clock-in wins per user:
 //   [{ userId, jobNumber, workType }]
@@ -48,7 +49,7 @@ export async function getWorkingStaff() {
     }
     return out;
   } catch (err) {
-    console.error("teamPresence getWorkingStaff failed:", err?.message || err);
+    logFailure("teamPresence getWorkingStaff failed:", err?.message || err);
     return [];
   }
 }

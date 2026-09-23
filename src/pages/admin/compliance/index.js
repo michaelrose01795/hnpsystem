@@ -78,7 +78,7 @@ export default function ComplianceDashboardPage() {
     <ComplianceLayout title="Dashboard">
       <Section title="At a Glance">
         {error && (
-          <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base, #ef4444)" }}>
+          <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>
             {error}
           </p>
         )}
@@ -118,7 +118,7 @@ export default function ComplianceDashboardPage() {
               return (
                 <li key={b.id} style={{ marginBottom: 6 }}>
                   <strong>{b.category || "Breach"}</strong> · detected {fmt(b.detected_at)} ·{" "}
-                  <span style={{ color: overdue ? "var(--danger-base, #ef4444)" : "inherit" }}>
+                  <span style={{ color: overdue ? "var(--danger-base)" : "inherit" }}>
                     {hoursElapsed}h elapsed{overdue ? " (ICO deadline passed)" : ""}
                   </span>
                 </li>

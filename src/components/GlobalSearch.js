@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import { createCustomerDisplaySlug } from "@/lib/customers/slug";
 import { prefetchJob } from "@/lib/swr/prefetch";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const MIN_QUERY_LENGTH = 2;
 
@@ -140,7 +141,7 @@ const GlobalSearch = ({
         setActiveIndex(0);
       } catch (error) {
         if (error.name !== "AbortError") {
-          console.error("Global search request failed:", error);
+          logFailure("Global search request failed:", error);
           setFeedback("Something went wrong. Please try again.");
           setApiResults([]);
         }

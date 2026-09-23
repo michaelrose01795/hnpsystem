@@ -13,6 +13,7 @@ import { sendDmsEmail } from "@/lib/email/emailApi";
 import { isSmtpConfigured } from "@/lib/email/smtp";
 import { resolveEmailBaseUrl } from "@/lib/email/template";
 import { buildSupportReportEmail } from "@/lib/support/supportReportEmail";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /**
  * Fire the internal support-report notification. Resolves an outcome object and
@@ -51,7 +52,7 @@ export async function sendSupportReportNotification({
     return { sent: true };
   } catch (error) {
     // Log safely (no report content) and swallow — never block the submission.
-    console.error("[support] notification email failed:", error?.message || error);
+    logFailure("[support] notification email failed:", error?.message || error);
     return { sent: false, error: error?.message || "send failed" };
   }
 }

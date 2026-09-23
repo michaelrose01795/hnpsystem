@@ -33,6 +33,20 @@ export function classifyVhcMedia(jobFiles = []) {
   };
 }
 
+// Keep the caller's existing row order inside each partition, but surface any
+// row with at least one attachment before rows that still have no media.
+export function prioritiseRowsWithMedia(rows = []) {
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  const hasMedia = (row) =>
+    (Array.isArray(row?.photos) && row.photos.length > 0) ||
+    (Array.isArray(row?.videos) && row.videos.length > 0);
+
+  return [
+    ...sourceRows.filter(hasMedia),
+    ...sourceRows.filter((row) => !hasMedia(row)),
+  ];
+}
+
 // Group VHC media (photos + videos) by the request/concern they were captured
 // against (job_files.vhc_concern_link). Each linked concern becomes one row
 // carrying both its photos and its videos. Media with no concern link falls

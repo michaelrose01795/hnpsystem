@@ -599,7 +599,6 @@ const USAGE_REGISTRY = {
   { label: "Button primitive", file: "src/components/ui/Button.js" },
   { label: "Job cards page", file: "src/pages/tech/[jobNumber].js", route: "/tech" },
   { label: "Accounts page", file: "src/pages/accounts/index.js", route: "/accounts" },
-  { label: "Admin users", file: "src/pages/admin/users/index.js", route: "/admin/users" },
   { label: "HR employees tab", file: "src/components/HR/tabs/EmployeesTab.js" },
   { label: "Profile page", file: "src/pages/profile/index.js", route: "/profile" }],
 
@@ -648,7 +647,7 @@ const USAGE_REGISTRY = {
   { label: "TabGroup primitive", file: "src/components/ui/tabAPI/TabGroup.js" },
   { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
   { label: "Profile tab switcher", file: "src/components/profile/TabSwitcher.js", route: "/profile" },
-  { label: "HR tabs bar", file: "src/components/HR/HrTabsBar.js" },
+  { label: "HR Manager tabs", file: "src/pages/hr/manager/index.js", route: "/hr/manager" },
   { label: "Job card write-up form", file: "src/components/JobCards/WriteUpForm.js" }],
 
   "searchbar-api": [

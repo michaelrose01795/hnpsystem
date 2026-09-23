@@ -18,6 +18,7 @@
 // Mounted from src/pages/_app.js next to GlobalNotesWidget.
 
 import React, { useEffect, useMemo, useState } from "react";import LayerSurface from "@/components/ui/LayerSurface";
+import Button from "@/components/ui/Button";
 
 const STORAGE_KEY = "hnp.cookieConsent.v1";
 const ANON_COOKIE = "hnp_anon_id";
@@ -118,6 +119,7 @@ export default function CookieBanner() {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [showCustomise, setShowCustomise] = useState(false);
+  const [isStaffScope, setIsStaffScope] = useState(true);
   const [selections, setSelections] = useState(() => ({
     essential: true,
     preferences: false,
@@ -128,6 +130,13 @@ export default function CookieBanner() {
   useEffect(() => {
     setMounted(true);
     if (typeof window === "undefined") return;
+    // The banner is mounted globally from _app.js, so the same component
+    // renders under BOTH design systems. Staff scope uses the shared
+    // Button; /website keeps its own controls, because custglobal.css
+    // styles a raw <button> as the clear-glass primary action and
+    // .app-btn as the red-wash secondary - handing both to .app-btn there
+    // would flatten the accept/reject hierarchy the customer site relies on.
+    setIsStaffScope(!document.documentElement.classList.contains("website-scope"));
     const storedConsent = readStoredConsent();
     if (!storedConsent || storedConsent.policyVersion !== POLICY_VERSION) {
       setOpen(true);
@@ -209,8 +218,10 @@ export default function CookieBanner() {
     []
   );
 
-  // Solid-accent (Accept All): brand colour on accent text. Fine in both
-  // modes because --onAccentText is already light-/dark-aware.
+  // /website-only fallbacks. Staff scope renders <Button> instead, which
+  // brings the shared 44px control height, --control-radius, and the
+  // hover / focus-visible / active / disabled states from
+  // families/buttons.css - none of which these inline objects had.
   const buttonPrimary = {
     minHeight: 40,
     padding: "10px 14px",
@@ -222,8 +233,7 @@ export default function CookieBanner() {
     color: "var(--onAccentText)"
   };
 
-  // Ghost (Customise, Reject All, Save Choices): no border, transparent
-  // surface, and text follows --text-1 so it flips with light/dark.
+  // Ghost (Customise, Reject All, Save Choices) - /website only.
   const buttonGhost = {
     minHeight: 40,
     padding: "10px 14px",
@@ -301,21 +311,45 @@ export default function CookieBanner() {
         }}>
 
         {!showCustomise &&
-        <button type="button" onClick={() => setShowCustomise(true)} style={buttonGhost}>
-            Customise
-          </button>
+          (isStaffScope ? (
+            <Button type="button" variant="ghost" onClick={() => setShowCustomise(true)}>
+              Customise
+            </Button>
+          ) : (
+            <button type="button" onClick={() => setShowCustomise(true)} style={buttonGhost}>
+              Customise
+            </button>
+          ))
         }
         {showCustomise &&
-        <button type="button" onClick={saveCustom} style={buttonGhost}>
-            Save Choices
-          </button>
+          (isStaffScope ? (
+            <Button type="button" variant="ghost" onClick={saveCustom}>
+              Save Choices
+            </Button>
+          ) : (
+            <button type="button" onClick={saveCustom} style={buttonGhost}>
+              Save Choices
+            </button>
+          ))
         }
-        <button type="button" onClick={rejectAll} style={buttonGhost}>
-          Reject All
-        </button>
-        <button type="button" onClick={acceptAll} style={buttonPrimary}>
-          Accept All
-        </button>
+        {isStaffScope ? (
+          <Button type="button" variant="ghost" onClick={rejectAll}>
+            Reject All
+          </Button>
+        ) : (
+          <button type="button" onClick={rejectAll} style={buttonGhost}>
+            Reject All
+          </button>
+        )}
+        {isStaffScope ? (
+          <Button type="button" variant="primary" onClick={acceptAll}>
+            Accept All
+          </Button>
+        ) : (
+          <button type="button" onClick={acceptAll} style={buttonPrimary}>
+            Accept All
+          </button>
+        )}
       </div>
     </LayerSurface>);
 

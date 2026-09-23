@@ -6,17 +6,21 @@ import { useRouter } from "next/router"; // Next.js router for navigation
 import { useUser } from "@/context/UserContext"; // Custom user context (dev auth user)
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
-import {
-  // Job clocking functions to start/stop time on jobs
-  clockInToJob,
-  clockOutFromJob,
-  getUserActiveJobs
-} from "@/lib/database/jobClocking"; // DB: job clocking
-import { getAllJobs, getJobRequestsForClocking } from "@/lib/database/jobs"; // DB: fetch jobs and their clocking requests
-import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
+// Loaded on demand - all three resolve the Supabase browser client (213 KB).
+//
+// This modal is imported by the staff shell and by the technician screens, so a
+// static import here put the client into the first load of every page that can
+// open it. Nothing below runs until the modal is actually open: the component
+// returns null while `isOpen` is false, and every call site sits inside an
+// isOpen-guarded effect or a button handler.
+const loadJobClockingDb = () => import("@/lib/database/jobClocking");
+const loadJobsDb = () => import("@/lib/database/jobs");
+const loadDevUsers = () => import("@/lib/users/devUsers");
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
+import PopupModal from "@/components/popups/popupStyleApi";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const buildRequestOptions = (jobNumberValue, requestRows) => {
   const trimmed = jobNumberValue.trim();
@@ -122,7 +126,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           setRequestOptions(fallbackOptions);
           return;
         }
-        const data = await getJobRequestsForClocking(jobMatch.id);
+        const data = await (await loadJobsDb()).getJobRequestsForClocking(jobMatch.id);
         if (!isMounted) return;
         setRequestOptions(buildRequestOptions(trimmed, data || []));
       } catch (err) {
@@ -181,16 +185,16 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         setError(""); // Clear any prior error
 
         // ✅ DEV: Ensure a users row exists and get integer user_id (no email needed)
-        const realId = await ensureDevDbUserAndGetId(user); // Create/find users row
+        const realId = await (await loadDevUsers()).ensureDevDbUserAndGetId(user); // Create/find users row
         if (!mounted) return; // Stop if unmounted
         setDbUserId(realId); // Save integer users.user_id
 
         // Fetch active jobs for this DB user
-        const act = await getUserActiveJobs(realId); // Query open clock-ins
+        const act = await (await loadJobClockingDb()).getUserActiveJobs(realId); // Query open clock-ins
         if (act.success) setActiveJobs(act.data); // Put into state
 
         // Fetch all jobs, keep only active ones, normalize shape
-        const allJobsRaw = await getAllJobs(); // Fetch jobs list
+        const allJobsRaw = await (await loadJobsDb()).getAllJobs(); // Fetch jobs list
         const allJobs = Array.isArray(allJobsRaw) ? allJobsRaw : []; // Safe array
         const activeOnly = allJobs
           .filter(
@@ -202,7 +206,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           .map(normaliseJob); // Normalize per UI
         setAvailableJobs(activeOnly); // Save available jobs
       } catch (e) {
-        console.error("ensureDevDbUserAndGetId/load error:", e); // Log any failure
+        logFailure("ensureDevDbUserAndGetId/load error:", e); // Log any failure
         setError(e.message || "Failed to prepare your account for clocking"); // Show message
       } finally {
         if (mounted) setLoading(false); // Stop loader
@@ -255,7 +259,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       }
 
       // Do the clock-in with real integer ids
-      const res = await clockInToJob(
+      const res = await (await loadJobClockingDb()).clockInToJob(
         dbUserId,
         Number(job.id),
         job.jobNumber,
@@ -271,7 +275,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         setError(res.error || "Failed to clock in"); // Show DB error
       }
     } catch (e) {
-      console.error("Clock-in error:", e); // Log
+      logFailure("Clock-in error:", e); // Log
       setError(e.message || "Error clocking in. Please try again."); // UI message
     } finally {
       setLoading(false); // Stop loader
@@ -289,7 +293,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
 
     setLoading(true); // Start loader
     try {
-      const res = await clockOutFromJob(dbUserId, jobId, clockingId); // Call DB
+      const res = await (await loadJobClockingDb()).clockOutFromJob(dbUserId, jobId, clockingId); // Call DB
       if (res.success) { // If OK
         alert(`✅ Clocked out from Job ${jobNumText}\n\nHours worked: ${res.hoursWorked}h`); // Show hours
         setJobNumber(""); // Clear job number input for next open
@@ -307,7 +311,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         setError(res.error || "Failed to clock out"); // Show DB error
       }
     } catch (e) {
-      console.error("Clock-out error:", e); // Log
+      logFailure("Clock-out error:", e); // Log
       setError(e.message || "Error clocking out. Please try again."); // UI message
     } finally {
       setLoading(false); // Stop loader
@@ -320,9 +324,9 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
     setLoading(true); // Start loader
     setError(""); // Clear
     try {
-      const act = await getUserActiveJobs(dbUserId); // Active clock-ins
+      const act = await (await loadJobClockingDb()).getUserActiveJobs(dbUserId); // Active clock-ins
       if (act.success) setActiveJobs(act.data); // Save
-      const raw = await getAllJobs(); // All jobs
+      const raw = await (await loadJobsDb()).getAllJobs(); // All jobs
       const all = Array.isArray(raw) ? raw : []; // Safe array
       const list = all
         .filter(
@@ -334,7 +338,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
         .map(normaliseJob); // Normalize
       setAvailableJobs(list); // Save
     } catch (e) {
-      console.error("Fetch data error:", e); // Log
+      logFailure("Fetch data error:", e); // Log
       setError("Failed to load jobs"); // UI message
     } finally {
       setLoading(false); // Stop loader
@@ -350,18 +354,18 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   if (!isOpen) return null; // Do not render when closed
 
   return (
-    <div className="popup-backdrop" onClick={onClose}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Start Job"
+      cardStyle={{
+        width: "100%",
+        maxWidth: "600px",
+        padding: "var(--section-card-padding)",
+      }}
+    >
       <div
-        className="popup-card"
         data-draft-ignore="true"
-        style={{
-          width: "100%",
-          maxWidth: "600px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          padding: "var(--section-card-padding)",
-        }}
-        onClick={(e) => e.stopPropagation()} // Prevent overlay close when clicking inside
       >
         <div
           className="app-popup-compact-header"
@@ -537,6 +541,6 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
 
         </LayerTheme>
       </div>
-    </div>
+    </PopupModal>
   );
 }

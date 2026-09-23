@@ -56,6 +56,17 @@ async function handler(req, res) {
       ? Math.min(Math.floor(requestedLimit), MAX_LIMIT)
       : JOBS_WORKLOAD_DEFAULT_LIMIT;
 
+  // Optional technician scope, used by /tech and /tech/dashboard.
+  //
+  // This narrows the SAME rows this caller can already read unfiltered, so it
+  // grants nothing — it only avoids shipping the whole workshop's workload to a
+  // technician who renders three of their own jobs. Anything non-numeric is
+  // ignored rather than rejected, so a malformed value degrades to the full list
+  // exactly as before.
+  const requestedAssignedTo = Number(req.query.assignedTo);
+  const assignedTo =
+    Number.isInteger(requestedAssignedTo) && requestedAssignedTo > 0 ? requestedAssignedTo : null;
+
   try {
     // `fresh=1` bypasses the short server-side dedupe window; the list uses it
     // for realtime-triggered refetches so a change is never masked by the cache.
@@ -63,8 +74,9 @@ async function handler(req, res) {
       limit,
       throwOnError: true,
       noCache: req.query.fresh === "1",
+      assignedTo,
     });
-    return res.status(200).json({ success: true, data: jobs, limit });
+    return res.status(200).json({ success: true, data: jobs, limit, assignedTo });
   } catch (error) {
     console.error("❌ GET /api/jobs/workload error:", error);
     return res

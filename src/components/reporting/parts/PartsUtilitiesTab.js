@@ -31,10 +31,10 @@ export default function PartsUtilitiesTab({ filter, onApplySavedView }) {
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                <button type="button" className="app-btn app-btn--secondary" onClick={() => setExplore(kpi)} style={{ fontSize: "0.74rem", padding: "4px 10px" }}>
+                <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => setExplore(kpi)}>
                   Explore
                 </button>
-                <a className="app-btn app-btn--primary" href={buildExportUrl(kpi.id, filter)} style={{ fontSize: "0.74rem", padding: "4px 10px", textDecoration: "none" }}>
+                <a className="app-btn app-btn--primary app-btn--xs" href={buildExportUrl(kpi.id, filter)}>
                   Export CSV
                 </a>
               </div>

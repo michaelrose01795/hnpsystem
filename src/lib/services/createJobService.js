@@ -12,6 +12,7 @@ import {
 } from "@/lib/database/customers"; // customer helpers
 import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection"; // AI job-type detection
 import { attachMobileFieldsToJob } from "@/lib/mobile/mobileJobs"; // mobile service_mode extension
+import { logFailure } from "@/lib/utils/logFailure";
 
 const supabase = getDatabaseClient(); // server-side database client
 
@@ -153,7 +154,7 @@ export const saveCustomerStatus = async (jobId, status) => {
 
   const { error } = await supabase.from("job_customer_statuses").insert([payload]); // insert status row
   if (error) { // log but don't block job creation
-    console.error("Failed to save customer status", error.message); // non-fatal
+    logFailure("Failed to save customer status", error.message); // non-fatal
   }
 };
 
@@ -283,6 +284,7 @@ export const createFullJob = async ({ customer, vehicle, requests, options = {} 
     primeJobId = null, // prime job id for sub-job linking
     asPrimeJob = false, // create as prime job flag
     isFirstJob = true, // whether this is the first job in a multi-tab batch
+    bookedBy = null, // advisor who pressed Save Job Card
   } = options;
 
   // Step 1: Resolve vehicle (upsert)
@@ -333,6 +335,7 @@ export const createFullJob = async ({ customer, vehicle, requests, options = {} 
     cosmeticNotes: isFirstJob ? cosmeticNotes : null, // cosmetic notes (first job only)
     vhcRequired: isFirstJob ? vhcRequired : false, // VHC flag (first job only)
     maintenanceInfo: isFirstJob ? { cosmeticDamagePresent, washRequired } : {}, // maintenance metadata
+    bookedBy, // persist creation actor and the single initial Booked milestone
     primeJobId: primeJobId || null, // prime job for sub-job linking
     asPrimeJob, // create as prime flag
   };
@@ -409,6 +412,7 @@ export const createFullJobBatch = async ({ customer, vehicle, tabs, sharedOption
     // the existing attachMobileFieldsToJob helper.
     mobileDetails = null,
     mobileUserId = null,
+    bookedBy = null,
   } = sharedOptions;
 
   const createdJobs = []; // accumulator for created job results
@@ -436,6 +440,7 @@ export const createFullJobBatch = async ({ customer, vehicle, tabs, sharedOption
         // Job 1 is always the prime/host when creating multiple jobs together
         asPrimeJob: !isSubJobMode && (asPrimeJob || tabs.length > 1) && isFirstTab,
         isFirstJob: isFirstTab, // cosmetic/VHC only on first
+        bookedBy, // same advisor creates every tab in the batch
       },
     });
 

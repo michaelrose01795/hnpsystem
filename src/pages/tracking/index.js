@@ -3,19 +3,20 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { buildApiUrl } from "@/utils/apiClient";
-import { fetchTrackingSnapshot } from "@/lib/database/tracking";
+import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
+import { getAutoMovementRule } from "@/lib/tracking/autoMovement"; // shared rule table; the write itself is server-owned
 import { supabaseClient } from "@/lib/database/supabaseClient";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { TrackingRouteSkeleton } from "@/components/ui/RouteSkeletons";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { Button, InputField, StatusMessage } from "@/components/ui";
-import useBodyModalLock from "@/hooks/useBodyModalLock";
+import PopupModal from "@/components/popups/popupStyleApi";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { addMonths } from "date-fns";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
@@ -23,9 +24,27 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical --surface inner-section primitive
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical --theme summary-tile primitive
 import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // Extracted presentation layer.
-import LoanCarSchedulePanel from "@/components/LoanCars/LoanCarSchedulePanel";
-import TrackingMapModal from "@/features/tracking/map/TrackingMapModal"; // CSS-only dealership site map overlay
 import { WORKSHOP_CONTROLLER_ROLES, hasAnyRole } from "@/lib/auth/roles";
+import useIdleWarm from "@/hooks/useIdleWarm";
+import { logFailure } from "@/lib/utils/logFailure";
+
+// Two surfaces on this route render nothing on arrival, and both were the
+// heaviest things in its eager import graph.
+//
+// `LoanCarSchedulePanel` (78 kB of source, plus FuelGauge and the calendar
+// family it pulls in) only mounts when the Loan Cars tab is selected, and that
+// tab only exists for workshop controllers — every other role downloaded it and
+// could never reach it. `TrackingMapModal` only mounts while the Key/Parking
+// map overlay is open.
+//
+// Both are code-split and warmed on idle, so a workshop controller who switches
+// to Loan Cars, or anyone who presses Map, finds the chunk already in cache
+// rather than waiting on a request. Same DOM, same effects, same behaviour.
+const loadLoanCarSchedulePanel = () => import("@/components/LoanCars/LoanCarSchedulePanel");
+const loadTrackingMapModal = () => import("@/features/tracking/map/TrackingMapModal");
+
+const LoanCarSchedulePanel = dynamic(loadLoanCarSchedulePanel, { ssr: false });
+const TrackingMapModal = dynamic(loadTrackingMapModal, { ssr: false });
 
 const CAR_LOCATIONS = [
 { id: "na", label: "N/A" },
@@ -108,29 +127,9 @@ const ensureDropdownOption = (options = [], value = "") => {
 
 };
 
-const AUTO_MOVEMENT_RULES = {
-  "workshop in progress": {
-    keyLocation: "Workshop Cupboard – Jobs in Progress",
-    vehicleLocation: "In Workshop",
-    vehicleStatus: "In Workshop"
-  },
-  wash: {
-    keyLocation: "Workshop Cupboard – Wash",
-    vehicleStatus: "Wash"
-  },
-  complete: {
-    keyLocation: "Workshop Cupboard – Complete",
-    vehicleLocation: "Ready for Release",
-    vehicleStatus: "Ready for Release"
-  }
-};
-
-const getAutoMovementRule = (status) => {
-  if (!status) return null;
-  return AUTO_MOVEMENT_RULES[status.trim().toLowerCase()] || null;
-};
-
 const NEXT_ACTION_ENDPOINT = "/api/tracking/next-action";
+
+const TRACKING_SNAPSHOT_ENDPOINT = "/api/tracking/snapshot";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -163,6 +162,7 @@ const OIL_STOCK_CATEGORY_FILTERS = [
 
 const EQUIPMENT_API_ENDPOINT = "/api/tracking/equipment";
 const OIL_STOCK_API_ENDPOINT = "/api/tracking/oil-stock";
+const TRACKING_CARD_GRID_TEMPLATE = "repeat(auto-fit, minmax(min(100%, 320px), 1fr))";
 
 const renderTrackingSummaryItem = (item) => (
   <LayerTheme
@@ -767,32 +767,21 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
 
 };
 const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
-  useBodyModalLock(true);
-
   const [query, setQuery] = useState("");
   const filtered = options.filter((option) => option.label.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <div
-      className="popup-backdrop"
-      role="dialog"
-      aria-modal="true"
-      style={{
-        ...popupOverlayStyles,
-        zIndex: "var(--z-modal)"
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Search location"
+      cardStyle={{
+        width: "min(100%, 600px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
       }}>
-
-      <div
-        style={{
-          ...popupCardStyles,
-          width: "min(600px, 100%)",
-          background: "var(--search-surface)",
-          padding: "26px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "14px",
-          color: "var(--search-text)"
-        }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
@@ -859,8 +848,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
         </div>
 
         {/* TODO: Replace static location lists with DB-driven results */}
-      </div>
-    </div>);
+    </PopupModal>);
 
 };
 
@@ -889,8 +877,6 @@ const buildOilFormState = (data = null) => {
 };
 
 const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) => {
-  useBodyModalLock(true);
-
   const [form, setForm] = useState(() => buildEquipmentFormState(initialData));
   const [confirmDialog, setConfirmDialog] = useState(null);
 
@@ -950,13 +936,14 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
   };
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={initialData ? "Edit equipment or tools" : "Add equipment or tools"}
+      cardStyle={{ width: "min(100%, 600px)", padding: "var(--section-card-padding)" }}>
       <form
         onSubmit={handleSubmit}
         style={{
-          ...popupCardStyles,
-          width: "min(600px, 100%)",
-          padding: "28px",
           display: "flex",
           flexDirection: "column",
           gap: "18px"
@@ -1049,13 +1036,11 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm} />
 
-    </div>);
+    </PopupModal>);
 
 };
 
 const EquipmentHistoryModal = ({ item, onClose }) => {
-  useBodyModalLock(Boolean(item));
-
   if (!item) return null;
 
   const rows = [
@@ -1067,16 +1052,17 @@ const EquipmentHistoryModal = ({ item, onClose }) => {
   ["Last updated", formatDateOnlyLabel(item.updatedAt)]];
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
-      <div
-        style={{
-          ...popupCardStyles,
-          width: "min(520px, 100%)",
-          padding: "28px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px"
-        }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={`${item.name} equipment history`}
+      cardStyle={{
+        width: "min(100%, 520px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-sm)" }}>
           <div style={{ minWidth: 0 }}>
@@ -1107,14 +1093,11 @@ const EquipmentHistoryModal = ({ item, onClose }) => {
             </div>
           )}
         </LayerSurface>
-      </div>
-    </div>);
+    </PopupModal>);
 
 };
 
 const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
-  useBodyModalLock(true);
-
   const [form, setForm] = useState(() => buildOilFormState(initialData));
   const [confirmDialog, setConfirmDialog] = useState(null);
 
@@ -1179,13 +1162,14 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
   };
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={initialData ? "Edit oil or stock" : "Add oil or stock"}
+      cardStyle={{ width: "min(100%, 650px)", padding: "var(--section-card-padding)" }}>
       <form
         onSubmit={handleSubmit}
         style={{
-          ...popupCardStyles,
-          width: "min(650px, 100%)",
-          padding: "28px",
           display: "flex",
           flexDirection: "column",
           gap: "18px"
@@ -1286,13 +1270,11 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm} />
 
-    </div>);
+    </PopupModal>);
 
 };
 
 const OilStockHistoryModal = ({ item, onClose }) => {
-  useBodyModalLock(Boolean(item));
-
   if (!item) return null;
 
   const status = getOilStockStatus(item);
@@ -1307,16 +1289,17 @@ const OilStockHistoryModal = ({ item, onClose }) => {
   ["Last updated", formatDateOnlyLabel(item.updatedAt)]];
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
-      <div
-        style={{
-          ...popupCardStyles,
-          width: "min(520px, 100%)",
-          padding: "28px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px"
-        }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={`${item.title} oil or stock history`}
+      cardStyle={{
+        width: "min(100%, 520px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-sm)" }}>
           <div style={{ minWidth: 0 }}>
@@ -1347,14 +1330,11 @@ const OilStockHistoryModal = ({ item, onClose }) => {
             </div>
           )}
         </LayerSurface>
-      </div>
-    </div>);
+    </PopupModal>);
 
 };
 
 const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
-  useBodyModalLock(true);
-
   const [form, setForm] = useState(() => ({
     jobNumber: initialData?.jobNumber || "",
     reg: initialData?.reg || "",
@@ -1404,7 +1384,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         }));
       }
     } catch (err) {
-      console.error("Auto-fill error:", err);
+      logFailure("Auto-fill error:", err);
     } finally {
       setIsSearching(false);
     }
@@ -1435,16 +1415,17 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
   };
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true">
-      <div
-        style={{
-          ...popupCardStyles,
-          width: "min(800px, 100%)",
-          padding: "28px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px"
-        }}>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="Vehicle and key tracking"
+      cardStyle={{
+        width: "min(100%, 800px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
@@ -1586,14 +1567,11 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             </Button>
           </form>
         }
-      </div>
-    </div>);
+    </PopupModal>);
 
 };
 
 const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries = [] }) => {
-  useBodyModalLock(true);
-
   const [form, setForm] = useState(() => ({
     ...emptyForm,
     ...entry,
@@ -1680,18 +1658,19 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
   };
 
   return (
-    <div className="popup-backdrop" role="dialog" aria-modal="true">
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel={entry || matchedExisting ? "Edit existing tracking entry" : "Log new tracking entry"}
+      cardStyle={{
+        width: "min(100%, 640px)",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        padding: "var(--section-card-padding)",
+      }}>
       <form
         onSubmit={handleSubmit}
-        className="popup-card"
         style={{
-          borderRadius: "var(--radius-xl)",
-          width: "100%",
-          maxWidth: "640px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          border: "none",
-          padding: "32px",
           display: "flex",
           flexDirection: "column",
           gap: "18px"
@@ -1815,7 +1794,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
 
         {/* TODO: Persist vehicle/key updates via API endpoint */}
       </form>
-    </div>);
+    </PopupModal>);
 
 };
 
@@ -1848,12 +1827,18 @@ export default function TrackingDashboard() {
     return base;
   }, [isWorkshopManager]);
   const [activeTab, setActiveTab] = useState("tracker");
+
+  // The map overlay is reachable by every role on this page, so its chunk is
+  // warmed unconditionally. The loan-car schedule is workshop-controller only
+  // and is warmed alongside their other deferred work below — `useIdleWarm`
+  // deliberately runs once per mount, and `isWorkshopManager` is still false on
+  // the first render while UserContext resolves.
+  useIdleWarm([loadTrackingMapModal]);
   const [equipmentChecks, setEquipmentChecks] = useState(() => cloneList(DEFAULT_EQUIPMENT_CHECKS));
   const [oilChecks, setOilChecks] = useState(() => cloneList(DEFAULT_OIL_CHECKS));
   const [activeTopUpId, setActiveTopUpId] = useState(null);
   const [topUpValue, setTopUpValue] = useState("");
   const [isMobileView, setIsMobileView] = useState(false); // portrait phone layout toggle
-  const [isWideTrackerView, setIsWideTrackerView] = useState(false);
   const [trackerSearchTerm, setTrackerSearchTerm] = useState("");
   const [loanCarSearchTerm, setLoanCarSearchTerm] = useState("");
   const [loanCarMonth, setLoanCarMonth] = useState(() => {
@@ -1878,26 +1863,30 @@ export default function TrackingDashboard() {
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 1280px)");
-    setIsWideTrackerView(mediaQuery.matches);
-    const handler = (event) => setIsWideTrackerView(event.matches);
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
-
+  // Read through the API rather than calling `fetchTrackingSnapshot()` in the
+  // browser.
+  //
+  // The direct call ran two deeply-joined Supabase queries from the page under
+  // the public anon key, which (a) put the whole of lib/database/tracking.js —
+  // loan-car helpers included — into this route's first-load bundle, (b) made
+  // the route's data load invisible to the Server-Timing/hnpPerf instrumentation
+  // every other hot route now reports through, and (c) required the tracking
+  // tables to stay readable by anon. /api/tracking/snapshot already existed,
+  // is role-guarded, runs the identical query under the service role and
+  // returns the identical shape.
   const loadEntries = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const snapshot = await fetchTrackingSnapshot();
-      if (!snapshot.success) {
-        throw new Error(snapshot.error?.message || "Failed to load tracking data");
+      const response = await fetch(buildApiUrl(TRACKING_SNAPSHOT_ENDPOINT));
+      const snapshot = await response.json().catch(() => null);
+      if (!response.ok || !snapshot?.success) {
+        throw new Error(snapshot?.message || "Failed to load tracking data");
       }
       const normalized = Array.isArray(snapshot.data) ? snapshot.data : [];
       setEntries(normalized);
     } catch (fetchError) {
-      console.error("Failed to fetch tracking snapshot", fetchError);
+      logFailure("Failed to fetch tracking snapshot", fetchError);
       setEntries([]);
       setError(fetchError?.message || "Unable to load tracking data");
     } finally {
@@ -1972,7 +1961,7 @@ export default function TrackingDashboard() {
       }
       setEquipmentChecks(Array.isArray(payload.data) ? payload.data : []);
     } catch (loadError) {
-      console.error("Equipment data load error", loadError);
+      logFailure("Equipment data load error", loadError);
       setEquipmentChecks([]);
     }
   }, [isWorkshopManager]);
@@ -1990,15 +1979,49 @@ export default function TrackingDashboard() {
       }
       setOilChecks(Array.isArray(payload.data) ? payload.data : []);
     } catch (loadError) {
-      console.error("Oil/stock data load error", loadError);
+      logFailure("Oil/stock data load error", loadError);
       setOilChecks([]);
     }
   }, [isWorkshopManager]);
 
+  // Equipment and oil/stock belong to other tabs, but both were fetched during
+  // mount for every workshop controller — two API round trips racing the
+  // tracking snapshot on the critical path, for data the landing tab never
+  // shows.
+  //
+  // They are now deferred to idle rather than removed. Loading them on tab
+  // activation would be cheaper still, but neither tab has a loading state, so
+  // the first switch would flash "Equipment service list is empty." — a visible
+  // change. Warming on idle keeps the data present the moment anyone switches
+  // while leaving the cold load to the snapshot alone. Same pattern as
+  // useIdleWarm, applied to requests instead of chunks.
   useEffect(() => {
-    if (!isWorkshopManager) return;
-    loadEquipmentChecks();
-    loadOilChecks();
+    if (!isWorkshopManager) return undefined;
+    if (typeof window === "undefined") return undefined;
+
+    let cancelled = false;
+    const warm = () => {
+      if (cancelled) return;
+      loadEquipmentChecks();
+      loadOilChecks();
+      // Workshop controllers are the only role with a Loan Cars tab; warm its
+      // chunk here, where `isWorkshopManager` is known, rather than in the
+      // mount-once useIdleWarm above.
+      loadLoanCarSchedulePanel().catch(() => {});
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(warm, { timeout: 3000 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback?.(id);
+      };
+    }
+    const timer = window.setTimeout(warm, 1500); // Safari / older browsers
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [isWorkshopManager, loadEquipmentChecks, loadOilChecks]);
 
   const sharedSearchValue = useMemo(() => {
@@ -2060,7 +2083,7 @@ export default function TrackingDashboard() {
         const updated = result.data;
         setEquipmentChecks((prev) => prev.map((item) => item.id === updated.id ? updated : item));
       } catch (error) {
-        console.error("Equipment check update failed", error);
+        logFailure("Equipment check update failed", error);
         alert(error.message || "Failed to log equipment check");
       }
     },
@@ -2097,7 +2120,7 @@ export default function TrackingDashboard() {
         setActiveTopUpId(null);
         setTopUpValue("");
       } catch (error) {
-        console.error("Oil/stock check update failed", error);
+        logFailure("Oil/stock check update failed", error);
         alert(error.message || "Failed to mark oil/stock check");
       }
     },
@@ -2149,7 +2172,7 @@ export default function TrackingDashboard() {
         });
         setEquipmentModal({ open: false, item: null });
       } catch (error) {
-        console.error("Save equipment entry failed", error);
+        logFailure("Save equipment entry failed", error);
         alert(error.message || "Failed to save equipment entry");
       }
     },
@@ -2203,7 +2226,7 @@ export default function TrackingDashboard() {
         });
         setOilStockModal({ open: false, item: null });
       } catch (error) {
-        console.error("Save oil/stock entry failed", error);
+        logFailure("Save oil/stock entry failed", error);
         alert(error.message || "Failed to save oil/stock entry");
       }
     },
@@ -2222,7 +2245,7 @@ export default function TrackingDashboard() {
       }
       setEquipmentChecks((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
-      console.error("Delete equipment entry failed", error);
+      logFailure("Delete equipment entry failed", error);
       alert(error.message || "Failed to delete equipment entry");
     } finally {
       setEquipmentModal({ open: false, item: null });
@@ -2241,51 +2264,33 @@ export default function TrackingDashboard() {
       }
       setOilChecks((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
-      console.error("Delete oil/stock entry failed", error);
+      logFailure("Delete oil/stock entry failed", error);
       alert(error.message || "Failed to delete oil/stock entry");
     } finally {
       setOilStockModal({ open: false, item: null });
     }
   }, []);
 
-  const handleAutoMovement = useCallback(
-    async (job, rule, newStatus) => {
-      try {
-        const payload = {
-          actionType: "job_status_change",
-          jobId: job.id || job.job_id || null,
-          jobNumber: (job.job_number || job.jobNumber || "").toString().trim().toUpperCase(),
-          vehicleId: job.vehicle_id || job.vehicleId || null,
-          vehicleReg: (job.vehicle_reg || job.reg || "").toString().trim().toUpperCase(),
-          keyLocation: rule.keyLocation,
-          vehicleLocation: rule.vehicleLocation,
-          vehicleStatus: rule.vehicleStatus,
-          notes: `Auto-sync from status "${newStatus}"`,
-          performedBy: dbUserId || null
-        };
+  // The job-status subscription below is unfiltered by design — any job in the
+  // workshop can trip an auto-movement rule — so on a busy day it fires often,
+  // and every hit reloaded the entire tracking list. The reload is now coalesced,
+  // and skipped entirely while the tab is hidden.
+  const scheduleEntriesRefresh = useCoalescedRefresh(loadEntries);
 
-        const response = await fetch(buildApiUrl(NEXT_ACTION_ENDPOINT), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-          const errorPayload = await response.
-          json().
-          catch(() => ({ message: "Failed to auto-sync locations" }));
-          console.error("Auto movement failed", errorPayload?.message || response.statusText);
-          return;
-        }
-
-        await loadEntries();
-      } catch (autoError) {
-        console.error("Auto movement error", autoError);
-      }
-    },
-    [dbUserId, loadEntries]
-  );
-
+  // This page is a *viewer* of automatic movement, not its owner.
+  //
+  // It used to answer this subscription by POSTing the movement itself, which
+  // meant the write only happened when somebody had this page open, happened
+  // once per open tab, and was attributed to whoever was watching rather than
+  // to whoever changed the status. That write now belongs to the status change
+  // (`updateJob` and /api/status/update, via
+  // `recordAutomaticMovementForStatus`), so all this subscription has to do is
+  // notice that the underlying data moved and refresh the list.
+  //
+  // The subscription stays unfiltered by design — any job in the workshop can
+  // trip a rule — so on a busy day it fires often. The refresh is coalesced and
+  // skipped entirely while the tab is hidden, and the callback now does no
+  // network work of its own.
   useEffect(() => {
     const channel = supabaseClient.
     channel("tracking-job-status").
@@ -2298,9 +2303,10 @@ export default function TrackingDashboard() {
         if (!newJob?.status || newJob.status === oldJob?.status) {
           return;
         }
-        const rule = getAutoMovementRule(newJob.status);
-        if (!rule) return;
-        handleAutoMovement(newJob, rule, newJob.status);
+        // Gated on the same rule table as before, so the refresh cadence this
+        // page has today is unchanged — only the write has moved away.
+        if (!getAutoMovementRule(newJob.status)) return;
+        scheduleEntriesRefresh();
       }
     ).
     subscribe();
@@ -2308,7 +2314,7 @@ export default function TrackingDashboard() {
     return () => {
       supabaseClient.removeChannel(channel);
     };
-  }, [handleAutoMovement]);
+  }, [scheduleEntriesRefresh]);
 
   // Priority audit: this page previously sorted assigned-to-me jobs first, then
   // newest movement. Keep that useful personal tie-breaker, but put location
@@ -2393,18 +2399,6 @@ export default function TrackingDashboard() {
     { label: "Customer Waiting", value: customerWaiting }];
 
   }, [activeEntries]);
-
-  const groupedTrackerEntries = useMemo(() => {
-    const groups = new Map();
-    filteredActiveEntries.forEach((entry) => {
-      const group = getTrackerGroup(entry);
-      if (!groups.has(group.id)) {
-        groups.set(group.id, { ...group, entries: [] });
-      }
-      groups.get(group.id).entries.push(entry);
-    });
-    return Array.from(groups.values());
-  }, [filteredActiveEntries]);
 
   const filteredEquipmentChecks = useMemo(() => {
     const term = equipmentSearchTerm.trim().toLowerCase();
@@ -2583,7 +2577,7 @@ export default function TrackingDashboard() {
       closeEntryModal();
       setSimplifiedModal({ open: false, initialData: null });
     } catch (saveError) {
-      console.error("Failed to log tracking entry", saveError);
+      logFailure("Failed to log tracking entry", saveError);
       setError(saveError.message || "Unable to save tracking entry");
     }
   };
@@ -2647,59 +2641,29 @@ export default function TrackingDashboard() {
           No active jobs match your search or filters.
         </DevLayoutSection>
     }
-      {groupedTrackerEntries.map((group) =>
+      {filteredActiveEntries.length > 0 &&
     <DevLayoutSection
-      key={group.id}
-      sectionKey={`tracking-active-jobs-group-${group.id}`}
+      sectionKey="tracking-active-jobs-list"
       parentKey="tracking-page-body"
-      sectionType="section-shell"
+      sectionType="list"
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
+        display: "grid",
+        gridTemplateColumns: TRACKING_CARD_GRID_TEMPLATE,
+        alignItems: "stretch",
+        gap: "20px",
         width: "100%",
         maxWidth: "100%",
         minWidth: 0
       }}>
 
-        <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: "var(--space-sm)",
-          minWidth: 0
-        }}>
-
-          <h2 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-h3)", lineHeight: 1.2 }}>
-            {group.label}
-          </h2>
-          <span style={{ color: "var(--text-1)", fontSize: "var(--text-caption)", fontWeight: 700 }}>
-            {group.entries.length}
-          </span>
-        </div>
-
-        <DevLayoutSection
-        sectionKey={`tracking-active-jobs-list-${group.id}`}
-        parentKey={`tracking-active-jobs-group-${group.id}`}
-        sectionType="list"
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-          !isMobileView && isWideTrackerView ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
-          gap: "20px",
-          width: "100%",
-          maxWidth: "100%",
-          minWidth: 0
-        }}>
-
-          {group.entries.map((entry, index) => {
+          {filteredActiveEntries.map((entry, index) => {
+        const group = getTrackerGroup(entry);
         const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
         return (
           <DevLayoutSection
             key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
             sectionKey={`tracking-active-jobs-card-${group.id}-${index + 1}`}
-            parentKey={`tracking-active-jobs-list-${group.id}`}
+            parentKey="tracking-active-jobs-list"
             sectionType="content-card">
 
               <CombinedTrackerCard
@@ -2727,9 +2691,8 @@ export default function TrackingDashboard() {
             </DevLayoutSection>);
 
       })}
-        </DevLayoutSection>
       </DevLayoutSection>
-    )}
+    }
     </>;
 
 
@@ -2817,10 +2780,11 @@ export default function TrackingDashboard() {
         sectionType="grid"
         style={{
           display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, min(100%, 260px))" : "repeat(auto-fill, 260px)",
-          justifyContent: "start",
+          gridTemplateColumns: TRACKING_CARD_GRID_TEMPLATE,
           alignItems: "stretch",
           gap: "16px",
+          width: "100%",
+          maxWidth: "100%",
           minWidth: 0
         }}>
 
@@ -3052,8 +3016,11 @@ export default function TrackingDashboard() {
         sectionType="grid"
         style={{
           display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
+          gridTemplateColumns: TRACKING_CARD_GRID_TEMPLATE,
+          alignItems: "stretch",
           gap: "16px",
+          width: "100%",
+          maxWidth: "100%",
           minWidth: 0
         }}>
 

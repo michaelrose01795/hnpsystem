@@ -1,6 +1,8 @@
 // file location: src/features/websiteManager/shopApi.js
 // Client wrapper for /api/shop/admin/* endpoints.
 
+import { logFailure } from "@/lib/utils/logFailure";
+
 const json = async (res, label) => {
   let payload = null;
   try {
@@ -11,7 +13,7 @@ const json = async (res, label) => {
   if (!res.ok || payload?.success === false) {
     const message = payload?.message || `${label} failed (${res.status})`;
     // eslint-disable-next-line no-console
-    console.error(`[shopApi] ${label}:`, message);
+    logFailure(`[shopApi] ${label}:`, message);
     throw new Error(message);
   }
   return payload?.data ?? null;

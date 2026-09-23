@@ -13,6 +13,7 @@ import {
   logJobSubStatus
 } from "@/lib/services/jobStatusService"; // Import auto-status functions
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ============================================
    CHECK AND UPDATE VHC STATUS
@@ -83,11 +84,11 @@ export const checkAndUpdateVHCStatus = async (jobId, userId) => {
       return { success: true, statusUpdated: true, newStatus: "VHC Completed" };
     }
 
-    console.error("❌ Failed to update VHC complete:", result.error);
+    logFailure("❌ Failed to update VHC complete:", result.error);
     return { success: false, error: result.error };
     
   } catch (error) {
-    console.error("❌ Error checking VHC status:", error);
+    logFailure("❌ Error checking VHC status:", error);
     return { success: false, error: error.message };
   }
 };
@@ -148,7 +149,7 @@ export const markVHCAsSent = async (jobId, sentBy, sendMethod = "email", custome
       }]);
     
     if (logError) {
-      console.error("⚠️ Failed to log VHC send event:", logError);
+      logFailure("⚠️ Failed to log VHC send event:", logError);
       // Continue anyway - logging failure shouldn't block the status update
     }
     
@@ -164,12 +165,12 @@ export const markVHCAsSent = async (jobId, sentBy, sendMethod = "email", custome
         message: "VHC sent to customer successfully"
       };
     } else {
-      console.error("❌ Failed to update status:", result.error);
+      logFailure("❌ Failed to update status:", result.error);
       return { success: false, error: result.error };
     }
     
   } catch (error) {
-    console.error("❌ Error marking VHC as sent:", error);
+    logFailure("❌ Error marking VHC as sent:", error);
     return { success: false, error: error.message };
   }
 };
@@ -228,12 +229,12 @@ export const authorizeAdditionalWork = async (
         message: "Additional work authorized successfully"
       };
     } else {
-      console.error("❌ Failed to update status:", result.error);
+      logFailure("❌ Failed to update status:", result.error);
       return { success: false, error: result.error };
     }
     
   } catch (error) {
-    console.error("❌ Error authorizing additional work:", error);
+    logFailure("❌ Error authorizing additional work:", error);
     return { success: false, error: error.message };
   }
 };
@@ -282,7 +283,7 @@ export const declineAdditionalWork = async (jobId, declinedBy, customerNotes = "
       }]);
     
     if (logError) {
-      console.error("⚠️ Failed to log declination:", logError);
+      logFailure("⚠️ Failed to log declination:", logError);
       // Continue anyway
     }
     
@@ -297,7 +298,7 @@ export const declineAdditionalWork = async (jobId, declinedBy, customerNotes = "
       }]);
     
     if (noteError) {
-      console.error("⚠️ Failed to add note:", noteError);
+      logFailure("⚠️ Failed to add note:", noteError);
     }
 
     await logJobSubStatus(jobId, "Customer Declined", declinedBy, "Additional work declined");
@@ -311,7 +312,7 @@ export const declineAdditionalWork = async (jobId, declinedBy, customerNotes = "
     };
     
   } catch (error) {
-    console.error("❌ Error declining additional work:", error);
+    logFailure("❌ Error declining additional work:", error);
     return { success: false, error: error.message };
   }
 };
@@ -392,7 +393,7 @@ export const checkWarrantyJobCompletion = async (jobId, userId) => {
     };
     
   } catch (error) {
-    console.error("❌ Error checking warranty job:", error);
+    logFailure("❌ Error checking warranty job:", error);
     return { success: false, error: error.message };
   }
 };
@@ -461,12 +462,12 @@ export const completeWarrantyQC = async (jobId, completedBy) => {
         message: "Warranty QC complete - ready to claim"
       };
     } else {
-      console.error("❌ Failed to update status:", result.error);
+      logFailure("❌ Failed to update status:", result.error);
       return { success: false, error: result.error };
     }
     
   } catch (error) {
-    console.error("❌ Error completing warranty QC:", error);
+    logFailure("❌ Error completing warranty QC:", error);
     return { success: false, error: error.message };
   }
 };
@@ -500,7 +501,7 @@ export const getVHCSendHistory = async (jobId) => {
     return { success: true, data: data || [] };
     
   } catch (error) {
-    console.error("❌ Error fetching VHC send history:", error);
+    logFailure("❌ Error fetching VHC send history:", error);
     return { success: false, error: error.message, data: [] };
   }
 };
@@ -555,7 +556,7 @@ export const getVHCAuthorizationHistory = async (jobId) => {
     };
     
   } catch (error) {
-    console.error("❌ Error fetching VHC authorization history:", error);
+    logFailure("❌ Error fetching VHC authorization history:", error);
     return { 
       success: false, 
       error: error.message, 
@@ -636,7 +637,7 @@ export const calculateVHCTotals = async (jobId) => {
     };
     
   } catch (error) {
-    console.error("❌ Error calculating VHC totals:", error);
+    logFailure("❌ Error calculating VHC totals:", error);
     return { 
       success: false, 
       error: error.message,

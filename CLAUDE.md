@@ -53,7 +53,36 @@ Before writing or changing any code:
 3. Toasts, calendar today-rows, and similar variant signalling now rely on background tint + icon colour, not coloured side-borders.
 4. `border-radius`, `border-collapse`, `border-spacing`, `box-sizing: border-box`, and transparent placeholder borders for layout (e.g. `border: 1px solid transparent` to prevent hover-shift) are **not** affected by this rule.
 
-**Enforcement:** `npm run check:borders` ([tools/scripts/check-borders.js](tools/scripts/check-borders.js)) scans `src/` for forbidden `border: …` declarations and exits non-zero on violations. Run it before committing any UI change. Functional diagram primitives (TyreDiagram, BrakeDiagram, photo/video editors, LoadingSkeleton, email templates) are allowlisted inside the script.
+**Ring tokens come in PAIRS — the two halves are not interchangeable.** Each ring use-case has a bare colour and a complete shorthand:
+
+| Want | Write |
+|---|---|
+| the standard ring | `border: var(--input-ring)` |
+| your own width / style | `border: 2px dashed var(--input-ring-color)` |
+
+`border: 1px solid var(--input-ring)` expands to `1px solid 1px solid rgba(…)`, which is invalid CSS. The browser drops the whole declaration and the control renders with **no ring at all** — silently, and invisibly in review, because the token name looks right. The same applies to `--checkbox-ring(-color)`, `--ghostbutton-ring(-color)` and `--separating-line(-color)`. `--focus-ring` / `--control-ring` are `box-shadow` values and are never valid as a border colour; use `--input-ring-focus-color` for a focused input's border. `npm run check:borders` fails the build on all of these.
+
+**Enforcement:** `npm run check:borders` ([tools/scripts/check-borders.js](tools/scripts/check-borders.js)) scans `src/` for forbidden `border: …` declarations and for the ring misuse above, and exits non-zero on violations. Run it before committing any UI change. Functional diagram primitives (TyreDiagram, BrakeDiagram, photo/video editors, LoadingSkeleton, email templates) are allowlisted inside the script.
+
+### 3.0a-2 The surface ladder — THE LAW (Colour Audit, 2026-08)
+
+In a borderless system the **colour step between two surfaces is the only thing separating them**, so those steps are load-bearing and are enforced.
+
+```
+app shell (--page-shell-bg, opaque accent/surface blend)
+  page card      --surface        .app-page-card,   <LayerSurface>
+    section card --theme          .app-section-card, <LayerTheme>
+      nested     --surface        flips back — never stack --theme on --theme
+```
+
+- `--section-card-bg` resolves to **`--theme`**, not `--surface`. It is *not* an alias of `--page-card-bg`; the two rungs must differ. The flip-back for nested surfaces lives in [families/cards.css](src/styles/families/cards.css).
+- **Controls are part of the ladder.** A control on a `--theme` layer takes the `--surface` fill, because no single accent-alpha fill separates from both a white card and a tint. This is done by re-binding `--primary-control-*` on theme-layer containers — the whole control family (buttons, inputs, dropdown triggers, calendar, time picker) follows automatically. Never hand-roll a per-component background to work around it.
+- **Light and dark use different alphas on purpose.** The same alpha over white gives roughly *half* the perceptual step it gives over near-black. Light is `--secondary` .14 / `--theme` .16; dark is .16 / .18. Making the numbers match un-matches the look — that is exactly how light mode went flat.
+- The **low-chroma accents (Stone, Slate) are the binding constraint** in light mode, not the default red. An alpha that looks fine on red can fail on those.
+
+**Enforcement:** `npm run check:colours` ([tools/scripts/check-colour-system.js](tools/scripts/check-colour-system.js)) resolves the real token values through `themeRuntime.js`, composites every translucent layer, and asserts a perceptual-lightness floor (CIE ΔL* ≥ 6 for a surface step, ≥ 3.5 for a hover step) plus WCAG 4.5:1 on every text-on-fill pairing — for **all 9 accents × both modes**. Runs in `predev`/`prebuild`. `npm run review:colours` renders the same matrix to screenshots in `e2e/.colour-review/` for a visual pass.
+
+**Token sources must stay in step.** Colour is derived in one place — `buildThemeTokens()` in [src/styles/themeRuntime.js](src/styles/themeRuntime.js) — and consumed twice: by the React provider after hydration, and by the first-paint script in `_document.js`, which serialises the *same function* with `.toString()`. That function must stay self-contained (it closes over nothing) or the first paint breaks. The static `:root` blocks in `theme.css` are the no-JS fallback and must mirror it.
 
 ### 3.0b Design Governance — canonical sources & drift control
 
@@ -90,8 +119,8 @@ existing pages:
 
 **Baselined debt.** `tools/design-baselines/design-governance.json` records
 the existing violations per file: family classes declared outside their
-family file (268), `!important` (486), undefined token references (187), raw
-hex colours (423), one-off inline styling (11,950). **A file with no baseline
+family file (196), `!important` (462), undefined token references (0), raw
+hex colours (63), one-off inline styling (11,843). **A file with no baseline
 entry is held to zero**, so new drift fails the build while existing files
 keep exactly the styling they have. Counts may only fall.
 
@@ -146,13 +175,18 @@ doc — recorded on purpose, not yet consolidated.
 | `--primary-hover` | Brand red, hover / pressed |
 | `--surface` | Base surface fill — `<LayerSurface>` |
 | `--theme` | Tinted surface fill — `<LayerTheme>` |
-| `--surfaceMain` / `--section-card-bg` / `--page-card-bg` | Deprecated aliases of `--surface` (still defined) |
+| `--surfaceMain` / `--page-card-bg` | Deprecated aliases of `--surface` (still defined) |
+| `--section-card-bg` | **= `--theme`**, not `--surface` — second rung of the ladder (§3.0a-2) |
+| `--control-on-theme-bg` / `-hover` / `-active` | Control fills for controls sitting on a `--theme` layer (§3.0a-2) |
+| `--control-disabled-bg` / `--control-disabled-text` | Disabled controls. Use these, not `opacity: .5` |
+| `--accent-text-on-tint` | The accent as a LABEL on an accent-tinted fill (Secondary / Ghost / Theme buttons) |
+| `--input-placeholder` / `--toggle-knob` / `--toggle-track-off` | Placeholder text, switch knob, switch off-track |
 | `--text-1` | Body text on a surface (use opacity for muted copy) |
 | `--text-2` / `--onAccentText` | **On-accent** text (white on brand red). NOT muted body text |
 | `--success-base` / `--danger-base` / `--warning-base` | Status colours |
 | `--text-h1` … `--text-h4`, `--text-body`, `--text-body-sm`, `--text-label`, `--text-caption` | Type scale |
 | `--separating-line` | The only allowed line inside a table / list |
-| `--input-ring` / `--checkbox-ring` / `--ghostbutton-ring` / `--focus-ring` | The four allowed outline tokens (§3.0a) |
+| `--input-ring` / `--checkbox-ring` / `--ghostbutton-ring` / `--focus-ring` | The allowed outline tokens (§3.0a). Each has a `-color` partner — see the PAIRS note in §3.0a |
 | `--control-height` | 44px control floor |
 | `--page-stack-gap` | Gap between stacked sections |
 | `--layout-card-gap` | Gap inside a section card |
@@ -160,9 +194,11 @@ doc — recorded on purpose, not yet consolidated.
 | `--page-card-padding` | Padding inside the main page card |
 
 **Corrected — these were documented above but have never existed in `theme.css`:**
-`--accentMain`, `--text-primary`, `--text-secondary` and `--border` have **no definition anywhere**, so every `var()` referencing them silently falls through to its fallback (or to nothing). They are **not** to be used. They have deliberately NOT been defined, because giving one a value would change what the elements currently referencing it render — see `undefined-tokens` in `npm run check:design:list` for the full list (187 references) and resolve them at the call site.
+`--accentMain`, `--text-primary`, `--text-secondary` and `--border` have **no definition anywhere**. They are **not** to be used, and they have deliberately NOT been defined — giving one a value would change what any element referencing it renders. Every staff reference to them has now been resolved at the call site, so `undefined-tokens` is at **0**: `npm run check:design` fails the build if a new one appears. See §7.1 of [docs/ui/staff-design-governance.md](docs/ui/staff-design-governance.md) for what each one was resolved to.
 
-Other frequently-referenced-but-undefined names: `--text-body-xs` (use `--text-caption`), `--font-mono` (use `--font-family-mono`), `--accent` and `--accent-dark` (use `--accentText` / `--primary-hover`), `--surface-dark` (use `--theme`), `--control-height-md` (use `--control-height`).
+Other names that do not exist, and what to reach for instead: `--text-body-xs` → `--text-caption`, `--font-mono` → `--font-family-mono`, `--accent` / `--accentMain` → `--accentText` or `--primary`, `--accent-dark` → `--accent-purple`, `--surface-dark` → `--media-letterbox-bg` (video matte) or `--theme`, `--control-height-md` → `--control-height`, `--text-small` → `--text-body-sm`, `--primary-surface` → `--secondary`, `--shadow-rgb` → the `--shadow-*` scale.
+
+A handful of tokens are legitimately defined at **runtime**, as an inline custom property set from JS and read back from CSS: `--font-inter`, `--portrait-sidebar-top`, `--video-editor-max-width`, `--video-editor-aspect-ratio`, `--app-card-grid-min`, `--job-tracker-phase-color`. Each is registered against its owning component in `RUNTIME_TOKEN_SOURCES` (`tools/scripts/check-design-governance.js`). If you add one, register it there — otherwise the build fails.
 
 ### 3.3 Layout Class System (follow this hierarchy strictly)
 ```

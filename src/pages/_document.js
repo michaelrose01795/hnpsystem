@@ -2,7 +2,15 @@
 // Custom Next.js document that boots the shared semantic theme tokens before React hydrates.
 
 import Document, { Html, Head, Main, NextScript } from "next/document";
-import { ACCENT_PALETTES, DEFAULT_ACCENT, buildThemeRuntime, normalizeAccent, normalizeMode } from "@/styles/themeRuntime";
+import ROUTE_SCOPED_CSS from "@/config/routeScopedCss.generated.json";
+import {
+  ACCENT_PALETTES,
+  DEFAULT_ACCENT,
+  buildThemeRuntime,
+  buildThemeTokens,
+  normalizeAccent,
+  normalizeMode,
+} from "@/styles/themeRuntime";
 
 const parseCookieHeader = (cookieHeader = "") =>
   String(cookieHeader)
@@ -177,136 +185,34 @@ const themeBootScript = `
 `;
 
 function buildClientRuntimeExpression() {
-  // Return a small self-contained expression that reproduces the shared runtime helper in the boot script.
-  return `(function() {
-    var hexToRgbObject = function(hexColor) {
-      var hex = String(hexColor || "").replace("#", "");
-      if (!/^[0-9a-fA-F]{6}$/.test(hex)) return { r: 185, g: 28, b: 28 };
-      return {
-        r: parseInt(hex.slice(0, 2), 16),
-        g: parseInt(hex.slice(2, 4), 16),
-        b: parseInt(hex.slice(4, 6), 16),
-      };
-    };
-    var hexToRgbString = function(hexColor) {
-      var rgb = hexToRgbObject(hexColor);
-      return rgb.r + ", " + rgb.g + ", " + rgb.b;
-    };
-    var clampChannel = function(value) {
-      return Math.max(0, Math.min(255, Math.round(value)));
-    };
-    var rgbToHex = function(rgb) {
-      return "#" + [rgb.r, rgb.g, rgb.b].map(function(value) {
-        return clampChannel(value).toString(16).padStart(2, "0");
-      }).join("");
-    };
-    var blend = function(from, to, ratio) {
-      var safeRatio = Math.max(0, Math.min(1, Number(ratio) || 0));
-      return {
-        r: from.r * (1 - safeRatio) + to.r * safeRatio,
-        g: from.g * (1 - safeRatio) + to.g * safeRatio,
-        b: from.b * (1 - safeRatio) + to.b * safeRatio,
-      };
-    };
-    var accentRgbObject = hexToRgbObject(resolvedAccent);
-    var accentRgb = hexToRgbString(resolvedAccent);
-    var white = { r: 255, g: 255, b: 255 };
-    var black = { r: 0, g: 0, b: 0 };
-    var surfaceAnchor = resolvedMode === "dark" ? { r: 22, g: 22, b: 26 } : white;
-    var accentHover = rgbToHex(resolvedMode === "dark" ? blend(accentRgbObject, white, 0.18) : blend(accentRgbObject, black, 0.18));
-    var accentPressed = rgbToHex(resolvedMode === "dark" ? blend(accentRgbObject, white, 0.34) : blend(accentRgbObject, black, 0.32));
-    var accentSurface = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.16)" : "rgba(" + accentRgb + ", 0.08)";
-    var accentSurfaceHover = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.24)" : "rgba(" + accentRgb + ", 0.14)";
-    var themeColour = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.18)" : "rgba(" + accentRgb + ", 0.1)";
-    var themeColourHover = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.26)" : "rgba(" + accentRgb + ", 0.16)";
-    var shellBackground = rgbToHex(blend(accentRgbObject, surfaceAnchor, resolvedMode === "dark" ? 0.78 : 0.86));
-    var surfaceMain = resolvedMode === "dark" ? "#16161a" : "#ffffff";
-    var surfaceHover = resolvedMode === "dark" ? "#23232b" : "#f7f7f7";
-    var surfaceMuted = resolvedMode === "dark" ? "#1d1d24" : "#f3f3f3";
-    var surfaceText = resolvedMode === "dark" ? "#f8f7ff" : "#0f0f0f";
-    var surfaceTextMuted = resolvedMode === "dark" ? "#f2f2ff" : "#1f1f1f";
-    var onAccentText = resolvedMode === "dark" ? "#0a0a0c" : "#ffffff";
-    var overlayBackdrop = resolvedMode === "dark" ? "rgba(2, 6, 23, 0.72)" : "rgba(15, 23, 42, 0.4)";
-    var overlayMuted = resolvedMode === "dark" ? "rgba(2, 6, 23, 0.5)" : "rgba(15, 23, 42, 0.24)";
-    return {
-      shellBackground: shellBackground,
-      legacy: {
-        "--primary": resolvedAccent,
-        "--primary-hover": accentHover,
-        "--primary-pressed": accentPressed,
-        "--primary-selected": accentPressed,
-        "--accentMainRgb": accentRgb,
-        "--accentText": resolvedAccent,
-        "--text-accent": resolvedAccent,
-        "--onAccentText": onAccentText,
-        "--secondary": accentSurface,
-        "--secondary-hover": accentSurfaceHover,
-        "--secondary-pressed": resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.32)" : "rgba(" + accentRgb + ", 0.2)",
-        "--theme": themeColour,
-        "--primary-border": accentHover,
-        "--surfaceHover": surfaceHover,
-        "--surfaceMutedToken": surfaceMuted,
-        "--surfaceText": surfaceText,
-        "--surfaceTextMuted": surfaceTextMuted,
-        "--surface": surfaceMain,
-        "--surface-rgb": hexToRgbString(surfaceMain),
-        "--text-1": surfaceText,
-        "--text-1-rgb": hexToRgbString(surfaceText),
-        "--text-2": onAccentText,
-        "--text-2-rgb": hexToRgbString(onAccentText),
-        "--overlay": overlayBackdrop,
-        "--overlay-muted": overlayMuted,
-        "--page-shell-bg": shellBackground,
-        "--nav-shell-bg": accentSurface,
-        "--page-card-bg": surfaceMain,
-        "--section-card-bg": surfaceMain,
-        "--nav-link-border-active": "none",
-        "--secondary-border": "transparent",
-        "--control-border": "none",
-        "--input-ring": "1px solid " + accentSurfaceHover,
-        "--input-border": "1px solid " + accentSurfaceHover,
-        "--ghostbutton-ring": "1px solid " + resolvedAccent,
-        "--checkbox-ring": "2px solid " + resolvedAccent,
-        "--separating-line": "1px solid rgba(" + accentRgb + ", " + (resolvedMode === "dark" ? "0.2" : "0.14") + ")",
-        "--table-border": "1px solid rgba(" + accentRgb + ", " + (resolvedMode === "dark" ? "0.2" : "0.14") + ")",
-        "--control-border-hover": accentSurfaceHover,
-        "--control-border-focus": accentSurfaceHover,
-        "--control-ring": "0 0 0 3px rgba(" + accentRgb + ", " + (resolvedMode === "dark" ? "0.18" : "0.12") + ")",
-        "--focus-ring": "0 0 0 3px rgba(" + accentRgb + ", " + (resolvedMode === "dark" ? "0.18" : "0.12") + ")",
-        "--control-menu-shadow": "none",
-        "--row-background": surfaceMain,
-        "--section-gradient-outer": accentSurfaceHover,
-        "--section-gradient-inner": accentSurface,
-        "--section-gradient-center": surfaceMain,
-        "--layer-gradient": accentSurface,
-        "--profile-table-surface": accentSurface,
-        "--profile-table-alt-surface": accentSurfaceHover,
-        "--search-surface": resolvedMode === "dark" ? "#2a2a32" : surfaceMain,
-        "--search-surface-muted": surfaceMain,
-        "--nav-link-border": "none",
-        "--search-text": accentPressed,
-        "--scrollbar-thumb": resolvedAccent,
-        "--scrollbar-thumb-hover": accentHover,
-        "--accent-base": accentSurface,
-        "--accent-base-rgb": accentRgb,
-        "--accent-base-hover": accentSurfaceHover,
-        "--theme-hover": themeColourHover,
-        "--accent-strong": resolvedAccent,
-        "--primary-rgb": accentRgb,
-        "--info": resolvedMode === "dark" ? "#f2a3a3" : "#d96f6f",
-        "--info-dark": resolvedMode === "dark" ? "#f7bcbc" : "#bf5656",
-        "--info-rgb": resolvedMode === "dark" ? "242, 163, 163" : "217, 111, 111",
-        "--theme-status": resolvedMode === "dark" ? "rgba(242, 163, 163, 0.26)" : "rgba(217, 111, 111, 0.18)",
-        "--accent-purple": resolvedAccent,
-        "--accent-purple-rgb": accentRgb,
-        "--accent-blue": resolvedAccent,
-        "--accent-blue-rgb": accentRgb,
-        "--accent-orange": resolvedAccent,
-        "--accent-orange-rgb": accentRgb
-      }
-    };
-  })()`;
+  // Serialise THE shared derivation (src/styles/themeRuntime.js) straight into
+  // the boot script, so the pre-hydration paint and the post-hydration paint
+  // run byte-identical code. This used to be a hand-transcribed second copy,
+  // and it had drifted: it painted --primary-border as a visible accent colour
+  // (every legacy consumer flashed an accent hairline that vanished on
+  // hydration), reverted the softened --ghostbutton-ring to full strength, and
+  // dropped --control-menu-shadow entirely.
+  //
+  // buildThemeTokens is self-contained by contract - it closes over nothing -
+  // which is what makes .toString() safe here. See the RULES block on the
+  // function itself before editing it.
+  return `(${buildThemeTokens.toString()})(resolvedMode, resolvedAccent)`;
 }
+
+// Route-scoped stylesheets for a first paint on this path.
+//
+// These two used to be imported by _app, which meant all 162 routes downloaded
+// them. They are emitted as static assets instead and linked only here (initial
+// HTML) and from _app's scope effect (client-side navigation). Keep the two
+// predicates in step with isWebsitePath / isTrackingPath in _app.js.
+const routeScopedCssFor = (pathname = "") => {
+  const keys = [];
+  if (pathname === "/website" || pathname.startsWith("/website/")) keys.push("website");
+  if (pathname === "/tracking" || pathname.startsWith("/tracking/")) keys.push("trackingMap");
+  return keys
+    .map((key) => ({ key, href: ROUTE_SCOPED_CSS[key] }))
+    .filter((entry) => Boolean(entry.href));
+};
 
 class MyDocument extends Document {
   static async getInitialProps(ctx) {
@@ -316,11 +222,16 @@ class MyDocument extends Document {
       ...initialProps,
       bootTheme: getBootTheme(cookies, ctx?.pathname || ""),
       hasAuthCookie: hasAuthenticatedCookie(cookies),
+      // Which route-scoped stylesheets this document needs (see
+      // tools/scripts/emit-route-scoped-css.js). Resolved here rather than in
+      // _app so the <link> is in the initial HTML and the route paints styled.
+      routeCss: routeScopedCssFor(ctx?.pathname || ""),
     };
   }
 
   render() {
     const bootTheme = this.props.bootTheme || getBootTheme({});
+    const routeCss = Array.isArray(this.props.routeCss) ? this.props.routeCss : [];
 
     return (
       <Html
@@ -332,10 +243,23 @@ class MyDocument extends Document {
         <Head>
           <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
           <meta name="theme-color" content={bootTheme.background} />
-          {/* The desktop/sidebar icon is the canonical app icon so both stay in sync. */}
-          <link rel="icon" type="image/png" href="/images/logo/desktop.png" />
-          <link rel="shortcut icon" type="image/png" href="/images/logo/desktop.png" />
-          <link rel="apple-touch-icon" href="/images/logo/desktop.png" />
+          {/* Tab and home-screen icons, generated from the canonical
+              /images/logo/desktop.png so they stay visually in sync with the
+              desktop app icon and the sidebar rail.
+
+              These used to point straight at desktop.png — a 1254x1254 PNG that
+              is 806 KB over the wire, requested by every browser on every page
+              just to draw a 16px tab icon. Serving each size at its own size
+              takes that to ~2 KB for the tab and ~15 KB for the home-screen
+              icon. Regenerate with sharp from desktop.png if the logo changes. */}
+          <link rel="icon" type="image/png" sizes="32x32" href="/images/logo/icon-32.png" />
+          <link rel="icon" type="image/png" sizes="192x192" href="/images/logo/icon-192.png" />
+          <link rel="shortcut icon" href="/favicon.ico" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/logo/icon-180.png" />
+          {/* Route-scoped global CSS — see routeScopedCssFor above. */}
+          {routeCss.map(({ key, href }) => (
+            <link key={key} rel="stylesheet" href={href} data-route-css={key} />
+          ))}
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

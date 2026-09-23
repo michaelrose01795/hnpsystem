@@ -9,6 +9,7 @@ import { // Phase-5 reporting emit adapters (non-blocking, flag-gated; inert unt
   emitVhcSent,
 } from "@/lib/database/reporting/emitters";
 import { normaliseStatus } from "@/lib/reporting/config/statusMaps"; // Canonicalise VHC approval status before deciding the event.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const db = getDatabaseClient(); // Cache the Supabase client so every function can reuse it.
 
@@ -393,7 +394,7 @@ export const createVHCCheck = async (payload) => {
     const data = await createVhcCheck(payload); // Reuse the camelCase helper for insertion
     return { success: true, data }; // Provide a success wrapper for API usage
   } catch (error) {
-    console.error("createVHCCheck error", error);
+    logFailure("createVHCCheck error", error);
     return { success: false, error: error instanceof Error ? error.message : error };
   }
 };
@@ -403,7 +404,7 @@ export const getVHCChecksByJob = async (jobId) => {
     const data = await getVhcChecksByJob(jobId); // Load raw check rows for the requested job
     return data; // Return the array directly for existing callers
   } catch (error) {
-    console.error("getVHCChecksByJob error", error);
+    logFailure("getVHCChecksByJob error", error);
     throw error; // Preserve existing error behaviour so callers can handle failures
   }
 };

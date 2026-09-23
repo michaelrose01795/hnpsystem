@@ -75,7 +75,7 @@ export default function RetentionPage() {
           One policy per data category. Defaults seeded from the published audit
           matrix; review and adjust per legal advice.
         </p>
-        {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base, #ef4444)" }}>{error}</p>}
+        {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>{error}</p>}
         {policies === null ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
         ) : policies.length === 0 ? (

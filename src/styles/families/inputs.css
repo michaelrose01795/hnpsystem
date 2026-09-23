@@ -13,6 +13,34 @@
  */
 
 /* -------------------------------------------------------------------------- */
+/* Disabled / read-only state (2026-08 colour audit).
+   The old treatment was a blanket `opacity: .5`. Applied to a light-mode fill
+   that was already only dL* 5.3 from its card, that left dL* 2.7 — the
+   control's shape stopped existing and only a ghost label remained. The
+   shared --control-disabled-* tokens are derived from --text-1 rather than
+   the accent, so a disabled control desaturates (reads as "off") instead of
+   looking like a paler live one, at every accent and in both themes.
+   Declared here rather than in staffglobal.css because inputs.css is the
+   canonical home for .app-input; the :disabled selector outranks the
+   .app-input base rule regardless of import order. */
+html.staff-scope .app-input:disabled,
+html.staff-scope .app-input[readonly] {
+  background: var(--control-disabled-bg);
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+html.staff-scope .app-input:disabled {
+  --input-color: var(--control-disabled-text);
+}
+
+/* Hover must not re-paint a disabled control. */
+html.staff-scope .app-input:disabled:hover,
+html.staff-scope .app-input[readonly]:hover {
+  background: var(--control-disabled-bg);
+}
+
+/* -------------------------------------------------------------------------- */
 /* Variant modifiers — layered onto the existing .app-input base. */
 /* Form & notes textareas auto-grow with their content (field-sizing —
    Chromium 123+/Safari 17.4+): they start at a single 44px input row, grow

@@ -14,7 +14,6 @@ import { SORT_OPTIONS } from "@/lib/support/adminView";
 import {
   Panel,
   SubSurface,
-  DevButton,
   LoadingBlock,
 } from "@/components/support/dev/supportDevUi";
 
@@ -35,7 +34,7 @@ function Toggle({ label, checked, onChange }) {
 function Field({ label, children }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <span style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
+      <span style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
         {label}
       </span>
       {children}
@@ -73,7 +72,7 @@ export default function PreferencesSection() {
     <Panel
       title="Developer preferences"
       subtitle="Personal to your developer session."
-      actions={<DevButton small variant="solid" onClick={onSave} disabled={saving}>{saving ? "Saving…" : "Save"}</DevButton>}
+      actions={<button type="button" onClick={onSave} disabled={saving} className="app-btn app-btn--primary app-btn--sm">{saving ? "Saving…" : "Save"}</button>}
     >
       <SubSurface style={{ gap: "var(--space-md)" }}>
         <div style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" }}>Interface</div>
@@ -92,7 +91,6 @@ export default function PreferencesSection() {
               className="app-input"
               value={draft.liveOpsPollSeconds}
               onChange={(e) => set({ liveOpsPollSeconds: Number(e.target.value) })}
-              style={{ minHeight: 44, padding: "8px 12px", borderRadius: "var(--radius-md)", background: "var(--surface)", color: "var(--text-1)" }}
             />
           </Field>
         </div>

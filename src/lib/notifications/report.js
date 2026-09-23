@@ -21,6 +21,7 @@ import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 import { logDiagnostic } from "@/lib/notifications/diagnosticsLog";
 import { recordFeedbackError } from "@/lib/support/feedbackDevBridge";
 import { resolveMessage } from "@/lib/notifications/errorMessages";
+import { logErrorEvent, ERROR_KINDS } from "@/lib/support/autoErrorLog";
 
 // De-duplication window: an identical (type, message) reported again within this
 // many ms is suppressed, so a failing loop or a double-clicked action can't spam
@@ -86,7 +87,39 @@ export function reportError(msgOrKey, err = null, context = {}) {
     kind: devContext?.source ? `error:${devContext.source}` : "error",
     source: devContext?.source,
   });
+  // Persist to the durable trail (support_error_events) under the SAME reference
+  // code the toast shows, so a staff member quoting "ERR-K3F9Q2" is traceable
+  // without them having to file a report. Fire-and-forget and self-swallowing —
+  // a logging failure never turns into a second toast.
+  logErrorEvent({
+    kind: errorKindFor(err, devContext),
+    error: err,
+    // The USER-FACING sentence is what the toast showed; the raw technical
+    // message rides in `context.detail` for developers only.
+    message: message,
+    referenceCode: payload.referenceCode,
+    statusCode: Number.isInteger(err?.status) ? err.status : null,
+    context: {
+      ...devContext,
+      detail: err?.message ? String(err.message).slice(0, 500) : null,
+      friendlyKey: err?.friendlyKey || null,
+      code: err?.code || null,
+    },
+  });
   return showAlert(payload);
+}
+
+// Map a caught failure onto the capture kinds so the durable trail can be
+// filtered by cause (permission denials vs data loads vs generic API failures).
+function errorKindFor(err, context) {
+  const friendlyKey = err?.friendlyKey || (err ? friendlyKeyForError(err) : null);
+  if (friendlyKey === "PERMISSION") return ERROR_KINDS.PERMISSION;
+  if (context?.source === "data-load" || context?.kind === "data-load") {
+    return ERROR_KINDS.DATA_LOAD;
+  }
+  // Anything carrying an HTTP status or an endpoint came through the API layer.
+  if (Number.isInteger(err?.status) || context?.endpoint) return ERROR_KINDS.API;
+  return ERROR_KINDS.RUNTIME;
 }
 
 /**

@@ -3,6 +3,7 @@
 // file location: src/lib/database/clocking.js
 import { supabase } from "@/lib/database/supabaseClient";
 import dayjs from "dayjs";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ============================================
    AUTO-CLOSE STALE RECORD
@@ -29,7 +30,7 @@ const autoCloseStaleRecord = async (record) => {
     .eq("id", record.id);
 
   if (error) {
-    console.error("Failed to auto-close stale record:", record.id, error);
+    logFailure("Failed to auto-close stale record", error, { recordId: record.id });
     return { success: false, error };
   }
 
@@ -46,7 +47,7 @@ const autoCloseStaleRecord = async (record) => {
       .is("clock_out", null);
 
     if (jobClockingError) {
-      console.error("Failed to auto-close paired job clocking:", jobClockingError);
+      logFailure("Failed to auto-close paired job clocking:", jobClockingError);
     }
   }
 
@@ -129,7 +130,7 @@ export const clockIn = async (userId) => {
     console.log("✅ Clock-in successful:", data);
     return { success: true, data, autoClosedPrevious: !!existing };
   } catch (error) {
-    console.error("❌ clockIn error:", error);
+    logFailure("❌ clockIn error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -208,7 +209,7 @@ export const clockOut = async (userId, breakMinutes = 0, notes = null) => {
     console.log("✅ Clock-out successful:", data);
     return { success: true, data };
   } catch (error) {
-    console.error("❌ clockOut error:", error);
+    logFailure("❌ clockOut error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -252,7 +253,7 @@ export const getClockingStatus = async (userId) => {
       clockInTime: data?.clock_in || null
     };
   } catch (error) {
-    console.error("❌ getClockingStatus error:", error);
+    logFailure("❌ getClockingStatus error:", error);
     return { 
       success: false,
       isClockedIn: false, 
@@ -315,7 +316,7 @@ export const getTodayClockingRecords = async (department = null) => {
       stats 
     };
   } catch (error) {
-    console.error("❌ getTodayClockingRecords error:", error);
+    logFailure("❌ getTodayClockingRecords error:", error);
     return { 
       success: false, 
       data: [], 
@@ -373,7 +374,7 @@ export const getAllClockingRecords = async (limit = 100, offset = 0, filters = {
     console.log("✅ Records fetched:", data?.length || 0, "Total:", count);
     return { success: true, data: data || [], count: count || 0 };
   } catch (error) {
-    console.error("❌ getAllClockingRecords error:", error);
+    logFailure("❌ getAllClockingRecords error:", error);
     return { success: false, data: [], count: 0, error: { message: error.message } };
   }
 };
@@ -430,7 +431,7 @@ export const getUserTimesheet = async (userId, startDate, endDate) => {
       }
     };
   } catch (error) {
-    console.error("❌ getUserTimesheet error:", error);
+    logFailure("❌ getUserTimesheet error:", error);
     return { 
       success: false,
       data: [], 
@@ -496,7 +497,7 @@ export const updateTimeRecord = async (recordId, updates) => {
     console.log("✅ Time record updated:", data);
     return { success: true, data };
   } catch (error) {
-    console.error("❌ updateTimeRecord error:", error);
+    logFailure("❌ updateTimeRecord error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -519,7 +520,7 @@ export const deleteTimeRecord = async (recordId) => {
     console.log("✅ Time record deleted successfully");
     return { success: true };
   } catch (error) {
-    console.error("❌ deleteTimeRecord error:", error);
+    logFailure("❌ deleteTimeRecord error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -583,7 +584,7 @@ export const getWeeklySummary = async (userId, startOfWeek) => {
       user: data?.[0]?.user || null
     };
   } catch (error) {
-    console.error("❌ getWeeklySummary error:", error);
+    logFailure("❌ getWeeklySummary error:", error);
     return { 
       success: false, 
       error: { message: error.message },
@@ -633,7 +634,7 @@ export const getDepartmentSummary = async (department, date = null) => {
     console.log("✅ Department summary calculated:", stats);
     return { success: true, data: stats, date: targetDate };
   } catch (error) {
-    console.error("❌ getDepartmentSummary error:", error);
+    logFailure("❌ getDepartmentSummary error:", error);
     return { 
       success: false, 
       data: { totalStaff: 0, currentlyClockedIn: 0, totalHoursToday: "0.00", records: [] },

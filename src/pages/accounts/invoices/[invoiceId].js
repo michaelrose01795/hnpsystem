@@ -5,6 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Button from "@/components/ui/Button";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import InvoiceDetailPageUi from "@/components/page-ui/accounts/invoices/accounts-invoices-invoice-id-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 const DETAIL_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "SALES", "WORKSHOP", "WORKSHOP MANAGER", "PARTS", "PARTS MANAGER"];
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 
@@ -94,7 +95,7 @@ export default function InvoiceDetailPage() {
         setJob(payload.job || null);
       } catch (error) {
         if (error.name === "AbortError") return;
-        console.error("Failed to load invoice", error);
+        logFailure("Failed to load invoice", error);
       } finally {
         setLoading(false);
       }

@@ -12,12 +12,36 @@
 // SupportControl already live as overlay controls rather than persistent chrome.
 
 import React, { useMemo, useState } from "react";
-import CommandPalette from "@/components/topbar/CommandPalette";
-import ShortcutHintsOverlay from "@/components/topbar/ShortcutHintsOverlay";
-import WorkspacePanel from "@/components/topbar/WorkspacePanel";
-import WorkspaceCustomiseOverlay from "@/components/topbar/WorkspaceCustomiseOverlay";
-import TeamPanel from "@/components/topbar/TeamPanel";
-import AssistantPanel from "@/components/topbar/AssistantPanel";
+import dynamic from "next/dynamic";
+
+// This controller adds nothing to the top bar - as the header above says, every
+// surface it hosts is keyboard/overlay-driven, and each one returns null until
+// its own isOpen flag is true. The controller and all of its hooks stay in the
+// first-load bundle, so shortcuts, presence, activity and reminders register
+// exactly when they do now; only the six panels are code-split, and they are
+// fetched on first open. They are deliberately NOT warmed on idle: unlike the
+// capture launchers on the technician card, these are power-user surfaces most
+// sessions never open, and warming six chunks on every staff page load cost 6
+// extra requests for no measured benefit.
+//
+// ssr: false is required here, not incidental. With SSR on, dynamic() renders
+// these behind a lazy boundary whose chunk is not guaranteed to be ready at
+// hydration - the failure mode that made _app import StaffProviders and Layout
+// statically. Rendering nothing on the server is also simply correct: all six
+// paint nothing until they are opened.
+const loadCommandPalette = () => import("@/components/topbar/CommandPalette");
+const loadShortcutHintsOverlay = () => import("@/components/topbar/ShortcutHintsOverlay");
+const loadWorkspacePanel = () => import("@/components/topbar/WorkspacePanel");
+const loadWorkspaceCustomiseOverlay = () => import("@/components/topbar/WorkspaceCustomiseOverlay");
+const loadTeamPanel = () => import("@/components/topbar/TeamPanel");
+const loadAssistantPanel = () => import("@/components/topbar/AssistantPanel");
+
+const CommandPalette = dynamic(loadCommandPalette, { ssr: false });
+const ShortcutHintsOverlay = dynamic(loadShortcutHintsOverlay, { ssr: false });
+const WorkspacePanel = dynamic(loadWorkspacePanel, { ssr: false });
+const WorkspaceCustomiseOverlay = dynamic(loadWorkspaceCustomiseOverlay, { ssr: false });
+const TeamPanel = dynamic(loadTeamPanel, { ssr: false });
+const AssistantPanel = dynamic(loadAssistantPanel, { ssr: false });
 import { useCommandPalette, openCommandPalette } from "@/hooks/useCommandPalette";
 import { useRecentActivity } from "@/hooks/useRecentActivity";
 import { useFavourites } from "@/hooks/useFavourites";
@@ -320,21 +344,21 @@ export default function WorkspaceCommandCenter({
 
   return (
     <>
-      <CommandPalette
+      {palette.isOpen && <CommandPalette
         isOpen={palette.isOpen}
         onClose={palette.close}
         seed={palette.seed}
         commands={commands}
         onExecute={handleExecute}
-      />
-      <WorkspacePanel
+      />}
+      {panelOpen && <WorkspacePanel
         isOpen={panelOpen}
         onClose={() => setPanelOpen(false)}
         widgets={widgets}
         reminders={reminders}
         onCustomise={preferences.canPersonalise ? () => setCustomiseOpen(true) : null}
-      />
-      <WorkspaceCustomiseOverlay
+      />}
+      {customiseOpen && <WorkspaceCustomiseOverlay
         isOpen={customiseOpen}
         onClose={() => setCustomiseOpen(false)}
         prefs={preferences.prefs}
@@ -343,9 +367,9 @@ export default function WorkspaceCommandCenter({
         quickActions={quickActions}
         onToggleQuickAction={preferences.toggleQuickAction}
         onReset={preferences.reset}
-      />
-      <ShortcutHintsOverlay isOpen={hintsOpen} onClose={() => setHintsOpen(false)} />
-      <TeamPanel
+      />}
+      {hintsOpen && <ShortcutHintsOverlay isOpen={hintsOpen} onClose={() => setHintsOpen(false)} />}
+      {teamOpen && <TeamPanel
         isOpen={teamOpen}
         onClose={() => setTeamOpen(false)}
         department={department}
@@ -356,14 +380,14 @@ export default function WorkspaceCommandCenter({
         activity={activity.items}
         managerTools={managerTools}
         coordination={coordination}
-      />
-      <AssistantPanel
+      />}
+      {assistantOpen && <AssistantPanel
         isOpen={assistantOpen}
         onClose={() => setAssistantOpen(false)}
         assistant={assistant}
         presence={presence}
         behaviour={behaviour}
-      />
+      />}
     </>
   );
 }

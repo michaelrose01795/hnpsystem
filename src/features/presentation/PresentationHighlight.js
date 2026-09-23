@@ -101,7 +101,7 @@ export default function PresentationHighlight({ anchor }) {
           width: rect.width + PAD * 2,
           height: rect.height + PAD * 2,
           borderRadius,
-          border: "2px solid var(--accentMain, var(--primary))",
+          border: "2px solid var(--primary)",
           boxShadow:
             "0 0 0 1px rgba(255,255,255,0.18) inset, 0 12px 36px rgba(0,0,0,0.28)",
           pointerEvents: "none",

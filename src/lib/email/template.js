@@ -198,45 +198,46 @@ export function renderEmailShell({
       }
       @media (prefers-color-scheme: dark) {
         body.email-body {
-          background: #111827 !important;
-          color: #f3f4f6 !important;
+          background: #0e0e11 !important;
+          color: #f2f2f2 !important;
         }
         .shell {
-          background: #1f2937 !important;
-          border-color: #374151 !important;
+          background: #16161a !important;
+          border-color: #2c2c33 !important;
         }
         .header {
-          background: #1f2937 !important;
-          color: #f9fafb !important;
-          border-top-color: #ef4444 !important;
+          background: #16161a !important;
+          color: #f8f8f8 !important;
+          border-top-color: #f87171 !important;
         }
         .content {
-          background: #1f2937 !important;
+          background: #16161a !important;
         }
         .intro {
-          color: #d1d5db !important;
+          color: #d6d6d8 !important;
         }
         .eyebrow {
-          color: #fca5a5 !important;
+          color: #f87171 !important;
         }
         .headline {
-          color: #f9fafb !important;
+          color: #f8f8f8 !important;
         }
         .card {
-          background: #111827 !important;
-          border-color: #374151 !important;
-          color: #e5e7eb !important;
+          background: #1d1d24 !important;
+          border-color: #2c2c33 !important;
+          color: #e6e6e8 !important;
         }
         .btn {
           background: #dc2626 !important;
+          color: #ffffff !important;
         }
         a {
           color: #f87171 !important;
         }
         .footer {
-          border-top-color: #374151 !important;
-          color: #9ca3af !important;
-          background: #1f2937 !important;
+          border-top-color: #2c2c33 !important;
+          color: #a8a8ad !important;
+          background: #16161a !important;
         }
       }
       @media only screen and (max-width: 640px) {

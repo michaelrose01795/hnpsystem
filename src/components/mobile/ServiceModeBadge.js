@@ -20,11 +20,11 @@ const baseStyle = {
 const modeStyles = {
   mobile: {
     backgroundColor: "rgba(var(--primary-rgb, 59,130,246), 0.15)",
-    color: "var(--primary-selected, #1d4ed8)",
+    color: "var(--primary-selected)",
   },
   workshop: {
-    backgroundColor: "var(--surface, #f1f5f9)",
-    color: "var(--text-1, #475569)",
+    backgroundColor: "var(--surface)",
+    color: "var(--text-1)",
   },
 };
 

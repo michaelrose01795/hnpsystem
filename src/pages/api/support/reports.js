@@ -28,6 +28,7 @@ import {
   listSupportReports,
   getSupportReportStats,
 } from "@/lib/database/support";
+import { linkErrorEventsToReport } from "@/lib/database/supportErrorEvents";
 import { hasDevPlatformAccess } from "@/lib/auth/roles";
 import { normaliseListFilters } from "@/lib/support/triageValidation";
 import {
@@ -189,6 +190,18 @@ async function handlePost(req, res, session) {
     }
   }
 
+  // 4b. Stamp this report onto the error events that were captured AUTOMATICALLY
+  //     when the failure happened (same reference code, logged before the user
+  //     pressed "Report a problem"). Best-effort: the report is already saved, so
+  //     a link failure must not affect the response.
+  const referenceCode =
+    typeof req.body?.referenceCode === "string" ? req.body.referenceCode.trim() : null;
+  let linkedErrorEvents = 0;
+  if (referenceCode && reportId) {
+    const linked = await linkErrorEventsToReport(referenceCode, reportId);
+    linkedErrorEvents = linked.linked || 0;
+  }
+
   // 5. Append-only audit log (never throws; failures are logged internally).
   await writeAuditLog({
     action: "support_report_create",
@@ -201,6 +214,8 @@ async function handlePost(req, res, session) {
       route: input.route,
       section_key: input.sectionKey,
       screenshot_count: screenshotCount,
+      reference_code: referenceCode,
+      linked_error_events: linkedErrorEvents,
     },
     ip: clientIp(req),
     userAgent: req.headers["user-agent"] || null,
@@ -224,7 +239,7 @@ async function handlePost(req, res, session) {
 
   return res.status(201).json({
     success: true,
-    data: { id: reportId, screenshotCount },
+    data: { id: reportId, screenshotCount, referenceCode, linkedErrorEvents },
   });
 }
 

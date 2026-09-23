@@ -4,6 +4,7 @@
 // Uses /api/profile/clock API which handles auto-closing stale records server-side
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useUser } from "@/context/UserContext";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Create context
 const ClockingContext = createContext();
@@ -45,7 +46,7 @@ export const ClockingProvider = ({ children }) => {
         setHoursWorked(0);
       }
     } catch (err) {
-      console.error("Error fetching clocking status:", err.message);
+      logFailure("Error fetching clocking status:", err.message);
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ export const ClockingProvider = ({ children }) => {
         setAllUsersClocking([]);
       }
     } catch (err) {
-      console.error("Error fetching all users clocking:", err.message);
+      logFailure("Error fetching all users clocking:", err.message);
       setAllUsersClocking([]);
     } finally {
       setLoading(false);
@@ -91,13 +92,13 @@ export const ClockingProvider = ({ children }) => {
       });
       const json = await res.json();
       if (!json.success) {
-        console.error("Clock In Error:", json.message);
+        logFailure("Clock In Error:", json.message);
       } else {
         setClockedIn(true);
       }
       await fetchClockingStatus();
     } catch (err) {
-      console.error("Clock In Error:", err.message);
+      logFailure("Clock In Error:", err.message);
     } finally {
       setLoading(false);
     }
@@ -118,13 +119,13 @@ export const ClockingProvider = ({ children }) => {
       });
       const json = await res.json();
       if (!json.success) {
-        console.error("Clock Out Error:", json.message);
+        logFailure("Clock Out Error:", json.message);
       } else {
         setClockedIn(false);
       }
       await fetchClockingStatus();
     } catch (err) {
-      console.error("Clock Out Error:", err.message);
+      logFailure("Clock Out Error:", err.message);
     } finally {
       setLoading(false);
     }

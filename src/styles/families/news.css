@@ -1,0 +1,884 @@
+/* file location: src/styles/families/news.css
+ *
+ * Canonical home for the News / Communication Hub family.
+ *
+ * Variants: feed-card (comfortable | compact), pinned, priority-important,
+ *           priority-urgent, meta row, chips, avatar, attachment row,
+ *           link row, comment thread, ack banner, insight grid.
+ * Components: src/components/NewsFeed/*
+ * Registered in: src/components/ui/variants.js (id "news")
+ * Showcase:   /newsfeed
+ *
+ * Design rules this file obeys (CLAUDE.md §3.0a / §3.0a-2):
+ *   - No borders. Separation is carried by the surface ladder and by
+ *     --separating-line on list rows only.
+ *   - The feed sits on a page card (--surface); every post card is the next
+ *     rung down (--theme); anything nested inside a post card flips back to
+ *     --surface.
+ *   - Priority and state are signalled by a tinted chip + a glyph, never by a
+ *     coloured side-border.
+ */
+
+/* ========================================================================== */
+/* Layout shell                                                               */
+/* ========================================================================== */
+
+/* Screen-reader-only text. Scoped to this family rather than added as a global
+   utility, so it cannot drift into a competing implementation elsewhere. */
+html.staff-scope .app-news-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+html.staff-scope .app-news {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Toolbar: filters, search and the composer trigger, on one full-width row —
+   equal shares of the width, so nothing is wider than its neighbour. Wraps to
+   two-up on tablet and stacks on mobile so every control keeps its 44px
+   target. */
+html.staff-scope .app-news-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .app-news-toolbar__control {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The controls inside each column fill it, so the columns read as one set. */
+html.staff-scope .app-news-toolbar__control > * {
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .app-news-filters {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .app-news-filters__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-filters__label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.65;
+  color: var(--text-1);
+}
+
+/* The feed itself. */
+html.staff-scope .app-news-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .app-news-list--compact {
+  gap: var(--space-sm);
+}
+
+html.staff-scope .app-news-group-heading {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  color: var(--text-1);
+}
+
+/* ========================================================================== */
+/* Post card                                                                  */
+/* ========================================================================== */
+
+/* The surface itself (background, radius, padding, gap) comes from
+   <LayerTheme>, which is the canonical theme-layer primitive — see CLAUDE.md
+   §3.0. This class only owns what happens INSIDE the card, so the two never
+   disagree about which rung of the ladder a post sits on. */
+html.staff-scope .app-news-card {
+  width: 100%;
+  min-width: 0;
+  color: var(--text-1);
+}
+
+html.staff-scope .app-news-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: var(--space-3);
+  row-gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-card__title {
+  margin: 0;
+  min-width: min(100%, 20rem);
+  flex: 1 1 20rem;
+  font-size: var(--text-h3);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-1);
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .app-news-card--compact .app-news-card__title {
+  font-size: var(--text-body);
+  line-height: 1.3;
+}
+
+html.staff-scope .app-news-card__body {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: 1.6;
+  color: var(--text-1);
+  opacity: 0.92;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .app-news-card__body--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+html.staff-scope .app-news-card--compact .app-news-card__body {
+  font-size: var(--text-body-sm);
+  -webkit-line-clamp: 2;
+}
+
+html.staff-scope .app-news-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-card__footer-end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+/* ========================================================================== */
+/* Author + date block                                                        */
+/* ========================================================================== */
+
+html.staff-scope .app-news-byline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-byline__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+html.staff-scope .app-news-byline__name {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-news-byline__meta {
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Avatar. A photo when the user has one, a monogram on the accent tint when
+   they do not — both are the same size so rows never shift. */
+html.staff-scope .app-news-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+html.staff-scope .app-news-avatar--sm {
+  width: 28px;
+  height: 28px;
+}
+
+html.staff-scope .app-news-avatar--lg {
+  width: 44px;
+  height: 44px;
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .app-news-avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+html.staff-scope .app-news-avatar-stack {
+  display: inline-flex;
+  align-items: center;
+}
+
+html.staff-scope .app-news-avatar-stack > * + * {
+  margin-left: -10px;
+}
+
+/* ========================================================================== */
+/* Chips — priority, category, department, state                              */
+/* ========================================================================== */
+
+html.staff-scope .app-news-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-pill);
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.staff-scope .app-news-chip--muted {
+  background: var(--surface);
+  color: var(--text-1);
+  opacity: 0.85;
+}
+
+html.staff-scope .app-news-chip--category {
+  background: var(--theme);
+  color: var(--text-1);
+}
+
+html.staff-scope .app-news-chip--important {
+  background: var(--warning-surface);
+  color: var(--warning-text);
+}
+
+html.staff-scope .app-news-chip--urgent {
+  background: var(--danger-surface);
+  color: var(--danger-text);
+}
+
+html.staff-scope .app-news-chip--success {
+  background: var(--success-surface);
+  color: var(--success-text);
+}
+
+html.staff-scope .app-news-chip__glyph {
+  font-size: 11px;
+  line-height: 1;
+}
+
+html.staff-scope .app-news-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-card__head > .app-news-chip-row {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+/* ========================================================================== */
+/* Acknowledgement banner                                                     */
+/* ========================================================================== */
+
+html.staff-scope .app-news-ack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-3) var(--space-md);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--text-1);
+}
+
+html.staff-scope .app-news-ack--due {
+  background: var(--warning-surface);
+  color: var(--warning-text);
+}
+
+html.staff-scope .app-news-ack--overdue {
+  background: var(--danger-surface);
+  color: var(--danger-text);
+}
+
+html.staff-scope .app-news-ack--done {
+  background: var(--success-surface);
+  color: var(--success-text);
+}
+
+html.staff-scope .app-news-ack__text {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  min-width: 0;
+}
+
+html.staff-scope .app-news-ack__actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-xs);
+}
+
+/* ========================================================================== */
+/* Attachments + record links                                                 */
+/* ========================================================================== */
+
+html.staff-scope .app-news-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  max-width: 100%;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  text-decoration: none;
+  min-height: var(--table-action-btn-height);
+}
+
+html.staff-scope .app-news-attachment:hover,
+html.staff-scope .app-news-attachment:focus-visible {
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+}
+
+html.staff-scope .app-news-attachment__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-news-attachment__size {
+  flex-shrink: 0;
+  font-size: var(--text-caption);
+  opacity: 0.7;
+}
+
+html.staff-scope .app-news-attachment-thumb {
+  width: 96px;
+  height: 72px;
+  border-radius: var(--radius-xs);
+  object-fit: cover;
+  display: block;
+  background: var(--surface);
+}
+
+html.staff-scope .app-news-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: 100%;
+  padding: 3px var(--space-sm);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--accent-strong);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-news-link:hover,
+html.staff-scope .app-news-link:focus-visible {
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+}
+
+/* ========================================================================== */
+/* Mentions inside body text                                                  */
+/* ========================================================================== */
+
+html.staff-scope .app-news-mention {
+  display: inline;
+  padding: 0 4px;
+  border-radius: var(--radius-xs);
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-news-mention--me {
+  background: var(--warning-surface);
+  color: var(--warning-text);
+  font-weight: 700;
+}
+
+html.staff-scope .app-news-mention--comment,
+html.staff-scope .app-news-mention--comment.app-news-mention--me {
+  display: inline-flex;
+  align-items: baseline;
+  padding: 1px var(--space-xs);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--accentText);
+  font-weight: 700;
+  line-height: 1.35;
+  vertical-align: baseline;
+}
+
+/* ========================================================================== */
+/* Comments                                                                   */
+/* ========================================================================== */
+
+html.staff-scope .app-news-comments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .app-news-comment {
+  display: flex;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-3);
+  /* The one place a line is allowed: a row rule inside a list. */
+  border-bottom: var(--separating-line);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-comment:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+html.staff-scope .app-news-comment__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+html.staff-scope .app-news-comment__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-sm);
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+html.staff-scope .app-news-comment__author {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  opacity: 1;
+}
+
+html.staff-scope .app-news-comment__body {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .app-news-comment__body--deleted {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+html.staff-scope .app-news-comment__actions {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+html.staff-scope .app-news-comment__replies {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-left: var(--space-md);
+}
+
+/* ========================================================================== */
+/* Composer                                                                   */
+/* ========================================================================== */
+
+html.staff-scope .app-news-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-composer__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-composer__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-composer__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-composer__hint {
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+/* @mention autocomplete, anchored under the description field. */
+html.staff-scope .app-news-mention-menu {
+  position: absolute;
+  z-index: 30;
+  max-height: 240px;
+  overflow-y: auto;
+  min-width: 240px;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+html.staff-scope .app-news-mention-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-1) var(--space-sm);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  text-align: left;
+  cursor: pointer;
+  min-height: var(--table-action-btn-height);
+}
+
+html.staff-scope .app-news-mention-menu__item:hover,
+html.staff-scope .app-news-mention-menu__item.is-active {
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+}
+
+/* ========================================================================== */
+/* Insights — analytics + acknowledgement tracker                             */
+/* ========================================================================== */
+
+html.staff-scope .app-news-insights-disclosure,
+html.staff-scope .app-news-insights,
+html.staff-scope .app-news-insights__loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-insights-disclosure__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-insights-disclosure__heading {
+  display: flex;
+  flex: 1 1 18rem;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-insights-disclosure__heading > strong {
+  color: var(--text-1);
+  font-size: var(--text-body);
+}
+
+html.staff-scope .app-news-insights-disclosure__heading > span,
+html.staff-scope .app-news-insights__header p,
+html.staff-scope .app-news-insights__empty {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+  opacity: 0.7;
+}
+
+html.staff-scope .app-news-insights__section {
+  min-width: 0;
+}
+
+html.staff-scope .app-news-insights__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+html.staff-scope .app-news-insights__header h4 {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-body);
+  line-height: 1.3;
+}
+
+html.staff-scope .app-news-insights__subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .app-news-insights__subhead > span {
+  opacity: 0.7;
+}
+
+html.staff-scope .app-news-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+  min-width: 0;
+}
+
+html.staff-scope .app-news-stat__value {
+  font-size: var(--text-h3);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+html.staff-scope .app-news-stat__label {
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+/* A read-rate meter. Track and fill only — no outline. */
+html.staff-scope .app-news-meter {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+html.staff-scope .app-news-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+}
+
+html.staff-scope .app-news-meter__fill--warning {
+  background: var(--warning-base);
+}
+
+html.staff-scope .app-news-meter__fill--danger {
+  background: var(--danger-base);
+}
+
+html.staff-scope .app-news-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+html.staff-scope .app-news-tracker__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-1) 0;
+  border-bottom: var(--separating-line);
+  min-width: 0;
+  min-height: var(--control-height);
+}
+
+html.staff-scope .app-news-tracker__row:last-child {
+  border-bottom: none;
+}
+
+html.staff-scope .app-news-tracker__name {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: var(--text-body-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========================================================================== */
+/* Edit history                                                               */
+/* ========================================================================== */
+
+html.staff-scope .app-news-revision {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-3) 0;
+  border-bottom: var(--separating-line);
+  min-width: 0;
+}
+
+html.staff-scope .app-news-revision:last-child {
+  border-bottom: none;
+}
+
+html.staff-scope .app-news-revision__meta {
+  font-size: var(--text-caption);
+  opacity: 0.7;
+}
+
+html.staff-scope .app-news-revision__body {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  opacity: 0.9;
+}
+
+/* ========================================================================== */
+/* Responsive                                                                 */
+/* ========================================================================== */
+
+@media (max-width: 1023px) {
+  /* Below a comfortable desktop width the controls squeeze past legibility on
+     one line, so the row wraps two-up and then stacks. */
+  html.staff-scope .app-news-toolbar__control {
+    flex: 1 1 calc(50% - var(--space-sm));
+  }
+}
+
+@media (max-width: 767px) {
+  html.staff-scope .app-news-toolbar__control {
+    flex: 1 1 100%;
+  }
+
+  html.staff-scope .app-news-card__footer-end {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  html.staff-scope .app-news-comment__replies {
+    padding-left: var(--space-sm);
+  }
+}
+
+/* ========================================================================== */
+/* Trace mode — the dev overlay's outline pass for this family.               */
+/* ========================================================================== */
+
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+  :where(.app-news-card, .app-news-chip, .app-news-comment, .app-news-stat) {
+  outline: 1px dashed #0ea5e9;
+  outline-offset: -1px;
+}

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
 
@@ -80,18 +81,14 @@ function NewActivityForm({ onCreated }) {
       </label>
       <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Lawful basis
-        <select
+        <DropdownField
           value={lawfulBasis}
           onChange={(e) => setLawfulBasis(e.target.value)}
-          className="app-input"
-          style={{ marginTop: 4, width: "100%", minHeight: 40 }}
-        >
-          {LAWFUL_BASES.map((b) => (
-            <option key={b} value={b}>{b}</option>
-          ))}
-        </select>
+          options={LAWFUL_BASES}
+          style={{ marginTop: 4, width: "100%" }}
+        />
       </label>
-      {error && <p role="alert" style={{ margin: 0, color: "var(--danger-base, #ef4444)" }}>{error}</p>}
+      {error && <p role="alert" style={{ margin: 0, color: "var(--danger-base)" }}>{error}</p>}
       <div style={{ display: "flex", gap: 8 }}>
         <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Creating..." : "Create"}
@@ -139,7 +136,7 @@ export default function RopaPage() {
       </Section>
 
       <Section title="Activities">
-        {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base, #ef4444)" }}>{error}</p>}
+        {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>{error}</p>}
         {rows === null ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
         ) : rows.length === 0 ? (

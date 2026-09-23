@@ -56,7 +56,7 @@ export default function StatusSnapshotDevPageUi(props) {
                     minHeight: "44px",
                     padding: "10px 12px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--input-ring)",
+                    border: "1px solid var(--input-ring-color)",
                     background: "var(--surface)",
                     color: "var(--text-1)",
                   }}
@@ -91,7 +91,7 @@ export default function StatusSnapshotDevPageUi(props) {
                   style={{
                     margin: 0,
                     color: "var(--text-1)",
-                    fontFamily: "var(--font-mono, monospace)",
+                    fontFamily: "var(--font-family-mono)",
                     fontSize: "13px",
                     lineHeight: 1.5,
                     whiteSpace: "pre",

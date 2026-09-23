@@ -247,10 +247,10 @@ function RecentActivity() {
           data-dev-section-parent="account-security-activity-table"
         >
           <tr style={{ textAlign: "left", color: "var(--surfaceTextMuted)" }}>
-            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line)" }}>When</th>
-            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--separating-line)" }}>Event</th>
-            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--separating-line)" }}>IP</th>
-            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--separating-line)" }}>Device</th>
+            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line-color)" }}>When</th>
+            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--separating-line-color)" }}>Event</th>
+            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--separating-line-color)" }}>IP</th>
+            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--separating-line-color)" }}>Device</th>
           </tr>
         </thead>
         <tbody
@@ -261,16 +261,16 @@ function RecentActivity() {
         >
           {events.map((event) => (
             <tr key={event.id}>
-              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line)" }}>
+              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line-color)" }}>
                 {formatTimestamp(event.occurredAt)}
               </td>
-              <td style={{ padding: "8px 8px", borderBottom: "1px solid var(--separating-line)" }}>
+              <td style={{ padding: "8px 8px", borderBottom: "1px solid var(--separating-line-color)" }}>
                 {ACTION_LABELS[event.action] || event.action}
               </td>
               <td
                 style={{
                   padding: "8px 8px",
-                  borderBottom: "1px solid var(--separating-line)",
+                  borderBottom: "1px solid var(--separating-line-color)",
                   fontFamily: "var(--font-family-mono, monospace)",
                   fontSize: "0.8rem"
                 }}
@@ -280,7 +280,7 @@ function RecentActivity() {
               <td
                 style={{
                   padding: "8px 0 8px 8px",
-                  borderBottom: "1px solid var(--separating-line)",
+                  borderBottom: "1px solid var(--separating-line-color)",
                   fontSize: "0.8rem",
                   color: "var(--surfaceTextMuted)"
                 }}

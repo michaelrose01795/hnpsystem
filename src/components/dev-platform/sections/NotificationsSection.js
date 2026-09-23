@@ -14,10 +14,9 @@ import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import {
   Panel,
   SubSurface,
-  Pill,
+  badgeClass,
   EmptyState,
   LoadingBlock,
-  DevButton,
 } from "@/components/support/dev/supportDevUi";
 
 const SEVERITY_META = {
@@ -135,9 +134,9 @@ export default function NotificationsSection() {
         title="Recent notifications"
         subtitle={`${unread} unread of ${notifications.length} shown.`}
         actions={
-          <DevButton small onClick={markAllRead} disabled={markingAll || unread === 0}>
+          <button type="button" onClick={markAllRead} disabled={markingAll || unread === 0} className="app-btn app-btn--secondary app-btn--sm">
             {markingAll ? "Marking…" : "Mark all read"}
-          </DevButton>
+          </button>
         }
       >
         {historyRes.loading ? (
@@ -162,13 +161,13 @@ export default function NotificationsSection() {
                 <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
                   <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 700, color: "var(--text-1)", wordBreak: "break-word" }}>{n.title}</span>
-                    {isUnread && <Pill label="Unread" tone={meta.tone} strong />}
-                    {n.kind && <Pill label={n.kind} tone="text-1" />}
+                    {isUnread && <span className={badgeClass(meta.tone, true)}>Unread</span>}
+                    {n.kind && <span className="app-badge app-badge--neutral">{n.kind}</span>}
                   </div>
                   {n.body && (
                     <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85, wordBreak: "break-word" }}>{n.body}</div>
                   )}
-                  <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6 }}>
+                  <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>
                     {n.created_at ? new Date(n.created_at).toLocaleString("en-GB") : ""}
                   </div>
                 </div>
@@ -196,24 +195,24 @@ export default function NotificationsSection() {
               >
                 <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
                   <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-                    <Pill label={r.event} tone="accentText" strong />
-                    {isDefault && <Pill label="team default" tone="text-1" />}
-                    <Pill label={r.enabled ? "enabled" : "disabled"} tone={r.enabled ? "success-base" : "text-1"} />
+                    <span className="app-badge app-badge--accent-strong">{r.event}</span>
+                    {isDefault && <span className="app-badge app-badge--neutral">team default</span>}
+                    <span className={badgeClass(r.enabled ? "success-base" : "text-1")}>{r.enabled ? "enabled" : "disabled"}</span>
                   </div>
                   {r.filters?.minSeverity && (
-                    <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>
+                    <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>
                       Min severity: {r.filters.minSeverity}
                     </div>
                   )}
                 </div>
                 {!isDefault && (
                   <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
-                    <DevButton small disabled={busyRuleId === r.id} onClick={() => toggleRule(r)}>
+                    <button type="button" disabled={busyRuleId === r.id} onClick={() => toggleRule(r)} className="app-btn app-btn--secondary app-btn--sm">
                       {r.enabled ? "Disable" : "Enable"}
-                    </DevButton>
-                    <DevButton small tone="danger-base" disabled={busyRuleId === r.id} onClick={() => deleteRule(r.id)}>
+                    </button>
+                    <button type="button" disabled={busyRuleId === r.id} onClick={() => deleteRule(r.id)} className="app-btn app-btn--danger app-btn--sm">
                       {busyRuleId === r.id ? "…" : "Delete"}
-                    </DevButton>
+                    </button>
                   </div>
                 )}
               </SubSurface>
@@ -226,21 +225,21 @@ export default function NotificationsSection() {
         title="New rule"
         subtitle="Subscribe to a platform event, optionally filtered by minimum severity."
         actions={
-          <DevButton variant="solid" onClick={createRule} disabled={creating}>
+          <button type="button" onClick={createRule} disabled={creating} className="app-btn app-btn--primary">
             {creating ? "Creating…" : "Create"}
-          </DevButton>
+          </button>
         }
       >
         <SubSurface style={{ gap: "var(--space-md)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-md)" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
+              <span style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
                 Event
               </span>
               <DropdownField options={EVENT_OPTIONS} value={ruleForm.event} onChange={(e) => setRule({ event: e.target.value })} />
             </label>
             <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
+              <span style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-1)", opacity: 0.75 }}>
                 Minimum severity (optional)
               </span>
               <DropdownField options={MIN_SEVERITY_OPTIONS} value={ruleForm.minSeverity} onChange={(e) => setRule({ minSeverity: e.target.value })} />

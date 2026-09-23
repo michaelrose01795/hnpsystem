@@ -1,12 +1,14 @@
 // file location: src/components/page-ui/parts/create-order/parts-create-order-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 
 export default function PartsJobCardPageUi(props) {
   const {
     CalendarField,
     ExistingCustomerPopup,
-    ModalPortal,
     NewCustomerPopup,
     SearchBar,
     TimePickerField,
@@ -39,8 +41,6 @@ export default function PartsJobCardPageUi(props) {
     loadingVehicle,
     openPartSearch,
     partLines,
-    partLookupContentStyle,
-    partLookupOverlayStyle,
     partSearchLoading,
     partSearchOpen,
     partSearchQuery,
@@ -109,7 +109,7 @@ export default function PartsJobCardPageUi(props) {
                         <button type="button" onClick={handleSaveCustomerDetails} disabled={savingCustomerDetails} style={{
                     borderRadius: "var(--radius-sm)",
                     background: "var(--primary)",
-                    color: "var(--surface)",
+                    color: "var(--onAccentText)",
                     padding: "8px 14px",
                     fontWeight: 600,
                     cursor: savingCustomerDetails ? "not-allowed" : "pointer",
@@ -132,7 +132,7 @@ export default function PartsJobCardPageUi(props) {
                       </> : <button type="button" onClick={handleStartCustomerEdit} style={{
                   borderRadius: "var(--radius-sm)",
                   background: "var(--primary)",
-                  color: "var(--surface)",
+                  color: "var(--onAccentText)",
                   padding: "8px 14px",
                   fontWeight: 600,
                   cursor: "pointer"
@@ -180,7 +180,7 @@ export default function PartsJobCardPageUi(props) {
                     borderRadius: "var(--radius-sm)",
                     border: "1px solid transparent",
                     background: isDarkMode ? "#7D3FFF" : "#E53935",
-                    color: "#ffffff",
+                    color: "var(--onAccentText)",
                     padding: "10px 18px",
                     fontWeight: 600,
                     cursor: "pointer"
@@ -190,7 +190,7 @@ export default function PartsJobCardPageUi(props) {
                       <button type="button" onClick={() => setShowNewCustomer(true)} style={{
                     borderRadius: "var(--radius-sm)",
                     background: "var(--primary)",
-                    color: "var(--surface)",
+                    color: "var(--onAccentText)",
                     padding: "10px 18px",
                     fontWeight: 600,
                     cursor: "pointer"
@@ -305,13 +305,14 @@ export default function PartsJobCardPageUi(props) {
                 <span style={{
                 fontWeight: 600
               }}>Fulfilment type</span>
-                <select value={form.delivery_type} onChange={event => handleFieldChange("delivery_type", event.target.value)} style={{
-                ...inputStyle,
-                cursor: "pointer"
-              }}>
-                  <option value="delivery">Delivery</option>
-                  <option value="collection">Collection</option>
-                </select>
+                <DropdownField
+                  value={form.delivery_type}
+                  onChange={event => handleFieldChange("delivery_type", event.target.value)}
+                  options={[
+                    { value: "delivery", label: "Delivery" },
+                    { value: "collection", label: "Collection" },
+                  ]}
+                />
               </label>
               <div style={twoColumnGrid}>
                 <CalendarField label={form.delivery_type === "delivery" ? "Delivery date" : "Collection date"} value={form.delivery_eta || ""} onChange={value => handleFieldChange("delivery_eta", value)} name="delivery_eta" />
@@ -362,7 +363,7 @@ export default function PartsJobCardPageUi(props) {
                 padding: "8px 14px",
                 fontWeight: 600,
                 cursor: "pointer",
-                color: "var(--surface)"
+                color: "var(--onAccentText)"
               }}>
                   + Add part
                 </button>
@@ -395,7 +396,7 @@ export default function PartsJobCardPageUi(props) {
                       borderRadius: "var(--radius-sm)",
                       border: "none",
                       background: "var(--primary)",
-                      color: "var(--surface)",
+                      color: "var(--onAccentText)",
                       padding: "8px 12px",
                       fontWeight: 600,
                       cursor: "pointer"
@@ -487,7 +488,7 @@ export default function PartsJobCardPageUi(props) {
               padding: "10px 18px",
               fontWeight: 600,
               cursor: "pointer",
-              color: isDarkMode ? "#ffffff" : "#000000"
+              color: "var(--text-1)"
             }}>
                 Clear
               </button>
@@ -495,7 +496,7 @@ export default function PartsJobCardPageUi(props) {
               borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--primary)",
-              color: "var(--surface)",
+              color: "var(--onAccentText)",
               padding: "10px 18px",
               fontWeight: 600,
               cursor: "pointer",
@@ -508,52 +509,22 @@ export default function PartsJobCardPageUi(props) {
         </LayerSurface>
       </div>
     </>
-    {partSearchOpen && <ModalPortal>
-        <div style={partLookupOverlayStyle}>
-          <div style={partLookupContentStyle}>
-          <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: "12px",
-          flexWrap: "wrap"
-        }}>
-            <div>
-              <p style={{
-              margin: 0,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              fontSize: "0.75rem",
-              color: "var(--info-dark)"
-            }}>
-                Parts stock
-              </p>
-              <h3 style={{
-              margin: "4px 0 0",
-              color: "var(--primary-selected)"
-            }}>Search catalog</h3>
+    {partSearchOpen && <PopupModal
+      isOpen
+      onClose={closePartSearch}
+      ariaLabel="Search parts catalogue"
+      cardStyle={{
+        width: "min(100%, 720px)",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        padding: "var(--section-card-padding)",
+      }}>
+          <header className="app-popup-compact-header">
+            <h3>Search catalogue</h3>
+            <div className="app-popup-compact-header__actions">
+              <Button type="button" variant="secondary" onClick={closePartSearch}>Close</Button>
             </div>
-            <div style={{
-            display: "flex",
-            gap: "8px",
-            alignItems: "center",
-            flexWrap: "wrap"
-          }}>
-              <button type="button" onClick={closePartSearch} style={{
-              border: "none",
-              background: "transparent",
-              fontSize: "0.95rem",
-              fontWeight: 700,
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-              color: "var(--accent-purple)",
-              cursor: "pointer",
-              padding: "6px 0"
-            }} aria-label="Close part search">
-                Close
-              </button>
-            </div>
-          </div>
+          </header>
           <SearchBar value={partSearchQuery} onChange={event => setPartSearchQuery(event.target.value)} onClear={() => setPartSearchQuery("")} placeholder="Search by part number or description" style={{
           width: "100%"
         }} />
@@ -615,9 +586,7 @@ export default function PartsJobCardPageUi(props) {
                   </button>;
           })}
             </div>}
-          </div>
-        </div>
-      </ModalPortal>}
+      </PopupModal>}
     {showExistingCustomer && <ExistingCustomerPopup onClose={() => setShowExistingCustomer(false)} onSelect={handleExistingCustomerSelect} />}
     {showNewCustomer && <NewCustomerPopup onClose={() => setShowNewCustomer(false)} onSelect={handleNewCustomerSaved} />}
     </>; // render extracted page section.

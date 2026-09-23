@@ -796,9 +796,9 @@ export default function GoodsInPageUi(props) {
           display: "flex",
           gap: "10px"
         }}>
-              <button className="app-btn app-btn--secondary" style={secondaryButtonStyle} onClick={() => goodsInRecord && fetchGoodsIn(goodsInRecord.id)} disabled={!goodsInRecord}>
+              <Button type="button" variant="secondary" onClick={() => goodsInRecord && fetchGoodsIn(goodsInRecord.id)} disabled={!goodsInRecord}>
                 Refresh
-              </button>
+              </Button>
               <button className="app-btn app-btn--primary" style={primaryButtonStyle(completing || !goodsInRecord || goodsInItems.length === 0)} onClick={handleCompleteGoodsIn} disabled={completing || !goodsInRecord || goodsInItems.length === 0}>
                 {completing ? "Completing..." : "Complete"}
               </button>

@@ -14,6 +14,7 @@ import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer prim
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import CompanyAccountsIndexPageUi from "@/components/page-ui/company-accounts/company-accounts-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const ALLOWED_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
@@ -66,7 +67,7 @@ export default function CompanyAccountsIndexPage() {
         setFeedback(debouncedSearch ? "No company accounts match the search." : "No company accounts have been created yet.");
       }
     } catch (error) {
-      console.error("Unable to fetch company accounts", error);
+      logFailure("Unable to fetch company accounts", error);
       setFeedback(error.message || "Unable to load company accounts");
     } finally {
       setLoading(false);
@@ -103,7 +104,7 @@ export default function CompanyAccountsIndexPage() {
         setLedgerFeedback(debouncedLedgerSearch ? "No ledger accounts match the search." : "No ledger accounts available.");
       }
     } catch (error) {
-      console.error("Unable to fetch ledger accounts", error);
+      logFailure("Unable to fetch ledger accounts", error);
       setLedgerFeedback(error.message || "Unable to load ledger accounts");
     } finally {
       setLedgerLoading(false);

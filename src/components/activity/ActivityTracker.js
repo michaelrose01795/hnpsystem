@@ -73,6 +73,21 @@ const readBodyMetadata = (body) => {
 
 export default function ActivityTracker() {
   const router = useRouter();
+
+  // The main effect below opens the audit session, installs the fetch
+  // interceptor and subscribes to route events. It only ever reads
+  // `router.asPath` (lazily, at event time) and `router.events` (a stable
+  // emitter), but having `router` in its dependency array made the whole thing
+  // tear down and re-run every time useRouter() handed back a new object — which
+  // it does during hydration and on every navigation. Each re-run POSTed
+  // /api/audit/session again: measured against production, up to 3 identical
+  // session starts and 2 duplicate /api/audit/events per page load, creating
+  // duplicate audit session rows as well as the wasted round trips.
+  //
+  // Reading through a ref keeps `asPath` current without making the effect
+  // depend on the object's identity.
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const { data: session, status } = useSession();
   const serverSessionRef = useRef(null);
   const pageRef = useRef(null);
@@ -215,13 +230,13 @@ export default function ActivityTracker() {
           eventName: "session_started",
           actionCategory: "authentication",
           feature: "authentication",
-          route: sanitiseRoute(router.asPath),
+          route: sanitiseRoute(routerRef.current.asPath),
           pageTitle: document.title,
           actionLabel: "Authenticated session started",
           dedupeKey: `session-start:${sessionId}`,
           metadata: { app_mode: detectAppMode() },
         });
-        openPage(router.asPath);
+        openPage(routerRef.current.asPath);
       } catch {
         // Auditing is non-blocking; authentication and page use must continue.
       }
@@ -231,8 +246,8 @@ export default function ActivityTracker() {
 
     const onRouteStart = () => closePage("route_change");
     const onRouteComplete = (url) => openPage(url);
-    router.events.on("routeChangeStart", onRouteStart);
-    router.events.on("routeChangeComplete", onRouteComplete);
+    routerRef.current.events.on("routeChangeStart", onRouteStart);
+    routerRef.current.events.on("routeChangeComplete", onRouteComplete);
 
     const onActivity = () => {
       const now = Date.now();
@@ -256,7 +271,7 @@ export default function ActivityTracker() {
         element.getAttribute("value")
       );
       if (!label) return;
-      const route = sanitiseRoute(router.asPath) || "/";
+      const route = sanitiseRoute(routerRef.current.asPath) || "/";
       const href = element.closest("a[href]")?.getAttribute("href") || null;
       const signature = `${route}|${label}|${href || ""}`;
       const now = Date.now();
@@ -310,7 +325,7 @@ export default function ActivityTracker() {
             eventName: "api_mutation",
             actionCategory: "record_change",
             feature: featureFromRoute(url.pathname.replace(/^\/api/, "")),
-            route: sanitiseRoute(router.asPath),
+            route: sanitiseRoute(routerRef.current.asPath),
             pageTitle: document.title,
             actionLabel: `${method} ${url.pathname}`,
             recordType: record.recordType,
@@ -334,7 +349,7 @@ export default function ActivityTracker() {
             eventName: "api_mutation",
             actionCategory: "record_change",
             feature: featureFromRoute(url.pathname.replace(/^\/api/, "")),
-            route: sanitiseRoute(router.asPath),
+            route: sanitiseRoute(routerRef.current.asPath),
             pageTitle: document.title,
             actionLabel: `${method} ${url.pathname}`,
             outcome: "failure",
@@ -377,7 +392,7 @@ export default function ActivityTracker() {
         closePage("visibility_hidden");
         void flush();
       } else if (!pageRef.current) {
-        openPage(router.asPath, { force: true });
+        openPage(routerRef.current.asPath, { force: true });
       }
     };
     const onPageHide = () => {
@@ -391,8 +406,8 @@ export default function ActivityTracker() {
       cancelled = true;
       closePage("tracker_unmounted");
       void flush();
-      router.events.off("routeChangeStart", onRouteStart);
-      router.events.off("routeChangeComplete", onRouteComplete);
+      routerRef.current.events.off("routeChangeStart", onRouteStart);
+      routerRef.current.events.off("routeChangeComplete", onRouteComplete);
       for (const name of ["pointerdown", "keydown", "scroll", "touchstart"]) {
         document.removeEventListener(name, onActivity, true);
       }
@@ -403,7 +418,9 @@ export default function ActivityTracker() {
       if (flushTimerRef.current) window.clearTimeout(flushTimerRef.current);
       if (window.fetch === auditedFetch) window.fetch = originalFetch;
     };
-  }, [router, session?.user?.id, status]);
+    // `router` is deliberately absent — it is read through routerRef so a new
+    // router object cannot restart the audit session. See the note by the ref.
+  }, [session?.user?.id, status]);
 
   useEffect(() => {
     if (status !== "unauthenticated") return;

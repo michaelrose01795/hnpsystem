@@ -15,6 +15,10 @@ import {
 } from "../mockData/hr_operations";
 import { buildPresentationPersonalState } from "../mockData/personal";
 import {
+  buildDeliveryDiaryMock,
+  buildDeliveryRouteMapMock,
+} from "../mockData/parts_delivery_diary";
+import {
   threads as messageThreads,
   threadMessages as messageThreadMessages,
   directory as messageDirectory,
@@ -609,6 +613,34 @@ const partsOrdersList = () => (rows, q) => {
 
 const partsOrderSingle = () => (rows) => ({ success: true, order: rows[0] || null, data: rows[0] || null });
 
+// The delivery diary is a whole-day payload rather than a row list, so it is
+// built from its own fixture (mockData/parts_delivery_diary.js) and the
+// requested ?date is honoured so the day controls still move during a demo.
+const deliveryDiaryDay = () => (_rows, q) => ({
+  success: true,
+  data: buildDeliveryDiaryMock(q ? q.get("date") : null),
+});
+
+const deliveryDiaryRouteMap = () => (_rows, q) => ({
+  success: true,
+  data: buildDeliveryRouteMapMock(q ? q.get("date") : null),
+});
+
+// Writes are no-ops that echo the demo day back, so a click during a demo
+// neither errors nor pretends to have persisted anything.
+const deliveryDiaryWriteNoop = () => (_rows, q) => {
+  const day = buildDeliveryDiaryMock(q ? q.get("date") : null);
+  return {
+    success: true,
+    data: {
+      delivery: day.deliveries[0],
+      events: [],
+      deliveries: day.deliveries,
+      syncNotes: [],
+    },
+  };
+};
+
 const partsDeliveriesList = () => (rows, q) => {
   const page = paginate(rows, q);
   return { success: true, deliveries: page.data, data: page.data, pagination: page.pagination, count: rows.length };
@@ -1148,6 +1180,11 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/parts\/jobs\/search\/?$/, table: "jobs", transform: jobSearchList() },
   { pattern: /^\/api\/parts\/jobs\/?$/, table: "jobs", transform: partsJobDetails() },
   { pattern: /^\/api\/parts\/suppliers\/search\/?$/, table: "company_accounts", transform: supplierList() },
+  { pattern: /^\/api\/parts\/delivery-diary\/route-map\/?$/, table: "parts_deliveries", transform: deliveryDiaryRouteMap() },
+  { pattern: /^\/api\/parts\/delivery-diary\/route-order\/?$/, table: "parts_deliveries", transform: deliveryDiaryWriteNoop() },
+  { pattern: /^\/api\/parts\/delivery-diary\/proof\/?$/, table: "parts_deliveries", transform: deliveryDiaryWriteNoop() },
+  { pattern: /^\/api\/parts\/delivery-diary\/[^/]+\/?$/, table: "parts_deliveries", transform: deliveryDiaryWriteNoop() },
+  { pattern: /^\/api\/parts\/delivery-diary\/?$/, table: "parts_deliveries", transform: deliveryDiaryDay() },
   { pattern: /^\/api\/parts\/deliveries\/add-stop\/?$/, table: "parts_deliveries", transform: () => ({ success: true }) },
   { pattern: /^\/api\/parts\/deliveries\/confirm-job\/?$/, table: "parts_deliveries", transform: () => ({ success: true }) },
   { pattern: /^\/api\/parts\/deliveries\/items\/[^/]+\/?$/, table: "parts_deliveries", transform: passthroughSingle() },

@@ -16,10 +16,9 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
+  badgeClass,
   EmptyState,
   LoadingBlock,
-  DevButton,
   SourceRef,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
@@ -39,7 +38,7 @@ function OwnershipView() {
   }
   if (error) {
     return (
-      <Panel title="Code Ownership" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+      <Panel title="Code Ownership" actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Retry</button>}>
         <EmptyState title="Could not load ownership map" message={error} />
       </Panel>
     );
@@ -55,7 +54,7 @@ function OwnershipView() {
       <Panel
         title="Code Ownership"
         subtitle="Resolved from data-dev-section-key to source map — no extra instrumentation"
-        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
+        actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "var(--space-sm)" }}>
           <StatCard label="Files touched" value={files.length} tone="accentText" />
@@ -69,7 +68,7 @@ function OwnershipView() {
         <Panel title="Affected features" subtitle="Distinct feature areas attracting reports">
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             {features.map((f) => (
-              <Pill key={f.feature} label={`${f.feature} · ${f.total}${f.open ? ` (${f.open} open)` : ""}`} tone={f.open ? "accentText" : "text-1"} strong />
+              <span key={f.feature} className={badgeClass(f.open ? "accentText" : "text-1", true)}>{`${f.feature} · ${f.total}${f.open ? ` (${f.open} open)` : ""}`}</span>
             ))}
           </div>
         </Panel>
@@ -85,12 +84,12 @@ function OwnershipView() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
                 <SourceRef file={f.file} line={f.line} />
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  <Pill label={`${f.total} total`} tone="text-1" />
-                  {f.open > 0 && <Pill label={`${f.open} open`} tone="accentText" />}
-                  {f.regressions > 0 && <Pill label={`${f.regressions} regression`} tone="danger-base" strong />}
+                  <span className="app-badge app-badge--neutral">{`${f.total} total`}</span>
+                  {f.open > 0 && <span className="app-badge app-badge--accent-soft">{`${f.open} open`}</span>}
+                  {f.regressions > 0 && <span className="app-badge app-badge--danger-strong">{`${f.regressions} regression`}</span>}
                 </div>
               </div>
-              <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7, wordBreak: "break-word" }}>
+              <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7, wordBreak: "break-word" }}>
                 {f.feature ? `feature: ${f.feature}` : ""}{f.routes.length ? ` · routes: ${f.routes.slice(0, 4).join(", ")}${f.routes.length > 4 ? "…" : ""}` : ""}
               </div>
             </SubSurface>
@@ -103,12 +102,12 @@ function OwnershipView() {
           <SubSurface key={m.module} style={{ flexDirection: "row", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700, color: "var(--text-1)", wordBreak: "break-word" }}>{m.module}</div>
-              <div style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.7 }}>{m.fileCount} file(s)</div>
+              <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.7 }}>{m.fileCount} file(s)</div>
             </div>
             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-              <Pill label={`${m.total} total`} tone="text-1" />
-              {m.open > 0 && <Pill label={`${m.open} open`} tone="accentText" />}
-              {m.regressions > 0 && <Pill label={`${m.regressions} regression`} tone="danger-base" strong />}
+              <span className="app-badge app-badge--neutral">{`${m.total} total`}</span>
+              {m.open > 0 && <span className="app-badge app-badge--accent-soft">{`${m.open} open`}</span>}
+              {m.regressions > 0 && <span className="app-badge app-badge--danger-strong">{`${m.regressions} regression`}</span>}
             </div>
           </SubSurface>
         ))}
@@ -121,13 +120,13 @@ function OwnershipView() {
           edges.map((e) => (
             <SubSurface key={`${e.route}¦${e.module}`} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-xs)", color: "var(--accentText)", wordBreak: "break-word" }}>{e.route}</span>
+                <span style={{ fontFamily: "var(--font-family-mono)", fontSize: "var(--text-caption)", color: "var(--accentText)", wordBreak: "break-word" }}>{e.route}</span>
                 <span aria-hidden style={{ color: "var(--text-1)", opacity: 0.5 }}>→</span>
                 <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", wordBreak: "break-word" }}>{e.module}</span>
               </div>
               <div style={{ display: "flex", gap: "6px" }}>
-                <Pill label={`×${e.weight}`} tone="warning-base" strong />
-                {e.open > 0 && <Pill label={`${e.open} open`} tone="accentText" />}
+                <span className="app-badge app-badge--warning-strong">{`×${e.weight}`}</span>
+                {e.open > 0 && <span className="app-badge app-badge--accent-soft">{`${e.open} open`}</span>}
               </div>
             </SubSurface>
           ))

@@ -18,6 +18,8 @@ import {
   getVhcCompletionUpdatesFromWriteUpTasks,
 } from "@/features/jobCards/workflow/selectors";
 import { selectCurrentAppointment } from "@/lib/jobCards/utils";
+import { getAutoMovementRule } from "@/lib/tracking/autoMovement"; // shared automatic tracking movement rules
+import { buildApiUrl } from "@/utils/apiClient"; // honours NEXT_PUBLIC_BASE_PATH / API base
 import { cachedQuery, invalidateCache } from "@/lib/database/queryCache";
 import {
   getVehicleRegistration,
@@ -160,7 +162,7 @@ const ensureJobNumberAssigned = async (jobRow, providedJobNumber = null) => {
       job_number: updatedRow?.job_number || fallbackJobNumber,
     };
   } catch (error) {
-    console.error("⚠️ Unable to persist generated job number, using fallback:", error);
+    logFailure("⚠️ Unable to persist generated job number, using fallback:", error);
     return {
       ...jobRow,
       job_number: fallbackJobNumber,
@@ -360,6 +362,18 @@ export const getAllJobs = ({ throwOnError = false, cacheKey = "jobs:all" } = {})
 ============================================ */
 export const JOBS_WORKLOAD_DEFAULT_LIMIT = 400;
 
+// NOTE: this template literal is sent verbatim to PostgREST as the `select`
+// parameter. It is NOT JavaScript — a `//` comment inside it is transmitted as
+// part of the column list and the whole query fails with PGRST100. Annotate
+// columns here, above the string, never inside it.
+//
+// Two columns are read by /appointments but not by /jobs, so they were absent
+// when this query was written for the jobs list alone:
+//   service_mode  — formatJobData defaults a missing value to "workshop", so
+//                   omitting it made every job look like a workshop job and hid
+//                   every mobile booking from the mobile-technician view
+//                   (appointments/index.js filters on serviceMode === "mobile").
+//   vehicle.year  — rendered in the appointments job rows.
 const JOBS_WORKLOAD_SELECT = `
   id,
   job_number,
@@ -388,6 +402,7 @@ const JOBS_WORKLOAD_SELECT = `
   queue_position,
   vhc_completed_at,
   vhc_sent_at,
+  service_mode,
   created_at,
   updated_at,
   next_update_due,
@@ -402,6 +417,7 @@ const JOBS_WORKLOAD_SELECT = `
     make,
     model,
     make_model,
+    year,
     vin,
     mileage,
     customer:customer_id(
@@ -443,15 +459,28 @@ const JOBS_WORKLOAD_SELECT = `
   )
 `;
 
-const _getJobsWorkloadUncached = async ({ limit = JOBS_WORKLOAD_DEFAULT_LIMIT, throwOnError = false } = {}) => {
-  const { data, error } = await supabase
-    .from("jobs")
-    .select(JOBS_WORKLOAD_SELECT)
+const _getJobsWorkloadUncached = async ({
+  limit = JOBS_WORKLOAD_DEFAULT_LIMIT,
+  throwOnError = false,
+  assignedTo = null,
+} = {}) => {
+  let query = supabase.from("jobs").select(JOBS_WORKLOAD_SELECT);
+
+  // Optional technician scope. jobs.assigned_to is an integer column and the
+  // `technician:assigned_to(...)` join is derived from it, so filtering here is
+  // exactly equivalent to the client-side
+  // `assignedTo === id || assignedTech?.id === id` test the technician screens
+  // used to run over every job in the database — assignedTech.id IS
+  // technician.user_id, and the string-fallback branch of that derivation always
+  // yields id: null, which can never match a real user id.
+  if (assignedTo !== null) query = query.eq("assigned_to", assignedTo);
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) {
-    console.error("❌ getJobsWorkload error:", {
+    logFailure("❌ getJobsWorkload error:", {
       message: error?.message,
       details: error?.details,
       hint: error?.hint,
@@ -469,19 +498,30 @@ export const getJobsWorkload = ({
   throwOnError = false,
   noCache = false,
   cacheKey = "jobs:workload",
+  assignedTo = null,
 } = {}) => {
+  const numericAssignedTo = Number(assignedTo);
+  const scopedTo =
+    Number.isInteger(numericAssignedTo) && numericAssignedTo > 0 ? numericAssignedTo : null;
+
   if (noCache) {
     invalidateCache(`${cacheKey}:`);
-    return _getJobsWorkloadUncached({ limit, throwOnError });
+    return _getJobsWorkloadUncached({ limit, throwOnError, assignedTo: scopedTo });
   }
-  // `shared: true` — the workload list is the same for every staff viewer (it is
-  // not filtered by session, role or user id), so a short server-side dedupe
-  // window is safe. See the note in lib/database/queryCache.js.
+
+  // `shared` is true ONLY for the unscoped list, which is identical for every
+  // staff viewer. A technician-scoped result is derived from a user id, so it
+  // must never be cached in the process-global map on the server — see the
+  // IS_SERVER note in lib/database/queryCache.js, which drops straight through
+  // to the fetcher when shared is false.
+  //
+  // The key still starts with "jobs:workload:" so revalidateAllJobs()'s
+  // invalidateCache("jobs:") continues to clear it.
   return cachedQuery(
-    `${cacheKey}:${limit}`,
-    () => _getJobsWorkloadUncached({ limit, throwOnError }),
+    `${cacheKey}:${limit}:${scopedTo ?? "all"}`,
+    () => _getJobsWorkloadUncached({ limit, throwOnError, assignedTo: scopedTo }),
     undefined,
-    { shared: true }
+    { shared: scopedTo === null }
   );
 };
 
@@ -503,7 +543,7 @@ export const getJobWorkloadRow = async (jobId, { throwOnError = false } = {}) =>
     .maybeSingle();
 
   if (error) {
-    console.error("❌ getJobWorkloadRow error:", error?.message || error);
+    logFailure("❌ getJobWorkloadRow error:", error?.message || error);
     if (throwOnError) throw error;
     return null;
   }
@@ -793,7 +833,7 @@ const _getAllJobsUncached = async ({ throwOnError = false } = {}) => {
     .order('created_at', { ascending: false }); // Order by newest first
 
   if (error) {
-    console.error("❌ getAllJobs error:", {
+    logFailure("❌ getAllJobs error:", {
       message: error?.message,
       details: error?.details,
       hint: error?.hint,
@@ -845,7 +885,7 @@ export const getDashboardData = async () => {
     .order('scheduled_time', { ascending: true });
 
   if (error) {
-    console.error("❌ Error fetching today's appointments:", error);
+    logFailure("❌ Error fetching today's appointments:", error);
     return { allJobs, appointments: [] };
   }
 
@@ -898,7 +938,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
       .eq("authorised", true);
 
     if (partsError && partsError.code !== "PGRST116") {
-      console.error("⚠️ Error fetching authorized parts:", partsError);
+      logFailure("⚠️ Error fetching authorized parts:", partsError);
     }
 
     // Fetch authorized VHC checks
@@ -910,7 +950,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
       .in("approval_status", ["authorized", "authorised"]);
 
     if (vhcChecksError && vhcChecksError.code !== "PGRST116") {
-      console.error("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
+      logFailure("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
     } else {
       vhcChecksData = data || [];
     }
@@ -960,7 +1000,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
     // Combine both sources
     return [...vhcChecksItems, ...partsItems];
   } catch (error) {
-    console.error("❌ getAuthorizedAdditionalWorkByJob error:", error);
+    logFailure("❌ getAuthorizedAdditionalWorkByJob error:", error);
     return [];
   }
 };
@@ -985,7 +1025,7 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
       .order("approved_at", { ascending: false });
 
     if (error) {
-      console.error("❌ Error fetching authorized VHC items:", error);
+      logFailure("❌ Error fetching authorized VHC items:", error);
       return [];
     }
 
@@ -1033,7 +1073,7 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
       };
     });
   } catch (error) {
-    console.error("❌ getAuthorizedVhcItemsWithDetails error:", error);
+    logFailure("❌ getAuthorizedVhcItemsWithDetails error:", error);
     return [];
   }
 };
@@ -1279,7 +1319,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
   const jobData = Array.isArray(jobRows) ? jobRows[0] : null;
 
   if (jobError) {
-    console.error("❌ getJobByNumber error:", jobError);
+    logFailure("❌ getJobByNumber error:", jobError);
     return { data: null, error: jobError };
   }
 
@@ -1611,7 +1651,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
     .maybeSingle();
 
   if (jobError) {
-    console.error("❌ getJobByNumberOrReg error:", jobError);
+    logFailure("❌ getJobByNumberOrReg error:", jobError);
     return null;
   }
 
@@ -1884,7 +1924,7 @@ const fetchJobMessagingThread = async (jobNumber) => {
 
     if (threadError) {
       if (threadError.code !== "PGRST116") {
-        console.error("❌ fetchJobMessagingThread error:", threadError);
+        logFailure("❌ fetchJobMessagingThread error:", threadError);
       }
       return null;
     }
@@ -1937,10 +1977,10 @@ const fetchJobMessagingThread = async (jobNumber) => {
     ]);
 
     if (participantsResult?.error) {
-      console.error("❌ Failed to load thread participants:", participantsResult.error);
+      logFailure("❌ Failed to load thread participants:", participantsResult.error);
     }
     if (messagesResult?.error) {
-      console.error("❌ Failed to load thread messages:", messagesResult.error);
+      logFailure("❌ Failed to load thread messages:", messagesResult.error);
     }
 
     const participants = (participantsResult?.data || [])
@@ -1960,7 +2000,7 @@ const fetchJobMessagingThread = async (jobNumber) => {
       messages,
     };
   } catch (threadError) {
-    console.error("❌ Unexpected messaging thread error:", threadError);
+    logFailure("❌ Unexpected messaging thread error:", threadError);
     return null;
   }
 };
@@ -2107,107 +2147,19 @@ const deriveAuthorisedWorkItems = (authorizationRows = []) => {
     .filter(Boolean);
 };
 
-// ✅ Normalise stored task status values
-const sanitiseTaskStatus = (status) =>
-  status === true
-    ? "complete"
-    : status === false
-    ? "additional_work"
-    : status === "complete" || status === "inprogress"
-    ? status
-    : "additional_work";
+// Pure task helpers now live in @/lib/jobCards/writeUpTasks so a component can
+// call them during render without importing this module. Re-exported below so
+// the public API of this module is unchanged.
+import {
+  sanitiseTaskStatus,
+  normalizeRequestTaskLabel,
+  isCompleteRequestStatus,
+  isMotRequestLike,
+  summarizeWriteUpTasks,
+} from "@/lib/jobCards/writeUpTasks";
+import { logFailure } from "@/lib/utils/logFailure";
 
-const normalizeRequestTaskLabel = (value = "") =>
-  String(value || "")
-    .replace(/^Request\s*\d+\s*:\s*/i, "")
-    .trim()
-    .toLowerCase();
-
-const isCompleteRequestStatus = (value) => {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
-  return normalized === "complete" || normalized === "completed" || normalized === "done";
-};
-
-const normalizeSearchValue = (value = "") =>
-  String(value || "")
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-export const isMotRequestLike = (request = {}) => {
-  const haystack = [
-    request?.description,
-    request?.jobType,
-    request?.job_type,
-    request?.serviceType,
-    request?.service_type,
-    request?.requestSource,
-    request?.request_source,
-    request?.label,
-    request?.raw,
-    request?.noteText,
-    request?.note_text,
-  ]
-    .map((value) => normalizeSearchValue(value))
-    .filter(Boolean)
-    .join(" ");
-
-  return haystack.includes("mot");
-};
-
-const isTaskComplete = (task = {}) =>
-  typeof task?.checked === "boolean" ? task.checked : sanitiseTaskStatus(task?.status) === "complete";
-
-export const summarizeWriteUpTasks = (tasks = []) => {
-  const normalizedTasks = (Array.isArray(tasks) ? tasks : [])
-    .filter((task) => task && typeof task === "object")
-    .map((task) => {
-      const source = String(task?.source || "request").trim().toLowerCase();
-      const checked = isTaskComplete(task);
-      const isMot = Boolean(task?.isMot) || (source === "request" && isMotRequestLike(task));
-
-      return {
-        source,
-        sourceKey: task?.sourceKey || task?.source_key || `${source}-${task?.label || "task"}`,
-        label: (task?.label || "").toString().trim(),
-        checked,
-        status: checked ? "complete" : "additional_work",
-        isMot,
-        requestId:
-          task?.requestId !== null && task?.requestId !== undefined
-            ? Number(task.requestId)
-            : task?.request_id !== null && task?.request_id !== undefined
-            ? Number(task.request_id)
-            : null,
-        sortOrder:
-          task?.sortOrder !== null && task?.sortOrder !== undefined
-            ? Number(task.sortOrder)
-            : task?.sort_order !== null && task?.sort_order !== undefined
-            ? Number(task.sort_order)
-            : null,
-      };
-    });
-
-  const pendingTasks = normalizedTasks.filter((task) => !task.checked);
-  const pendingMotTasks = pendingTasks.filter((task) => task.isMot);
-  const pendingNonMotTasks = pendingTasks.filter((task) => !task.isMot);
-
-  return {
-    totalCount: normalizedTasks.length,
-    allTasksComplete: normalizedTasks.length > 0 && pendingTasks.length === 0,
-    technicianTasksComplete: normalizedTasks.length > 0 && pendingNonMotTasks.length === 0,
-    hasPendingMotOnly: pendingMotTasks.length > 0 && pendingNonMotTasks.length === 0,
-    pendingCount: pendingTasks.length,
-    pendingMotCount: pendingMotTasks.length,
-    pendingNonMotCount: pendingNonMotTasks.length,
-    pendingTasks,
-    pendingMotTasks,
-    pendingNonMotTasks,
-  };
-};
+export { isMotRequestLike, summarizeWriteUpTasks };
 
 // ✅ Merge stored tasks with live request/VHC sources
 const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedItems = [] }) => {
@@ -2978,12 +2930,18 @@ export const addJobToDatabase = async ({
   cosmeticNotes,
   vhcRequired,
   maintenanceInfo,
+  bookedBy = null,
   // Prime/Sub-job parameters
   primeJobId = null,
   asPrimeJob = false,
 }) => {
   try {
     const normalizedJobNumber = normaliseJobNumberInput(jobNumber);
+    const parsedBookedBy = Number(String(bookedBy ?? "").trim());
+    const bookedByUserId = Number.isInteger(parsedBookedBy) && parsedBookedBy > 0
+      ? parsedBookedBy
+      : null;
+    const createdAt = new Date().toISOString();
 
     console.log("➕ addJobToDatabase called with:", { 
       regNumber,
@@ -3015,12 +2973,12 @@ export const addJobToDatabase = async ({
         .maybeSingle();
 
       if (vehicleError) {
-        console.error("❌ Error finding vehicle:", vehicleError);
+        logFailure("❌ Error finding vehicle:", vehicleError);
         throw vehicleError;
       }
 
       if (!vehicle) {
-        console.error("❌ Vehicle not found for reg:", regNumber);
+        logFailure("❌ Vehicle not found for reg:", regNumber);
         return { 
           success: false, 
           error: { message: `Vehicle with registration ${regNumber} not found` } 
@@ -3046,7 +3004,7 @@ export const addJobToDatabase = async ({
         .single();
 
       if (primeJobError || !primeJob) {
-        console.error("❌ Prime job not found:", primeJobError);
+        logFailure("❌ Prime job not found:", primeJobError);
         return {
           success: false,
           error: { message: `Prime job with ID ${primeJobId} not found` }
@@ -3092,7 +3050,10 @@ export const addJobToDatabase = async ({
       assigned_to: assignedTo || null,
       type: type || "Service",
       description: description || "",
-      status: "Open",
+      status: "Booked",
+      booked_by: bookedByUserId,
+      status_updated_at: createdAt,
+      status_updated_by: bookedByUserId ? String(bookedByUserId) : null,
       waiting_status: waitingStatus || "Neither",
       job_source: jobSource || "Retail",
       job_division: jobDivision || "Retail",
@@ -3106,7 +3067,7 @@ export const addJobToDatabase = async ({
       is_prime_job: asPrimeJob && !primeJobId,
       sub_job_sequence: subJobSequence,
       maintenance_info: maintenanceInfo || {},
-      created_at: new Date().toISOString(),
+      created_at: createdAt,
     };
 
     console.log("📝 Inserting job with data:", jobInsert);
@@ -3159,11 +3120,31 @@ export const addJobToDatabase = async ({
       .single();
 
     if (jobError) {
-      console.error("❌ Error creating job:", jobError);
+      logFailure("❌ Error creating job:", jobError);
       throw jobError;
     }
 
     let jobWithNumber = await ensureJobNumberAssigned(job, normalizedJobNumber);
+
+    // A newly saved job begins its lifecycle as Booked. Persist this milestone
+    // once, at creation time, with the advisor who pressed Save Job Card.
+    // Later appointment edits are deliberately idempotent and must not add
+    // another Booked entry to the Job Tracker.
+    const { error: bookedHistoryError } = await supabase
+      .from("job_status_history")
+      .insert([
+        {
+          job_id: jobWithNumber.id,
+          from_status: null,
+          to_status: "Booked",
+          changed_by: bookedByUserId ? String(bookedByUserId) : null,
+          reason: "Job created",
+          changed_at: createdAt,
+        },
+      ]);
+    if (bookedHistoryError) {
+      logFailure("Failed to record initial Booked status:", bookedHistoryError);
+    }
 
     // If this is a prime job, set prime_job_number to the job's own job_number
     if (asPrimeJob && !primeJobId && jobWithNumber.job_number) {
@@ -3186,7 +3167,7 @@ export const addJobToDatabase = async ({
     invalidateCache("jobs:");
     return { success: true, data: formatJobData(jobWithNumber) };
   } catch (error) {
-    console.error("❌ Error adding job:", error);
+    logFailure("❌ Error adding job:", error);
     return {
       success: false,
       error: { message: error.message || "Failed to create job" }
@@ -3257,6 +3238,39 @@ const stableStringify = (value) => {
   return String(value);
 };
 
+// Records the automatic tracking movement for a status change. See the call
+// site inside `updateJob` for why it lives here rather than on /tracking.
+//
+// Both branches are lazy on purpose: `@/lib/database/tracking` is a server-side
+// helper and must not be pulled into the eager client graph of every page that
+// imports this module. The rule check comes first so the common case (a status
+// with no movement rule) costs nothing at all — no import, no request.
+const recordStatusMovement = async (jobId, status, statusUpdatedBy) => {
+  try {
+    if (!jobId || !getAutoMovementRule(status)) return;
+
+    if (typeof window === "undefined") {
+      const { recordAutomaticMovementForStatus } = await import("@/lib/database/tracking");
+      await recordAutomaticMovementForStatus({
+        jobId,
+        status,
+        performedBy: statusUpdatedBy,
+      });
+      return;
+    }
+
+    await fetch(buildApiUrl("/api/tracking/next-action"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // No `performedBy`: the endpoint resolves the actor from the session.
+      body: JSON.stringify({ actionType: "job_status_change", jobId, status }),
+    });
+  } catch (movementError) {
+    // Never fail a job update because a tracking event could not be written.
+    logFailure("Auto tracking movement failed", movementError);
+  }
+};
+
 export const updateJob = async (jobId, updates) => {
   try {
     console.log("🔄 Updating job:", jobId, "with updates:", updates);
@@ -3297,7 +3311,7 @@ export const updateJob = async (jobId, updates) => {
         .single();
 
       if (statusFetchError) {
-        console.error(
+        logFailure(
           "❌ Unable to read current status before job update:",
           statusFetchError
         );
@@ -3312,7 +3326,7 @@ export const updateJob = async (jobId, updates) => {
             .single();
 
           if (existingJobError) {
-            console.error("❌ Unable to read existing job for no-op status update:", existingJobError);
+            logFailure("❌ Unable to read existing job for no-op status update:", existingJobError);
             return { success: false, error: existingJobError };
           }
 
@@ -3335,7 +3349,7 @@ export const updateJob = async (jobId, updates) => {
           };
         }
       } catch (subStatusError) {
-        console.error("❌ Failed to validate invoicing prerequisites:", subStatusError);
+        logFailure("❌ Failed to validate invoicing prerequisites:", subStatusError);
         return {
           success: false,
           error: { message: "Unable to validate invoicing prerequisites" },
@@ -3360,7 +3374,7 @@ export const updateJob = async (jobId, updates) => {
           };
         }
       } catch (invoiceError) {
-        console.error("❌ Failed to check invoice before release:", invoiceError);
+        logFailure("❌ Failed to check invoice before release:", invoiceError);
         return {
           success: false,
           error: { message: "Unable to validate invoice before release" },
@@ -3391,11 +3405,30 @@ export const updateJob = async (jobId, updates) => {
       .single();
 
     if (error) {
-      console.error("❌ Error updating job:", error);
+      logFailure("❌ Error updating job:", error);
       return { success: false, error };
     }
 
     console.log("✅ Job updated successfully:", data);
+
+    // Automatic tracking movement is owned by the status change, not by an open
+    // /tracking tab.
+    //
+    // Previously the movement was written by a Supabase Realtime subscription
+    // inside src/pages/tracking/index.js: it only fired if somebody happened to
+    // have that page open, it fired once per open tab, and `performed_by` was
+    // the viewer's user id rather than the person who changed the status. This
+    // is the point where every status change funnels through, and it already
+    // knows both the new status and the actor.
+    //
+    // In the browser the write is handed to /api/tracking/next-action, which
+    // resolves the actor from the session — so attribution is server-decided
+    // and the tracking tables can eventually be closed to the anon key. On the
+    // server the helper is called directly. Either way it is fire-and-forget:
+    // a tracking event must never fail a job update.
+    if (hasStatusUpdate && data) {
+      void recordStatusMovement(jobId, payload.status, updates.status_updated_by);
+    }
 
     // Report meaningful jobcard edits on the Job Tracker timeline. Non-blocking:
     // a logging failure must never fail the underlying save.
@@ -3419,7 +3452,7 @@ export const updateJob = async (jobId, updates) => {
             },
           ]);
         } catch (activityError) {
-          console.error("❌ Failed to log job card edit activity:", activityError);
+          logFailure("❌ Failed to log job card edit activity:", activityError);
         }
       }
     }
@@ -3443,7 +3476,7 @@ export const updateJob = async (jobId, updates) => {
           },
         ]);
       } catch (historyError) {
-        console.error("❌ Failed to log job status history:", historyError);
+        logFailure("❌ Failed to log job status history:", historyError);
       }
 
       // Reporting event spine (Phase-5). Non-blocking + flag-gated: inert until
@@ -3466,7 +3499,7 @@ export const updateJob = async (jobId, updates) => {
             newStatus: updates.status,
           });
         } catch (notifyError) {
-          console.error(
+          logFailure(
             "❌ Failed to dispatch job status notification:",
             notifyError
           );
@@ -3477,7 +3510,7 @@ export const updateJob = async (jobId, updates) => {
     invalidateCache("jobs:");
     return { success: true, data: formatJobData(data) };
   } catch (error) {
-    console.error("❌ Exception updating job:", error);
+    logFailure("❌ Exception updating job:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3605,7 +3638,7 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
 
     return { success: true };
   } catch (error) {
-    console.error("❌ upsertJobRequestsForJob error:", error);
+    logFailure("❌ upsertJobRequestsForJob error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3635,7 +3668,7 @@ export const updateJobRequestStatus = async (requestId, status) => {
 
     return { success: true };
   } catch (error) {
-    console.error("❌ updateJobRequestStatus error:", error);
+    logFailure("❌ updateJobRequestStatus error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3680,7 +3713,7 @@ export const updateJobRequestWorkDetails = async (requestId, fields = {}) => {
 
     return { success: true };
   } catch (error) {
-    console.error("❌ updateJobRequestWorkDetails error:", error);
+    logFailure("❌ updateJobRequestWorkDetails error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3706,7 +3739,7 @@ export const markAllJobRequestsComplete = async (jobId) => {
 
     return { success: true };
   } catch (error) {
-    console.error("❌ markAllJobRequestsComplete error:", error);
+    logFailure("❌ markAllJobRequestsComplete error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -3774,7 +3807,7 @@ export const cancelJobAppointment = async (
     invalidateCache("jobs:");
     return { success: true, data: statusResult.data };
   } catch (error) {
-    console.error("❌ cancelJobAppointment error:", error);
+    logFailure("❌ cancelJobAppointment error:", error);
     return {
       success: false,
       error: { message: error?.message || "Failed to cancel appointment" },
@@ -3817,7 +3850,7 @@ export const assignTechnicianToJob = async (
         resolvedTechnicianId = ensuredId;
       }
     } catch (err) {
-      console.error("❌ Failed to resolve technician id:", err);
+      logFailure("❌ Failed to resolve technician id:", err);
       return {
         success: false,
         error: { message: err?.message || "Failed to resolve technician id" },
@@ -3919,7 +3952,7 @@ export const createOrUpdateAppointment = async (
       .maybeSingle();
 
     if (jobError || !job) {
-      console.error("❌ Job not found:", jobNumber, jobError);
+      logFailure("Job not found", jobError, { jobNumber });
       return { 
         success: false, 
         error: { message: `Job ${jobNumber} not found in database` } 
@@ -3990,7 +4023,7 @@ export const createOrUpdateAppointment = async (
       }
     };
   } catch (error) {
-    console.error("❌ Error creating/updating appointment:", error);
+    logFailure("❌ Error creating/updating appointment:", error);
     return { 
       success: false, 
       error: { message: error.message || "Failed to create/update appointment" } 
@@ -4033,7 +4066,7 @@ export const getJobsByDate = async (date) => {
     .order('scheduled_time', { ascending: true });
 
   if (error) {
-    console.error("❌ Error fetching jobs by date:", error);
+    logFailure("❌ Error fetching jobs by date:", error);
     return [];
   }
 
@@ -4090,7 +4123,7 @@ export const addJobFile = async (
     console.log("✅ File added to job:", data);
     return { success: true, data };
   } catch (error) {
-    console.error("❌ Error adding file to job:", error);
+    logFailure("❌ Error adding file to job:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4117,7 +4150,7 @@ export const getJobFiles = async (jobId, folder = null) => {
     console.log("✅ Job files retrieved:", data?.length || 0);
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("❌ Error getting job files:", error);
+    logFailure("❌ Error getting job files:", error);
     return { success: false, error: { message: error.message }, data: [] };
   }
 };
@@ -4137,7 +4170,7 @@ export const deleteJobFile = async (fileId) => {
     console.log("✅ File deleted from job");
     return { success: true };
   } catch (error) {
-    console.error("❌ Error deleting file:", error);
+    logFailure("❌ Error deleting file:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4167,7 +4200,7 @@ export const getCustomerJobHistory = async (customerId) => {
     console.log("✅ Customer job history retrieved:", data?.length || 0, "jobs");
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("❌ Error getting customer job history:", error);
+    logFailure("❌ Error getting customer job history:", error);
     return { success: false, error: { message: error.message }, data: [] };
   }
 };
@@ -4195,7 +4228,7 @@ export const getVehicleJobHistory = async (vehicleId) => {
     console.log("✅ Vehicle job history retrieved:", data?.length || 0, "jobs");
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("❌ Error getting vehicle job history:", error);
+    logFailure("❌ Error getting vehicle job history:", error);
     return { success: false, error: { message: error.message }, data: [] };
   }
 };
@@ -4225,7 +4258,7 @@ export const updateJobPosition = async (jobId, newPosition) => {
     invalidateCache("jobs:");
     return data;
   } catch (err) {
-    console.error("❌ Error in updateJobPosition:", err.message);
+    logFailure("❌ Error in updateJobPosition:", err.message);
     throw err;
   }
 };
@@ -4258,7 +4291,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       .single();
 
     if (jobError || !job) {
-      console.error("❌ Job not found:", jobNumber);
+      logFailure("❌ Job not found:", jobNumber);
       return null;
     }
 
@@ -4278,7 +4311,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
     const { data: writeUp, error } = writeUpResponse;
 
     if (error && error.code !== "PGRST116") {
-      console.error("❌ Error fetching write-up:", error);
+      logFailure("❌ Error fetching write-up:", error);
       return null;
     }
 
@@ -4373,7 +4406,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       sectionEditors,
     };
   } catch (error) {
-    console.error("❌ getWriteUpByJobNumber error:", error);
+    logFailure("❌ getWriteUpByJobNumber error:", error);
     return null;
   }
 };
@@ -4407,7 +4440,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       .single();
 
     if (jobError || !job) {
-      console.error("❌ Job not found:", jobNumber);
+      logFailure("❌ Job not found:", jobNumber);
       return { success: false, error: "Job not found" };
     }
 
@@ -4503,7 +4536,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     if (formattedJobDescription && formattedJobDescription !== (job.description || "")) {
       const jobUpdateResult = await updateJob(job.id, { description: formattedJobDescription });
       if (!jobUpdateResult.success) {
-        console.error("⚠️ Failed to synchronise job description:", jobUpdateResult.error);
+        logFailure("⚠️ Failed to synchronise job description:", jobUpdateResult.error);
       }
     }
 
@@ -4587,7 +4620,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         const { error: requestUpdateError } = await requestUpdateQuery;
 
         if (requestUpdateError) {
-          console.error("⚠️ Error updating job request status:", requestUpdateError);
+          logFailure("⚠️ Error updating job request status:", requestUpdateError);
           return {
             success: false,
             error: `Failed to save request completion: ${requestUpdateError.message}`,
@@ -4607,7 +4640,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
           .eq("vhc_id", update.vhcItemId);
 
         if (vhcCompletionError) {
-          console.error("⚠️ Error updating authorised VHC completion:", vhcCompletionError);
+          logFailure("⚠️ Error updating authorised VHC completion:", vhcCompletionError);
           return {
             success: false,
             error: `Failed to save authorised work completion: ${vhcCompletionError.message}`,
@@ -4673,7 +4706,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         .single();
 
       if (updateWriteUpError) {
-        console.error("❌ Error updating write-up:", updateWriteUpError);
+        logFailure("❌ Error updating write-up:", updateWriteUpError);
         return { success: false, error: updateWriteUpError.message };
       }
 
@@ -4688,7 +4721,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         .single();
 
       if (insertWriteUpError) {
-        console.error("❌ Error inserting write-up:", insertWriteUpError);
+        logFailure("❌ Error inserting write-up:", insertWriteUpError);
         return { success: false, error: insertWriteUpError.message };
       }
 
@@ -4698,7 +4731,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     console.log("✅ Write-up saved successfully");
     return { success: true, data: writeUpRecord, completionStatus };
   } catch (error) {
-    console.error("❌ saveWriteUpToDatabase error:", error);
+    logFailure("❌ saveWriteUpToDatabase error:", error);
     return { success: false, error: error.message };
   }
 };
@@ -4790,12 +4823,12 @@ export const saveChecksheet = async (jobNumber, vhcData) => {
         labour_rate_gbp: 85,
       });
     } catch (syncError) {
-      console.error("Warning: VHC sync to canonical rows failed:", syncError.message);
+      logFailure("Warning: VHC sync to canonical rows failed:", syncError.message);
     }
 
     return { success: true };
   } catch (error) {
-    console.error("❌ saveChecksheet error:", error);
+    logFailure("❌ saveChecksheet error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4830,7 +4863,7 @@ export const updateJobVhcCheck = async (jobNumber, checkData) => {
     invalidateCache("jobs:");
     return { success: true };
   } catch (error) {
-    console.error("❌ updateJobVhcCheck error:", error);
+    logFailure("❌ updateJobVhcCheck error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4876,7 +4909,7 @@ export const getJobsByPrimeGroup = async (primeJobNumber) => {
       .order("sub_job_sequence", { ascending: true, nullsFirst: true });
 
     if (error) {
-      console.error("❌ Error fetching prime job group:", error);
+      logFailure("❌ Error fetching prime job group:", error);
       throw error;
     }
 
@@ -4895,7 +4928,7 @@ export const getJobsByPrimeGroup = async (primeJobNumber) => {
       },
     };
   } catch (error) {
-    console.error("❌ getJobsByPrimeGroup error:", error);
+    logFailure("❌ getJobsByPrimeGroup error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -4918,7 +4951,7 @@ export const convertToPrimeJob = async (jobId) => {
       .single();
 
     if (fetchError || !job) {
-      console.error("❌ Job not found:", fetchError);
+      logFailure("❌ Job not found:", fetchError);
       return { success: false, error: { message: "Job not found" } };
     }
 
@@ -4944,14 +4977,14 @@ export const convertToPrimeJob = async (jobId) => {
       .single();
 
     if (updateError) {
-      console.error("❌ Error converting to prime job:", updateError);
+      logFailure("❌ Error converting to prime job:", updateError);
       throw updateError;
     }
 
     console.log("✅ Converted job to prime:", job.job_number);
     return { success: true, data: formatJobData(updated) };
   } catch (error) {
-    console.error("❌ convertToPrimeJob error:", error);
+    logFailure("❌ convertToPrimeJob error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -5008,7 +5041,7 @@ export const getGroupedJobsForDate = async (date) => {
       .order("appointments.scheduled_time", { ascending: true });
 
     if (error) {
-      console.error("❌ Error fetching grouped jobs:", error);
+      logFailure("❌ Error fetching grouped jobs:", error);
       throw error;
     }
 
@@ -5055,7 +5088,7 @@ export const getGroupedJobsForDate = async (date) => {
       },
     };
   } catch (error) {
-    console.error("❌ getGroupedJobsForDate error:", error);
+    logFailure("❌ getGroupedJobsForDate error:", error);
     return { success: false, error: { message: error.message } };
   }
 };

@@ -24,8 +24,10 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import StatusMessage from "@/components/ui/StatusMessage";
 import MultiSelectDropdown from "@/components/ui/dropdownAPI/MultiSelectDropdown";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ════════════════════════════════════════════════════════════════════════
    Shared constants + small pure helpers (formerly contactConstants.js).
@@ -397,12 +399,18 @@ function buildInitialForm(jobData) {
   };
 }
 
-function DisplayField({ label, value }) {
+function DisplayField({ label, value, sectionKey }) {
   return (
-    <div>
+    <LayerTheme
+      sectionKey={sectionKey}
+      parentKey="jobcard-contact-customer"
+      radius="var(--radius-sm)"
+      padding="var(--space-4)"
+      gap="var(--space-1)"
+    >
       <span style={contactLabelStyle}>{label}</span>
       <div style={contactValueStyle}>{value || "—"}</div>
-    </div>
+    </LayerTheme>
   );
 }
 
@@ -521,11 +529,12 @@ function CustomerContactSection({
             <input className="app-input" type="email" value={form.email} onChange={(e) => setField("email", e.target.value)} disabled={customerSaving} />
           </EditField>
           <EditField label="Contact preference">
-            <select className="app-input" value={form.contactPreference} onChange={(e) => setField("contactPreference", e.target.value)} disabled={customerSaving}>
-              {CONTACT_PREFERENCES.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+            <DropdownField
+              value={form.contactPreference}
+              onChange={(e) => setField("contactPreference", e.target.value)}
+              disabled={customerSaving}
+              options={CONTACT_PREFERENCES}
+            />
           </EditField>
           <EditField label="Primary address">
             <input className="app-input" value={form.address} onChange={(e) => setField("address", e.target.value)} disabled={customerSaving} />
@@ -545,15 +554,15 @@ function CustomerContactSection({
           <div
             style={{
               display: "grid",
-              gap: "16px",
+              gap: "10px", // Exact spacing requested between customer detail sections.
               gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             }}
           >
-            <DisplayField label="Customer name" value={name} />
-            <DisplayField label="Mobile phone" value={mobile} />
-            <DisplayField label="Landline phone" value={jobData.customerTelephone} />
-            <DisplayField label="Email address" value={jobData.customerEmail} />
-            <DisplayField label="Contact preference" value={jobData.customerContactPreference} />
+            <DisplayField sectionKey="jobcard-contact-customer-name" label="Customer name" value={name} />
+            <DisplayField sectionKey="jobcard-contact-customer-mobile" label="Mobile phone" value={mobile} />
+            <DisplayField sectionKey="jobcard-contact-customer-landline" label="Landline phone" value={jobData.customerTelephone} />
+            <DisplayField sectionKey="jobcard-contact-customer-email" label="Email address" value={jobData.customerEmail} />
+            <DisplayField sectionKey="jobcard-contact-customer-preference" label="Contact preference" value={jobData.customerContactPreference} />
           </div>
 
           <div
@@ -1020,7 +1029,7 @@ export default function ContactTab({
         setMessages(messagesPayload?.data || messagesPayload?.messages || []);
       }
     } catch (error) {
-      console.error("ContactTab: failed to load communication history:", error);
+      logFailure("ContactTab: failed to load communication history:", error);
     } finally {
       setLoadingHistory(false);
     }
@@ -1037,7 +1046,7 @@ export default function ContactTab({
       const payload = await fetchMessageTemplates();
       setTemplates(payload?.templates || []);
     } catch (error) {
-      console.error("ContactTab: failed to load templates:", error);
+      logFailure("ContactTab: failed to load templates:", error);
     } finally {
       setLoadingTemplates(false);
     }
@@ -1081,7 +1090,7 @@ export default function ContactTab({
         });
         await loadHistory();
       } catch (error) {
-        console.error("ContactTab: failed to send message:", error);
+        logFailure("ContactTab: failed to send message:", error);
         // Surface minimally — the confirm dialog already closed; a failed send
         // simply won't appear in the history (which reloads on success).
         alert(error?.message || "Failed to send message.");

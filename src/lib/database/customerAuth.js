@@ -4,6 +4,7 @@
 
 import { supabaseService, supabase } from "@/lib/database/supabaseClient";
 import { buildSlugKeyFromNames } from "@/lib/customers/slug";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const TABLE = "customer_auth";
 const SELECT_FIELDS =
@@ -23,7 +24,7 @@ export async function getCustomerAuthByEmail(email) {
     .eq("email", e)
     .maybeSingle();
   if (error) {
-    console.error("getCustomerAuthByEmail:", error.message);
+    logFailure("getCustomerAuthByEmail:", error.message);
     return null;
   }
   return data || null;
@@ -37,7 +38,7 @@ export async function getCustomerAuthById(id) {
     .eq("id", id)
     .maybeSingle();
   if (error) {
-    console.error("getCustomerAuthById:", error.message);
+    logFailure("getCustomerAuthById:", error.message);
     return null;
   }
   return data || null;
@@ -55,7 +56,7 @@ export async function findCustomerByEmail(email) {
     .order("updated_at", { ascending: false })
     .limit(1);
   if (error) {
-    console.error("findCustomerByEmail:", error.message);
+    logFailure("findCustomerByEmail:", error.message);
     return null;
   }
   return Array.isArray(data) && data.length > 0 ? data[0] : null;
@@ -85,7 +86,7 @@ export async function createCustomerRow({
     .select("id, firstname, lastname, email, mobile, telephone, address, postcode")
     .single();
   if (error) {
-    console.error("createCustomerRow:", error.message);
+    logFailure("createCustomerRow:", error.message);
     return null;
   }
   return data;
@@ -108,7 +109,7 @@ export async function createCustomerAuth({
     .select(SELECT_FIELDS)
     .single();
   if (error) {
-    console.error("createCustomerAuth:", error.message);
+    logFailure("createCustomerAuth:", error.message);
     return { data: null, error };
   }
   return { data, error: null };
@@ -121,7 +122,7 @@ export async function updateCustomerLastLogin(authId) {
     .from(TABLE)
     .update({ last_login_at: now, updated_at: now })
     .eq("id", authId);
-  if (error) console.error("updateCustomerLastLogin:", error.message);
+  if (error) logFailure("updateCustomerLastLogin:", error.message);
 }
 
 export async function updateCustomerProfile(customerId, patch) {
@@ -170,7 +171,7 @@ export async function updateCustomerProfile(customerId, patch) {
     )
     .single();
   if (error) {
-    console.error("updateCustomerProfile:", error.message);
+    logFailure("updateCustomerProfile:", error.message);
     return null;
   }
   return data;

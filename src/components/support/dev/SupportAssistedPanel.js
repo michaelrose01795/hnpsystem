@@ -12,7 +12,7 @@ import {
   buildAssistedInvestigation,
   assistedInvestigationMarkdown,
 } from "@/lib/dev-platform/assistedInvestigation";
-import { Panel, Pill, ConfidenceBar, CopyButton, SourceRef, SubSurface, DashboardGrid } from "@/components/support/dev/supportDevUi";
+import { Panel, badgeClass, ConfidenceBar, CopyButton, SourceRef, SubSurface, DashboardGrid } from "@/components/support/dev/supportDevUi";
 
 const TYPE_TONE = { module: "accentText", file: "text-1", component: "text-1", api: "warning-base", table: "success-base" };
 
@@ -57,7 +57,7 @@ export default function SupportAssistedPanel({ report }) {
 
       {assisted.affectedSystems.length > 0 && (
         <div>
-          <div style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
+          <div style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
             Affected systems
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -65,7 +65,7 @@ export default function SupportAssistedPanel({ report }) {
               s.type === "file" && s.ref ? (
                 <SourceRef key={`${s.type}-${i}`} file={s.ref.file} line={s.ref.line} />
               ) : (
-                <Pill key={`${s.type}-${i}`} label={`${s.type}: ${s.value}`} tone={TYPE_TONE[s.type] || "text-1"} />
+                <span key={`${s.type}-${i}`} className={badgeClass(TYPE_TONE[s.type] || "text-1")}>{`${s.type}: ${s.value}`}</span>
               )
             )}
           </div>
@@ -97,7 +97,7 @@ export default function SupportAssistedPanel({ report }) {
         <DashboardGrid min={320}>
           {assisted.implementationSuggestions.length > 0 && (
             <div>
-              <div style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
+              <div style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
                 Implementation suggestions
               </div>
               <ol style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -110,14 +110,14 @@ export default function SupportAssistedPanel({ report }) {
 
           {assisted.verificationChecklist.length > 0 && (
             <div>
-              <div style={{ fontSize: "var(--text-body-xs)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
+              <div style={{ fontSize: "var(--text-caption)", textTransform: "uppercase", letterSpacing: "0.03em", opacity: 0.7, color: "var(--text-1)", marginBottom: "6px" }}>
                 Verification checklist
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 {assisted.verificationChecklist.map((c, i) => (
                   <label key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "var(--text-body-sm)", color: "var(--text-1)", cursor: "default" }}>
                     <input type="checkbox" style={{ marginTop: "3px" }} aria-label={c.text} />
-                    <span>{c.text} <Pill label={c.kind} tone={c.kind === "regression" ? "warning-base" : "text-1"} /></span>
+                    <span>{c.text} <span className={badgeClass(c.kind === "regression" ? "warning-base" : "text-1")}>{c.kind}</span></span>
                   </label>
                 ))}
               </div>

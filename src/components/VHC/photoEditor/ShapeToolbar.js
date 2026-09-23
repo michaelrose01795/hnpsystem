@@ -107,8 +107,8 @@ function Swatch({ color, active, onClick, label }) {
         borderRadius: "50%",
         background: color,
         border: active
-          ? "3px solid var(--checkbox-ring)"
-          : "2px solid var(--checkbox-ring)",
+          ? "3px solid var(--checkbox-ring-color)"
+          : "2px solid var(--checkbox-ring-color)",
         cursor: "pointer",
         padding: 0,
         transition: "var(--control-transition)",

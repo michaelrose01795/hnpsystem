@@ -7,6 +7,11 @@ import { Button, LayerTheme, StatusMessage } from "@/components/ui"; // LayerThe
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
+import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+
+export function getServerSideProps() {
+  return redirectToHrManagerTab("payroll");
+}
 
 // Structured skeleton bodies that sit inside each SectionCard while payroll
 // data loads — outer page shell (header, section grids, card chrome) stays

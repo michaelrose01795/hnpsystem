@@ -4,7 +4,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
-import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
+// Loaded on demand.
+//
+// This module resolves the Supabase browser client, so importing it at module
+// scope put 213 KB of @supabase/supabase-js into this route's first-load
+// bundle — before the page could paint, for data that is only fetched from an
+// effect after mount. The queries still start on the same tick they did
+// before; only the download of the client moves off the critical path.
+const loadDashboardData = () => import("@/lib/database/dashboard/workshop");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import {
@@ -14,6 +21,7 @@ import {
   PageShell,
 } from "@/components/ui";
 import WorkshopDashboardUi from "@/components/page-ui/dashboard/workshop/dashboard-workshop-ui";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // MetricCard — single stat tile. Lives inside the daily-checkpoints LayerSurface,
 // so per the strict alternation rule it renders as a LayerTheme.
@@ -149,10 +157,10 @@ export default function WorkshopDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const data = await getWorkshopDashboardData();
+        const data = await (await loadDashboardData()).getWorkshopDashboardData();
         setDashboardData(data);
       } catch (fetchError) {
-        console.error("Failed to load workshop dashboard", fetchError);
+        logFailure("Failed to load workshop dashboard", fetchError);
         setError(fetchError.message || "Unable to load dashboard");
       } finally {
         setLoading(false);

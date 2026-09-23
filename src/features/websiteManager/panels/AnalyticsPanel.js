@@ -55,10 +55,7 @@ export default function AnalyticsPanel() {
 
   return (
     <>
-      <Section
-        title="Website Analytics & Customer Behaviour"
-        subtitle="Traffic, page performance, customer behaviour, accounts, leads and stock insights for the public /website. Staff-only — these figures are never shown on the public site."
-      >
+      <Section title="Website analytics">
         <TabGroup
           items={SUB_TABS}
           value={activeSub}

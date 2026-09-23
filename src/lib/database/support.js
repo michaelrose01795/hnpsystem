@@ -13,6 +13,7 @@
 import { supabaseService, supabase as supabaseFallback } from "@/lib/database/supabaseClient";
 import { sanitiseDiagnostics, isWithinSizeCap } from "@/lib/support/sanitise";
 import { buildTriagePatch, sanitiseSearch } from "@/lib/support/triageValidation";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Re-export the pure triage patch builder so existing importers keep working.
 export { buildTriagePatch };
@@ -130,7 +131,7 @@ export async function createSupportReport(input) {
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("[support] createSupportReport error:", error?.message || error);
+    logFailure("[support] createSupportReport error:", error?.message || error);
     return { success: false, error: { message: error?.message || "Insert failed" } };
   }
 }
@@ -152,7 +153,7 @@ export async function setSupportReportScreenshot(id, screenshotPath) {
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("[support] setSupportReportScreenshot error:", error?.message || error);
+    logFailure("[support] setSupportReportScreenshot error:", error?.message || error);
     return { success: false, error: { message: error?.message || "Update failed" } };
   }
 }
@@ -182,7 +183,7 @@ export async function setSupportReportScreenshots(id, screenshotPaths) {
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("[support] setSupportReportScreenshots error:", error?.message || error);
+    logFailure("[support] setSupportReportScreenshots error:", error?.message || error);
     return { success: false, error: { message: error?.message || "Update failed" } };
   }
 }
@@ -239,7 +240,7 @@ export async function listSupportReports(filters = {}) {
     if (error) throw error;
     return { success: true, data: data || [], count: count || 0 };
   } catch (error) {
-    console.error("[support] listSupportReports error:", error?.message || error);
+    logFailure("[support] listSupportReports error:", error?.message || error);
     return { success: false, data: [], count: 0, error: { message: error?.message || "Query failed" } };
   }
 }
@@ -289,7 +290,7 @@ export async function getSupportReportStats({ window = 1000 } = {}) {
       },
     };
   } catch (error) {
-    console.error("[support] getSupportReportStats error:", error?.message || error);
+    logFailure("[support] getSupportReportStats error:", error?.message || error);
     return { success: false, error: { message: error?.message || "Query failed" } };
   }
 }
@@ -310,7 +311,7 @@ export async function getSupportReport(id) {
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("[support] getSupportReport error:", error?.message || error);
+    logFailure("[support] getSupportReport error:", error?.message || error);
     return { success: false, error: { message: error?.message || "Query failed" } };
   }
 }
@@ -348,7 +349,7 @@ export async function listRecentReportFingerprints(limit = 50) {
         fingerprint: r.fingerprint,
       }));
   } catch (error) {
-    console.error("[support] listRecentReportFingerprints error:", error?.message || error);
+    logFailure("[support] listRecentReportFingerprints error:", error?.message || error);
     return [];
   }
 }
@@ -377,7 +378,7 @@ export async function updateSupportReport(id, updates = {}) {
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("[support] updateSupportReport error:", error?.message || error);
+    logFailure("[support] updateSupportReport error:", error?.message || error);
     return { success: false, error: { message: error?.message || "Update failed" } };
   }
 }
@@ -405,7 +406,7 @@ export async function listReportsForIntelligence({ window = 1000 } = {}) {
     if (error) throw error;
     return { success: true, data: data || [], count: count || 0 };
   } catch (error) {
-    console.error("[support] listReportsForIntelligence error:", error?.message || error);
+    logFailure("[support] listReportsForIntelligence error:", error?.message || error);
     return { success: false, data: [], count: 0, error: { message: error?.message || "Query failed" } };
   }
 }
@@ -436,7 +437,7 @@ export async function bulkUpdateSupportReports(ids, updates = {}) {
     if (error) throw error;
     return { success: true, updatedIds: (data || []).map((r) => r.id) };
   } catch (error) {
-    console.error("[support] bulkUpdateSupportReports error:", error?.message || error);
+    logFailure("[support] bulkUpdateSupportReports error:", error?.message || error);
     return { success: false, updatedIds: [], error: { message: error?.message || "Update failed" } };
   }
 }
@@ -469,7 +470,7 @@ export async function listSupportReportsForRetention(cutoffIso, limit = 500) {
     if (error) throw error;
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("[support] listSupportReportsForRetention error:", error?.message || error);
+    logFailure("[support] listSupportReportsForRetention error:", error?.message || error);
     return { success: false, data: [], error: { message: error?.message || "Query failed" } };
   }
 }
@@ -488,7 +489,7 @@ export async function deleteSupportReports(ids) {
     if (error) throw error;
     return { success: true, deleted: list.length };
   } catch (error) {
-    console.error("[support] deleteSupportReports error:", error?.message || error);
+    logFailure("[support] deleteSupportReports error:", error?.message || error);
     return { success: false, deleted: 0, error: { message: error?.message || "Delete failed" } };
   }
 }
@@ -514,7 +515,7 @@ export async function listSupportReportComments(reportId) {
     if (error) throw error;
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("[support] listSupportReportComments error:", error?.message || error);
+    logFailure("[support] listSupportReportComments error:", error?.message || error);
     return { success: false, data: [], error: { message: error?.message || "Query failed" } };
   }
 }
@@ -543,7 +544,7 @@ export async function addSupportReportComment({ reportId, body, authorId = null,
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("[support] addSupportReportComment error:", error?.message || error);
+    logFailure("[support] addSupportReportComment error:", error?.message || error);
     return { success: false, error: { message: error?.message || "Insert failed" } };
   }
 }
@@ -569,7 +570,7 @@ export async function listSupportReportAudit(reportId, limit = 100) {
     if (error) throw error;
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error("[support] listSupportReportAudit error:", error?.message || error);
+    logFailure("[support] listSupportReportAudit error:", error?.message || error);
     return { success: false, data: [], error: { message: error?.message || "Query failed" } };
   }
 }

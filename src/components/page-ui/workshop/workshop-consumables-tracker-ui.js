@@ -202,7 +202,7 @@ function Trend({ rows, formatCurrency }) {
         <div key={row.key} title={`${row.label}: ${formatCurrency(row.spend)} spent / ${formatCurrency(row.budget)} budget`} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-sm)", minWidth: 0 }}>
           <div style={{ height: "104px", width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "4px" }}>
             <span style={{ width: "38%", minHeight: row.budget ? "4px" : 0, height: `${Math.max(0, row.budget / maximum * 100)}%`, background: "var(--surfaceTextMuted)", borderRadius: "var(--radius-xs) var(--radius-xs) 0 0" }} />
-            <span style={{ width: "38%", minHeight: row.spend ? "4px" : 0, height: `${Math.max(0, row.spend / maximum * 100)}%`, background: row.budget && row.spend > row.budget ? "var(--danger-base)" : "var(--accentMain)", borderRadius: "var(--radius-xs) var(--radius-xs) 0 0" }} />
+            <span style={{ width: "38%", minHeight: row.spend ? "4px" : 0, height: `${Math.max(0, row.spend / maximum * 100)}%`, background: row.budget && row.spend > row.budget ? "var(--danger-base)" : "var(--primary)", borderRadius: "var(--radius-xs) var(--radius-xs) 0 0" }} />
           </div>
           <span style={{ ...labelStyle, textTransform: "none", letterSpacing: 0 }}>{row.label}</span>
         </div>

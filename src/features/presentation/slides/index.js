@@ -23,7 +23,6 @@ import { dashboardManagersSlide } from "./definitions/dashboardManagers";
 import { dashboardAccountsSlide } from "./definitions/dashboardAccounts";
 import { dashboardAdminSlide } from "./definitions/dashboardAdmin";
 import { dashboardMotSlide } from "./definitions/dashboardMot";
-import { dashboardPaintingSlide } from "./definitions/dashboardPainting";
 import { dashboardPartsSlide } from "./definitions/dashboardParts";
 import { dashboardServiceSlide } from "./definitions/dashboardService";
 import { dashboardValetingSlide } from "./definitions/dashboardValeting";
@@ -40,9 +39,6 @@ import { accountsReportsSlide } from "./definitions/accountsReports";
 import { accountsSettingsSlide } from "./definitions/accountsSettings";
 import { companyAccountsSlide } from "./definitions/companyAccounts";
 import { companyAccountsDetailSlide } from "./definitions/companyAccountsDetail";
-
-// Admin
-import { adminUsersSlide } from "./definitions/adminUsers";
 
 // HR
 import { hrAttendanceSlide } from "./definitions/hrAttendance";
@@ -151,7 +147,6 @@ export const ALL_SLIDES = [
   dashboardAccountsSlide,
   dashboardAdminSlide,
   dashboardMotSlide,
-  dashboardPaintingSlide,
   dashboardPartsSlide,
   dashboardServiceSlide,
   dashboardValetingSlide,
@@ -167,8 +162,6 @@ export const ALL_SLIDES = [
   accountsSettingsSlide,
   companyAccountsSlide,
   companyAccountsDetailSlide,
-
-  adminUsersSlide,
 
   hrAttendanceSlide,
   hrDisciplinarySlide,

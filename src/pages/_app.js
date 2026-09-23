@@ -4,23 +4,22 @@ import "@/utils/polyfills"; // ensure polyfills load globally
 import "@/utils/quietConsole"; // minimize console noise unless LOG_LEVEL is raised
 import "@/styles/theme.css"; // register CSS variables before globals
 import "@/styles/staffglobal.css"; // staff/admin app global base styles
-import "@/styles/custglobal.css"; // /website customer overrides (gated by html.website-scope)
-// PERFORMANCE NOTE — this import costs 82KB of render-blocking CSS on all 163
-// routes even though every rule inside is scoped to `html.website-scope`, which
-// only the ~7 customer-facing routes ever set. Moving it onto those routes was
-// attempted and reverted: Next's Pages Router still refuses global CSS imported
-// from anywhere but _app ("Global CSS cannot be imported from files other than
-// your Custom <App>"), so it cannot simply be imported by `useWebsiteScope()`.
-// The two viable routes out are (a) convert custglobal.css to a CSS Module with
-// every selector wrapped in `:global(...)`, or (b) emit it as a static asset and
-// <link> it from the customer layout. Both are mechanical but touch all ~650
-// rules, so they are left for the in-flight design-governance work rather than
-// bundled into a performance pass.
-import "@/features/tracking/map/trackingMap.css"; // /tracking site-map diagram (Pages Router requires plain-CSS imports here)
+// custglobal.css (/website) and trackingMap.css (/tracking) are NOT imported
+// here any more. Both were costing 82 KB of render-blocking CSS on all 162
+// routes, because anything _app imports lands in the stylesheet every route
+// loads — and neither can match anything outside its own routes.
+//
+// Option (b) from the note that used to sit here is now implemented: they are
+// emitted as standalone static assets by tools/scripts/emit-route-scoped-css.js
+// and linked only where they apply — from _document.js on first paint (so there
+// is no unstyled flash) and from ensureRouteScopedStylesheet() below on client
+// navigation into those routes.
+import ROUTE_SCOPED_CSS from "@/config/routeScopedCss.generated.json";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import dynamic from "next/dynamic";
+import Head from "next/head";
 import React, { useEffect } from "react"; // import React helpers
 
 // Self-hosted Inter via next/font (no FOUT, no external request at runtime).
@@ -40,6 +39,7 @@ const interFont = Inter({
 // change there. Rendered as an inline <style> tag so it is present in the
 // initial HTML — no FOUC, no JS dependency, no _document.js changes.
 const FONT_VARIABLE_STYLE = `:root { --font-inter: ${interFont.style.fontFamily}; }`;
+const APP_BROWSER_TITLE = "H&P DMS";
 import { SessionProvider } from "next-auth/react"; // import NextAuth session provider
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
@@ -48,9 +48,19 @@ import { setPresentationMode } from "@/features/presentation/runtime/presentatio
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
 import { canAccessPath } from "@/lib/auth/pageAccess";
 import { hasDevPlatformPageAccess } from "@/lib/auth/devSession";
+import { isAllAccessUser } from "@/lib/auth/allAccessSession";
+import { rememberStaffRoute } from "@/lib/auth/returnRoute";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
-import { trace, TRACE_ENABLED } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
+import { trace, TRACE_ENABLED } from "@/utils/loadTrace"; // opt-in tracer — hnpDebug("trace")
+import { isDebugChannelEnabled } from "@/utils/debugChannels";
 import { installPerfConsole, startJourney, stage } from "@/lib/perf/stageTimings";
+// STATIC, deliberately — see the note above StaffProviders/Layout below.
+import StaffProviders from "@/components/App/StaffProviders";
+// Static too: the route boundary wraps EVERY page, so code-splitting it would
+// only add a chunk request to the critical path — and a boundary that arrives
+// late cannot catch a crash during the first render it is supposed to guard.
+import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
+import Layout from "@/components/Layout";
 
 // Keep staff-only providers, shell code and global listeners out of the login
 // route's initial JavaScript. These chunks are requested only when rendered.
@@ -62,8 +72,33 @@ const DevLayoutOverlayRoot = dynamic(() => import("@/components/dev-layout-overl
 const StaffStyleReviewHighlighter = dynamic(() => import("@/components/dev-platform/StaffStyleReviewHighlighter"), { ssr: false });
 const GlobalTooltip = dynamic(() => import("@/components/ui/GlobalTooltip"), { ssr: false });
 const ActivityTracker = dynamic(() => import("@/components/activity/ActivityTracker"), { ssr: false });
-const StaffProviders = dynamic(() => import("@/components/App/StaffProviders"));
-const Layout = dynamic(() => import("@/components/Layout"));
+// StaffProviders and Layout are imported STATICALLY (at the top of this file) and
+// must stay that way.
+//
+// They were `dynamic(..., { ssr: true })`, which wraps them in a React.lazy
+// boundary. The boundary is server-rendered, but its chunk is not loaded when
+// hydration starts: React suspends there, drops the server-rendered chrome out
+// of its tree WITHOUT removing it from the DOM, and renders a second chrome
+// beside it. The orphan keeps whatever the server painted — always the pre-auth
+// shell, i.e. SidebarNavSkeleton — so the user is left looking at a frozen
+// skeleton sidebar with the real, fully resolved one behind it. Measured on
+// production builds: orphaned shell in 12/12 loads code-split, 0/12 static.
+//
+// Three alternatives were built and measured before settling here:
+//
+//   dynamic + ssr:true   correct only by luck (loses the hydration race).
+//   dynamic + ssr:false  also 0/12 orphans and keeps /login small, but nothing
+//                        is server-rendered any more: /newsfeed FCP 656ms vs
+//                        156ms and /profile FCP 740ms vs 144ms, and staff
+//                        routes get BIGGER (+80KB) from the extra chunking.
+//   static (this)        0/12 orphans, fastest staff routes.
+//
+// The cost is real and lands on /login, which no longer code-splits the shell
+// away: first-load JS 325KB -> 444KB (+119KB transferred), hydration 338ms ->
+// 448ms. FCP/LCP there are unchanged within noise (168ms vs 184ms). Staff
+// routes — where users actually spend the day — are better off on every metric:
+// FCP -500ms (/newsfeed) and -596ms (/profile), LCP -80ms and -176ms, and 80KB
+// less JavaScript. Sign-in happens once; the shell renders on every page.
 const RouteProgressBar = dynamic(() => import("@/components/layout/RouteProgressBar"), { ssr: false });
 
 // Default page layout: every page is wrapped by the persistent <Layout>. Pages that
@@ -74,6 +109,31 @@ const RouteProgressBar = dynamic(() => import("@/components/layout/RouteProgress
 const defaultGetLayout = (page) => <Layout>{page}</Layout>;
 
 const isWebsitePath = (path = "") => path === "/website" || path.startsWith("/website/");
+const isTrackingPath = (path = "") => path === "/tracking" || path.startsWith("/tracking/");
+
+// Add a route-scoped stylesheet once, if it is not already in the document.
+//
+// _document.js emits the same <link> (same href) server-side for a direct hit on
+// one of these routes, so on a first paint this finds it already present and does
+// nothing. It only actually inserts anything when the user arrives by client-side
+// navigation from another route, where no new document is rendered.
+//
+// The link is deliberately never removed: it is a handful of KB, it keeps a
+// return visit to the route instant, and removing it mid-session risks
+// unstyling a page that is still animating out.
+const ensureRouteScopedStylesheet = (key) => {
+  if (typeof document === "undefined") return;
+  const href = ROUTE_SCOPED_CSS?.[key];
+  if (!href) return;
+  if (document.querySelector(`link[data-route-css="${key}"]`)) return;
+  if (document.querySelector(`link[rel="stylesheet"][href="${href}"]`)) return;
+
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  link.setAttribute("data-route-css", key);
+  document.head.appendChild(link);
+};
 const isAllowedPresentationNavigation = (url = "") => {
   try {
     const parsed = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost");
@@ -106,6 +166,7 @@ function AppWrapper({ Component, pageProps }) {
     isPublicVhcReportPath(asPathClean) ||
     Component.hideGlobalNotesWidget === true;
   const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
+  const isTrackingRoute = isTrackingPath(pathname) || isTrackingPath(asPathWithoutQuery);
   const isDevRoute = pathname === "/dev" || pathname.startsWith("/dev/") || asPathWithoutQuery === "/dev" || asPathWithoutQuery.startsWith("/dev/");
   const hideNotesWidget =
     isPresentationRoute ||
@@ -142,6 +203,10 @@ function AppWrapper({ Component, pageProps }) {
   // under html.website-scope.
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
+    // Attach the route's own stylesheet before flipping its scope class, so the
+    // rules exist by the time the selector they hang off starts matching.
+    if (isWebsiteRoute) ensureRouteScopedStylesheet("website");
+    if (isTrackingRoute) ensureRouteScopedStylesheet("trackingMap");
     const root = document.documentElement;
     const body = document.body;
     root.classList.toggle("website-scope", isWebsiteRoute);
@@ -151,7 +216,7 @@ function AppWrapper({ Component, pageProps }) {
     body?.classList.toggle("staff-scope", !isWebsiteRoute);
     body?.classList.toggle("dev-scope", isDevRoute);
     return undefined;
-  }, [isWebsiteRoute, isDevRoute]);
+  }, [isWebsiteRoute, isTrackingRoute, isDevRoute]);
 
   // Install / restore the /api/* fetch interceptor based on whether we're on a
   // /presentation/* route. Real routes always get the original window.fetch.
@@ -216,42 +281,41 @@ function AppWrapper({ Component, pageProps }) {
     return () => window.removeEventListener("pageshow", clearLegacyBootArtifacts);
   }, []);
 
-  // TEMP diagnostic: mark each fresh document/app boot. Also clear any
-  // leftover console output and trace buffer so F12 starts clean.
+  // Mark each fresh document/app boot, and start the trace buffer empty so one
+  // boot's timeline is not mixed into the previous one's.
+  //
+  // This deliberately does NOT call console.clear(). Clearing is destructive
+  // and unconditional: it wiped whatever error the developer had just stopped
+  // to read, on a boot nobody asked to be traced. Resetting the trace buffer is
+  // the part of that state this effect actually owns.
   useEffect(() => {
-    // Development-only: clears the console and the persisted trace buffer so a
-    // fresh boot starts clean. Skipped in production, where the tracer is a
-    // no-op and wiping the user's console would be user-hostile.
     if (!TRACE_ENABLED) return;
     if (typeof window !== "undefined") {
-      const native = globalThis.__HNP_NATIVE_CONSOLE__ || console;
-      try {
-        native.clear?.();
-      } catch {
-        // ignore
-      }
       try {
         window.sessionStorage.removeItem("hnp-trace-buffer");
       } catch {
-        // ignore
+        // sessionStorage unavailable — the in-memory buffer still works.
       }
       window.__hnpTrace = [];
     }
     trace("boot", "app shell mounted");
   }, []);
 
-  // Navigation diagnostics — clears the F12 console at each new navigation
-  // and prints a fresh timeline so the user can copy the events for one nav
-  // in isolation. Tracks: link click, prefetch, every router event, page
+  // Navigation diagnostics — prints a timeline for one navigation so it can be
+  // copied in isolation. Tracks: link click, prefetch, every router event, page
   // mount, errors, history popstate. Hint after each completed nav:
   //   copy(window.__hnpTrace)   to grab the full timeline
+  //
+  // OFF BY DEFAULT, behind its own debug channel: hnpDebug("nav") then reload,
+  // or ?debug=nav for one visit. It installs nine global listeners including a
+  // capture-phase document click handler, so it is not something to leave
+  // running — and its banners are the loudest thing in the console when it is.
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
-    // Development-only navigation timeline. In production this installed nine
-    // global listeners (including a capture-phase document click handler that
-    // called console.clear() on every link click) purely to feed a tracer that
-    // is itself disabled there.
-    if (!TRACE_ENABLED) return undefined;
+    // Development-only. In production this installed all nine listeners purely
+    // to feed a tracer that is itself disabled there.
+    if (process.env.NODE_ENV === "production") return undefined;
+    if (!isDebugChannelEnabled("nav")) return undefined;
 
     const native =
       (typeof globalThis !== "undefined" && globalThis.__HNP_NATIVE_CONSOLE__) || console;
@@ -265,11 +329,9 @@ function AppWrapper({ Component, pageProps }) {
           ? performance.now()
           : Date.now();
       navTargetHref = href || null;
-      try {
-        native.clear?.();
-      } catch {
-        // ignore
-      }
+      // No console.clear() here. Resetting the log per navigation also threw
+      // away the error that caused the developer to open F12 in the first
+      // place; the [NAV] banner below is enough to find where a nav starts.
       native.log(
         `%c[NAV] ${sourceLabel} → ${href || "(unknown)"}`,
         "color:#fff;background:#0b66ff;padding:2px 6px;border-radius:3px;font-weight:600"
@@ -406,7 +468,7 @@ function AppWrapper({ Component, pageProps }) {
     window.addEventListener("unhandledrejection", onUnhandledRejection);
 
     native.log(
-      `%c[NAV] diagnostics installed — F12 will clear at each click`,
+      `%c[NAV] diagnostics on — hnpDebug(false) then reload to turn them off`,
       "color:#888"
     );
 
@@ -601,7 +663,6 @@ function AppWrapper({ Component, pageProps }) {
   // Default is the persistent <Layout>. Returning the SAME element type across routes
   // keeps the sidebar/topbar mounted and only swaps the inner children.
   const getLayout = Component.getLayout || defaultGetLayout;
-  const pageElement = <Component {...pageProps} />;
 
   // Customer-facing surfaces (the public website, the customer portal, and the
   // public VHC report links) render none of the staff chrome, so the staff-only
@@ -609,8 +670,36 @@ function AppWrapper({ Component, pageProps }) {
   // though: GlobalTableShells installs a document-wide MutationObserver plus
   // mousemove/scroll/resize listeners for staff data tables, and
   // GlobalDraftPersistence tracks staff form drafts. Skipping them keeps the
-  // customer pages off those listeners entirely.
+  // customer pages off those listeners entirely. The route boundary below also
+  // reads it, to pick the softer customer recovery copy.
   const isCustomerFacingSurface = isWebsiteRoute || isCustomerRoute || isPublicVhcReportRoute;
+
+  // ROUTE-LEVEL ERROR BOUNDARY.
+  //
+  // Until now the only boundary was the app-shell one in StaffProviders, so a
+  // crash in ANY page replaced the entire interface — sidebar, topbar and all.
+  // Wrapping the page element (and not the layout) means a page crash now
+  // recovers inside the content area with the chrome still standing: the user
+  // keeps their navigation and can move somewhere else without a reload.
+  //
+  // It is applied HERE rather than page-by-page so every one of the app's routes
+  // is covered by construction, including any added later. Pages that want finer
+  // isolation still wrap individual panels in <SectionBoundary>.
+  //
+  // The `key` resets the boundary on navigation, so a crash screen never
+  // survives into the next route. The app-shell boundary remains above as the
+  // last resort for a crash in the layout itself.
+  const pageElement = (
+    <RouteBoundary
+      key={pathname}
+      variant={isCustomerFacingSurface ? "customer" : "staff"}
+      // Customer surfaces have no StaffTopbar to host the report popup.
+      hostSupportModal={isCustomerFacingSurface}
+      homeHref={isCustomerFacingSurface ? "/" : "/newsfeed"}
+    >
+      <Component {...pageProps} />
+    </RouteBoundary>
+  );
 
   return (
     <>
@@ -636,7 +725,7 @@ function AppWrapper({ Component, pageProps }) {
 // src/lib/auth/pageAccess.js for the rule.
 function PageAccessGuard({ pathname }) {
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading, sidebarAccessReady } = useUser();
   useEffect(() => {
     if (loading) return; // wait for user context to resolve
     if (!user) return; // unauthenticated → existing auth guards handle redirect
@@ -644,12 +733,26 @@ function PageAccessGuard({ pathname }) {
     // audits (Staff Style Review, layout overlay) can run against the real
     // screens. It gains no roles, so its own sidebar/nav is unchanged.
     if (hasDevPlatformPageAccess(user)) return;
+    // All Access demo login: same reasoning. Every page in its sidebar already
+    // passes canAccessPath below; this keeps it consistent with the edge guard
+    // and ProtectedRoute, which also let this synthetic session through.
+    if (isAllAccessUser(user)) return;
     // Skip the guard while the user is still being hydrated or on routes
     // that always exit through their own auth flow.
-    if (canAccessPath(pathname, user?.roles, user?.sidebarAccess)) return;
+    if (canAccessPath(pathname, user?.roles, user?.sidebarAccess)) {
+      // This route has just been authorised for this user, so it is safe to
+      // offer back on a cold start that arrives with no route of its own (a
+      // pinned "/" tab, a bookmarked /login). Recorded only once the per-user
+      // sidebar-access snapshot has resolved — before that canAccessPath is
+      // running on the broader role-derived set, and remembering then could
+      // store a route the snapshot goes on to deny. `pathname` is the route
+      // PATTERN the check needs; asPath is the real URL worth returning to.
+      if (sidebarAccessReady) rememberStaffRoute(user.id, router.asPath);
+      return;
+    }
     if (router.pathname === "/newsfeed") return;
     router.replace("/newsfeed");
-  }, [pathname, user, loading, router]);
+  }, [pathname, user, loading, router, sidebarAccessReady]);
   return null;
 }
 
@@ -665,6 +768,20 @@ function LightweightLoginScope({ children }) {
   }, []);
 
   return children;
+}
+
+function AppBrowserTitle() {
+  const router = useRouter();
+
+  useEffect(() => {
+    document.title = APP_BROWSER_TITLE;
+  }, [router.asPath]);
+
+  return (
+    <Head key={router.asPath}>
+      <title>{APP_BROWSER_TITLE}</title>
+    </Head>
+  );
 }
 
 // Main app entry with all providers composed
@@ -695,6 +812,7 @@ export default function MyApp({ Component, pageProps }) {
       </SessionProvider>
       <Analytics />
       <SpeedInsights />
+      <AppBrowserTitle />
     </>
   );
 }

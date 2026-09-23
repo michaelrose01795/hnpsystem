@@ -19,6 +19,8 @@
 // Canonical departments (dim_department rows). `kind` and `parent` drive
 // rollups (department → aftersales tier → company total). Phase-2 §7.1/§7.2.
 // ---------------------------------------------------------------------------
+import { hasAllAccessRole } from "@/lib/auth/roles";
+
 export const DEPARTMENTS = Object.freeze({
   workshop: { code: "workshop", name: "Workshop", kind: "operational", parent: "aftersales" },
   parts: { code: "parts", name: "Parts", kind: "operational", parent: "aftersales" },
@@ -129,6 +131,10 @@ export function resolveDepartmentForRole(role) {
 // operational department is preferred over the catch-all `management` so that,
 // e.g., a "Workshop Manager" who also holds "Manager" is attributed to workshop.
 export function resolveDepartmentForRoles(roles = []) {
+  // The All Access demo login holds no real department role, which would leave
+  // every department-derived surface (topbar metrics, team presence) empty.
+  // Attribute it to Management — the oversight department that sees everything.
+  if (hasAllAccessRole(roles)) return "management";
   const mapped = (roles || [])
     .map((r) => resolveDepartmentForRole(r))
     .filter(Boolean);

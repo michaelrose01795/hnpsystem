@@ -34,6 +34,13 @@ export const DEV_PLATFORM_NAV = [
     description: "Live Feedback System state: last error, latest reference code, support-report + boundary status.",
   },
   {
+    key: "error-preview",
+    label: "Error Experience",
+    href: "/dev/error-preview",
+    description:
+      "Every in-app error screen rendered live (no crash needed), triggers for each failure class, and the captured error trail.",
+  },
+  {
     key: "intelligence",
     label: "Intelligence",
     href: "/dev/intelligence",
@@ -140,7 +147,7 @@ export function getDevPlatformNavItem(key) {
 // ---------------------------------------------------------------------------
 export const DEV_PLATFORM_GROUPS = [
   { key: "home", label: "Home", children: ["home"] },
-  { key: "operations", label: "Operations", children: ["live-ops", "health", "feedback", "performance"] },
+  { key: "operations", label: "Operations", children: ["live-ops", "health", "feedback", "error-preview", "performance"] },
   { key: "intelligence", label: "Intelligence", children: ["intelligence", "ownership", "knowledge"] },
   { key: "releases", label: "Releases", children: ["releases", "readiness", "productivity"] },
   { key: "support", label: "Support", children: ["support", "saved-views", "activity"] },

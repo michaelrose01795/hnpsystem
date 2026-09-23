@@ -19,11 +19,18 @@ html.staff-scope .app-toggle--switch {
   width: 44px;
   height: 24px;
   border-radius: var(--radius-pill);
-  background: var(--control-bg);
+  /* Neutral off-track, not the accent control fill — the knob has to read
+     against it, and an accent tint at control strength left a white knob at
+     1.2:1 in light mode. */
+  background: var(--toggle-track-off);
   cursor: pointer;
   transition: background-color 0.18s ease;
 }
 
+/* The knob used to be --surface, i.e. exactly the card colour behind the
+   switch, so an "off" switch in light mode was a white knob on a near-white
+   track (1.14:1) and its position could not be read at all. --toggle-knob is
+   pinned independently of the surface in both themes. */
 html.staff-scope .app-toggle--switch::after {
   content: "";
   position: absolute;
@@ -31,7 +38,7 @@ html.staff-scope .app-toggle--switch::after {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--surface);
+  background: var(--toggle-knob);
   transition: transform 0.18s ease;
 }
 
@@ -128,6 +135,10 @@ html.staff-scope input[type="checkbox"]:checked {
   border-color: var(--accent-strong);
 }
 
+/* --onAccentText, matching .app-toggle--checkbox above. This drew its tick in
+   --surface, which happens to resolve to a readable colour today but is the
+   card colour, not the on-accent colour — it would break the moment --surface
+   moves off pure white / near-black. */
 html.staff-scope input[type="checkbox"]:checked::before {
   content: "";
   position: absolute;
@@ -135,16 +146,17 @@ html.staff-scope input[type="checkbox"]:checked::before {
   top: 1px;
   width: 4px;
   height: 8px;
-  border: solid var(--surface);
+  border: solid var(--onAccentText);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
 
 html.staff-scope input[type="checkbox"]:disabled {
-  opacity: 0.5;
   cursor: not-allowed;
-  border-color: var(--grey-accent-light);
-  background: var(--surface);
+  /* --grey-accent-light aliases --surface, so the disabled ring was the same
+     colour as the box it outlined and the checkbox vanished. */
+  border-color: var(--control-disabled-text);
+  background: var(--control-disabled-bg);
 }
 
 html.staff-scope input[type="checkbox"]:disabled:checked {

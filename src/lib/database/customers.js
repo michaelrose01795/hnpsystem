@@ -3,6 +3,7 @@
 // file location: src/lib/database/customers.js
 import { supabase } from "@/lib/database/supabaseClient"; // import Supabase client
 import { normalizeCustomerSlug, splitCustomerSlugParts, buildSlugKeyFromNames } from "@/lib/customers/slug";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const CUSTOMER_SELECT_FIELDS = `
   id,
@@ -32,7 +33,7 @@ export const getCustomerById = async (customerId) => {
     .single();
 
   if (error) {
-    console.error("❌ getCustomerById error:", error.message);
+    logFailure("❌ getCustomerById error:", error.message);
     return null;
   }
 
@@ -81,7 +82,7 @@ const fallbackCustomerLookupBySlug = async (rawSlug) => {
     .limit(1);
 
   if (error) {
-    console.error("❌ fallback customer lookup error:", error.message);
+    logFailure("❌ fallback customer lookup error:", error.message);
     return null;
   }
 
@@ -101,7 +102,7 @@ export const getCustomerBySlug = async (customerSlug) => {
     .maybeSingle();
 
   if (error) {
-    console.error("❌ getCustomerBySlug error:", error.message);
+    logFailure("❌ getCustomerBySlug error:", error.message);
     return fallbackCustomerLookupBySlug(customerSlug);
   }
 
@@ -126,7 +127,7 @@ export const getAllCustomers = async (limit = 100, offset = 0) => {
     .range(offset, offset + limit - 1);
 
   if (error) {
-    console.error("❌ getAllCustomers error:", error.message);
+    logFailure("❌ getAllCustomers error:", error.message);
     return { data: [], count: 0 };
   }
 
@@ -176,7 +177,7 @@ export const searchCustomers = async (searchTerm) => {
     .limit(20); // limit to 20 results for performance
 
   if (error) {
-    console.error("❌ searchCustomers error:", error.message);
+    logFailure("❌ searchCustomers error:", error.message);
     throw error;
   }
 
@@ -217,7 +218,7 @@ export const getCustomerVehicles = async (customerId) => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error("❌ getCustomerVehicles error:", error.message);
+    logFailure("❌ getCustomerVehicles error:", error.message);
     return [];
   }
 
@@ -311,7 +312,7 @@ export const getCustomerJobs = async (customerId) => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error("❌ getCustomerJobs error:", error.message);
+    logFailure("❌ getCustomerJobs error:", error.message);
     return [];
   }
 
@@ -333,7 +334,7 @@ export const getCustomerPaymentMethods = async (customerId) => {
     }
     return Array.isArray(payload.methods) ? payload.methods : [];
   } catch (error) {
-    console.error("❌ getCustomerPaymentMethods error:", error.message);
+    logFailure("❌ getCustomerPaymentMethods error:", error.message);
     return [];
   }
 };
@@ -359,7 +360,7 @@ export const getCustomerActivityEvents = async (customerId, { limit = 50 } = {})
     .limit(limit);
 
   if (error) {
-    console.error("❌ getCustomerActivityEvents error:", error.message);
+    logFailure("❌ getCustomerActivityEvents error:", error.message);
     return [];
   }
 
@@ -391,7 +392,7 @@ export const getCustomerAccounts = async (customerId) => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("❌ getCustomerAccounts error:", error.message);
+    logFailure("❌ getCustomerAccounts error:", error.message);
     return [];
   }
 
@@ -485,7 +486,7 @@ export const addCustomerToDatabase = async (customerData) => {
     console.log("✅ Customer created successfully:", data); // debug log
     return data;
   } catch (err) {
-    console.error("❌ addCustomerToDatabase error:", err.message);
+    logFailure("❌ addCustomerToDatabase error:", err.message);
     throw new Error(err.message || "Failed to add new customer.");
   }
 };
@@ -540,14 +541,14 @@ export const updateCustomer = async (customerId, customerData) => {
       .single();
 
     if (error) {
-      console.error("❌ updateCustomer error:", error.message);
+      logFailure("❌ updateCustomer error:", error.message);
       return { success: false, error };
     }
 
     console.log("✅ Customer updated successfully:", data); // debug log
     return { success: true, data };
   } catch (err) {
-    console.error("❌ updateCustomer exception:", err.message);
+    logFailure("❌ updateCustomer exception:", err.message);
     return { success: false, error: { message: err.message } };
   }
 };
@@ -592,7 +593,7 @@ export const deleteCustomer = async (customerId) => {
     console.log("✅ Customer deleted successfully"); // debug log
     return { success: true };
   } catch (err) {
-    console.error("❌ deleteCustomer error:", err.message);
+    logFailure("❌ deleteCustomer error:", err.message);
     return { success: false, error: { message: err.message } };
   }
 };
@@ -626,7 +627,7 @@ export const checkCustomerExists = async (email = null, mobile = null) => {
       .maybeSingle();
 
     if (error) {
-      console.error("❌ checkCustomerExists error:", error.message);
+      logFailure("❌ checkCustomerExists error:", error.message);
       return { exists: false, customer: null, error };
     }
 
@@ -638,7 +639,7 @@ export const checkCustomerExists = async (email = null, mobile = null) => {
     console.log("✅ Customer does not exist"); // debug log
     return { exists: false, customer: null };
   } catch (err) {
-    console.error("❌ checkCustomerExists exception:", err.message);
+    logFailure("❌ checkCustomerExists exception:", err.message);
     return { exists: false, customer: null, error: { message: err.message } };
   }
 };
@@ -647,7 +648,7 @@ export const createCustomer = async (customerData) => {
     const data = await addCustomerToDatabase(customerData); // Reuse existing insert helper
     return { success: true, data }; // Provide status wrapper expected by API routes
   } catch (error) {
-    console.error("createCustomer error", error);
+    logFailure("createCustomer error", error);
     const message = error instanceof Error ? error.message : String(error);
     return { success: false, error: message };
   }

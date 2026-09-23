@@ -64,9 +64,12 @@ merge it there — same result, plus the CI checks run on the PR.
 
 ## CI
 
-[.github/workflows/playwright.yml](../.github/workflows/playwright.yml) runs the web build,
-desktop build and Playwright suites on pushes to `main`, `master` and `development`, and on
-PRs targeting those branches.
+[.github/workflows/playwright.yml](../.github/workflows/playwright.yml) runs the web and desktop
+builds on pushes to `main`, `master` and `development`, and on PRs targeting those branches.
+Playwright execution is disabled in GitHub Actions. The legacy `test` job remains as a fast
+compatibility check so protected branches still receive the expected status; Playwright can
+still be run manually through the package scripts. The workflow keeps its legacy filename, but
+appears in GitHub Actions as `Build Checks`.
 
 ## Helper scripts
 

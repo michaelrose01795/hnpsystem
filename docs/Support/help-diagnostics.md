@@ -211,6 +211,76 @@ borderless recovery screen (Try again / Reload / pre-filled Report). Reusable fo
 boundaries. Runtime exceptions + unhandled rejections are already captured by Phase 2's window
 listeners, so the boundary never re-listens (no double-recording).
 
+## 9c. Primary in-app error experience — **done**
+
+Phases 4/9 built the recovery screen; this step makes it **the** error experience for the whole
+staff system, closes the three places raw framework output still reached production users, and
+makes capture unconditional.
+
+**Coverage — every error now lands somewhere we own.**
+
+| Failure | Caught by | Screen the user gets |
+|---|---|---|
+| Render crash in a page | `RouteBoundary` in `_app.js` (wraps the page element) | Recovery screen **inside the content area** — sidebar/topbar survive |
+| Render crash in the layout/shell | app-shell `SupportErrorBoundary` (StaffProviders) | Full-screen recovery screen |
+| Render crash in a panel | `SectionBoundary` where a page opts in | Compact in-place recovery |
+| Uncaught runtime error / unhandled rejection | `installBrowserCapture` window listeners | (no screen — logged; user sees whatever the app already shows) |
+| API / data-load / permission failure | `reportError` / `reportApiError` | Friendly toast + reference code |
+| **404** | `src/pages/404.js` | Recovery screen, "We couldn't find that page" |
+| **500 / SSR failure** | `src/pages/500.js` | Recovery screen, "The server ran into a problem" |
+| **Any other framework error** | `src/pages/_error.js` | Recovery screen, status-appropriate copy |
+
+The three page-level entries are new. Before them, Next.js served its own stock white 404/500
+screens in production — the last place raw framework output was visible to staff. They render
+`PageErrorScreen`, which is **not a second design**: it renders `SupportErrorRecovery` (the same
+component the boundary uses) and only supplies its own `plan` — the new optional prop that lets a
+caller with no thrown error to classify provide the headline/message/actions itself.
+
+**Actions** come from one resolver (`labelFor` in `recoveryModel.js`), so a page error and a caught
+crash never disagree: **Try Again**, Reload, Go back, **Return to Newsfeed**, **Report Problem**.
+(The staff home label was "Return to dashboard" and now names where the button actually goes —
+`DEFAULT_HOME.staff` has always been `/newsfeed`.)
+
+**Automatic logging — the user no longer has to press anything.** Every failure above is written to
+`support_error_events` at the moment it is caught, via `logErrorEvent()`
+(`src/lib/support/autoErrorLog.js`) → `POST /api/support/error-events`. This is the durable
+counterpart to the in-memory ring buffers, which only ever reached the server if someone filed a
+report. Captured per event: message, stack, component stack + top component, route, section key,
+user id / username / roles (**from the session, never the body**), user-agent, browser/device
+snapshot, deployment reference (version / commit / ref / build id / env), HTTP status, boundary
+level and variant.
+
+Safeguards, because capture must never break the thing it observes:
+- Fingerprint de-duplication client-side (60 s) **and** server-side (5 min → `occurrences += 1`),
+  so a crash loop costs one row.
+- A hard ceiling of 40 posts per page-load.
+- Posts go through the **fetch captured at module load**, and the endpoint is on an ignore list, so
+  a failing log endpoint cannot log itself.
+- Every path is wrapped and swallows its own failures; the ingest route answers **202, not 500**,
+  when persistence fails, so the client never treats a logging failure as another error.
+- `keepalive` on the request, so an error immediately before a reload still gets through.
+
+**Reference code is the join key.** The same `ERR-…` code is minted for boundary crashes, toasts and
+page errors, shown on screen, shown again in the report popup, and sent with the report — the
+submit route then stamps the new report onto the already-captured events
+(`linkErrorEventsToReport`). A developer opening a report sees the trail that existed *before* the
+user typed a word.
+
+**Who sees what is unchanged.** Normal staff see the friendly message + the reference code. The
+technical panel on the recovery screen stays gated behind `canViewDiagnostics`; the `GET` on
+`/api/support/error-events` is gated to `hasDevPlatformAccess`, matching the report list. Everything
+is scrubbed by `sanitiseDiagnostics` / `scrubString` on the client **and** re-scrubbed server-side.
+
+**Development is untouched.** Next.js still shows its dev overlay for render and server errors —
+`_error.js` adds nothing that suppresses it. The H&P screens are what production gets, where no
+overlay exists.
+
+**One related tightening:** `createHandler` no longer returns raw `error.message` on a 500 in
+production (it can carry table names, constraint text and internal paths, and clients render API
+messages to users). It is still logged server-side, and still returned verbatim in development. The
+client maps the 500 to the friendly `SERVER` sentence via `friendlyKeyForStatus`, so nothing
+depended on that text.
+
 ## 9b. Hardening — **Phase 7 (done)**
 
 The final production-hardening pass. No new user-facing feature — it makes the existing
@@ -850,6 +920,13 @@ global change; Phase 9 depends on Phase 8's substrate; Phase 10 depends on both.
   **`support_release_approvals`** and **`support_knowledge_entries`** (RLS on, no policies). Until
   they run, the GitHub-link / notifications / release-approval / knowledge surfaces degrade to empty.
   Safe to re-run.
+- **Apply the automatic error-capture table** — the same file's final block creates
+  **`support_error_events`** (RLS on, no policies) and seeds its 90-day retention policy row. A
+  standalone copy is at `supabase/migrations/20260902120000_support_error_events.sql`. **Until it
+  runs, automatic capture degrades silently**: the boundary/toast/page recovery screens all still
+  work and still show a reference code, and `/api/support/error-events` answers 202 instead of
+  storing — nothing user-facing breaks, but there is no durable trail and a quoted reference code
+  will not be findable. Idempotent; safe to re-run.
 - **Configure SMTP for the submit notification** (Phase 11) — the internal "new support report" email
   reuses the existing mailer, so it needs `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` (optional
   `SMTP_FROM` / `SMTP_COMPANY_NAME`). Without them the notifier skips silently and report submission is

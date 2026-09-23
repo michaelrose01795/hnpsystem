@@ -9,6 +9,7 @@
 
 import { runAggregation } from "./runner";
 import { aggregationWindow } from "./schedule";
+import { logFailure } from "@/lib/utils/logFailure";
 
 export async function handleAggregationCron(req, res, cadence) {
   if (req.method !== "POST") {
@@ -41,7 +42,7 @@ export async function handleAggregationCron(req, res, cadence) {
       skipped: result.skipped || result.error || undefined,
     });
   } catch (error) {
-    console.error(`[reporting] aggregate-kpis-${cadence} cron error:`, error);
+    logFailure(`[reporting] aggregate-kpis-${cadence} cron error:`, error);
     return res.status(500).json({ success: false, message: error.message });
   }
 }

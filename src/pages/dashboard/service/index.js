@@ -3,10 +3,18 @@
 
 import React, { useEffect, useState } from "react";
 import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
-import { getServiceDashboardData } from "@/lib/database/dashboard/service";
+// Loaded on demand.
+//
+// This module resolves the Supabase browser client, so importing it at module
+// scope put 213 KB of @supabase/supabase-js into this route's first-load
+// bundle — before the page could paint, for data that is only fetched from an
+// effect after mount. The queries still start on the same tick they did
+// before; only the download of the client moves off the critical path.
+const loadDashboardData = () => import("@/lib/database/dashboard/service");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import ServiceDashboardUi from "@/components/page-ui/dashboard/service/dashboard-service-ui";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // MetricCard — single stat tile. Lives inside a ThemeCard (LayerTheme),
 // so per the strict alternation rule it renders as a LayerSurface.
@@ -14,7 +22,7 @@ const MetricCard = ({ label, value, helper }) => (
   <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 0 }}>
     <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.8rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-2)" }}>{helper}</p>}
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>{helper}</p>}
   </LayerSurface>
 );
 
@@ -30,7 +38,7 @@ const PieChart = ({ breakdown }) => {
     <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
       {segments.map((segment) => (
         <div key={segment.label} style={{ minWidth: 120, flex: "1 1 120px" }}>
-          <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-2)" }}>{segment.label}</p>
+          <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--surfaceTextMuted)" }}>{segment.label}</p>
           <div
             style={{
               height: 12,
@@ -49,7 +57,7 @@ const PieChart = ({ breakdown }) => {
               }}
             />
           </div>
-          <strong style={{ color: "var(--text-accent)" }}>{segment.value}</strong>
+          <strong style={{ color: "var(--accent-text-on-tint)" }}>{segment.value}</strong>
         </div>
       ))}
     </div>
@@ -76,9 +84,9 @@ const ProgressBar = ({ completed, target }) => {
   const percentage = Math.min(100, Math.round((completed / target) * 100));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--text-2)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>
         <span style={{ color: "var(--text-1)" }}>Completed</span>
-        <span style={{ color: "var(--text-accent)" }}>{percentage}%</span>
+        <span style={{ color: "var(--accent-text-on-tint)" }}>{percentage}%</span>
       </div>
       <div style={{ width: "100%", height: 10, background: "var(--surface)", borderRadius: 5 }}>
         <div
@@ -108,7 +116,7 @@ const QueueItem = ({ job }) => (
   >
     <div style={{ minWidth: 0 }}>
       <strong style={{ color: "var(--text-accent)" }}>{job.job_number || "—"}</strong>
-      <p style={{ margin: "4px 0 0", color: "var(--text-2)", fontSize: "0.85rem" }}>
+      <p style={{ margin: "4px 0 0", color: "var(--surfaceTextMuted)", fontSize: "0.85rem" }}>
         {job.vehicle_reg || "Plate missing"}
       </p>
     </div>
@@ -140,10 +148,10 @@ export default function ServiceDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const payload = await getServiceDashboardData();
+        const payload = await (await loadDashboardData()).getServiceDashboardData();
         setData(payload);
       } catch (fetchError) {
-        console.error("Failed to load service dashboard", fetchError);
+        logFailure("Failed to load service dashboard", fetchError);
         setError(fetchError.message || "Unable to load service data");
       } finally {
         setLoading(false);

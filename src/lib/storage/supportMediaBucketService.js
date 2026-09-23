@@ -9,6 +9,7 @@
 // Server-only — every operation needs the service-role key.
 
 import { supabaseService } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const BUCKET_NAME = "support-reports";
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB — screenshots are capped client-side too
@@ -98,7 +99,7 @@ export async function uploadSupportScreenshot(file, reportId) {
   });
 
   if (error) {
-    console.error("[support] screenshot upload failed:", {
+    logFailure("[support] screenshot upload failed:", {
       bucket: BUCKET_NAME,
       storagePath,
       message: error.message,

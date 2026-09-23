@@ -21,7 +21,6 @@ const ROUTE_TO_MODULE = {
 
   // Admin
   "/dashboard/admin": () => import("@/pages/dashboard/admin/index"),
-  "/admin/users": () => import("@/pages/admin/users/index"),
   "/admin/compliance": () => import("@/pages/admin/compliance/index"),
   "/admin/compliance/breaches": () => import("@/pages/admin/compliance/breaches"),
   "/admin/compliance/dpias": () => import("@/pages/admin/compliance/dpias"),
@@ -33,7 +32,6 @@ const ROUTE_TO_MODULE = {
   // Dashboards
   "/dashboard/managers": () => import("@/pages/dashboard/managers/index"),
   "/dashboard/mot": () => import("@/pages/dashboard/mot/index"),
-  "/dashboard/painting": () => import("@/pages/dashboard/painting/index"),
   "/dashboard/parts": () => import("@/pages/dashboard/parts/index"),
   "/dashboard/service": () => import("@/pages/dashboard/service/index"),
   "/dashboard/valeting": () => import("@/pages/dashboard/valeting/index"),

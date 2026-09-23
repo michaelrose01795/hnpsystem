@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { supabaseClient } from "@/lib/database/supabaseClient";
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup";
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup";
@@ -15,6 +16,7 @@ import { TimePickerField } from "@/components/ui/timePickerAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
 import PartsJobCardPageUi from "@/components/page-ui/parts/create-order/parts-create-order-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const cardStyle = {
   gap: "18px"
@@ -142,7 +144,7 @@ export default function PartsJobCardPage() {
   const { resolvedMode } = useTheme();
   const { user } = useUser();
   const roles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasPartsAccess = roles.includes("parts") || roles.includes("parts manager");
+  const hasPartsAccess = hasAllAccessRole(roles) || roles.includes("parts") || roles.includes("parts manager");
   const isDarkMode = resolvedMode === "dark";
 
   const router = useRouter();
@@ -202,7 +204,7 @@ export default function PartsJobCardPage() {
           setPartSearchResults(payload.parts || []);
         }
       } catch (lookupError) {
-        console.error("Failed to search parts catalog:", lookupError);
+        logFailure("Failed to search parts catalog:", lookupError);
         if (!cancelled) {
           setPartSearchResults([]);
         }
@@ -319,7 +321,7 @@ export default function PartsJobCardPage() {
         }));
       }
     } catch (vehicleError) {
-      console.error("Failed to load vehicle for customer:", vehicleError);
+      logFailure("Failed to load vehicle for customer:", vehicleError);
     } finally {
       setLoadingVehicle(false);
     }
@@ -434,7 +436,7 @@ export default function PartsJobCardPage() {
       });
       setIsCustomerEditing(false);
     } catch (saveError) {
-      console.error("Failed to update customer details:", saveError);
+      logFailure("Failed to update customer details:", saveError);
       setErrorMessage(saveError.message || "Unable to update customer details.");
     } finally {
       setSavingCustomerDetails(false);
@@ -545,7 +547,7 @@ export default function PartsJobCardPage() {
         router.push("/new-order");
       }
     } catch (submitError) {
-      console.error("Failed to create parts order:", submitError);
+      logFailure("Failed to create parts order:", submitError);
       setErrorMessage(submitError.message || "Unable to save parts order.");
     } finally {
       setSaving(false);

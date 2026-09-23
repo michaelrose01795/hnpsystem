@@ -19,6 +19,7 @@ import { listKpis } from "../kpiCatalog";
 import { resolveKpiValue } from "../resolver";
 import { upsertSnapshots, readSnapshots, recordAggregationRun, snapshotTableForCadence } from "@/lib/database/reporting/snapshots";
 import { emitReportEvent } from "@/lib/database/reporting/reportEvent";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -125,7 +126,7 @@ export async function runAggregation(opts = {}) {
       outcome = await aggregateRollup(opts);
     }
   } catch (err) {
-    console.error(`[reporting] aggregation(${cadence}) failed:`, err?.message || err);
+    logFailure(`[reporting] aggregation(${cadence}) failed:`, err?.message || err);
     await recordAggregationRun({ cadence, periodKey: opts.day || opts.periodKey || "?", status: "failed", reason: err?.message });
     return { ok: false, cadence, error: err?.message || String(err) };
   }

@@ -1,20 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import DOMPurify from "dompurify";
 import { useUser } from "@/context/UserContext";
 import {
   createFloatingNote,
   deleteFloatingNote,
-  getFloatingNotesForUser,
-  getNoteSharedUserIds,
-  getShareableUsers,
-  setNoteSharedUsers,
+  getFloatingNoteShareOptions,
+  getFloatingNotes,
+  setFloatingNoteSharedUsers,
   updateFloatingNote,
-} from "@/lib/database/floatingNotes";
+} from "@/lib/floatingNotes/client";
 import AiGuidePanel from "@/features/appGuide/components/AiGuidePanel";
 import styles from "@/components/GlobalNotesWidget.module.css";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import ShareNotePopup from "@/components/GlobalNotes/ShareNotePopup";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
 
 const BUBBLE_SIZE = 44;
@@ -23,6 +24,7 @@ const PANEL_CLOSE_ANIMATION_MS = 150;
 const SAVE_DEBOUNCE_MS = 520;
 const DRAG_START_THRESHOLD = 4;
 const PRESENTATION_DEMO_USER_ID = 0;
+const FLOATING_NOTES_POPUP_SELECTOR = "[aria-label='Share note'], [aria-label='Chat history']";
 const PRESENTATION_DEMO_NOTES = [
   {
     noteId: -101,
@@ -76,6 +78,10 @@ const escapeHtml = (value) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 const isLikelyHtml = (value) => /<\/?[a-z][\s\S]*>/i.test(String(value || ""));
+const sanitizeNoteHtml = (value) => DOMPurify.sanitize(String(value || ""), {
+  ALLOWED_TAGS: ["br", "b", "strong", "i", "em", "u", "ul", "ol", "li", "div", "p"],
+  ALLOWED_ATTR: [],
+});
 
 const getPanelMinWidth = () => (typeof window !== "undefined" && window.innerWidth <= 480 ? 260 : 320);
 const getPanelMinHeight = () => (typeof window !== "undefined" && window.innerWidth <= 480 ? 220 : 260);
@@ -171,10 +177,16 @@ const getStoredPanelRect = (storageKey) => {
 
 const hasOpenModal = () => {
   if (typeof document === "undefined") return false;
-  return Boolean(
-    document.body.classList.contains("modal-open") ||
-      document.querySelector(".popup-backdrop, [aria-modal='true'], [data-modal-portal='true']")
+  const modalNodes = Array.from(
+    document.querySelectorAll(".popup-backdrop, [aria-modal='true'], [data-modal-portal='true']")
   );
+  const hasExternalModal = modalNodes.some((node) => (
+    !node.matches(FLOATING_NOTES_POPUP_SELECTOR) &&
+    !node.querySelector(FLOATING_NOTES_POPUP_SELECTOR)
+  ));
+
+  if (hasExternalModal) return true;
+  return document.body.classList.contains("modal-open") && modalNodes.length === 0;
 };
 
 const setDragSelectionLock = (isLocked) => {
@@ -183,6 +195,45 @@ const setDragSelectionLock = (isLocked) => {
   document.body.style.webkitUserSelect = isLocked ? "none" : "";
   document.body.style.cursor = isLocked ? "grabbing" : "";
 };
+
+function DeleteNoteIcon() {
+  return (
+    <svg
+      className={styles.deleteNoteIcon}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="m7 7 10 10M17 7 7 17" />
+    </svg>
+  );
+}
+
+function SharedNoteIcon() {
+  return (
+    <svg
+      className={styles.sharedNoteIcon}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4" />
+    </svg>
+  );
+}
 
 function NotesLoadingSkeleton() {
   return (
@@ -226,15 +277,16 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     presentationDemo ? PRESENTATION_DEMO_NOTES[0]?.noteId || null : null
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [deletingNoteId, setDeletingNoteId] = useState(null);
   const [saveStatus, setSaveStatus] = useState("idle");
   const [error, setError] = useState("");
   const [commandSuggestions, setCommandSuggestions] = useState([]);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [commandMenuPosition, setCommandMenuPosition] = useState({ top: 0, left: 0 });
+  // Share popup: this widget owns the candidate list, the selection and the
+  // saving, ShareNotePopup owns its own search box (it unmounts on close).
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [shareSearch, setShareSearch] = useState("");
   const [shareUsers, setShareUsers] = useState([]);
-  const [totalShareUserCount, setTotalShareUserCount] = useState(0);
   const [selectedShareUserIds, setSelectedShareUserIds] = useState([]);
   const [isShareLoading, setIsShareLoading] = useState(false);
   const [isShareSaving, setIsShareSaving] = useState(false);
@@ -247,6 +299,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
   const bubbleDragRef = useRef(null);
   const panelDragRef = useRef(null);
   const panelResizeRef = useRef(null);
+  const tabBarRef = useRef(null);
   const pointerMovedRef = useRef(false);
   const closePanelTimerRef = useRef(null);
   const saveTimersRef = useRef(new Map());
@@ -269,16 +322,6 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     () => notes.find((note) => note.noteId === activeNoteId) || null,
     [notes, activeNoteId]
   );
-  const filteredShareUsers = useMemo(() => {
-    const query = shareSearch.trim().toLowerCase();
-    if (!query) return shareUsers;
-    return shareUsers.filter((userRow) => {
-      const fullName = `${userRow.firstName || ""} ${userRow.lastName || ""}`.trim().toLowerCase();
-      const email = String(userRow.email || "").toLowerCase();
-      return fullName.includes(query) || email.includes(query);
-    });
-  }, [shareUsers, shareSearch]);
-
   const activeNoteOwnedByUser = !presentationDemo && Boolean(activeNote && Number(activeNote.userId) === Number(dbUserId));
   const activeNoteReadOnly = presentationDemo || !activeNoteOwnedByUser;
 
@@ -302,7 +345,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     if (isFocused && editingNoteIdRef.current === activeNoteId) return;
     const description = activeNote?.description || "";
     const nextHtml = isLikelyHtml(description)
-      ? description
+      ? sanitizeNoteHtml(description)
       : escapeHtml(description).replace(/\n/g, "<br>");
     if (editor.innerHTML !== nextHtml) {
       editor.innerHTML = nextHtml;
@@ -315,9 +358,21 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
   }, [activeNoteId, isPanelVisible]);
 
   useEffect(() => {
+    if (!isPanelVisible) return;
+    const selectedTab = tabBarRef.current?.querySelector('[aria-selected="true"]');
+    selectedTab?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeNoteId, activeView, isPanelVisible, notes.length]);
+
+  useEffect(() => {
     setIsShareModalOpen(false);
-    setShareSearch("");
   }, [activeNoteId, isPanelVisible]);
+
+  useEffect(() => {
+    const modalClass = "floating-notes-share-modal-open";
+    if (!isShareModalOpen || typeof document === "undefined") return undefined;
+    document.body.classList.add(modalClass);
+    return () => document.body.classList.remove(modalClass);
+  }, [isShareModalOpen]);
 
   useEffect(() => {
     persistActiveNoteId(activeNoteId);
@@ -355,11 +410,6 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     window.localStorage.setItem(activeNoteStorageKey, String(noteId));
   };
 
-  const getUserDisplayName = (userRow) => {
-    const fullName = `${userRow.firstName || ""} ${userRow.lastName || ""}`.replace(/\s+/g, " ").trim();
-    return fullName || userRow.email || `User ${userRow.userId}`;
-  };
-
   const loadNotes = async () => {
     if (presentationDemo) {
       setIsLoading(false);
@@ -373,7 +423,11 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     }
 
     const numericUserId = Number(dbUserId);
-    if (!Number.isInteger(numericUserId)) {
+    // `> 0` as well as isInteger: Number(null) === 0 passes isInteger, so while
+    // dbUserId was still resolving this fired a real fetch for user 0 on every
+    // page load. Waiting for a positive id costs nothing — the effect re-runs on
+    // dbUserId — and removes a guaranteed-empty round trip from every page.
+    if (!Number.isInteger(numericUserId) || numericUserId <= 0) {
       setNotes([]);
       setActiveNoteId(null);
       return;
@@ -382,7 +436,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     setIsLoading(true);
     setError("");
     try {
-      const rows = await getFloatingNotesForUser(numericUserId);
+      const rows = await getFloatingNotes();
       const storedActiveNoteId =
         typeof window !== "undefined" ? Number(window.localStorage.getItem(activeNoteStorageKey)) : null;
       setNotes(rows);
@@ -421,7 +475,16 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
       return;
     }
 
-    setNotes((prev) => prev.map((row) => (row.noteId === noteId ? { ...row, ...result.data } : row)));
+    setNotes((prev) => prev.map((row) => (
+      row.noteId === noteId
+        ? {
+            ...row,
+            ...result.data,
+            isShared: Boolean(result.data?.isGlobal) || row.sharedUserCount > 0,
+            sharedUserCount: row.sharedUserCount,
+          }
+        : row
+    )));
     setSaveStatus("saved");
   };
 
@@ -443,7 +506,16 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         setError(result.error?.message || "Failed to save note");
         return;
       }
-      setNotes((prev) => prev.map((row) => (row.noteId === noteId ? { ...row, ...result.data } : row)));
+      setNotes((prev) => prev.map((row) => (
+        row.noteId === noteId
+          ? {
+              ...row,
+              ...result.data,
+              isShared: Boolean(result.data?.isGlobal) || row.sharedUserCount > 0,
+              sharedUserCount: row.sharedUserCount,
+            }
+          : row
+      )));
       setSaveStatus("saved");
     }, SAVE_DEBOUNCE_MS);
 
@@ -710,10 +782,8 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
 
     setError("");
     const result = await createFloatingNote({
-      userId: Number(dbUserId),
       title: "",
       description: "",
-      isGlobal: false,
     });
 
     if (!result.success) {
@@ -728,7 +798,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
   };
 
   const deleteTab = async (noteId) => {
-    if (presentationDemo) return;
+    if (presentationDemo || deletingNoteId !== null) return;
 
     const target = notesRef.current.find((note) => note.noteId === noteId);
     if (!target) return;
@@ -744,22 +814,35 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
       saveTimersRef.current.delete(noteId);
     }
 
-    const result = await deleteFloatingNote(noteId);
-    if (!result.success) {
-      setError(result.error?.message || "Failed to delete note");
-      return;
-    }
+    const deletedIndex = notesRef.current.findIndex((note) => note.noteId === noteId);
+    setDeletingNoteId(noteId);
+    setError("");
 
-    setNotes((prev) => {
-      const remaining = prev.filter((note) => note.noteId !== noteId);
-      setActiveNoteId((current) => {
-        if (current !== noteId) return current;
-        const next = remaining[0]?.noteId || null;
-        persistActiveNoteId(next);
-        return next;
+    try {
+      const result = await deleteFloatingNote(noteId);
+      if (!result.success) {
+        setError(result.error?.message || "Failed to delete note");
+        return;
+      }
+
+      setNotes((prev) => {
+        const remaining = prev.filter((note) => note.noteId !== noteId);
+        setActiveNoteId((current) => {
+          if (current !== noteId) return current;
+          // Match browser tabs: prefer the tab that moved into the deleted
+          // tab's position, then fall back to the tab immediately before it.
+          const adjacent = remaining[deletedIndex] || remaining[deletedIndex - 1] || null;
+          const nextNoteId = adjacent?.noteId || null;
+          persistActiveNoteId(nextNoteId);
+          return nextNoteId;
+        });
+        return remaining;
       });
-      return remaining;
-    });
+    } catch (deleteError) {
+      setError(deleteError?.message || "Failed to delete note");
+    } finally {
+      setDeletingNoteId(null);
+    }
   };
 
   const updateLocalNote = (noteId, updater) => {
@@ -839,7 +922,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
   const syncFromEditor = () => {
     const editor = descriptionInputRef.current;
     if (!editor || !activeNote || activeNoteReadOnly) return;
-    const nextValue = editor.innerHTML === "<br>" ? "" : editor.innerHTML;
+    const nextValue = editor.innerHTML === "<br>" ? "" : sanitizeNoteHtml(editor.innerHTML);
     onChangeDescription(nextValue);
     const textBeforeCaret = getTextBeforeCaret(editor);
     const suggestions = detectSlashSuggestions(textBeforeCaret);
@@ -1006,18 +1089,12 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
 
     if (!activeNote || !activeNoteOwnedByUser) return;
     setIsShareModalOpen(true);
-    setShareSearch("");
     setIsShareLoading(true);
     setError("");
     try {
-      const [allUsers, sharedUserIds] = await Promise.all([
-        getShareableUsers(),
-        getNoteSharedUserIds(activeNote.noteId),
-      ]);
-      const ownerId = Number(activeNote.userId);
-      setTotalShareUserCount(allUsers.length);
-      setShareUsers(allUsers.filter((userRow) => Number(userRow.userId) !== ownerId));
-      setSelectedShareUserIds(sharedUserIds);
+      const shareOptions = await getFloatingNoteShareOptions(activeNote.noteId);
+      setShareUsers(shareOptions.users);
+      setSelectedShareUserIds(shareOptions.sharedUserIds);
     } catch (loadShareError) {
       setError(loadShareError?.message || "Failed to load share users");
     } finally {
@@ -1027,7 +1104,6 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
 
   const closeShareModal = () => {
     setIsShareModalOpen(false);
-    setShareSearch("");
   };
 
   const toggleSharedUser = async (userId) => {
@@ -1037,22 +1113,31 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
       : [...selectedShareUserIds, userId];
     setSelectedShareUserIds(nextIds);
     setIsShareSaving(true);
-    const result = await setNoteSharedUsers({
-      noteId: activeNote.noteId,
-      sharedByUserId: Number(dbUserId),
-      userIds: nextIds,
-    });
+    const result = await setFloatingNoteSharedUsers(activeNote.noteId, nextIds);
     setIsShareSaving(false);
     if (!result.success) {
+      setSelectedShareUserIds(selectedShareUserIds);
       setError(result.error?.message || "Failed to save shared users");
+      return;
     }
+    setNotes((prev) => prev.map((note) => (
+      note.noteId === activeNote.noteId
+        ? {
+            ...note,
+            isShared: Boolean(note.isGlobal) || nextIds.length > 0,
+            sharedUserCount: nextIds.length,
+          }
+        : note
+    )));
   };
 
   if (
     isPublicVhcReportRoute ||
     !hasHydrated ||
     (!presentationDemo && !Number.isInteger(Number(dbUserId))) ||
-    isModalOpen
+    // The Share popup is owned by this widget. Its ModalPortal sets the same
+    // global modal markers used to hide Notes behind unrelated app modals.
+    (isModalOpen && !isShareModalOpen)
   ) {
     return null;
   }
@@ -1062,7 +1147,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
       <button
         type="button"
         className={`app-btn app-btn--primary ${styles.bubble} ${
-          isPanelVisible || isPanelMounted ? styles.bubbleOpen : ""
+          isPanelVisible || isPanelMounted ? "is-active" : ""
         }`}
         style={{
           left: bubblePosition.x,
@@ -1112,20 +1197,20 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
             <span className={styles.dragHandleGrip} aria-hidden="true" />
           </div>
 
-          {/* Resize grip — tucked into the curved top-right corner.
-              Hidden in the AI view so the chat area can't be resized manually. */}
-          {activeView !== "ai" && (
-            <div
-              className={styles.resizeHandle}
-              onPointerDown={startResize}
-              role="presentation"
-              aria-hidden="true"
-            />
-          )}
+          {/* Resize grip — always available, including in the HELP chat view. */}
+          <div
+            className={styles.resizeHandle}
+            onPointerDown={startResize}
+            role="presentation"
+            aria-hidden="true"
+          />
 
           <header className={styles.header}>
             <div
-              className={`tab-api ${styles.tabBar}`}
+              className={`tab-api themed-scrollbar ${styles.tabBar}`}
+              ref={tabBarRef}
+              role="tablist"
+              aria-label="Floating note tabs"
               onPointerDown={(event) => event.stopPropagation()}
             >
               {/* App Guide (HELP) tab — always present, before note tabs */}
@@ -1137,44 +1222,52 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
                 onClick={openAiTab}
                 title="App Guide — ask questions about the system"
                 aria-label="Open App Guide help"
+                role="tab"
+                aria-selected={activeView === "ai"}
               >
                 <span className={styles.tabTitle}>HELP</span>
               </button>
 
               {notes.map((note) => {
                 const editable = !presentationDemo && Number(note.userId) === Number(dbUserId);
+                const isActiveNote = note.noteId === activeNoteId && activeView === "notes";
+                const isDeletingNote = note.noteId === deletingNoteId;
                 return (
-                  <button
+                  <div
                     key={note.noteId}
-                    type="button"
-                    className={`tab-api__item ${styles.tab} ${
-                      note.noteId === activeNoteId && activeView === "notes" ? "is-active" : ""
-                    }`}
-                    onClick={() => openNoteTab(note.noteId)}
-                    title={note.title || "Untitled"}
+                    role="presentation"
+                    className={`${styles.noteTab} ${isActiveNote ? styles.noteTabActive : ""}`}
+                    data-deleting={isDeletingNote ? "true" : undefined}
                   >
-                    <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
+                    <button
+                      type="button"
+                      className={`tab-api__item ${styles.noteTabSelect}`}
+                      onClick={() => openNoteTab(note.noteId)}
+                      title={`${note.title || "Untitled"}${note.isShared ? " — Shared note" : ""}`}
+                      aria-label={`${note.title || "Untitled"}${note.isShared ? ", shared note" : ""}`}
+                      role="tab"
+                      aria-selected={isActiveNote}
+                    >
+                      {note.isShared && <SharedNoteIcon />}
+                      <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
+                    </button>
                     {editable && (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        className={styles.tabClose}
+                      <button
+                        type="button"
+                        className={`app-btn ${styles.tabDelete}`}
                         onClick={(event) => {
                           event.stopPropagation();
                           deleteTab(note.noteId);
                         }}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            deleteTab(note.noteId);
-                          }
-                        }}
-                        aria-label="Close tab"
+                        disabled={deletingNoteId !== null}
+                        aria-label={`Delete ${note.title || "untitled"} note`}
+                        aria-busy={isDeletingNote}
+                        title="Delete note permanently"
                       >
-                        ×
-                      </span>
+                        <DeleteNoteIcon />
+                      </button>
                     )}
-                  </button>
+                  </div>
                 );
               })}
               {!presentationDemo && (
@@ -1185,7 +1278,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
                   aria-label="Add tab"
                   title="Add tab"
                 >
-                  +
+                  <span className={styles.tabAddGlyph} aria-hidden="true">+</span>
                 </button>
               )}
             </div>
@@ -1310,67 +1403,16 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
 
         </LayerSurface>
       )}
-
       {isShareModalOpen && (
-        <div className={styles.shareOverlay} onClick={closeShareModal}>
-          <LayerSurface
-            as="section"
-            className={styles.shareModal}
-            radius="var(--section-card-radius)"
-            padding="var(--section-card-padding)"
-            gap="var(--layout-card-gap)"
-            role="dialog"
-            aria-label="Share note"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className={styles.shareModalHeader}>
-              <div className={styles.shareSearchWrap}>
-                <input
-                  type="text"
-                  className={`app-input ${styles.shareSearch}`}
-                  placeholder="Search users"
-                  value={shareSearch}
-                  onChange={(event) => setShareSearch(event.target.value)}
-                />
-                <span className={styles.shareSelectedCount}>
-                  {selectedShareUserIds.length} out of {totalShareUserCount} selected
-                </span>
-              </div>
-              <button type="button" className={`app-btn app-btn--secondary ${styles.shareCloseButton}`} onClick={closeShareModal}>
-                Close
-              </button>
-            </div>
-
-            <LayerTheme
-              className={`${styles.shareUserList} themed-scrollbar`}
-              radius="var(--radius-sm)"
-              padding="0"
-              gap="0"
-              aria-busy={isShareLoading ? "true" : "false"}
-            >
-              {isShareLoading && <div className={styles.shareEmpty}>Loading users...</div>}
-              {!isShareLoading && filteredShareUsers.length === 0 && (
-                <div className={styles.shareEmpty}>No users found</div>
-              )}
-              {!isShareLoading &&
-                filteredShareUsers.map((userRow) => {
-                  const isSelected = selectedShareUserIds.includes(userRow.userId);
-                  return (
-                    <label key={userRow.userId} className={styles.shareUserRow}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSharedUser(userRow.userId)}
-                        disabled={isShareSaving}
-                      />
-                      <span className={styles.shareUserName}>{getUserDisplayName(userRow)}</span>
-                      <span className={styles.shareUserEmail}>{userRow.email || ""}</span>
-                    </label>
-                  );
-                })}
-            </LayerTheme>
-          </LayerSurface>
-        </div>
+        <ShareNotePopup
+          users={shareUsers}
+          selectedUserIds={selectedShareUserIds}
+          isLoading={isShareLoading}
+          isSaving={isShareSaving}
+          error={error}
+          onToggleUser={toggleSharedUser}
+          onClose={closeShareModal}
+        />
       )}
     </div>
   );

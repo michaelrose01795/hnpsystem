@@ -7,6 +7,7 @@ import {
   getWorkspacePageCatalog,
   resolveAccessiblePaths,
 } from "@/config/workspace/manifest";
+import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
 
 const REQUIRED_ROLES = [
   "Retail",
@@ -60,9 +61,51 @@ describe("role workspace defaults", () => {
     }
   });
 
-  it("keeps Communication first for role defaults but respects saved layouts", () => {
+  it("renders every rail in the fixed module order, skipping absent modules", () => {
+    // The agreed sidebar order. A role that has no pages in a module simply
+    // skips it and the next module moves up — that is what this asserts, by
+    // checking each role's rail is a subsequence of the canonical order.
+    const RAIL_ORDER = [
+      "General",
+      "Reception",
+      "Workshop",
+      "Tech",
+      "Parts",
+      "Admin",
+      "Accounts",
+      "MOT",
+      "Valeting",
+      "Reports",
+    ];
+
+    const isSubsequence = (labels) => {
+      let cursor = -1;
+      return labels.every((label) => {
+        const next = RAIL_ORDER.indexOf(label, cursor + 1);
+        if (next === -1) return false;
+        cursor = next;
+        return true;
+      });
+    };
+
     for (const role of WORKSPACE_ROLE_DEFAULT_NAMES) {
-      expect(getRoleDefaultWorkspaceModules(role)[0]?.key, role).toBe("communication");
+      const labels = getRoleDefaultWorkspaceModules(role).map((module) => module.label);
+      expect(isSubsequence(labels), `${role}: ${labels.join(" > ")}`).toBe(true);
+    }
+
+    // The All Access rail is built by bucketing the whole page catalogue and
+    // must land in the same order as everyone else's.
+    const allAccessLabels = getRoleWorkspaceModules([ALL_ACCESS_ROLE]).map((module) => module.label);
+    expect(isSubsequence(allAccessLabels), allAccessLabels.join(" > ")).toBe(true);
+    expect(allAccessLabels[0]).toBe("General");
+  });
+
+  it("keeps General first for role defaults but respects saved layouts", () => {
+    // Post module-library sweep: /newsfeed and /messages live in the library's
+    // General module, which every role default lists first. The old synthetic
+    // "communication" module existed in no library module and is gone.
+    for (const role of WORKSPACE_ROLE_DEFAULT_NAMES) {
+      expect(getRoleDefaultWorkspaceModules(role)[0]?.key, role).toBe("department-general");
     }
 
     const savedLayout = {
@@ -91,16 +134,27 @@ describe("role workspace defaults", () => {
   });
 
   it("keeps manager controls separate from employee task modules", () => {
-    expect(getRoleDefaultWorkspaceModules("Service").map((module) => module.key)).not.toContain("management-overview");
-    expect(getRoleDefaultWorkspaceModules("Service Manager").map((module) => module.key)).toContain("management-overview");
-    expect(getRoleDefaultWorkspaceModules("Techs").map((module) => module.key)).toContain("my-work");
-    expect(getRoleDefaultWorkspaceModules("Techs").flatMap((module) => module.items.map((item) => item.href))).not.toContain("/nextjobs");
+    // The manager dashboard is what separates a manager from their team; after
+    // the sweep it lives in the library's Admin module rather than a bespoke
+    // "management-overview" bundle, so assert on the PAGE, not the module name.
+    const serviceHrefs = getRoleDefaultWorkspaceModules("Service")
+      .flatMap((module) => module.items.map((item) => item.href));
+    const serviceManagerHrefs = getRoleDefaultWorkspaceModules("Service Manager")
+      .flatMap((module) => module.items.map((item) => item.href));
+    expect(serviceHrefs).not.toContain("/dashboard/managers");
+    expect(serviceManagerHrefs).toContain("/dashboard/managers");
+
+    const techHrefs = getRoleDefaultWorkspaceModules("Techs")
+      .flatMap((module) => module.items.map((item) => item.href));
+    expect(getRoleDefaultWorkspaceModules("Techs").map((module) => module.key)).toContain("department-tech");
+    expect(techHrefs).toContain("/tech");
+    expect(techHrefs).not.toContain("/nextjobs");
   });
 
   it("opens the module that owns the active route, including pending routes", () => {
-    expect(getActiveRoleWorkspaceModule("/jobs", ["service"])).toBe("customer-jobs");
-    expect(getActiveRoleWorkspaceModule("/newsfeed", ["service"])).toBe("communication");
-    expect(getActiveRoleWorkspaceModule("/newsfeed", ["service"], null, "/jobs")).toBe("customer-jobs");
+    expect(getActiveRoleWorkspaceModule("/jobs", ["service"])).toBe("department-service");
+    expect(getActiveRoleWorkspaceModule("/newsfeed", ["service"])).toBe("department-general");
+    expect(getActiveRoleWorkspaceModule("/newsfeed", ["service"], null, "/jobs")).toBe("department-service");
   });
 
   it("custom user modules grant access to every page they render", () => {

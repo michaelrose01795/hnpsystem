@@ -236,12 +236,12 @@
 }
 
 .tracking-map-button--primary {
-  background: var(--accentMain);
+  background: var(--primary);
   border-color: transparent;
 }
 
 .tracking-map-button--primary:hover {
-  background: var(--accentMain);
+  background: var(--primary);
   filter: brightness(1.1);
 }
 

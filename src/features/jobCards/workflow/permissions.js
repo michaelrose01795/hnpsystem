@@ -1,5 +1,6 @@
 // file location: src/features/jobCards/workflow/permissions.js
 import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 
 // Build a shared permission model for the job-card workflow page.
@@ -15,8 +16,12 @@ export const resolveJobCardPermissions = ({
     .map((role) => String(role || "").trim().toLowerCase())
     .filter(Boolean);
 
+  // All Access demo login: every role-gated tab and action is granted. The
+  // STATUS locks below still apply — those are job-state rules, not permissions.
+  const allAccess = hasAllAccessRole(normalizedRoles);
+
   // Shared role buckets used across tabs.
-  const canEditBase = [
+  const canEditBase = allAccess || [
     "service",
     "service manager",
     "workshop manager",
@@ -26,7 +31,7 @@ export const resolveJobCardPermissions = ({
     "parts manager",
   ].some((role) => normalizedRoles.includes(role));
 
-  const canManageDocumentsBase = [
+  const canManageDocumentsBase = allAccess || [
     "service manager",
     "workshop manager",
     "after-sales manager",
@@ -34,7 +39,7 @@ export const resolveJobCardPermissions = ({
     "admin manager",
   ].some((role) => normalizedRoles.includes(role));
 
-  const canViewPartsTab = [
+  const canViewPartsTab = allAccess || [
     "workshop manager",
     "service manager",
     "parts",
@@ -42,7 +47,7 @@ export const resolveJobCardPermissions = ({
     "after-sales manager",
   ].some((role) => normalizedRoles.includes(role));
 
-  const isWorkshopManager = normalizedRoles.includes("workshop manager");
+  const isWorkshopManager = allAccess || normalizedRoles.includes("workshop manager");
 
   // Resolve current main status once for consistent lock decisions.
   const mainStatusForEditLock = resolveMainStatusId(jobStatus);

@@ -2,13 +2,14 @@
 
 export default function MobileDashboardPageUi(props) {
   const {
+    allowedRoles,
     MobileDashboardInner,
     ProtectedRoute,
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
-      return <ProtectedRoute allowedRoles={["MOBILE TECHNICIAN", "ADMIN", "ADMIN MANAGER", "SERVICE MANAGER", "WORKSHOP MANAGER"]}>
+      return <ProtectedRoute allowedRoles={allowedRoles}>
       <MobileDashboardInner />
     </ProtectedRoute>; // render extracted page section.
     default:

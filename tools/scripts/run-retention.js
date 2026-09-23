@@ -132,6 +132,31 @@ const HANDLERS = {
     return { rowsProcessed, rowsActioned: rowsProcessed };
   },
 
+  // Automatically-captured in-app errors. High volume and purely diagnostic —
+  // no user-authored content, no attachments — so it ages out at 90 days rather
+  // than the 180 the human report queue gets. A row already linked to a
+  // support_report (report_id set) is left alone: it is evidence for a report
+  // that is still inside its own retention window, and the FK is ON DELETE SET
+  // NULL, so it becomes eligible again once that report is itself deleted.
+  support_error_event: async ({ dryRun }) => {
+    const cutoff = new Date(Date.now() - 90 * 86400000).toISOString();
+    const { count } = await sb
+      .from("support_error_events")
+      .select("id", { count: "exact", head: true })
+      .lt("created_at", cutoff)
+      .is("report_id", null);
+    const rowsProcessed = count || 0;
+    if (!dryRun && rowsProcessed > 0) {
+      const { error } = await sb
+        .from("support_error_events")
+        .delete()
+        .lt("created_at", cutoff)
+        .is("report_id", null);
+      if (error) throw new Error(`support_error_events delete: ${error.message}`);
+    }
+    return { rowsProcessed, rowsActioned: dryRun ? 0 : rowsProcessed };
+  },
+
   // Audit log retention is "archive then delete". For now we only delete
   // beyond the 7y mark. An archive job to cold storage is a follow-up.
   audit_log: async ({ dryRun }) => {

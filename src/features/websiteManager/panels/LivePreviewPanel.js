@@ -7,22 +7,23 @@
 //     overlay (see src/features/website/components/PreviewClickTarget).
 //   - When the user clicks a section in the iframe, the iframe posts a
 //     `hnp:section-selected` message back here; we load that section from
-//     /api/website/sections/:section and open a SectionEditor in the
-//     side pane.
+//     /api/website/sections/:section and open a SectionEditor in the side pane.
 //   - As the user types in the editor, we forward each draft change to the
 //     iframe via `hnp:content-patch` postMessages. The iframe's
-//     useWebsiteContent hook applies the patch to its in-memory state, so
-//     the change is visible immediately - no reload, no jump-to-tab.
-//   - On Save, we PATCH the API and ask the iframe to refresh from the API
-//     so the staff sees the canonical saved version.
+//     useWebsiteContent hook applies the patch to its in-memory state, so the
+//     change is visible immediately - no reload, no jump-to-tab.
+//   - On Save, we PATCH the API and ask the iframe to refresh from the API so
+//     the staff sees the canonical saved version.
 //
-// All edits to /website content are intended to flow through this panel - the
-// classic Page Content tab is kept as a fallback for power users / bulk work.
+// Most edits to /website content are meant to flow through here; the Pages &
+// sections tab stays as the list-driven route for bulk work.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Section from "@/components/Section";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import SectionEditor from "../editors/SectionEditor";
 import { SECTION_SCHEMAS } from "../editors/sectionSchemas";
 import {
@@ -32,23 +33,32 @@ import {
   createRow,
   deleteRowApi,
 } from "../websiteApi";
+import { slugify } from "../helpers";
 import { PREVIEW_MESSAGE_TYPES } from "@/features/website/hooks/useWebsitePreviewMode";
 
+// The public site is a single scroller, so each "page" is an anchor on it.
 const PAGES = [
   { key: "home", name: "Homepage", hash: "" },
   { key: "new-cars", name: "Cars", hash: "#cars" },
   { key: "offers", name: "Offers", hash: "#offers" },
+  { key: "shop", name: "Shop", hash: "#shop" },
   { key: "sell-your-car", name: "Sell Your Car", hash: "#sell" },
   { key: "service-parts", name: "Service & Parts", hash: "#service" },
   { key: "motability", name: "Motability", hash: "#motability" },
   { key: "about", name: "About Us", hash: "#about" },
   { key: "blog", name: "Blog", hash: "#blog" },
   { key: "contact", name: "Contact", hash: "#contact" },
-  { key: "shop", name: "Shop", hash: "#shop" },
+];
+
+const DEVICES = [
+  { value: "desktop", label: "Desktop" },
+  { value: "tablet", label: "Tablet" },
+  { value: "mobile", label: "Mobile" },
 ];
 
 export default function LivePreviewPanel() {
   const [pageKey, setPageKey] = useState("home");
+  const [device, setDevice] = useState("desktop");
   const [reloadKey, setReloadKey] = useState(0);
   const [iframeReady, setIframeReady] = useState(false);
   const [selection, setSelection] = useState(null); // { sectionKey, rowId }
@@ -60,7 +70,7 @@ export default function LivePreviewPanel() {
   const iframeRef = useRef(null);
 
   const activePage = PAGES.find((p) => p.key === pageKey) || PAGES[0];
-  const src = `/website${activePage.hash}?preview=editor&v=${reloadKey}`;
+  const src = `/website?preview=editor&v=${reloadKey}${activePage.hash}`;
 
   const postToIframe = useCallback((message) => {
     const w = iframeRef.current?.contentWindow;
@@ -71,6 +81,7 @@ export default function LivePreviewPanel() {
   // ---- listen for the iframe's selection events ---------------------------
   useEffect(() => {
     const handle = (event) => {
+      if (event.origin !== window.location.origin) return;
       const msg = event?.data;
       if (!msg || typeof msg !== "object") return;
       if (msg.type === PREVIEW_MESSAGE_TYPES.READY) {
@@ -92,17 +103,21 @@ export default function LivePreviewPanel() {
       setSectionRows([]);
       return;
     }
+    // A selection with `newRow` set is a local "add" — there is nothing to
+    // fetch, the blank draft is already in sectionData.
+    if (selection.newRow) return;
     setLoadingSection(true);
     setError(null);
+    let active = true;
     (async () => {
       try {
         const data = await fetchSection(selection.sectionKey);
+        if (!active) return;
         const schema = SECTION_SCHEMAS[selection.sectionKey];
         if (schema?.kind === "collection") {
           const list = Array.isArray(data) ? data : [];
           setSectionRows(list);
-          // If a specific row was clicked, focus that row; otherwise the
-          // first row.
+          // Focus the clicked row, else the first one.
           const focus = selection.rowId
             ? list.find((r) => r.id === selection.rowId)
             : list[0];
@@ -112,11 +127,14 @@ export default function LivePreviewPanel() {
           setSectionRows([]);
         }
       } catch (err) {
-        setError(err.message);
+        if (active) setError(err.message);
       } finally {
-        setLoadingSection(false);
+        if (active) setLoadingSection(false);
       }
     })();
+    return () => {
+      active = false;
+    };
   }, [selection]);
 
   // ---- highlight selected section inside iframe ---------------------------
@@ -142,19 +160,33 @@ export default function LivePreviewPanel() {
     [selection, postToIframe]
   );
 
+  const schema = selection?.sectionKey ? SECTION_SCHEMAS[selection.sectionKey] : null;
+
   // ---- save handlers -------------------------------------------------------
   const handleSave = async (draft) => {
     if (!selection?.sectionKey) return;
     setSaving(true);
     setError(null);
     try {
-      const schema = SECTION_SCHEMAS[selection.sectionKey];
       if (schema?.kind === "collection") {
         if (selection.rowId) {
           await patchRow(selection.sectionKey, selection.rowId, draft);
         } else {
-          // No row chosen yet — treat as new row.
-          await createRow(selection.sectionKey, draft);
+          // No existing row — this is a new one. Collection rows need a stable
+          // text PK; derive it from the row label so staff never type an id.
+          const next = { ...draft };
+          if (!next.id) {
+            const label = schema.rowLabel ? schema.rowLabel(next) : "";
+            const base = slugify(label, selection.sectionKey);
+            let candidate = base;
+            let n = 2;
+            while (sectionRows.some((r) => r.id === candidate)) candidate = `${base}-${n++}`;
+            next.id = candidate;
+          }
+          if (next.sort_order == null) next.sort_order = sectionRows.length;
+          await createRow(selection.sectionKey, next);
+          // Re-select the saved row so the editor stops being an "add" form.
+          setSelection({ sectionKey: selection.sectionKey, rowId: next.id });
         }
       } else {
         await patchSingleton(selection.sectionKey, draft);
@@ -163,6 +195,7 @@ export default function LivePreviewPanel() {
       postToIframe({ type: PREVIEW_MESSAGE_TYPES.REFRESH });
     } catch (err) {
       setError(err.message);
+      throw err; // let SectionEditor surface it inline too
     } finally {
       setSaving(false);
     }
@@ -171,14 +204,18 @@ export default function LivePreviewPanel() {
   const handleDelete = async () => {
     if (!selection?.sectionKey || !selection.rowId) return;
     if (!window.confirm("Delete this row? This cannot be undone.")) return;
-    await deleteRowApi(selection.sectionKey, selection.rowId);
-    setSelection(null);
-    postToIframe({ type: PREVIEW_MESSAGE_TYPES.REFRESH });
-    setReloadKey((n) => n + 1);
+    try {
+      await deleteRowApi(selection.sectionKey, selection.rowId);
+      setSelection(null);
+      postToIframe({ type: PREVIEW_MESSAGE_TYPES.REFRESH });
+      setReloadKey((n) => n + 1);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const handleAddNewRow = () => {
-    setSelection({ sectionKey: selection.sectionKey, rowId: null });
+    setSelection({ sectionKey: selection.sectionKey, rowId: null, newRow: true });
     setSectionData({ status: "published" });
   };
 
@@ -186,31 +223,25 @@ export default function LivePreviewPanel() {
     setSelection({ sectionKey: selection.sectionKey, rowId: row.id });
   };
 
-  const schema = selection?.sectionKey
-    ? SECTION_SCHEMAS[selection.sectionKey]
-    : null;
-
   return (
     <>
-      <Section
-        title="Live Preview Editor"
-        subtitle="Click any section of /website on the right to edit it. Changes appear live as you type. Save to commit."
-      >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {PAGES.map((p) => (
-            <Button
-              key={p.key}
-              type="button"
-              size="sm"
-              variant={p.key === pageKey ? "primary" : "secondary"}
-              onClick={() => {
-                setPageKey(p.key);
-                setSelection(null);
-              }}
-            >
-              {p.name}
-            </Button>
-          ))}
+      <Section title="Visual editor">
+        <div className="website-manager__preview-toolbar">
+          <TabGroup
+            items={PAGES.map((page) => ({ value: page.key, label: page.name }))}
+            value={pageKey}
+            onChange={(value) => {
+              setPageKey(value);
+              setSelection(null);
+            }}
+            ariaLabel="Website preview page"
+          />
+          <TabGroup
+            items={DEVICES}
+            value={device}
+            onChange={setDevice}
+            ariaLabel="Website preview device"
+          />
           <Button
             type="button"
             size="sm"
@@ -220,60 +251,51 @@ export default function LivePreviewPanel() {
               setIframeReady(false);
               setSelection(null);
             }}
-            style={{ marginLeft: "auto" }}
           >
             Reload preview
           </Button>
         </div>
       </Section>
 
-      <Section title={`Preview — ${activePage.name}`}>
+      <Section title={activePage.name}>
         <div className="ws-editor-split">
           {/* ----- left: editor pane --------------------------------------- */}
           <div className="ws-editor-pane">
             {!selection && (
-              <LayerTheme padding="16px" gap="8px">
-                <div style={{ fontWeight: 700, color: "var(--accentText)" }}>
-                  Click a section on the right
-                </div>
-                <div style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
-                  Hover the preview and click any outlined region — the matching
-                  editor opens here and your changes show live as you type.
-                </div>
-              </LayerTheme>
+              <EmptyState
+                variant="bare"
+                icon="🖱"
+                title="Click a section in the preview"
+                description="Hover the site on the right and click any outlined region. Its editor opens here and your changes show live as you type."
+              />
             )}
 
-            {selection && loadingSection && (
-              <div style={{ color: "var(--text-1)" }}>Loading section…</div>
+            {selection && loadingSection && <p className="website-manager__meta">Loading section…</p>}
+
+            {error && (
+              <div className="website-manager__notice website-manager__notice--warning" role="alert">
+                {error}
+              </div>
             )}
 
             {selection && !loadingSection && schema && (
               <>
                 {schema.kind === "collection" && sectionRows.length > 0 && (
-                  <LayerTheme padding="12px" gap="6px">
-                    <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>
-                      Rows in this section
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  <LayerTheme gap="var(--space-2)">
+                    <span className="website-manager__label">Rows in this section</span>
+                    <div className="website-manager__chip-row">
                       {sectionRows.map((row) => (
                         <Button
                           key={row.id}
                           type="button"
                           size="xs"
-                          variant={
-                            selection.rowId === row.id ? "primary" : "secondary"
-                          }
+                          variant={selection.rowId === row.id ? "primary" : "secondary"}
                           onClick={() => handleSwitchRow(row)}
                         >
                           {schema.rowLabel ? schema.rowLabel(row) : row.id}
                         </Button>
                       ))}
-                      <Button
-                        type="button"
-                        size="xs"
-                        variant="secondary"
-                        onClick={handleAddNewRow}
-                      >
+                      <Button type="button" size="xs" variant="secondary" onClick={handleAddNewRow}>
                         + New row
                       </Button>
                     </div>
@@ -287,44 +309,24 @@ export default function LivePreviewPanel() {
                   onSave={handleSave}
                   onCancel={() => setSelection(null)}
                   onDelete={
-                    schema.kind === "collection" && selection.rowId
-                      ? handleDelete
-                      : null
+                    schema.kind === "collection" && selection.rowId ? handleDelete : null
+                  }
+                  saveLabel={
+                    schema.kind === "collection" && !selection.rowId
+                      ? "Add to the site"
+                      : "Save changes"
                   }
                 />
 
-                {saving && (
-                  <div style={{ color: "var(--text-1)" }}>Saving…</div>
-                )}
-                {error && (
-                  <div style={{ color: "#d97706", fontWeight: 600 }}>
-                    {error}
-                  </div>
-                )}
+                {saving && <p className="website-manager__meta">Saving…</p>}
               </>
             )}
           </div>
 
           {/* ----- right: iframe ------------------------------------------- */}
-          <div className="ws-editor-preview">
-            <iframe
-              ref={iframeRef}
-              key={reloadKey}
-              title="Website preview"
-              src={src}
-              style={{
-                width: "100%",
-                height: "780px",
-                display: "block",
-                background: "var(--theme)",
-                borderRadius: 8,
-              }}
-            />
-            {!iframeReady && (
-              <div style={{ color: "var(--text-1)", marginTop: 8 }}>
-                Preview loading…
-              </div>
-            )}
+          <div className={`ws-editor-preview ws-editor-preview--${device}`}>
+            <iframe ref={iframeRef} key={reloadKey} title="Website preview" src={src} />
+            {!iframeReady && <p className="website-manager__meta">Preview loading…</p>}
           </div>
         </div>
       </Section>

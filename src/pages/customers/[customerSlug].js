@@ -36,6 +36,7 @@ import {
 import { createJobNote } from "@/lib/database/notes";
 import CustomerDetailWorkspaceUi from "@/components/page-ui/customers/customers-customer-slug-ui"; // Extracted presentation layer.
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const TAB_DEFINITIONS = [
 { id: "insights", label: "Insights" },
@@ -1570,7 +1571,7 @@ export default function CustomerDetailWorkspace() {
         setPaymentMethods(methodsForCustomer || []);
         setActivityEvents(activityForCustomer || []);
       } catch (err) {
-        console.error("Failed to load customer detail view:", err);
+        logFailure("Failed to load customer detail view:", err);
         setError("Unable to load customer data right now.");
       } finally {
         setIsLoading(false);

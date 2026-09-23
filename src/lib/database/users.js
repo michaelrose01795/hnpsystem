@@ -3,6 +3,7 @@
 // file location: src/lib/database/users.js
 import { getDatabaseClient } from "@/lib/database/client";
 import { getDisplayName } from "@/lib/users/displayName";
+import { excludeAllAccessUser } from "@/lib/database/allAccessVisibility";
 
 const db = getDatabaseClient();
 const USERS_TABLE = "users";
@@ -170,12 +171,13 @@ const fetchUsersByRoles = async (roles) => {
     .map((roleName) => `"${roleName.replace(/"/g, '\\"')}"`)
     .join(",");
   const roleFilter = `role.in.(${escapedList})`;
-  const { data, error } = await db
-    .from(USERS_TABLE)
-    .select(PUBLIC_STAFF_DIRECTORY_COLUMNS)
-    .eq("is_active", true)
-    .or(roleFilter)
-    .order("first_name", { ascending: true });
+  const { data, error } = await excludeAllAccessUser(
+    db
+      .from(USERS_TABLE)
+      .select(PUBLIC_STAFF_DIRECTORY_COLUMNS)
+      .eq("is_active", true)
+      .or(roleFilter)
+  ).order("first_name", { ascending: true });
   if (error) {
     throw new Error(`Failed to fetch users by role: ${error.message}`);
   }
@@ -188,10 +190,9 @@ export const getMotTesterUsers = () => fetchUsersByRoles(DEFAULT_TEST_ROLES);
 
 export const getAllUsers = async ({ includeInactive = false } = {}) => {
   const { data, error } = await withOptionalSidebarAccessColumn((columns) => {
-    let query = db
-      .from(USERS_TABLE)
-      .select(columns)
-      .order("user_id", { ascending: true });
+    let query = excludeAllAccessUser(db.from(USERS_TABLE).select(columns)).order("user_id", {
+      ascending: true,
+    });
     if (!includeInactive) {
       query = query.eq("is_active", true);
     }
@@ -205,9 +206,7 @@ export const getAllUsers = async ({ includeInactive = false } = {}) => {
 
 export const getUsersGroupedByRole = async () => {
   const { data, error } = await withOptionalSidebarAccessColumn((columns) =>
-    db
-      .from(USERS_TABLE)
-      .select(columns)
+    excludeAllAccessUser(db.from(USERS_TABLE).select(columns))
       .eq("is_active", true)
       .order("role", { ascending: true })
       .order("first_name", { ascending: true })

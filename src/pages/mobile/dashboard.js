@@ -1,169 +1,97 @@
 // file location: src/pages/mobile/dashboard.js
-// Mobile technician landing page: shows today's appointments and upcoming on-site jobs.
+// Mobile technician landing page: shows assigned on-site visits and mobile-specific actions.
 
-import React, { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
-import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
-import LayerTheme from "@/components/ui/LayerTheme";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
+import { SectionShell, StatCard } from "@/components/ui";
+import MobileDashboardPageUi from "@/components/page-ui/mobile/mobile-dashboard-ui";
+import {
+  HR_MANAGER_ROLES,
+  MOBILE_TECH_ROLES,
+  WORKSHOP_MANAGER_ROLES,
+} from "@/lib/auth/roles";
+import { prefetchJob } from "@/lib/swr/prefetch";
 
-// Structured job-row skeleton shaped like the real JobRow (title + time stamp + body).
-// Kept local to this file because the mobile dashboard cards use a compact two-column
-// grid that differs from the main app table layout.
-import MobileDashboardPageUi from "@/components/page-ui/mobile/mobile-dashboard-ui"; // Extracted presentation layer.
-function MobileJobRowsSkeleton({ count = 2 }) {return (
-    <div>
-      <SkeletonKeyframes />
-      {Array.from({ length: count }).map((_, i) =>
-      <div
-        key={i}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr auto",
-          gap: "10px",
-          padding: "12px 0",
-          borderBottom: "var(--separating-line)"
-        }}>
-        
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <SkeletonBlock width="60%" height="14px" />
-            <SkeletonBlock width="80%" height="10px" />
-          </div>
-          <SkeletonBlock width="80px" height="12px" />
-        </div>
-      )}
-    </div>);
+const MOBILE_DASHBOARD_ROLES = Array.from(
+  new Set([
+    ...MOBILE_TECH_ROLES,
+    ...HR_MANAGER_ROLES,
+    ...WORKSHOP_MANAGER_ROLES,
+    "service manager",
+  ].map((role) => role.toUpperCase()))
+);
 
-}
-
-const pageStyle = {
-  padding: "clamp(12px, 2.5vw, 20px)",
-  display: "flex",
-  flexDirection: "column",
-  gap: "16px",
+const pageShellStyle = {
   width: "100%",
-  boxSizing: "border-box"
+  minWidth: 0,
+  padding: "8px 0",
 };
 
-const summaryGridStyle = {
+const statsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+  gap: "12px",
+  width: "100%",
+};
+
+const actionGridStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
   gap: "12px",
-  alignItems: "start"
+  width: "100%",
 };
 
-const contentGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
-  gap: "16px",
-  alignItems: "start"
+const centeredStateStyle = {
+  minHeight: "280px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center",
 };
 
-const stackStyle = {
-  display: "grid",
-  gap: "16px",
-  minWidth: 0
+const sectionSurfaceStyle = {
+  boxShadow: "none",
 };
 
 const sectionHeadingStyle = {
-  margin: 0,
-  fontSize: "1rem",
+  fontSize: "20px",
+  fontWeight: 700,
   color: "var(--text-1)",
-  fontWeight: 700
-};
-
-const sectionHeaderStyle = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: "12px",
-  marginBottom: "12px",
-  flexWrap: "wrap"
-};
-
-const sectionEmptyStyle = {
   margin: 0,
-  color: "var(--text-2)",
-  fontSize: "0.9rem",
-  padding: "10px 0"
 };
 
-const countBadgeStyle = {
-  minHeight: "32px",
+const detailLabelStyle = {
+  fontSize: "15px",
+  color: "var(--text-1)",
+  margin: 0,
+  lineHeight: 1.5,
+  overflowWrap: "anywhere",
+};
+
+const statusBadgeBaseStyle = {
+  height: "var(--table-action-btn-height, 32px)",
+  minHeight: "var(--table-action-btn-height, 32px)",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   padding: "0 12px",
-  borderRadius: "var(--radius-sm)",
-  background: "var(--surface)",
-  color: "var(--text-accent)",
-  fontSize: "0.85rem",
-  fontWeight: 700,
-  whiteSpace: "nowrap"
+  borderRadius: "var(--radius-xs)",
+  fontSize: "11px",
+  fontWeight: 600,
+  lineHeight: 1,
+  whiteSpace: "nowrap",
 };
 
-const summaryCardStyle = {
-  padding: "14px",
-  minHeight: "82px",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "space-between",
-  gap: "8px",
-  background: "var(--surface)",
-  borderRadius: "var(--radius-md)"
-};
-
-const summaryLabelStyle = {
-  color: "var(--text-2)",
-  fontSize: "0.78rem",
-  fontWeight: 700,
-  textTransform: "uppercase",
-  letterSpacing: "0.04em"
-};
-
-const summaryValueStyle = {
-  color: "var(--text-accent)",
-  fontSize: "1.5rem",
-  fontWeight: 800,
-  lineHeight: 1
-};
-
-const quickActionsListStyle = {
-  margin: 0,
-  padding: 0,
-  listStyle: "none",
-  display: "flex",
-  flexDirection: "column",
-  gap: "8px"
-};
-
-const quickActionLinkStyle = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: "12px",
-  padding: "0 14px",
-  borderRadius: "var(--radius-sm)",
-  background: "var(--surface)",
-  color: "var(--text-1)",
-  textDecoration: "none",
-  fontWeight: 700,
-  minHeight: "44px",
-  lineHeight: "20px"
-};
-
-const jobRowStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) auto",
-  gap: "12px",
-  alignItems: "center",
-  padding: "12px",
-  borderRadius: "var(--radius-sm)",
-  background: "var(--surface)",
-  borderBottom: "var(--separating-line)"
-};
+const quickActions = [
+  { key: "appointments", label: "Appointments", href: "/appointments" },
+  { key: "my-jobs", label: "My Mobile Jobs", href: "/tech" },
+  { key: "request-parts", label: "Request Parts", href: "/consumables-request" },
+  { key: "new-mobile-job", label: "New Mobile Job", href: "/new-job" },
+];
 
 const getLocalDateKey = (date = new Date()) => {
   const year = date.getFullYear();
@@ -172,217 +100,443 @@ const getLocalDateKey = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-function formatWindow(startIso, endIso) {
+const formatWindow = (startIso, endIso) => {
   if (!startIso) return "Unscheduled";
+
   const start = new Date(startIso);
-  const fmt = (d) => d.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
-  if (!endIso) return fmt(start);
-  const end = new Date(endIso);
-  return `${fmt(start)} → ${end.toLocaleString([], { hour: "2-digit", minute: "2-digit" })}`;
-}
+  const startLabel = start.toLocaleString("en-GB", {
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  if (!endIso) return startLabel;
+
+  return `${startLabel} – ${new Date(endIso).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
+};
+
+const formatVisitStatus = (job) => {
+  const outcomeLabels = {
+    completed_onsite: "Completed on-site",
+    follow_up_required: "Follow-up required",
+    redirected_to_workshop: "Sent to workshop",
+    unable_to_complete: "Unable to complete",
+  };
+
+  return outcomeLabels[job?.mobile_outcome] || job?.status || "Scheduled";
+};
+
+const getStatusBadgeStyle = (job) => {
+  const status = formatVisitStatus(job).toLowerCase();
+
+  if (status.includes("complete") && !status.includes("unable")) {
+    return {
+      ...statusBadgeBaseStyle,
+      backgroundColor: "var(--success-surface)",
+      color: "var(--success-text)",
+    };
+  }
+
+  if (status.includes("unable") || status.includes("workshop")) {
+    return {
+      ...statusBadgeBaseStyle,
+      backgroundColor: "var(--danger-surface)",
+      color: "var(--danger-text)",
+    };
+  }
+
+  return {
+    ...statusBadgeBaseStyle,
+    backgroundColor: "var(--warning-surface)",
+    color: "var(--warning-text)",
+  };
+};
 
 function MobileDashboardInner() {
+  const router = useRouter();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const loadJobs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/mobile/jobs");
+      if (!response.ok) throw new Error(`Failed to load mobile jobs (${response.status})`);
+      const body = await response.json();
+      setJobs(Array.isArray(body.jobs) ? body.jobs : []);
+    } catch (loadError) {
+      setError(loadError.message || "Mobile jobs could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
-        const res = await fetch("/api/mobile/jobs");
-        if (!res.ok) throw new Error(`Failed: ${res.status}`);
-        const body = await res.json();
-        if (!cancelled) setJobs(body.jobs || []);
-      } catch (err) {
-        if (!cancelled) setError(err.message);
+        const response = await fetch("/api/mobile/jobs");
+        if (!response.ok) throw new Error(`Failed to load mobile jobs (${response.status})`);
+        const body = await response.json();
+        if (!cancelled) setJobs(Array.isArray(body.jobs) ? body.jobs : []);
+      } catch (loadError) {
+        if (!cancelled) setError(loadError.message || "Mobile jobs could not be loaded.");
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
-    return () => {cancelled = true;};
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const today = useMemo(() => {
     const todayIso = getLocalDateKey();
-    return jobs.filter((j) => (j.appointment_window_start || "").slice(0, 10) === todayIso);
+    return jobs.filter((job) =>
+      (job.appointment_window_start || "").slice(0, 10) === todayIso
+    );
   }, [jobs]);
 
   const upcoming = useMemo(() => {
     const now = new Date();
-    return jobs.filter((j) => {
-      if (!j.appointment_window_start) return false;
-      return new Date(j.appointment_window_start) > now && !today.includes(j);
+    return jobs.filter((job) => {
+      if (!job.appointment_window_start) return false;
+      return new Date(job.appointment_window_start) > now && !today.includes(job);
     });
   }, [jobs, today]);
 
-  return (
-    <DevLayoutSection
-      sectionKey="mobile-dashboard-page"
-      parentKey="app-layout-page-card"
-      sectionType="page-shell"
-      shell
-      backgroundToken="surface"
-      style={pageStyle}>
-      {error &&
-      <LayerTheme
+  const followUps = useMemo(
+    () => jobs.filter((job) => job.mobile_outcome === "follow_up_required"),
+    [jobs]
+  );
+
+  const visibleJobs = useMemo(() => {
+    const priorityJobs = [...today, ...upcoming, ...jobs];
+    const uniqueJobs = Array.from(new Map(priorityJobs.map((job) => [job.id, job])).values());
+    return uniqueJobs.slice(0, 3);
+  }, [jobs, today, upcoming]);
+
+  const nextVisit = useMemo(() => {
+    const now = new Date();
+    return (
+      today.find((job) => {
+        const visitEnd = job.appointment_window_end || job.appointment_window_start;
+        return visitEnd && new Date(visitEnd) >= now;
+      }) || upcoming[0] || today[0] || null
+    );
+  }, [today, upcoming]);
+
+  const openJob = useCallback(
+    (job) => router.push(`/tech/${encodeURIComponent(job.job_number)}`),
+    [router]
+  );
+
+  if (loading) return <PageSkeleton />;
+
+  if (error) {
+    return (
+      <SectionShell
         sectionKey="mobile-dashboard-error"
-        parentKey="mobile-dashboard-page"
-        sectionType="banner"
-        padding="var(--section-card-padding)"
-        style={{ color: "var(--danger-base)" }}>
-        {error}
-      </LayerTheme>
-      }
+        parentKey="app-layout-page-card"
+        style={centeredStateStyle}
+      >
+        <div style={{ display: "grid", gap: "12px", justifyItems: "center" }}>
+          <h2 style={{ ...sectionHeadingStyle, color: "var(--danger-text)" }}>
+            Mobile jobs could not be loaded
+          </h2>
+          <p style={detailLabelStyle}>{error}</p>
+          <button type="button" className="app-btn app-btn--primary" onClick={loadJobs}>
+            Try Again
+          </button>
+        </div>
+      </SectionShell>
+    );
+  }
 
-      <LayerTheme
-        as="section"
-        sectionKey="mobile-dashboard-summary"
-        parentKey="mobile-dashboard-page"
-        sectionType="content-card"
-        padding="var(--section-card-padding)">
-        <DevLayoutSection
-          sectionKey="mobile-dashboard-summary-grid"
-          parentKey="mobile-dashboard-summary"
-          sectionType="grid"
-          style={summaryGridStyle}>
-          <SummaryCard label="Today" value={loading ? "-" : today.length} />
-          <SummaryCard label="Upcoming" value={loading ? "-" : upcoming.length} />
-          <SummaryCard label="Total mobile jobs" value={loading ? "-" : jobs.length} />
-        </DevLayoutSection>
-      </LayerTheme>
-
+  return (
+    <>
       <DevLayoutSection
-        sectionKey="mobile-dashboard-grid"
-        parentKey="mobile-dashboard-page"
-        sectionType="grid"
-        style={contentGridStyle}>
+        sectionKey="mobile-dashboard-page"
+        parentKey="app-layout-page-card"
+        sectionType="page-shell"
+        shell
+        backgroundToken="surface"
+        className="app-layout-page-shell"
+        style={pageShellStyle}
+      >
         <DevLayoutSection
-          sectionKey="mobile-dashboard-workload"
-          parentKey="mobile-dashboard-grid"
-          sectionType="grid"
-          style={stackStyle}>
-          <LayerTheme
-            as="section"
-            sectionKey="mobile-dashboard-today"
-            parentKey="mobile-dashboard-workload"
-            sectionType="content-card"
-            padding="var(--section-card-padding)">
-            <div style={sectionHeaderStyle}>
-              <h2 style={sectionHeadingStyle}>Today</h2>
-              <span style={countBadgeStyle}>{today.length} visit{today.length === 1 ? "" : "s"}</span>
-            </div>
-            {loading ?
-            <MobileJobRowsSkeleton count={2} /> :
-            today.length === 0 ?
-            <p style={sectionEmptyStyle}>No mobile visits scheduled today.</p> :
-
-            <div style={stackStyle}>
-              {today.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-today" />)}
-            </div>
-            }
-          </LayerTheme>
-
-          <LayerTheme
-            as="section"
-            sectionKey="mobile-dashboard-upcoming"
-            parentKey="mobile-dashboard-workload"
-            sectionType="content-card"
-            padding="var(--section-card-padding)">
-            <div style={sectionHeaderStyle}>
-              <h2 style={sectionHeadingStyle}>Upcoming</h2>
-              <span style={countBadgeStyle}>{upcoming.length} job{upcoming.length === 1 ? "" : "s"}</span>
-            </div>
-            {loading ?
-            <MobileJobRowsSkeleton count={3} /> :
-            upcoming.length === 0 ?
-            <p style={sectionEmptyStyle}>Nothing upcoming.</p> :
-
-            <div style={stackStyle}>
-              {upcoming.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-upcoming" />)}
-            </div>
-            }
-          </LayerTheme>
+          sectionKey="mobile-dashboard-stats-grid"
+          parentKey="mobile-dashboard-page"
+          sectionType="section-shell"
+          shell
+          style={statsGridStyle}
+        >
+          <MobileStatCard label="Visits Today" value={today.length} sectionKey="today" />
+          <MobileStatCard label="Upcoming Visits" value={upcoming.length} sectionKey="upcoming" />
+          <MobileStatCard label="Follow-ups" value={followUps.length} sectionKey="follow-ups" />
+          <MobileStatCard label="Mobile Jobs" value={jobs.length} sectionKey="total" />
         </DevLayoutSection>
 
-        <LayerTheme
-          as="section"
-          sectionKey="mobile-dashboard-quick-actions"
-          parentKey="mobile-dashboard-grid"
-          sectionType="content-card"
-          padding="var(--section-card-padding)">
-          <div style={sectionHeaderStyle}>
-            <h2 style={sectionHeadingStyle}>Quick actions</h2>
-          </div>
-          <ul style={quickActionsListStyle}>
-            <li><Link href="/appointments" style={quickActionLinkStyle}><span>Appointments</span><span>Open</span></Link></li>
-            <li><Link href="/tech" style={quickActionLinkStyle}><span>My jobs</span><span>Open</span></Link></li>
-            <li><Link href="/consumables-request" style={quickActionLinkStyle}><span>Request parts</span><span>Open</span></Link></li>
-            <li><Link href="/new-job" style={quickActionLinkStyle}><span>New mobile job</span><span>Open</span></Link></li>
-          </ul>
-        </LayerTheme>
+        {nextVisit && (
+          <SectionShell
+            sectionKey="mobile-dashboard-next-visit"
+            parentKey="mobile-dashboard-page"
+            backgroundToken="page-card-alt"
+            style={{
+              ...sectionSurfaceStyle,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
+              alignItems: "center",
+              gap: "16px",
+            }}
+          >
+            <div style={{ display: "grid", gap: "10px", minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <h2 style={sectionHeadingStyle}>Next Mobile Visit</h2>
+                <ServiceModeBadge mode="mobile" />
+              </div>
+              <div className="mobile-dashboard-next-visit-details">
+                <p className="mobile-dashboard-job-number">{nextVisit.job_number}</p>
+                <p style={detailLabelStyle}>
+                  <strong>Vehicle:</strong> {nextVisit.vehicle_reg || "No registration"} · {nextVisit.vehicle_make_model || "Vehicle details missing"}
+                </p>
+                <p style={detailLabelStyle}>
+                  <strong>When:</strong> {formatWindow(nextVisit.appointment_window_start, nextVisit.appointment_window_end)}
+                </p>
+                <p style={detailLabelStyle}>
+                  <strong>Location:</strong> {[nextVisit.service_address, nextVisit.service_postcode].filter(Boolean).join(", ") || "Address not added"}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="app-btn app-btn--primary mobile-dashboard-primary-button"
+              onClick={() => openJob(nextVisit)}
+              onMouseEnter={() => prefetchJob(nextVisit.job_number)}
+            >
+              Open Visit
+            </button>
+          </SectionShell>
+        )}
+
+        <SectionShell
+          sectionKey="mobile-dashboard-assigned-visits"
+          parentKey="mobile-dashboard-page"
+          backgroundToken="page-card-alt"
+          style={sectionSurfaceStyle}
+        >
+          <DevLayoutSection
+            sectionKey="mobile-dashboard-assigned-visits-header"
+            parentKey="mobile-dashboard-assigned-visits"
+            sectionType="toolbar"
+            className="app-layout-header-row"
+          >
+            <h2 style={sectionHeadingStyle}>My Assigned Mobile Visits</h2>
+          </DevLayoutSection>
+
+          {visibleJobs.length === 0 ? (
+            <DevLayoutSection
+              sectionKey="mobile-dashboard-assigned-visits-empty"
+              parentKey="mobile-dashboard-assigned-visits"
+              sectionType="content-card"
+              className="app-layout-card"
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                minHeight: "140px",
+              }}
+            >
+              <p style={detailLabelStyle}>No mobile visits are currently assigned.</p>
+            </DevLayoutSection>
+          ) : (
+            <DevLayoutSection
+              sectionKey="mobile-dashboard-assigned-visits-rows"
+              parentKey="mobile-dashboard-assigned-visits"
+              sectionType="data-table-shell"
+              className="app-table-shell-scroll"
+            >
+              <table
+                className="app-data-table app-table-shell app-table-shell--with-headings mobile-dashboard-visits-table"
+                data-dev-section="1"
+                data-dev-section-key="mobile-dashboard-visits-table"
+                data-dev-section-type="data-table"
+                data-dev-section-parent="mobile-dashboard-assigned-visits-rows"
+              >
+                <thead>
+                  <tr>
+                    <th>Job</th>
+                    <th>Vehicle</th>
+                    <th>Visit window</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th aria-label="Open visit" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleJobs.map((job, index) => (
+                    <tr key={job.id || job.job_number || index}>
+                      <td className="mobile-dashboard-table-job">{job.job_number}</td>
+                      <td>{job.vehicle_reg || "No registration"} · {job.vehicle_make_model || "Vehicle details missing"}</td>
+                      <td>{formatWindow(job.appointment_window_start, job.appointment_window_end)}</td>
+                      <td>{[job.service_address, job.service_postcode].filter(Boolean).join(", ") || "Address not added"}</td>
+                      <td>
+                        <span className="app-table-action-btn" style={getStatusBadgeStyle(job)}>
+                          {formatVisitStatus(job)}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="app-btn app-btn--secondary app-btn--sm"
+                          onClick={() => openJob(job)}
+                          onMouseEnter={() => prefetchJob(job.job_number)}
+                          aria-label={`Open mobile visit ${job.job_number}`}
+                        >
+                          Open
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DevLayoutSection>
+          )}
+        </SectionShell>
+
+        <SectionShell
+          sectionKey="mobile-dashboard-actions-card"
+          parentKey="mobile-dashboard-page"
+          backgroundToken="page-card-alt"
+          style={sectionSurfaceStyle}
+        >
+          <DevLayoutSection
+            sectionKey="mobile-dashboard-actions"
+            parentKey="mobile-dashboard-actions-card"
+            sectionType="toolbar"
+            className="app-layout-toolbar-row"
+            style={actionGridStyle}
+          >
+            {quickActions.map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                className="app-btn app-btn--primary mobile-dashboard-action-button"
+                onClick={() => router.push(action.href)}
+              >
+                {action.label}
+              </button>
+            ))}
+          </DevLayoutSection>
+        </SectionShell>
       </DevLayoutSection>
-    </DevLayoutSection>);
 
+      <style jsx>{`
+        .mobile-dashboard-next-visit-details {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+          align-items: center;
+          gap: 14px;
+          width: 100%;
+        }
+
+        .mobile-dashboard-job-number,
+        .mobile-dashboard-table-job {
+          color: var(--text-accent);
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .mobile-dashboard-job-number {
+          margin: 0;
+          font-size: 24px;
+        }
+
+        .mobile-dashboard-table-job {
+          white-space: nowrap;
+        }
+
+        .mobile-dashboard-primary-button {
+          width: 100%;
+        }
+
+        .mobile-dashboard-action-button {
+          width: 100%;
+          min-height: 88px;
+          text-align: center;
+          transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .mobile-dashboard-action-button:hover,
+        .mobile-dashboard-action-button:focus-visible {
+          transform: translateY(-2px);
+          z-index: var(--hover-surface-z, 80);
+        }
+
+        .mobile-dashboard-action-button:active {
+          transform: translateY(1px);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mobile-dashboard-action-button {
+            transition: none;
+          }
+
+          .mobile-dashboard-action-button:hover,
+          .mobile-dashboard-action-button:focus-visible,
+          .mobile-dashboard-action-button:active {
+            transform: none;
+          }
+        }
+      `}</style>
+    </>
+  );
 }
 
-function SummaryCard({ label, value }) {
+function MobileStatCard({ label, value, sectionKey }) {
   return (
-    <DevLayoutSection
-      sectionKey={`mobile-dashboard-summary-${String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-      parentKey="mobile-dashboard-summary-grid"
-      sectionType="content-card"
-      style={summaryCardStyle}>
-      <span style={summaryLabelStyle}>{label}</span>
-      <strong style={summaryValueStyle}>{value}</strong>
-    </DevLayoutSection>);
-
-}
-
-function JobRow({ job, parentKey }) {
-  return (
-    <DevLayoutSection
-      sectionKey={`mobile-dashboard-job-row-${job.id}`}
-      parentKey={parentKey}
-      sectionType="list-row"
-      style={jobRowStyle}>
-      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-          <strong style={{ color: "var(--text-accent)" }}>{job.job_number}</strong>
-          <ServiceModeBadge mode="mobile" />
-        </div>
-        <div style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
-          {job.vehicle_reg} · {job.vehicle_make_model}
-        </div>
-        <div style={{ fontSize: "0.85rem", color: "var(--text-2)", overflowWrap: "anywhere" }}>
-          {job.service_address} {job.service_postcode}
-        </div>
-        <div style={{ fontSize: "0.85rem", color: "var(--text-2)" }}>
-          {formatWindow(job.appointment_window_start, job.appointment_window_end)}
-        </div>
-      </div>
-      <Link
-        href={`/tech/${encodeURIComponent(job.job_number)}`}
+    <StatCard
+      sectionKey={`mobile-dashboard-stat-${sectionKey}`}
+      parentKey="mobile-dashboard-stats-grid"
+      style={{ boxShadow: "none" }}
+    >
+      <div
         style={{
-          fontWeight: 600,
+          fontSize: "28px",
+          fontWeight: 700,
           color: "var(--text-accent)",
-          textDecoration: "none",
-          padding: "10px 14px",
-          minHeight: "44px",
-          display: "inline-flex",
-          alignItems: "center",
-          whiteSpace: "nowrap"
-        }}>
-        Open
-      </Link>
-    </DevLayoutSection>);
-
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {value}
+      </div>
+      <div style={{ fontSize: "14px", color: "var(--text-1)", fontWeight: 600 }}>
+        {label}
+      </div>
+    </StatCard>
+  );
 }
 
 export default function MobileDashboardPage() {
-  return <MobileDashboardPageUi view="section1" MobileDashboardInner={MobileDashboardInner} ProtectedRoute={ProtectedRoute} />;
-
-
-
-
+  return (
+    <MobileDashboardPageUi
+      view="section1"
+      MobileDashboardInner={MobileDashboardInner}
+      ProtectedRoute={ProtectedRoute}
+      allowedRoles={MOBILE_DASHBOARD_ROLES}
+    />
+  );
 }

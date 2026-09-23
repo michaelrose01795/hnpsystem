@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import PopupModal from "@/components/popups/popupStyleApi";
 import AccountForm from "@/components/accounts/AccountForm";
 import { DEFAULT_ACCOUNT_FORM_VALUES } from "@/config/accounts";
+import { logFailure } from "@/lib/utils/logFailure";
 
 export default function AccountUpsertModal({ isOpen, mode, accountId, onClose, onSaved }) {
   const router = useRouter();
@@ -45,7 +46,7 @@ export default function AccountUpsertModal({ isOpen, mode, accountId, onClose, o
         setAccount(payload.data || DEFAULT_ACCOUNT_FORM_VALUES);
       } catch (error) {
         if (error.name === "AbortError") return;
-        console.error("Failed to load account", error);
+        logFailure("Failed to load account", error);
         setMessage(error.message || "Unable to load account");
       } finally {
         setLoading(false);
@@ -76,7 +77,7 @@ export default function AccountUpsertModal({ isOpen, mode, accountId, onClose, o
       onClose?.();
       router.push(`/accounts/view/${savedAccount?.account_id || accountId || ""}`);
     } catch (error) {
-      console.error(isEditMode ? "Failed to update account" : "Failed to create account", error);
+      logFailure(isEditMode ? "Failed to update account" : "Failed to create account", error);
       setMessage(error.message || (isEditMode ? "Unable to update account" : "Unable to create account"));
     } finally {
       setSaving(false);

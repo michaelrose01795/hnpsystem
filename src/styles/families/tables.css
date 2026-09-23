@@ -13,6 +13,21 @@
  */
 
 /* -------------------------------------------------------------------------- */
+/* Layer alternation inside a table (2026-08 colour audit).
+   Table rows paint --row-background, which is --surface. So when a table sits
+   on a --theme section card, each ROW is a surface rung — and the controls in
+   that row have to alternate back to the accent fill, or an in-row action
+   button (which takes --control-bg) renders --surface on a --surface row and
+   disappears. Mirrors the nested-card rule in families/cards.css.
+   Harmless when the table sits directly on a page card: --secondary is
+   already what --control-bg resolves to there. */
+html.staff-scope .app-data-table tbody tr {
+  --primary-control-bg: var(--secondary);
+  --primary-control-bg-hover: var(--secondary-hover);
+  --primary-control-bg-active: var(--secondary-pressed);
+}
+
+/* -------------------------------------------------------------------------- */
 /* New variants */
 html.staff-scope .app-data-table--compact th,
 html.staff-scope .app-data-table--compact td {

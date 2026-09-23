@@ -8,6 +8,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import InvoiceDetailSection from "@/features/invoices/components/InvoiceDetailSection"; // shared invoice viewer
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import PartsOrderDetailUi from "@/components/page-ui/parts/create-order/parts-create-order-order-number-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 const containerStyle = {
   display: "flex",
   flexDirection: "column",
@@ -96,7 +97,7 @@ const formatOrderStatus = (value) => orderStatusLabels[value] || orderStatusLabe
 const statusChip = (label, tone = "info") => {
   const tones = {
     info: { background: "rgba(var(--info-rgb),0.15)", color: "var(--info-dark)" },
-    success: { background: "rgba(var(--success-rgb,34,139,34),0.2)", color: "var(--success, #297C3B)" },
+    success: { background: "rgba(var(--success-rgb,34,139,34),0.2)", color: "var(--success)" },
     warning: { background: "rgba(var(--warning-rgb),0.2)", color: "var(--danger-dark)" }
   };
   const colors = tones[tone] || tones.info;
@@ -146,7 +147,7 @@ export default function PartsOrderDetail() {
         if (fetchError) throw fetchError;
         setOrder(data || null);
       } catch (fetchErr) {
-        console.error("Failed to load parts order:", fetchErr);
+        logFailure("Failed to load parts order:", fetchErr);
         setError(fetchErr.message || "Unable to load parts order.");
       } finally {
         setLoading(false);
@@ -195,7 +196,7 @@ export default function PartsOrderDetail() {
         setOrder(nextOrder);
         return nextOrder;
       } catch (updateErr) {
-        console.error("Failed to update parts order:", updateErr);
+        logFailure("Failed to update parts order:", updateErr);
         setStatusError(updateErr.message || "Unable to update status.");
         return null;
       } finally {
@@ -507,7 +508,7 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
           Current status: {formatOrderStatus(order?.status)}
         </p>
         {completionReady ?
-        <p style={{ margin: 0, color: "var(--success, #297C3B)" }}>
+        <p style={{ margin: 0, color: "var(--success)" }}>
             Delivered and paid — order is marked complete and archived automatically.
           </p> :
 

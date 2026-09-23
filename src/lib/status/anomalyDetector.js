@@ -123,6 +123,9 @@ function checkMissingActor(snapshot, timeline) {
   timeline.forEach((entry) => {
     const importance = entry.importance || 0; // Get importance score if available
     if (importance < 4) return; // Only check major+ events
+    const isExpectedSystemLifecycleEvent =
+      entry.eventType === "job_created" || entry.status === "booked";
+    if (isExpectedSystemLifecycleEvent) return; // Legacy creation/booking rows may predate actor capture
     const hasActor = entry.userName && entry.userName !== "System"; // Check for real actor
     if (hasActor) return; // Actor is present
     const label = entry.displayTitle || entry.label || entry.status || "event"; // Get display label

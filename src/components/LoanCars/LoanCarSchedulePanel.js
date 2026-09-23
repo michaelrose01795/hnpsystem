@@ -6,17 +6,12 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import StatusMessage from "@/components/ui/StatusMessage";
+import PopupModal from "@/components/popups/popupStyleApi";
 import FuelGauge, { fuelLevelDisplayLabel } from "@/components/LoanCars/FuelGauge";
-import {
-  deleteLoanCar,
-  deleteLoanCarBooking,
-  getLoanCarFuelHistory,
-  getLoanCarScheduleBookings,
-  getLoanCars,
-  saveLoanCar,
-  saveLoanCarBooking,
-  searchLoanCarBookingTargets,
-} from "@/lib/database/tracking";
+// Loaded on demand - @/lib/database/tracking resolves the Supabase browser
+// client. Every function below runs from a panel effect or a save handler,
+// never during render.
+const loadTrackingDb = () => import("@/lib/database/tracking");
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const LOOK_BACK_DAYS = 14;
@@ -821,7 +816,7 @@ function LoanCarDetailsModal({ car, bookings = [], onClose, onSave, onDelete }) 
     }
     let active = true;
     setHistoryLoading(true);
-    getLoanCarFuelHistory(loanCarId).then((rows) => {
+    loadTrackingDb().then((m) => m.getLoanCarFuelHistory(loanCarId)).then((rows) => {
       if (!active) return;
       setFuelHistory(rows);
       setHistoryLoading(false);
@@ -874,37 +869,29 @@ function LoanCarDetailsModal({ car, bookings = [], onClose, onSave, onDelete }) 
   };
 
   return (
-    <div
-      className="popup-backdrop"
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: LOAN_CAR_MODAL_Z_INDEX,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "16px",
-        backgroundColor: "rgba(0, 0, 0, 0.48)",
+    <PopupModal
+      isOpen
+      onClose={saving ? undefined : onClose}
+      closeOnBackdrop={!saving}
+      closeOnEscape={!saving}
+      ariaLabel={`${car.reg || "Loan car"} details`}
+      cardStyle={{
+        ...detailsModalStyle,
+        padding: "var(--section-card-padding)",
       }}>
-      <LayerSurface
-        as="form"
+      <form
         onSubmit={handleSave}
-        sectionKey="loan-car-details-popup"
-        sectionType="modal"
-        radius="var(--radius-sm)"
-        padding="var(--section-card-padding)"
-        gap="var(--layout-card-gap)"
-        style={detailsModalStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
+        style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
+        <header className="app-popup-compact-header">
           <div>
             <h2 style={detailsTitleStyle}>{car.reg || "Loan car"}</h2>
           </div>
-          <Button type="button" variant="ghost" size="sm" pill onClick={onClose} aria-label="Close loan car details">
-            X
-          </Button>
-        </div>
+          <div className="app-popup-compact-header__actions">
+            <Button type="submit" variant="primary" busy={saving} disabled={!form.reg.trim()}>Save changes</Button>
+            <Button type="button" variant="danger" onClick={handleDelete} disabled={saving}>Remove loan car</Button>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Close</Button>
+          </div>
+        </header>
 
         <div style={fieldGridStyle}>
           <Field label="Loan car reg" value={form.reg} onChange={(value) => update("reg", value.toUpperCase())} />
@@ -977,19 +964,8 @@ function LoanCarDetailsModal({ car, bookings = [], onClose, onSave, onDelete }) 
 
         {message ? <p style={{ margin: 0, color: "var(--danger)", fontSize: "13px" }}>{message}</p> : null}
 
-        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-          <Button type="button" variant="danger" onClick={handleDelete} disabled={saving}>
-            Remove loan car
-          </Button>
-          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" disabled={saving || !form.reg.trim()}>
-            {saving ? "Saving..." : "Save changes"}
-          </Button>
-        </div>
-      </LayerSurface>
-    </div>
+      </form>
+    </PopupModal>
   );
 }
 
@@ -1137,7 +1113,7 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
     }
     setBookingLoading(true);
     showBookingMessage("");
-    const rows = await searchLoanCarBookingTargets(term);
+    const rows = await (await loadTrackingDb()).searchLoanCarBookingTargets(term);
     setBookingMatches(rows);
     setBookingLoading(false);
     if (rows.length === 0) {
@@ -1370,7 +1346,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const runSearch = async () => {
-    const rows = await searchLoanCarBookingTargets(searchTerm);
+    const rows = await (await loadTrackingDb()).searchLoanCarBookingTargets(searchTerm);
     setMatches(rows);
   };
 
@@ -1404,7 +1380,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
     }
     setSaving(true);
     setMessage("");
-    const result = await saveLoanCarBooking(form);
+    const result = await (await loadTrackingDb()).saveLoanCarBooking(form);
     setSaving(false);
     if (result.success) {
       onSaved();
@@ -1417,7 +1393,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
   const handleDelete = async () => {
     if (!form.bookingId && !form.id) return;
     setSaving(true);
-    const result = await deleteLoanCarBooking(form.bookingId || form.id);
+    const result = await (await loadTrackingDb()).deleteLoanCarBooking(form.bookingId || form.id);
     setSaving(false);
     if (result.success) {
       onSaved();
@@ -1426,34 +1402,21 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
   };
 
   return (
-    <div
-      className="popup-backdrop"
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: LOAN_CAR_MODAL_Z_INDEX,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "16px",
-        backgroundColor: "rgba(0, 0, 0, 0.48)",
+    <PopupModal
+      isOpen
+      onClose={saving ? undefined : onClose}
+      closeOnBackdrop={!saving}
+      closeOnEscape={!saving}
+      ariaLabel={`${selected.car?.reg || "Loan car"} booking`}
+      cardStyle={{
+        width: "min(100%, 1180px)",
+        maxHeight: "calc(100dvh - 32px)",
+        padding: "var(--section-card-padding)",
       }}>
-      <LayerSurface
-        as="form"
-        className="popup-card"
+      <form
         onSubmit={handleSave}
-        sectionKey="loan-car-booking-details-popup"
-        sectionType="modal"
-        radius="var(--radius-sm)"
-        padding="var(--section-card-padding)"
-        gap="var(--layout-card-gap)"
-        style={{
-          width: "min(1180px, 100%)",
-          maxHeight: "calc(100dvh - 32px)",
-        }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
+        style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
+        <header className="app-popup-compact-header">
           <div>
             <h2 style={{ margin: 0, color: "var(--text-1)", fontSize: "20px" }}>
               {selected.car?.reg || "Loan car"} booking
@@ -1462,10 +1425,12 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
               {selected.day?.dateLabel || form.startDate}
             </p>
           </div>
-          <Button type="button" variant="ghost" size="sm" pill onClick={onClose} aria-label="Close loan car booking">
-            X
-          </Button>
-        </div>
+          <div className="app-popup-compact-header__actions">
+            <Button type="submit" variant="primary" busy={saving} disabled={!form.loanCarId || !form.startDate || !form.endDate}>Save booking</Button>
+            {form.bookingId || form.id ? <Button type="button" variant="danger" onClick={handleDelete} disabled={saving}>Delete booking</Button> : null}
+            <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Close</Button>
+          </div>
+        </header>
 
         <LayerTheme
           as="section"
@@ -1548,21 +1513,8 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
 
         <LoanCarStatusToast message={message} tone="danger" />
 
-        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-          {form.bookingId || form.id ? (
-            <Button type="button" variant="danger" onClick={handleDelete} disabled={saving}>
-              Delete booking
-            </Button>
-          ) : null}
-          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" disabled={saving || !form.loanCarId || !form.startDate || !form.endDate}>
-            {saving ? "Saving..." : "Save booking"}
-          </Button>
-        </div>
-      </LayerSurface>
-    </div>
+      </form>
+    </PopupModal>
   );
 }
 
@@ -1655,8 +1607,8 @@ export default function LoanCarSchedulePanel({
     const firstDay = dateRows[0]?.key;
     const lastDay = dateRows[dateRows.length - 1]?.key;
     const [nextCars, nextBookings] = await Promise.all([
-      getLoanCars(),
-      getLoanCarScheduleBookings({ startDate: firstDay, endDate: lastDay }),
+      loadTrackingDb().then((m) => m.getLoanCars()),
+      loadTrackingDb().then((m) => m.getLoanCarScheduleBookings({ startDate: firstDay, endDate: lastDay })),
     ]);
     setCars(nextCars);
     setBookings(nextBookings);
@@ -1725,7 +1677,7 @@ export default function LoanCarSchedulePanel({
 
   const handleSaveCar = async (car) => {
     const isNewCar = !(car.loanCarId || car.id);
-    const result = await saveLoanCar(car);
+    const result = await (await loadTrackingDb()).saveLoanCar(car);
     if (result.success) {
       await loadData();
       if (isNewCar && scrollRef.current) {
@@ -1736,13 +1688,13 @@ export default function LoanCarSchedulePanel({
   };
 
   const handleDeleteCar = async (loanCarId) => {
-    const result = await deleteLoanCar(loanCarId);
+    const result = await (await loadTrackingDb()).deleteLoanCar(loanCarId);
     if (result.success) loadData();
     return result;
   };
 
   const handleSaveBooking = async (booking) => {
-    const result = await saveLoanCarBooking(booking);
+    const result = await (await loadTrackingDb()).saveLoanCarBooking(booking);
     if (result.success) {
       await loadData();
     }

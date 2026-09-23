@@ -133,7 +133,7 @@ const SUGGESTION_RULES = [
     when: (ctx) => hasRole(ctx, "hr manager", "admin manager"),
     build: () => ({
       label: "Review leave requests",
-      href: "/hr/leave",
+      href: "/hr/manager?tab=leave",
       subtitle: "HR",
       keywords: ["leave", "holiday", "hr"],
     }),

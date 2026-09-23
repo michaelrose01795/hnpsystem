@@ -8,7 +8,13 @@ import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+import {
+  DELIVERY_STATUS,
+  deliveryStatusLabel,
+  normaliseDeliveryStatus
+} from "@/features/deliveries/deliveryStatus";
 import PartsDeliveryPlannerPageUi from "@/components/page-ui/parts/parts-delivery-planner-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 
 const sectionStyle = {
   gap: "18px"
@@ -87,11 +93,27 @@ const collectionListScrollStyle = {
   paddingRight: "4px"
 };
 
-const statusChipStyle = (variant = "scheduled") => {
+// The chip keeps its three tones; the workflow states added for the delivery
+// diary are folded onto them (in-progress on the van reads as en route, a
+// closed stop reads as completed) so an unmapped value can never fall through
+// to "scheduled" and misreport a stop that is already done.
+const CHIP_VARIANT_BY_STATUS = {
+  [DELIVERY_STATUS.PLANNED]: "scheduled",
+  [DELIVERY_STATUS.PICKING]: "scheduled",
+  [DELIVERY_STATUS.READY]: "scheduled",
+  [DELIVERY_STATUS.LOADED]: "en_route",
+  [DELIVERY_STATUS.OUT_FOR_DELIVERY]: "en_route",
+  [DELIVERY_STATUS.DELIVERED]: "completed",
+  [DELIVERY_STATUS.FAILED]: "completed",
+  [DELIVERY_STATUS.RETURNED]: "completed"
+};
+
+const statusChipStyle = (status = "scheduled") => {
+  const variant = CHIP_VARIANT_BY_STATUS[normaliseDeliveryStatus(status)] || "scheduled";
   const variants = {
     scheduled: { background: "rgba(var(--warning-rgb),0.18)", color: "var(--danger-dark)" },
     en_route: { background: "rgba(var(--info-rgb),0.2)", color: "var(--accent-purple)" },
-    completed: { background: "rgba(var(--success-rgb, 34,139,34),0.2)", color: "var(--success, #297C3B)" }
+    completed: { background: "rgba(var(--success-rgb, 34,139,34),0.2)", color: "var(--success)" }
   };
   return {
     padding: "4px 12px",
@@ -110,7 +132,7 @@ const paidPillStyle = (isPaid) => ({
   fontWeight: 600,
   fontSize: "0.75rem",
   background: isPaid ? "rgba(var(--success-rgb,34,139,34),0.18)" : "rgba(var(--warning-rgb),0.18)",
-  color: isPaid ? "var(--success, #297C3B)" : "var(--danger-dark)"
+  color: isPaid ? "var(--success)" : "var(--danger-dark)"
 });
 
 const modalOverlayStyle = {
@@ -210,7 +232,7 @@ const collectionLoadTokens = {
   full: {
     label: "At capacity",
     background: "rgba(var(--danger-rgb,220,38,38),0.12)",
-    color: "var(--danger, #C62828)"
+    color: "var(--danger)"
   }
 };
 
@@ -419,7 +441,7 @@ export default function PartsDeliveryPlannerPage() {
           setInvoiceResults(data || []);
         }
       } catch (searchErr) {
-        console.error("Invoice search failed:", searchErr);
+        logFailure("Invoice search failed:", searchErr);
         if (!cancelled) {
           setInvoiceResults([]);
         }
@@ -730,7 +752,7 @@ export default function PartsDeliveryPlannerPage() {
       await loadDeliveryJobs();
       closeJobModal();
     } catch (saveErr) {
-      console.error("Failed to save delivery job:", saveErr);
+      logFailure("Failed to save delivery job:", saveErr);
       setJobModalError(saveErr.message || "Unable to save delivery job");
     } finally {
       setJobModalSaving(false);
@@ -752,18 +774,19 @@ export default function PartsDeliveryPlannerPage() {
       await loadDeliveryJobs();
       closeJobModal();
     } catch (deleteErr) {
-      console.error("Failed to delete delivery job:", deleteErr);
+      logFailure("Failed to delete delivery job:", deleteErr);
       setJobModalError(deleteErr.message || "Unable to delete delivery job");
     } finally {
       setJobModalSaving(false);
     }
   };
 
-  const jobStatusLabel = (status) => {
-    if (status === "completed") return "Completed";
-    if (status === "en_route") return "En Route";
-    return "Scheduled";
-  };
+  // /deliveries moved the diary onto the full workflow (planned → picking →
+  // ready → loaded → out for delivery → delivered / failed / returned). The
+  // planner still creates rows as "scheduled" and does not run that workflow,
+  // but it must not label a delivered or failed stop "Scheduled" — so the label
+  // comes from the shared status module rather than a local three-way guess.
+  const jobStatusLabel = (status) => deliveryStatusLabel(status);
 
   const computeFuelCost = (run) => (Number(run.mileage) || 0) / KM_PER_LITRE * pricePerLitre;
   const priceLabel = fuelRate?.fuel_type ?
@@ -1549,7 +1572,7 @@ function DeliveryJobModal({
                   padding: "8px 14px",
                   cursor: "pointer",
                   background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.12)" : "var(--danger-surface)",
-                  color: job.is_paid ? "var(--success, #297C3B)" : "var(--primary-selected)",
+                  color: job.is_paid ? "var(--success)" : "var(--primary-selected)",
                   fontWeight: 600
                 }}>
                 
@@ -1759,7 +1782,7 @@ function DeliveryJobModal({
                 borderRadius: "var(--radius-sm)",
                 border: "none",
                 background: "var(--primary)",
-                color: "var(--surface)",
+                color: "var(--onAccentText)",
                 padding: "10px 18px",
                 fontWeight: 600,
                 cursor: "pointer",

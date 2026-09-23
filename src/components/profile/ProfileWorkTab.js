@@ -506,7 +506,7 @@ const modalLabelStyle = {
 const modalInputStyle = {
   padding: "10px 12px",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--input-ring)",
+  border: "1px solid var(--input-ring-color)",
   background: "var(--surface)",
   color: "var(--text-1)",
   fontSize: "0.9rem",
@@ -561,6 +561,7 @@ function createRecurringRuleLabel() {
 
 // Import shared recurring overtime utilities (cycle math, matching, grouping, summaries)
 import { groupRulesSmartly, getGroupKey, generateSmartSummary, getUpcomingEntries, detectOverlaps } from "@/lib/overtime/recurringUtils";
+import { logFailure } from "@/lib/utils/logFailure";
 
 function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null, initialMode = "single" }) {
   const [mode, setMode] = useState("single"); // "single" or "recurring"
@@ -1135,7 +1136,7 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
             flex: 1,
             padding: "var(--control-padding)",
             borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--input-ring)",
+            border: "1px solid var(--input-ring-color)",
             fontWeight: 500,
             height: "var(--control-height)",
             boxSizing: "border-box",
@@ -1226,7 +1227,7 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
               borderRadius: "var(--radius-sm)",
               border: "none",
               background: "transparent",
-              color: "var(--danger, #e53935)",
+              color: "var(--danger)",
               fontWeight: 600,
               cursor: "pointer",
               fontSize: "0.85rem",
@@ -1551,7 +1552,7 @@ export function ProfileWorkTab({
         if (error.name === "AbortError") return;
         if (!isMounted) return;
 
-        console.error("Failed to fetch user profile:", error);
+        logFailure("Failed to fetch user profile:", error);
         setUserProfileError(error);
         setUserProfileLoading(false);
       }
@@ -1753,7 +1754,7 @@ export function ProfileWorkTab({
       setProfileReloadKey((prev) => prev + 1);
       alert(`Leave request ${isEditMode ? "updated" : "submitted"} successfully.`);
     } catch (err) {
-      console.error("Leave request error:", err);
+      logFailure("Leave request error:", err);
       setLeaveSubmitError(err.message || `Failed to ${editingLeaveRequest?.id ? "update" : "submit"} leave request.`);
     } finally {
       setLeaveSubmitting(false);
@@ -1792,7 +1793,7 @@ export function ProfileWorkTab({
       setProfileReloadKey((prev) => prev + 1);
       alert("Leave request removed successfully.");
     } catch (error) {
-      console.error("Failed to remove leave request:", error);
+      logFailure("Failed to remove leave request:", error);
       alert(`Failed to remove leave request. ${error.message || ""}`);
     } finally {
       setLeaveRemoving(false);
@@ -2207,13 +2208,13 @@ export function ProfileWorkTab({
                     </div>
                     <div style={{ padding: "6px 8px", textAlign: "center" }}>
                       <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-1)" }}>Overtime</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger)" }}>
                         {aggregatedStats?.monthlyOvertimeHours?.toFixed(2) ?? "0.00"}h
                       </div>
                     </div>
                     <div style={{ padding: "6px 8px", textAlign: "center" }}>
                       <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-1)" }}>Weekend</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--info, #1e88e5)" }}>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--info)" }}>
                         {aggregatedStats?.monthlyWeekendHours?.toFixed(2) ?? "0.00"}h
                       </div>
                     </div>
@@ -2621,7 +2622,7 @@ export function ProfileWorkTab({
                 style={{
                   background: "var(--surface)",
                 }}
-                title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Attendance History</span>}
+                title={<span style={{ color: "var(--accent-purple)" }}>Attendance History</span>}
               >
                 {renderAttendanceBody({
                   records: normalRecords,
@@ -2640,7 +2641,7 @@ export function ProfileWorkTab({
                 style={{
                   background: "var(--surface)",
                 }}
-                title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Overtime History</span>}
+                title={<span style={{ color: "var(--accent-purple)" }}>Overtime History</span>}
                 action={
                   !shouldUseHrData && (
                     <Button

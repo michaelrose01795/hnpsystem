@@ -5,6 +5,8 @@
 //   { id, type, x, y, w, h, rotate?, radius?, label?, spaces? }
 // x/y/w/h are percentages of the map stage so the layout scales responsively.
 //
+
+import { logFailure } from "@/lib/utils/logFailure";
 // The default is intentionally blank. Once an item is added, removed, moved,
 // resized, rotated, or relabelled, TrackingMap saves the full item list here so
 // reloads keep the edited map.
@@ -99,7 +101,7 @@ export function loadTrackingMapLayout() {
     if (!Array.isArray(parsed?.items)) return getDefaultLayout();
     return sanitizeTrackingMapLayout(parsed.items);
   } catch (loadError) {
-    console.error("Failed to load saved site-map layout", loadError);
+    logFailure("Failed to load saved site-map layout", loadError);
     return getDefaultLayout();
   }
 }
@@ -117,7 +119,7 @@ export function saveTrackingMapLayout(items) {
     );
     return true;
   } catch (saveError) {
-    console.error("Failed to save site-map layout", saveError);
+    logFailure("Failed to save site-map layout", saveError);
     return false;
   }
 }

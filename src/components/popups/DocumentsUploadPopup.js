@@ -8,6 +8,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import LayerSurface from "@/components/ui/LayerSurface";
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const generateTempJobId = () => `temp-${Date.now()}`;
 
@@ -213,7 +214,7 @@ export default function DocumentsUploadPopup({
               onFileUploaded(responseData.file);
             }
           } catch (uploadError) {
-            console.error("Document upload failed", uploadError);
+            logFailure("Document upload failed", uploadError);
             updateProgressForFile(safeName, (item) => ({
               ...item,
               status: "failed",
@@ -401,7 +402,7 @@ export default function DocumentsUploadPopup({
                     key={`${file.name}-${idx}`}
                     style={{
                       padding: "8px",
-                      borderBottom: "1px solid var(--separating-line)"
+                      borderBottom: "1px solid var(--separating-line-color)"
                     }}
                   >
                     {renamingIndex === idx ? (

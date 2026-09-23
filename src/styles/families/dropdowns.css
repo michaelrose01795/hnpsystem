@@ -15,6 +15,16 @@
  */
 
 /* -------------------------------------------------------------------------- */
+/* Invalid state. Reproduces the ring that form pages were setting inline on
+   native <select> elements, so a migrated field signals an error exactly as it
+   did before. The compound selector is deliberate: .dropdown-api__control is
+   declared in staffglobal.css, which is imported AFTER this file, so the extra
+   class is what wins on specificity instead of source order or !important. */
+html.staff-scope .dropdown-api.is-error .dropdown-api__control {
+  box-shadow: 0 0 0 2px rgba(var(--danger-rgb), 0.12);
+}
+
+/* -------------------------------------------------------------------------- */
 /* Trace mode — loud magenta outlines on dropdowns and menus. */
 html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-select="1"])
   :where(

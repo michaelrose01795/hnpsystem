@@ -2,6 +2,8 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/notes.js
 import { supabase } from "@/lib/database/supabaseClient";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const toIntegerOrNull = (value) => {
   const numericValue = Number(value);
@@ -92,7 +94,7 @@ export const createJobNote = async (noteData) => {
     console.log("✅ Job note created:", data); // debug log
     return { success: true, data };
   } catch (error) {
-    console.error("❌ createJobNote error:", error);
+    logFailure("❌ createJobNote error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -176,7 +178,7 @@ export const getNotesByJob = async (jobId) => {
 
     return formattedNotes;
   } catch (error) {
-    console.error("❌ getNotesByJob error:", error);
+    logFailure("❌ getNotesByJob error:", error);
     return [];
   }
 };
@@ -217,7 +219,7 @@ export const getAllNotes = async (limit = 100, offset = 0) => {
     console.log("✅ All notes fetched:", data?.length || 0, "Total:", count); // debug log
     return { success: true, data: data || [], count: count || 0 };
   } catch (error) {
-    console.error("❌ getAllNotes error:", error);
+    logFailure("❌ getAllNotes error:", error);
     return { success: false, data: [], count: 0, error: { message: error.message } };
   }
 };
@@ -291,7 +293,7 @@ export const updateJobNote = async (noteId, updates, userId = null) => {
     console.log("✅ Note updated:", data); // debug log
     return { success: true, data };
   } catch (error) {
-    console.error("❌ updateJobNote error:", error);
+    logFailure("❌ updateJobNote error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -327,7 +329,7 @@ export const deleteJobNote = async (noteId, userId = null) => {
     console.log("✅ Note deleted successfully"); // debug log
     return { success: true };
   } catch (error) {
-    console.error("❌ deleteJobNote error:", error);
+    logFailure("❌ deleteJobNote error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -378,7 +380,7 @@ export const searchNotes = async (searchTerm, jobId = null) => {
     console.log("✅ Search results:", data?.length || 0, "notes"); // debug log
     return data || [];
   } catch (error) {
-    console.error("❌ searchNotes error:", error);
+    logFailure("❌ searchNotes error:", error);
     return [];
   }
 };
@@ -417,7 +419,7 @@ export const getRecentNotes = async (limit = 10) => {
     console.log("✅ Recent notes fetched:", data?.length || 0); // debug log
     return data || [];
   } catch (error) {
-    console.error("❌ getRecentNotes error:", error);
+    logFailure("❌ getRecentNotes error:", error);
     return [];
   }
 };
@@ -452,7 +454,7 @@ export const getNotesByUser = async (userId) => {
     console.log("✅ User notes found:", data?.length || 0); // debug log
     return data || [];
   } catch (error) {
-    console.error("❌ getNotesByUser error:", error);
+    logFailure("❌ getNotesByUser error:", error);
     return [];
   }
 };
@@ -468,6 +470,7 @@ export const getActiveStaff = async () => {
     const { data, error } = await supabase
       .from("users")
       .select("user_id, first_name, last_name, role")
+      .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
       .eq("is_active", true)
       .order("first_name", { ascending: true });
 
@@ -479,7 +482,7 @@ export const getActiveStaff = async () => {
       role: user.role || "",
     }));
   } catch (error) {
-    console.error("❌ getActiveStaff error:", error);
+    logFailure("❌ getActiveStaff error:", error);
     return [];
   }
 };
@@ -515,7 +518,7 @@ export const getNoteViewers = async (noteId) => {
       role: row.viewer?.role || "",
     }));
   } catch (error) {
-    console.error("❌ getNoteViewers error:", error);
+    logFailure("❌ getNoteViewers error:", error);
     return [];
   }
 };
@@ -536,7 +539,7 @@ export const addNoteViewer = async ({ noteId, userId, addedBy = null }) => {
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    console.error("❌ addNoteViewer error:", error);
+    logFailure("❌ addNoteViewer error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -556,7 +559,7 @@ export const removeNoteViewer = async (noteId, userId) => {
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    console.error("❌ removeNoteViewer error:", error);
+    logFailure("❌ removeNoteViewer error:", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -602,7 +605,7 @@ export const bulkCreateNotes = async (notes) => {
     console.log("✅ Bulk notes created:", data?.length || 0); // debug log
     return { success: true, data };
   } catch (error) {
-    console.error("❌ bulkCreateNotes error:", error);
+    logFailure("❌ bulkCreateNotes error:", error);
     return { success: false, error: { message: error.message } };
   }
 };

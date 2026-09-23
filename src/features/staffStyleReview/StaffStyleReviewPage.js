@@ -110,7 +110,7 @@ const SUMMARY_BADGES_STYLE = Object.freeze({ display: "flex", flexWrap: "wrap", 
 const SUMMARY_GRID_STYLE = Object.freeze({ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "var(--space-sm) var(--layout-card-gap)", margin: 0, minWidth: 0 });
 const FIELD_LABEL_STYLE = Object.freeze({ display: "block", fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" });
 const FIELD_VALUE_STYLE = Object.freeze({ margin: "var(--space-xs) 0 0", whiteSpace: "pre-wrap", minWidth: 0, overflowWrap: "anywhere" });
-const SOURCE_CODE_STYLE = Object.freeze({ display: "block", margin: "var(--space-xs) 0 0", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "var(--font-mono, monospace)", fontSize: "var(--text-body-sm)" });
+const SOURCE_CODE_STYLE = Object.freeze({ display: "block", margin: "var(--space-xs) 0 0", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "var(--font-family-mono)", fontSize: "var(--text-body-sm)" });
 
 // Audit metadata is only kept in the normal popup when it can actually change the decision.
 // Group, subsection, the boilerplate per-category recommendation and the parsed line references

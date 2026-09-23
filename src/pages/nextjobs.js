@@ -5,17 +5,16 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"; // Core React hooks
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext"; // Logged-in user context
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
-import {
-  assignTechnicianToJob,
-  getJobRequestCapacityProgress,
-  unassignTechnicianFromJob,
-  updateJobPosition } from
-"@/lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
-import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
+// Loaded on demand - both resolve the 213 KB Supabase browser client, and every
+// function below runs from a drag/assign handler or an async fetch callback,
+// never during render.
+const loadJobsDb = () => import("@/lib/database/jobs");
+const loadUsersDb = () => import("@/lib/database/users");
 import { normalizeDisplayName } from "@/utils/nameUtils";
-import { supabase } from "@/lib/database/supabaseClient";
+import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/realtimeClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
@@ -23,6 +22,7 @@ import { normalizeRequests, compareJobsForBoard, isNextJobsTechnicianPanelJob } 
 import { getJobRequests, getJobRequestsCount as canonicalRequestsCount, getVehicleRegistration } from "@/lib/canonical/fields";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
+import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
 // Engine helpers — single source of truth for "is this job still outstanding
 // because the customer authorised VHC work the tech hasn't finished yet".
 import {
@@ -40,6 +40,7 @@ import {
 // Layout constants ensure consistent panel sizing and scroll thresholds
 import NextJobsPageUi from "@/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui"; // Extracted presentation layer (loading / access / empty states).
 import WorkshopQueuePlanner from "@/components/Workshop/QueuePlanner/WorkshopQueuePlanner"; // One-off dispatch board that replaces the old Next Jobs table/list.
+import { logFailure } from "@/lib/utils/logFailure";
 const VISIBLE_JOBS_PER_PANEL = 5;const JOB_CARD_HEIGHT = 68; // px height per job card (including padding)
 const JOB_CARD_VERTICAL_GAP = 8; // px gap between cards
 const JOB_LIST_MAX_HEIGHT =
@@ -243,7 +244,7 @@ const jobDetailsPopupQuietButtonStyle = {
   ...jobDetailsPopupPrimaryButtonStyle,
   backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
-  border: "1px solid var(--ghostbutton-ring)"
+  border: "1px solid var(--ghostbutton-ring-color)"
 };
 
 const getJobRequestsCountFromPayload = (payload) => {
@@ -553,6 +554,7 @@ export default function NextJobsPage() {
   // ⚠️ Mock data found — replacing with Supabase query
   // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
   const hasAccess =
+  hasAllAccessRole(normalizedRoles) ||
   allowedUsers.includes(username) ||
   normalizedRoles.some((role) => allowedRoles.has(role));
 
@@ -686,7 +688,7 @@ export default function NextJobsPage() {
     jobsFetchSequenceRef.current = fetchSequence;
     setLoading(true); // Start loading to show spinner
 
-    const { data, error } = await supabase.
+    const { data, error } = await (await loadSupabaseClient()).
     from("jobs").
     select(
       `
@@ -722,7 +724,7 @@ export default function NextJobsPage() {
     order("created_at", { ascending: false });
 
     if (error) {
-      console.error("❌ Error fetching waiting jobs:", error);
+      logFailure("❌ Error fetching waiting jobs:", error);
       if (fetchSequence === jobsFetchSequenceRef.current) {
         setJobs([]);
         setLoading(false);
@@ -743,20 +745,21 @@ export default function NextJobsPage() {
 
   const fetchTechnicians = useCallback(async () => {// Wrap technician lookup in stable callback
     try {
+      const usersDb = await loadUsersDb();
       const [techList, testerList] = await Promise.all([
-      getTechnicianUsers(), // Load technician list
-      getMotTesterUsers() // Load MOT tester list
+      usersDb.getTechnicianUsers(), // Load technician list
+      usersDb.getMotTesterUsers() // Load MOT tester list
       ]);
       setDbTechnicians(techList); // Cache technicians
       setDbMotTesters(testerList); // Cache MOT testers
     } catch (err) {
-      console.error("❌ Error fetching technicians:", err); // Log fetch errors
+      logFailure("❌ Error fetching technicians:", err); // Log fetch errors
     }
   }, []);
 
   const fetchActiveClockings = useCallback(async () => {
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabaseClient()).
       from("job_clocking").
       select(
         `
@@ -803,7 +806,7 @@ export default function NextJobsPage() {
 
       setActiveClockingsByUser(byUser);
     } catch (err) {
-      console.error("❌ Error fetching active technician clockings:", err);
+      logFailure("❌ Error fetching active technician clockings:", err);
     }
   }, []);
 
@@ -828,7 +831,7 @@ export default function NextJobsPage() {
       setCapacityDate(payload.data?.[0]?.date || today);
       setCapacityByUser(byUser);
     } catch (err) {
-      console.error("❌ Error fetching technician capacity:", err);
+      logFailure("❌ Error fetching technician capacity:", err);
     }
   }, []);
 
@@ -840,9 +843,9 @@ export default function NextJobsPage() {
     }
 
     try {
-      setJobProgressByJobId(await getJobRequestCapacityProgress(jobIds));
+      setJobProgressByJobId(await (await loadJobsDb()).getJobRequestCapacityProgress(jobIds));
     } catch (error) {
-      console.error("❌ Error fetching job request capacity progress:", error);
+      logFailure("❌ Error fetching job request capacity progress:", error);
     }
   }, [jobs]);
 
@@ -856,7 +859,7 @@ export default function NextJobsPage() {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (await loadSupabaseClient())
         .from("job_clocking")
         .select("id, job_id, job_number, clock_in, clock_out")
         .in("job_id", jobIds);
@@ -874,7 +877,7 @@ export default function NextJobsPage() {
       });
       setJobClockingRowsByJobKey(byKey);
     } catch (error) {
-      console.error("❌ Error fetching job clocking totals:", error);
+      logFailure("❌ Error fetching job clocking totals:", error);
       setJobClockingRowsByJobKey({});
     }
   }, [jobs]);
@@ -921,75 +924,83 @@ export default function NextJobsPage() {
     [jobProgressByJobId]
   );
 
+  // Realtime refresh, coalesced.
+  //
+  // Every subscription below is an unfiltered `event: "*"` on a whole table, and
+  // each one used to call its refetch straight from the callback. On a live
+  // workshop board that is the busiest code path on the page: one technician
+  // clocking on writes `job_clocking`, which fired `fetchActiveClockings()` AND
+  // `fetchJobClockingRows()` immediately — on every browser with /nextjobs open.
+  // Bulk operations (a status sweep, a parts import) turned into one full
+  // workload download per changed row.
+  //
+  // The refreshes themselves are unchanged; they are now scheduled through
+  // useCoalescedRefresh, so a burst produces one call and a hidden tab produces
+  // none until it is looked at again.
+  const scheduleJobsRefresh = useCoalescedRefresh(fetchJobs);
+  const scheduleClockingRefresh = useCoalescedRefresh(useCallback(() => {
+    fetchActiveClockings();
+    fetchJobClockingRows();
+  }, [fetchActiveClockings, fetchJobClockingRows]));
+  const scheduleCapacityRefresh = useCoalescedRefresh(fetchTechnicianCapacity);
+  const scheduleRequestProgressRefresh = useCoalescedRefresh(fetchJobRequestProgress);
+
   useEffect(() => {// Subscribe to Supabase changes for live updates
-    const channel = supabase.
+    return subscribeWithDeferredClient((supabase) =>
+    supabase.
     channel("nextjobs-waiting-jobs").
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "jobs" },
-      () => {
-        fetchJobs();
-      }
+      scheduleJobsRefresh
     ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchJobs]);
+    subscribe()
+    );
+  }, [scheduleJobsRefresh]);
 
   useEffect(() => {
-    const channel = supabase.
+    return subscribeWithDeferredClient((supabase) =>
+    supabase.
     channel("nextjobs-active-clocking").
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "job_clocking" },
-      () => {
-        fetchActiveClockings();
-        fetchJobClockingRows();
-      }
+      scheduleClockingRefresh
     ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchActiveClockings, fetchJobClockingRows]);
+    subscribe()
+    );
+  }, [scheduleClockingRefresh]);
 
   useEffect(() => {
-    const channel = supabase.
+    return subscribeWithDeferredClient((supabase) =>
+    supabase.
     channel("nextjobs-technician-capacity").
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "technician_capacity_overrides" },
-      fetchTechnicianCapacity
+      scheduleCapacityRefresh
     ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchTechnicianCapacity]);
+    subscribe()
+    );
+  }, [scheduleCapacityRefresh]);
 
   useEffect(() => {
-    const channel = supabase.
+    return subscribeWithDeferredClient((supabase) =>
+    supabase.
     channel("nextjobs-labour-progress").
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "job_requests" },
-      fetchJobRequestProgress
+      scheduleRequestProgressRefresh
     ).
     on(
       "postgres_changes",
       { event: "*", schema: "public", table: "vhc_checks" },
-      fetchJobs
+      scheduleJobsRefresh
     ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchJobRequestProgress, fetchJobs]);
+    subscribe()
+    );
+  }, [scheduleRequestProgressRefresh, scheduleJobsRefresh]);
 
   const techIdSet = useMemo(() => {
     return new Set(
@@ -1234,13 +1245,35 @@ export default function NextJobsPage() {
     [clockingNow, jobClockingRowsByJobKey]
   );
 
+  // Live "clocked time" ticker.
+  //
+  // `clockingNow` feeds exactly one thing: getJobClockedTimeText, which renders
+  // `Xh Ymins` — whole minutes. Updating it every second therefore re-rendered
+  // the entire board roughly sixty times for every one time the displayed text
+  // could actually change, all day, on every screen showing the dispatch board.
+  //
+  // The tick still runs each second, but it now recomputes the minute totals
+  // first (a reduce over the open clocking rows — orders of magnitude cheaper
+  // than a board render) and only commits state when one of them has moved. The
+  // displayed values are identical to before, to the second; the wasted renders
+  // in between are gone.
   useEffect(() => {
-    const hasOpenClocking = Object.values(jobClockingRowsByJobKey).some((rows) =>
+    const entries = Object.entries(jobClockingRowsByJobKey);
+    const hasOpenClocking = entries.some(([, rows]) =>
       (Array.isArray(rows) ? rows : []).some((row) => row && !row.clock_out)
     );
     if (!hasOpenClocking) return undefined;
+
+    const signatureAt = (now) =>
+      entries.map(([, rows]) => calculateClockingMinutesTotal(rows, now)).join("|");
+
+    let lastSignature = signatureAt(Date.now());
     const intervalId = window.setInterval(() => {
-      setClockingNow(Date.now());
+      const now = Date.now();
+      const signature = signatureAt(now);
+      if (signature === lastSignature) return;
+      lastSignature = signature;
+      setClockingNow(now);
     }, 1000);
     return () => window.clearInterval(intervalId);
   }, [jobClockingRowsByJobKey]);
@@ -1374,9 +1407,9 @@ export default function NextJobsPage() {
     // Use the dedicated helper function - it now returns formatted job data or null
     let updatedJob;
     try {
-      updatedJob = await unassignTechnicianFromJob(jobId, { status: "In Progress" });
+      updatedJob = await (await loadJobsDb()).unassignTechnicianFromJob(jobId, { status: "In Progress" });
     } catch (err) {
-      console.error("❌ Exception unassigning technician:", err);
+      logFailure("❌ Exception unassigning technician:", err);
       setFeedbackMessage({
         type: "error",
         text: `Failed to unassign technician from ${jobNumber}: ${err?.message || "Unknown error"}`
@@ -1385,7 +1418,7 @@ export default function NextJobsPage() {
     }
 
     if (!updatedJob?.success) {
-      console.error("❌ Failed to unassign technician:", updatedJob?.error);
+      logFailure("❌ Failed to unassign technician:", updatedJob?.error);
       setFeedbackMessage({
         type: "error",
         text: `Failed to unassign technician from ${jobNumber}${
@@ -1479,6 +1512,7 @@ export default function NextJobsPage() {
       position: index + 1
     }));
 
+    const { updateJobPosition } = await loadJobsDb();
     await Promise.all(
       reindexed.
       filter((job) => job?.id).
@@ -1507,7 +1541,7 @@ export default function NextJobsPage() {
         tech.id && Number.isInteger(Number(tech.id)) ?
         Number(tech.id) :
         tech.id || tech.name;
-        const assignmentResult = await assignTechnicianToJob(
+        const assignmentResult = await (await loadJobsDb()).assignTechnicianToJob(
           job.id,
           identifier,
           tech.name,
@@ -1606,7 +1640,7 @@ export default function NextJobsPage() {
       }
 
       if (isAssigned || needsQueuePromotion) {
-        const unassignmentResult = await unassignTechnicianFromJob(job.id, {
+        const unassignmentResult = await (await loadJobsDb()).unassignTechnicianFromJob(job.id, {
           status: "In Progress"
         });
         if (!unassignmentResult?.success) {
@@ -1747,7 +1781,7 @@ export default function NextJobsPage() {
       try {
         await completePointerDrop(currentState.job, currentIndicator);
       } catch (error) {
-        console.error("❌ Failed to drop job:", error);
+        logFailure("❌ Failed to drop job:", error);
         setFeedbackMessage({
           type: "error",
           text: `Failed to move ${currentState.job?.jobNumber || "job"}: ${
@@ -1898,7 +1932,7 @@ export default function NextJobsPage() {
           boxShadow:
           activeDropTarget === panelKey ?
           "0 4px 12px rgba(0, 0, 0, 0.2)" :
-          "0 2px 4px rgba(var(--shadow-rgb),0.14)",
+          "var(--shadow-sm)",
           transition: "all 0.2s ease"
         }}>
 

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import Button from "@/components/ui/Button";
 import { useAlerts } from "@/context/AlertContext";
 import { useUser } from "@/context/UserContext";
 import { canViewDiagnostics } from "@/lib/auth/roles";
@@ -198,14 +199,15 @@ function ToastItem({ alert, onDismiss, onPause, onResume, showDiagnostics, onRep
           {tone.icon}
         </span>
         <span className="app-alert__message">{alert.message}</span>
-        <button
+        <Button
           type="button"
-          className="app-alert__dismiss"
+          variant="secondary"
+          className="app-btn--icon app-alert__dismiss"
           onClick={onDismiss}
           aria-label="Dismiss notification"
         >
           ✕
-        </button>
+        </Button>
       </div>
 
       {/* Reference code — shown to EVERYONE so staff can quote it to support.

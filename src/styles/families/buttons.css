@@ -18,13 +18,37 @@
 /* ========================================================= */
 /* === Base rule                                           === */
 /* ========================================================= */
+/*
+ * State model (2026-08 colour audit).
+ *
+ * Every variant paints through THREE custom properties — --btn-bg,
+ * --btn-color, --btn-ring — and the base rule below is the only place that
+ * reads them. Two consequences:
+ *
+ *   - The two `!important`s on the base rule still lock the palette against
+ *     page-level inline styles on Links wearing .app-btn (Button.js already
+ *     strips visual inline keys on real buttons).
+ *   - Every state (:hover, :focus-visible, :active, :disabled, .is-active)
+ *     is a plain custom-property assignment, so states are free: they need no
+ *     `!important` of their own and cannot be lost to specificity. Before
+ *     this, the variant fills were `!important` and there were no :active
+ *     paints at all, so pressed was indistinguishable from hover.
+ *
+ * Add a new variant by declaring the three properties. Do not add
+ * `background`/`color` declarations to variants — they will be overridden.
+ */
 html.staff-scope .app-btn {
+  --btn-bg: var(--primary);
+  --btn-color: var(--onAccentText);
+  --btn-ring: none;
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);
   font-size: var(--control-font-size);
   font-weight: 600;
-  border: none;
+  background: var(--btn-bg) !important;
+  color: var(--btn-color) !important;
+  border: var(--btn-ring);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -36,8 +60,16 @@ html.staff-scope .app-btn {
   text-decoration: none;
 }
 
-html.staff-scope .app-btn:disabled {
-  opacity: 0.5;
+/* Disabled keeps the button's SHAPE and drops its affordance. The old
+   `opacity: .5` faded an already-faint light-mode fill to dL* 2.7 from the
+   card, so the button outline stopped existing and only a ghost label
+   remained. A dedicated desaturated fill derived from --text-1 reads as
+   "off" in both themes and at every accent. */
+html.staff-scope .app-btn:disabled,
+html.staff-scope .app-btn[aria-disabled="true"] {
+  --btn-bg: var(--control-disabled-bg);
+  --btn-color: var(--control-disabled-text);
+  --btn-ring: none;
   cursor: not-allowed;
   transform: none;
 }
@@ -95,69 +127,95 @@ html.staff-scope .app-btn--icon {
 
 /* ========================================================= */
 /* === Variant treatments                                  === */
-/* === Declared with !important so page-level inline style === */
-/* === cannot drift the palette. Button.js strips visual   === */
-/* === inline keys; Links wearing .app-btn are guarded     === */
-/* === here.                                               === */
+/* === Each variant sets --btn-bg / --btn-color / --btn-ring === */
+/* === only. The base rule paints them (with !important, so === */
+/* === page-level inline style cannot drift the palette).   === */
 /* ========================================================= */
+
+/* Buttons deliberately do not consume --primary-control-* / --control-bg.
+   Those form-control tokens are rebound to --surface inside a --theme layer,
+   which made actions flip between white-on-black and black-on-white depending
+   on colour mode. Primary actions instead use the brand fill in every layer.
+
+   Primary sits one accent step DEEPER than the flat --primary fill. The
+   is-active / aria-pressed / aria-selected paint further down this file uses
+   --primary + --onAccentText, so a Primary button on --primary was pixel-
+   identical to a selected one and read as permanently selected. Using the
+   deeper step keeps Primary the boldest control on the page while leaving the
+   flat brand fill to mean "selected". Hover brightens back to --primary,
+   press goes deepest — all three states stay distinct. */
 html.staff-scope .app-btn--primary {
-  /* Primary is the single source of truth for the form-control family.
-     Background / hover / text colour come from --primary-control-* (theme.css);
-     editing those four tokens re-skins text inputs, dropdowns, calendar and
-     time pickers too. Radius flows via .app-btn → --control-radius, which is
-     also driven by --primary-control-radius. */
-  background: var(--primary-control-bg) !important;
-  color: var(--primary-control-color) !important;
-  border: none !important;
+  --btn-bg: var(--primary-hover);
+  --btn-color: var(--onAccentText);
 }
 html.staff-scope .app-btn--primary:hover,
 html.staff-scope .app-btn--primary:focus-visible {
-  background: var(--primary-control-bg-hover) !important;
+  --btn-bg: var(--primary);
+}
+html.staff-scope .app-btn--primary:active {
+  --btn-bg: var(--primary-pressed);
 }
 
+/* Secondary uses the accent tint directly. Unlike --control-bg, this token is
+   not rebound to a neutral surface by card nesting, so it remains recognisably
+   Secondary in both light and dark modes. */
 html.staff-scope .app-btn--secondary {
-  background: var(--control-bg) !important;
-  color: var(--text-accent) !important;
-  border: none !important;
+  --btn-bg: var(--secondary);
+  --btn-color: var(--accent-text-on-tint);
 }
 html.staff-scope .app-btn--secondary:hover,
 html.staff-scope .app-btn--secondary:focus-visible {
-  background: var(--control-bg-hover) !important;
+  --btn-bg: var(--secondary-hover);
+}
+html.staff-scope .app-btn--secondary:active {
+  --btn-bg: var(--secondary-pressed);
 }
 
 html.staff-scope .app-btn--ghost {
-  background: transparent !important;
-  color: var(--accentText) !important;
-  /* Ghost buttons are one of the four allowed "ring" use-cases. */
-  border: var(--ghostbutton-ring) !important;
+  --btn-bg: transparent;
+  --btn-color: var(--accent-text-on-tint);
+  /* Ghost buttons are one of the five allowed "ring" use-cases. */
+  --btn-ring: var(--ghostbutton-ring);
 }
 html.staff-scope .app-btn--ghost:hover,
 html.staff-scope .app-btn--ghost:focus-visible {
-  background: var(--control-bg) !important;
+  --btn-bg: var(--secondary);
+}
+html.staff-scope .app-btn--ghost:active {
+  --btn-bg: var(--secondary-hover);
 }
 
-/* Theme — a filled, borderless button on the tinted --theme layer, carrying its
-   glyph in --surface. Reads like Primary but sits quieter, for in-card actions
-   (e.g. the technician card's info button) where a full Primary fill would
-   compete with the card's own content. */
+/* Theme — a quieter filled button for in-card actions (e.g. the technician
+   card's info button) where a full Primary fill would compete with the card's
+   own content. Its label used to be --surface on a --theme fill, i.e. white
+   text on a near-white tint (1.19:1 light, 1.31:1 dark) — invisible in both
+   themes at every accent. The accent label reads at ~4.9:1 in both. */
 html.staff-scope .app-btn--theme {
-  background: var(--theme) !important;
-  color: var(--surface) !important;
-  border: none !important;
+  --btn-bg: var(--theme);
+  --btn-color: var(--accent-text-on-tint);
 }
 html.staff-scope .app-btn--theme:hover,
 html.staff-scope .app-btn--theme:focus-visible {
-  background: var(--theme-hover) !important;
+  --btn-bg: var(--theme-hover);
+}
+html.staff-scope .app-btn--theme:active {
+  --btn-bg: var(--secondary-pressed);
 }
 
+/* Danger hardcoded `color: #fff`, which cannot flip with the theme: on dark
+   mode's --danger (#f87171) that scored 2.77:1, the worst contrast in the app.
+   --text-2 is white in light and near-black in dark; paired with the darkened
+   light --danger fill it clears 5.5:1 in both. */
 html.staff-scope .app-btn--danger {
-  background: var(--danger) !important;
-  color: #fff !important;
-  border: none !important;
+  --btn-bg: var(--danger);
+  --btn-color: var(--text-2);
 }
 html.staff-scope .app-btn--danger:hover,
 html.staff-scope .app-btn--danger:focus-visible {
-  background: var(--danger-dark) !important;
+  --btn-bg: var(--danger-hover);
+}
+html.staff-scope .app-btn--danger:active {
+  --btn-bg: var(--danger-dark);
 }
 
 /* ========================================================= */
@@ -169,14 +227,18 @@ html.staff-scope .app-btn--danger:focus-visible {
 /* === Not for production code.                             === */
 /* ========================================================= */
 html.staff-scope .app-btn[data-demo-state="hover"] {
-  background: var(--primary-hover) !important;
+  --btn-bg: var(--primary-hover);
 }
 html.staff-scope .app-btn[data-demo-state="active"] {
-  background: var(--primary-pressed) !important;
+  --btn-bg: var(--primary-pressed);
+}
+html.staff-scope .app-btn[data-demo-state="disabled"] {
+  --btn-bg: var(--control-disabled-bg);
+  --btn-color: var(--control-disabled-text);
 }
 html.staff-scope .app-btn[data-demo-state="focus"] {
-  box-shadow: var(--focus-ring) !important;
-  outline: none !important;
+  box-shadow: var(--focus-ring);
+  outline: none;
 }
 
 /* ========================================================= */
@@ -185,9 +247,16 @@ html.staff-scope .app-btn[data-demo-state="focus"] {
 /* === route. Wins over --control and --secondary because  === */
 /* === it is declared after them in this file.             === */
 /* ========================================================= */
-html.staff-scope .app-btn.is-active {
-  background: var(--primary) !important;
-  color: var(--onAccentText) !important;
+html.staff-scope .app-btn.is-active,
+html.staff-scope .app-btn[aria-pressed="true"],
+html.staff-scope .app-btn[aria-selected="true"] {
+  --btn-bg: var(--primary);
+  --btn-color: var(--onAccentText);
+}
+html.staff-scope .app-btn.is-active:hover,
+html.staff-scope .app-btn[aria-pressed="true"]:hover,
+html.staff-scope .app-btn[aria-selected="true"]:hover {
+  --btn-bg: var(--primary-hover);
 }
 
 /* ========================================================= */
@@ -228,4 +297,255 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline: 2px solid #ec4899 !important;
   outline-offset: 2px;
   box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.25) !important;
+}
+
+/* ========================================================= */
+/* === Glyph modifier — oversized single glyph             === */
+/* === Pairs with .app-btn--icon when the glyph is a bare  === */
+/* === mark ("+", "×") that should fill the circle rather  === */
+/* === than sit small inside it. Height is unchanged.      === */
+/* ========================================================= */
+html.staff-scope .app-btn--icon.app-btn--glyph-lg {
+  font-size: 1.9rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* ========================================================= */
+/* === Reaction bar                                        === */
+/* === The bar is exactly one control tall (44px); every   === */
+/* === button inside it is a fixed 32px, centred by the    === */
+/* === 6px padding. The trigger is the anchor: it never    === */
+/* === moves, the options grow leftwards out of its left   === */
+/* === edge. Used by the newsfeed post row and the         === */
+/* === messages bubble picker.                             === */
+/* ========================================================= */
+html.staff-scope .app-reaction-bar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  height: var(--control-height);
+  max-height: var(--control-height);
+  gap: var(--space-xs);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  transition: background-color 0.24s ease, padding 0.24s ease;
+}
+
+/* Closed there is nothing to inset — the trigger fills the bar at the full
+   44px control height, so the 6px padding would push it past the bar. */
+html.staff-scope .app-reaction-bar:not(.is-open) {
+  padding: 0;
+}
+
+html.staff-scope .app-reaction-bar.is-open {
+  background: var(--surface);
+}
+
+/* Collapsed to zero width so the trigger keeps its position; opening
+   animates max-width rather than width because the option count varies. */
+html.staff-scope .app-reaction-bar__options {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: max-width 0.28s ease, opacity 0.2s ease, visibility 0.28s;
+}
+
+html.staff-scope .app-reaction-bar.is-open .app-reaction-bar__options {
+  max-width: 420px;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Perfect circles — the emoji options and the trigger alike. Declared after
+   the size modifiers above so they win the height/padding they need (the
+   family otherwise locks every button to --control-height). */
+html.staff-scope .app-btn.app-reaction-emoji,
+html.staff-scope .app-btn.app-reaction-trigger {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  font-size: 19px;
+  line-height: 1;
+  flex: 0 0 auto;
+  transition: width 0.24s ease, height 0.24s ease;
+}
+
+/* Closed, the trigger is a full 44px control — it is the only thing on show,
+   so it carries the touch target. Opening hands that job to the emoji row and
+   the trigger shrinks to the same 32px as the options, which is why the bar's
+   own height never changes. */
+html.staff-scope .app-reaction-bar:not(.is-open) .app-btn.app-reaction-trigger {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  max-height: var(--control-height);
+}
+
+/* Perfect 32px circle — the small sibling of .app-btn--icon, for a single
+   glyph that must sit tighter than the 44px control floor (e.g. the newsfeed
+   save star). Declared alongside the reaction circles so it likewise wins the
+   height the family otherwise locks to --control-height. Not a touch target on
+   its own — only use it where a 44px control sits beside it. */
+html.staff-scope .app-btn.app-btn--icon-sm {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  font-size: 1.05rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+/* 32px-tall pill — the only size modifier that leaves the 44px control floor.
+   Declared here, after the size modifiers, so it wins the height the family
+   otherwise locks. Use where the control is a secondary affordance next to a
+   full-height one (e.g. the composer's "Choose files"). */
+html.staff-scope .app-btn.app-btn--xxs {
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 var(--space-3);
+  font-size: 0.82rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+/* Non-circular actions that share the bar (e.g. the messages "Reply"), held
+   to the same 32px height so the bar stays one control tall. */
+html.staff-scope .app-btn.app-reaction-action {
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+/* ========================================================= */
+/* === Reaction summary                                    === */
+/* === Who reacted, in the Facebook shape: an overlapping  === */
+/* === stack + total, per-emoji count chips, then the      === */
+/* === people list. Component: ui/ReactionSummary.js       === */
+/* ========================================================= */
+html.staff-scope .app-reaction-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .app-reaction-summary__empty {
+  margin: 0;
+  color: var(--text-1);
+  opacity: 0.7;
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope button.app-reaction-summary__total {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-sm);
+  min-height: 32px;
+  padding: 0 var(--space-2) 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+html.staff-scope button.app-reaction-summary__total:hover {
+  background: var(--theme);
+}
+
+html.staff-scope .app-reaction-stack {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Bare overlapping glyphs — no disc, no ring. A ring here has to be painted
+   in whatever colour sits behind the stack, and the stack appears on more
+   than one surface, so it showed up as a pale halo cutting into the emoji
+   underneath. The glyph shapes carry the overlap on their own. */
+html.staff-scope .app-reaction-stack__item {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+}
+
+html.staff-scope .app-reaction-stack__item + .app-reaction-stack__item {
+  margin-left: -5px;
+}
+
+html.staff-scope .app-reaction-stack__item:nth-child(1) {
+  z-index: 3;
+}
+
+html.staff-scope .app-reaction-stack__item:nth-child(2) {
+  z-index: 2;
+}
+
+html.staff-scope .app-reaction-stack__item:nth-child(3) {
+  z-index: 1;
+}
+
+html.staff-scope .app-reaction-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+html.staff-scope .app-reaction-people {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.staff-scope .app-reaction-people__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-1);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .app-reaction-people__row:not(:last-child) {
+  border-bottom: var(--separating-line);
 }

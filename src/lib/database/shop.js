@@ -7,6 +7,7 @@
 // status='published' on products and status='active' on categories.
 
 import { supabase } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 /* ============================= CATALOG ============================= */
 
@@ -17,7 +18,7 @@ export const listPublishedProducts = async () => {
     .eq("status", "published")
     .order("sort_order", { ascending: true });
   if (error) {
-    console.error("[shop] listPublishedProducts:", error.message);
+    logFailure("[shop] listPublishedProducts:", error.message);
     return [];
   }
   return data || [];
@@ -29,7 +30,7 @@ export const listAllProducts = async () => {
     .select("*")
     .order("sort_order", { ascending: true });
   if (error) {
-    console.error("[shop] listAllProducts:", error.message);
+    logFailure("[shop] listAllProducts:", error.message);
     return [];
   }
   return data || [];
@@ -42,7 +43,7 @@ export const getProductsByIds = async (ids) => {
     .select("*")
     .in("id", ids);
   if (error) {
-    console.error("[shop] getProductsByIds:", error.message);
+    logFailure("[shop] getProductsByIds:", error.message);
     return [];
   }
   return data || [];
@@ -76,7 +77,7 @@ export const listActiveCategories = async () => {
     .eq("status", "active")
     .order("sort_order", { ascending: true });
   if (error) {
-    console.error("[shop] listActiveCategories:", error.message);
+    logFailure("[shop] listActiveCategories:", error.message);
     return [];
   }
   return data || [];

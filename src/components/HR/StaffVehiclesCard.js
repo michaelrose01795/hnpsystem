@@ -486,7 +486,7 @@ export default function StaffVehiclesCard({
         <button
           type="button"
           onClick={() => setShowVehicleForm((prev) => !prev)}
-          style={showVehicleForm ? secondaryActionButton : primaryActionButton}
+          className={`app-btn ${showVehicleForm ? "app-btn--ghost" : "app-btn--primary"}`}
         >
           {showVehicleForm ? "Hide form" : "Add vehicle"}
         </button>
@@ -679,7 +679,7 @@ export default function StaffVehiclesCard({
                   <button
                     type="button"
                     onClick={() => (editVisibility[vehicle.id] ? cancelEdit(vehicle.id) : startEdit(vehicle))}
-                    style={secondaryActionButton}
+                    className="app-btn app-btn--ghost"
                   >
                     {editVisibility[vehicle.id] ? "Cancel edit" : "Edit"}
                   </button>
@@ -809,14 +809,14 @@ export default function StaffVehiclesCard({
                     <button
                       type="button"
                       onClick={() => cancelEdit(vehicle.id)}
-                      style={secondaryActionButton}
+                      className="app-btn app-btn--ghost"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={savingEdit[vehicle.id]}
-                      style={primaryActionButton}
+                      className="app-btn app-btn--primary"
                     >
                       {savingEdit[vehicle.id] ? "Saving..." : "Save changes"}
                     </button>
@@ -854,7 +854,7 @@ export default function StaffVehiclesCard({
           <button
             type="button"
             onClick={() => setShowHistoryForm((prev) => !prev)}
-            style={showHistoryForm ? secondaryActionButton : primaryActionButton}
+            className={`app-btn ${showHistoryForm ? "app-btn--ghost" : "app-btn--primary"}`}
           >
             {showHistoryForm ? "Hide repair form" : "Log new repair"}
           </button>
@@ -923,7 +923,7 @@ export default function StaffVehiclesCard({
                     onClick={() =>
                       fetchJobSummary(selectedHistoryVehicleId, (historyForms[selectedHistoryVehicleId]?.jobNumber || "").trim())
                     }
-                    style={primaryActionButton}
+                    className="app-btn app-btn--primary"
                   >
                     Search
                   </button>
@@ -970,7 +970,7 @@ export default function StaffVehiclesCard({
               <button
                 type="submit"
                 disabled={!selectedHistoryVehicleId || savingHistory[selectedHistoryVehicleId]}
-                style={primaryActionButton}
+                className="app-btn app-btn--primary"
               >
                 {savingHistory[selectedHistoryVehicleId] ? "Saving..." : "Add entry"}
               </button>
@@ -1036,7 +1036,7 @@ export default function StaffVehiclesCard({
               >
                 <tr
                   style={{
-                    color: "var(--text-2, #ffffff)",
+                    color: "var(--onAccentText)",
                     fontSize: "0.72rem",
                     textTransform: "uppercase",
                     letterSpacing: "0.04em",
@@ -1151,7 +1151,7 @@ export default function StaffVehiclesCard({
                     type="button"
                     onClick={lookupVehicleDetails}
                     disabled={isLookupLoading}
-                    style={primaryActionButton}
+                    className="app-btn app-btn--primary"
                   >
                     {isLookupLoading ? "Searching..." : "Search"}
                   </button>
@@ -1226,7 +1226,7 @@ export default function StaffVehiclesCard({
               <button
                 type="submit"
                 disabled={savingVehicle}
-                style={primaryActionButton}
+                className="app-btn app-btn--primary"
               >
                 {savingVehicle ? "Saving..." : "Add vehicle"}
               </button>
@@ -1250,33 +1250,13 @@ const historyLabelStyle = {
 const historyInputStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--input-radius)",
-  border: "1px solid var(--input-ring)",
+  border: "1px solid var(--input-ring-color)",
   fontSize: "0.9rem",
   fontWeight: 500,
   background: "rgba(var(--surface-rgb, 255, 255, 255), 0.86)",
   color: "var(--text-1)",
 };
 
-const primaryActionButton = {
-  borderRadius: "var(--input-radius)",
-  padding: "var(--control-padding)",
-  background: "var(--primary)",
-  color: "white",
-  fontWeight: 600,
-  fontSize: "0.8rem",
-  cursor: "pointer",
-};
-
-const secondaryActionButton = {
-  border: "1px solid var(--ghostbutton-ring)",
-  borderRadius: "var(--input-radius)",
-  padding: "var(--control-padding)",
-  background: "rgba(var(--surface-rgb, 255, 255, 255), 0.38)",
-  color: "var(--text-1)",
-  fontWeight: 600,
-  fontSize: "0.8rem",
-  cursor: "pointer",
-};
 
 const dangerActionButton = {
   border: "none",

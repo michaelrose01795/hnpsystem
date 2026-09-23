@@ -112,12 +112,12 @@ export default function PayslipsListPopup({
             <SummaryStat
               label="Hourly rate"
               value={summary?.hourlyRate ? formatCurrency(summary.hourlyRate) : "—"}
-              tone="var(--success, #2e7d32)"
+              tone="var(--success)"
             />
             <SummaryStat
               label="Overtime rate"
               value={summary?.overtimeRate ? formatCurrency(summary.overtimeRate) : "—"}
-              tone="var(--danger, #c62828)"
+              tone="var(--danger)"
             />
             <SummaryStat
               label="Contracted hours"
@@ -134,7 +134,7 @@ export default function PayslipsListPopup({
             <SummaryStat
               label="Latest net"
               value={latest ? formatCurrency(latest.netPay) : "—"}
-              tone="var(--accentText, var(--accent))"
+              tone="var(--accentText)"
             />
             <SummaryStat
               label="Latest tax"
@@ -190,7 +190,7 @@ export default function PayslipsListPopup({
                 padding: "12px 14px",
                 borderRadius: "var(--radius-md, 12px)",
                 background: "rgba(198, 40, 40, 0.08)",
-                color: "var(--danger, #c62828)",
+                color: "var(--danger)",
                 fontSize: "0.88rem",
               }}
             >
@@ -236,7 +236,7 @@ export default function PayslipsListPopup({
                     <span style={{ color: "var(--text-1)", fontSize: "0.88rem", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {formatPeriodLabel(slip)}
                     </span>
-                    <span style={{ fontWeight: 700, color: "var(--accentText, var(--accent))", textAlign: "right" }}>
+                    <span style={{ fontWeight: 700, color: "var(--accentText)", textAlign: "right" }}>
                       {formatCurrency(slip.netPay)}
                     </span>
                     <span style={{ color: "var(--text-1)", fontSize: "0.82rem", textAlign: "right" }}>

@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { supabaseService } from "@/lib/database/supabaseClient";
 import { markVHCAsSent } from "@/lib/services/vhcStatusService";
 import { isSmtpConfigured } from "@/lib/email/smtp";
@@ -6,10 +5,11 @@ import { sendDmsEmail } from "@/lib/email/emailApi";
 import { getEmailBranding, renderEmailShell } from "@/lib/email/template";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { generateShareCode, buildCustomerReportUrl } from "@/lib/vhc/shareCode";
 
 const COMPANY_NAME = process.env.SMTP_COMPANY_NAME || "Service Department";
 
-const generateLinkCode = () => crypto.randomBytes(9).toString("base64url").slice(0, 12);
+const generateLinkCode = () => generateShareCode();
 
 const isLinkExpired = (createdAt) => {
   const created = new Date(createdAt).getTime();
@@ -147,7 +147,7 @@ async function handler(req, res, session) {
       process.env.NEXT_PUBLIC_APP_URL ||
       "https://hnpsystem.vercel.app"
     ).replace(/\/+$/, "");
-    const shareUrl = `${baseUrl}/vhc/customer/${canonicalJobNumber}/${linkCode}`;
+    const shareUrl = buildCustomerReportUrl(linkCode, baseUrl);
     const customerName = `${jobRow.customer?.firstname || ""} ${jobRow.customer?.lastname || ""}`.trim() || "Customer";
     const branding = getEmailBranding(req, COMPANY_NAME);
 

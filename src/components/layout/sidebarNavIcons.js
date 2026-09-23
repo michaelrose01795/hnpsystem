@@ -88,13 +88,6 @@ const ICONS = {
       <path d="M12 3s6 6 6 10a6 6 0 0 1-12 0c0-4 6-10 6-10z" />
     </Svg>
   ),
-  "Painting Dashboard": (
-    <Svg>
-      <rect x="4" y="4" width="11" height="5" rx="1" />
-      <path d="M15 6.5h3a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1h-6v3" />
-      <rect x="10" y="15" width="4" height="6" rx="1" />
-    </Svg>
-  ),
   "Accounts Dashboard": (
     <Svg>
       <ellipse cx="12" cy="6.5" rx="7" ry="3" />

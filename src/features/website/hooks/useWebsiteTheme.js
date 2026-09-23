@@ -38,7 +38,7 @@ const resolveWebsiteTheme = (preference) => {
   return null;
 };
 
-export default function useWebsiteTheme() {
+export default function useWebsiteTheme(siteDefaultMode) {
   const { setTemporaryOverride, mode } = useTheme();
   const { user } = useUser() || {};
   const isLoggedIn = Boolean(user);
@@ -53,8 +53,11 @@ export default function useWebsiteTheme() {
     if (!websiteMode && isLoggedIn) {
       websiteMode = mode === "system" ? resolveSystemMode() : mode === "light" ? "light" : "dark";
     }
-    // 3. Dark marketing default.
-    if (!websiteMode) websiteMode = "dark";
+    // 3. The staff-chosen default from website_design, else the dark marketing
+    //    default. /website-manager -> Design -> "Default colour mode" decides
+    //    what a first-time visitor sees, without overriding anyone who has
+    //    already picked for themselves in step 1.
+    if (!websiteMode) websiteMode = siteDefaultMode === "light" ? "light" : "dark";
 
     // Underlying semantic tokens — keep the brand-red accent in both modes.
     setTemporaryOverride({ mode: websiteMode, accent: "red" });
@@ -69,5 +72,5 @@ export default function useWebsiteTheme() {
         document.documentElement.removeAttribute("data-website-theme");
       }
     };
-  }, [setTemporaryOverride, isLoggedIn, mode]);
+  }, [setTemporaryOverride, isLoggedIn, mode, siteDefaultMode]);
 }

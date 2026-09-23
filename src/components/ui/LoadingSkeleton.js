@@ -18,7 +18,7 @@ export function SkeletonBlock({ width = "100%", height = "20px", borderRadius = 
         height,
         borderRadius,
         background:
-          "linear-gradient(90deg, var(--skeleton-base,#ececef) 25%, var(--skeleton-highlight,#f6f6f8) 50%, var(--skeleton-base,#ececef) 75%)",
+          "linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%)",
         backgroundSize: "200% 100%",
         animation: "skeleton-scan var(--skeleton-animation-duration,1.8s) ease-in-out infinite",
         flexShrink: 0,

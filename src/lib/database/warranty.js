@@ -5,6 +5,7 @@
 // gracefully (null / zeroed totals) if the warranty_* tables don't exist yet
 // or a query fails, so the tab renders an empty state rather than throwing.
 import { supabase } from "@/lib/database/supabaseClient";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const DEFAULT_VAT_RATE = 20; // matches src/lib/invoices/detailService.js
 const DEFAULT_LABOUR_RATE = 85; // matches src/lib/invoices/detailService.js
@@ -186,7 +187,7 @@ export const ensureWarrantyClaim = async (warrantyJobId, hostJobId = null, userI
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("ensureWarrantyClaim error", error);
+    logFailure("ensureWarrantyClaim error", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -214,7 +215,7 @@ export const updateWarrantyClaim = async (claimId, patch = {}, userId = null) =>
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("updateWarrantyClaim error", error);
+    logFailure("updateWarrantyClaim error", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -256,7 +257,7 @@ export const createWarrantyRequest = async ({
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("createWarrantyRequest error", error);
+    logFailure("createWarrantyRequest error", error);
     return { success: false, error: { message: error.message } };
   }
 };
@@ -277,7 +278,7 @@ export const updateWarrantyRequest = async (requestId, patch = {}) => {
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error("updateWarrantyRequest error", error);
+    logFailure("updateWarrantyRequest error", error);
     return { success: false, error: { message: error.message } };
   }
 };

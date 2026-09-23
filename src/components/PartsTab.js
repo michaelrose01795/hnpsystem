@@ -8,17 +8,19 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
-import ModalPortal from "@/components/popups/ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import AddNewJobPartPopup from "@/components/Parts/AddNewJobPartPopup";
 import {
   buildVhcRequestLinkRows,
 } from "@/lib/vhc/requestRowLinking";
 import { getJobRequests } from "@/lib/canonical/fields";
 import { NORMALIZE_ITEM as normalizePartStatus } from "@/lib/status/catalog/parts"; // Centralized parts item normalizer.
 import { reportApiError, reportWarning } from "@/lib/notifications/report"; // Phase 3/5 reporting helpers (Phase 10 migration).
+import { logFailure } from "@/lib/utils/logFailure";
 
 const moneyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -99,6 +101,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [allocatingPart, setAllocatingPart] = useState(false);
   const [addJobDiagnostics, setAddJobDiagnostics] = useState(null);
   const [showBookPartPanel, setShowBookPartPanel] = useState(false);
+  const [showAddNewPartPopup, setShowAddNewPartPopup] = useState(false);
   const [showAllocatePanel, setShowAllocatePanel] = useState(false);
   const [showPrePickPopup, setShowPrePickPopup] = useState(false);
   const [selectedPrePickPartId, setSelectedPrePickPartId] = useState("");
@@ -537,7 +540,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       }
     } catch (error) {
       // Silent fail for background refresh - keep existing data
-      console.error("Background refresh failed:", error);
+      logFailure("Background refresh failed:", error);
     }
   }, [jobId]);
 
@@ -580,7 +583,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       // Refresh parts on order list
       await fetchPartsOnOrder();
     } catch (error) {
-      console.error("Failed to update ETA:", error);
+      logFailure("Failed to update ETA:", error);
       reportApiError(error, { source: "PartsTab" });
     }
   }, [jobId, fetchPartsOnOrder]);
@@ -614,7 +617,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         onRefreshJob();
       }
     } catch (error) {
-      console.error("Failed to mark part as arrived:", error);
+      logFailure("Failed to mark part as arrived:", error);
       reportApiError(error, { source: "PartsTab" });
     }
   }, [jobId, onRefreshJob, fetchPartsOnOrder]);
@@ -678,7 +681,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       setCatalogResults(results);
       setCatalogError(results.length === 0 ? "No parts found in stock catalogue." : "");
     } catch (error) {
-      console.error("Stock search failed", error);
+      logFailure("Stock search failed", error);
       setCatalogResults([]);
       setCatalogError(error.message || "Unable to search stock catalogue");
     } finally {
@@ -906,7 +909,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         searchStockCatalog(catalogSearch.trim());
       }
     } catch (error) {
-      console.error("Unable to add part from stock", error);
+      logFailure("Unable to add part from stock", error);
       setCatalogSubmitError(error.message || "Unable to add part to job");
       setAddJobDiagnostics((prev) => ({
         ...prev,
@@ -989,7 +992,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         searchStockCatalog(catalogSearch.trim());
       }
     } catch (error) {
-      console.error("Unable to add part to order", error);
+      logFailure("Unable to add part to order", error);
       setCatalogSubmitError(error.message || "Unable to add part to order");
     } finally {
       setAllocatingPart(false);
@@ -1030,7 +1033,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           onRefreshJob();
         }
       } catch (error) {
-        console.error("Failed to update pre-pick location:", error);
+        logFailure("Failed to update pre-pick location:", error);
         reportApiError(error, { source: "PartsTab" });
       }
     },
@@ -1418,7 +1421,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           onRefreshJob();
         }
       } catch (error) {
-        console.error("Failed to allocate parts to request:", error);
+        logFailure("Failed to allocate parts to request:", error);
         reportApiError(error, { source: "PartsTab" });
       } finally {
         setAllocatingSelection(false);
@@ -1497,7 +1500,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           onRefreshJob();
         }
       } catch (error) {
-        console.error("Failed to unassign part:", error);
+        logFailure("Failed to unassign part:", error);
         reportApiError(error, { source: "PartsTab" });
       }
     },
@@ -1558,7 +1561,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
         await refreshCatalogStockState();
       } catch (error) {
-        console.error("Failed to remove part:", error);
+        logFailure("Failed to remove part:", error);
         reportApiError(error, { source: "PartsTab" });
         setRemovedPartIds((prev) => prev.filter((id) => id !== partId));
       } finally {
@@ -1708,7 +1711,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       setPartPopup({ open: false, part: null });
       setPartDraft(null);
     } catch (error) {
-      console.error("Failed to save part details:", error);
+      logFailure("Failed to save part details:", error);
       reportApiError(error, { source: "PartsTab" });
     } finally {
       setSavingPartDetails(false);
@@ -2135,22 +2138,33 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 Search and add parts to this job
               </p>
             </div>
-            <SearchBar
-              value={catalogSearch}
-              disabled={!canAllocateParts}
-              onChange={(e) => {
-                setCatalogSearch(e.target.value);
-                setCatalogSuccessMessage("");
-                setCatalogSubmitError("");
-              }}
-              onClear={() => {
-                setCatalogSearch("");
-                setCatalogSuccessMessage("");
-                setCatalogSubmitError("");
-              }}
-              placeholder={canAllocateParts ? "Search by part number or description..." : "Search disabled"}
-              style={{ width: "100%", opacity: canAllocateParts ? 1 : 0.7 }}
-            />
+            <div style={{ display: "flex", gap: "var(--control-gap)", alignItems: "center", flexWrap: "wrap" }}>
+              <SearchBar
+                value={catalogSearch}
+                disabled={!canAllocateParts}
+                onChange={(e) => {
+                  setCatalogSearch(e.target.value);
+                  setCatalogSuccessMessage("");
+                  setCatalogSubmitError("");
+                }}
+                onClear={() => {
+                  setCatalogSearch("");
+                  setCatalogSuccessMessage("");
+                  setCatalogSubmitError("");
+                }}
+                placeholder={canAllocateParts ? "Search by part number or description..." : "Search disabled"}
+                style={{ flex: "1 1 260px", minWidth: 0, opacity: canAllocateParts ? 1 : 0.7 }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowAddNewPartPopup(true)}
+                disabled={!canAllocateParts}
+                style={{ whiteSpace: "nowrap" }}
+              >
+                Add new part
+              </Button>
+            </div>
             {catalogLoading && (
               <div>
                 <InlineLoading width={120} label="Searching" />
@@ -2172,7 +2186,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         width: "100%",
                         padding: "10px",
                         border: "none",
-                        borderBottom: "1px solid var(--separating-line)",
+                        borderBottom: "1px solid var(--separating-line-color)",
                         textAlign: "left",
                         background: isSelected ? "var(--surface)" : "transparent",
                         cursor: "pointer",
@@ -2389,36 +2403,32 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
       {/* Part Removal Popup Modal */}
       {showPrePickPopup && (
-        <ModalPortal>
-          <div
-            className="popup-backdrop"
-            role="dialog"
-            aria-modal="true"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowPrePickPopup(false);
-              }
-            }}
-            style={{ zIndex: 10000 }}
-          >
-            <div
-              className="popup-card"
-              style={{
-                borderRadius: "var(--radius-xl)",
-                width: "100%",
-                maxWidth: "560px",
-                border: "none",
-                background: "var(--surface)",
-                padding: "var(--page-card-padding)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ fontSize: "var(--text-body)", fontWeight: 700, color: "var(--primary)" }}>
-                Set Picked Location
-              </div>
+        <PopupModal
+          isOpen
+          onClose={() => setShowPrePickPopup(false)}
+          ariaLabel="Set picked location"
+          cardStyle={{
+            width: "min(100%, 560px)",
+            padding: "var(--section-card-padding)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--layout-card-gap)",
+          }}>
+              <header className="app-popup-compact-header">
+                <h2>Set Picked Location</h2>
+                <div className="app-popup-compact-header__actions">
+                  <Button type="button" variant="primary" onClick={handleSubmitPrePickPopup} disabled={!selectedPrePickPartId} busy={savingPrePick}>
+                    Save Location
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={() => {
+                    setShowPrePickPopup(false);
+                    setSelectedPrePickPartId("");
+                    setSelectedPrePickLocation("");
+                  }}>
+                    Close
+                  </Button>
+                </div>
+              </header>
               <div style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
                 Choose a part already added to this job and assign the location it has been picked to.
               </div>
@@ -2441,64 +2451,33 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 className="prepick-popup-dropdown"
               />
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "4px" }}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowPrePickPopup(false);
-                    setSelectedPrePickPartId("");
-                    setSelectedPrePickLocation("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={handleSubmitPrePickPopup}
-                  disabled={!selectedPrePickPartId || savingPrePick}
-                  busy={savingPrePick}
-                >
-                  Save Location
-                </Button>
-              </div>
-            </div>
-          </div>
-        </ModalPortal>
+        </PopupModal>
       )}
 
+      <AddNewJobPartPopup
+        isOpen={showAddNewPartPopup}
+        jobId={jobId}
+        jobNumber={jobNumber}
+        actingUserId={actingUserId}
+        actingUserNumericId={actingUserNumericId}
+        onClose={() => setShowAddNewPartPopup(false)}
+        onAdded={async ({ partNumber }) => {
+          setCatalogSuccessMessage(`${partNumber} added directly to job ${jobNumber}.`);
+          if (typeof onRefreshJob === "function") await onRefreshJob();
+        }}
+      />
+
       {partPopup.open && partPopup.part && (
-        <ModalPortal>
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(0, 0, 0, 0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: "var(--z-modal)",
-            }}
-            onClick={() => setPartPopup({ open: false, part: null })}
-          >
-            <LayerSurface
-              radius="var(--radius-sm)"
-              padding="var(--section-card-padding)"
-              gap="var(--layout-card-gap)"
-              style={{
-                width: "min(92vw, 680px)",
-                maxWidth: "680px",
-                maxHeight: "calc(100dvh - 48px)",
-                overflowY: "auto",
-                boxShadow: "var(--shadow-xl)",
-                color: "var(--text-1)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
+        <PopupModal
+          isOpen
+          onClose={() => setPartPopup({ open: false, part: null })}
+          ariaLabel="Part details"
+          cardStyle={{
+            width: "min(100%, 680px)",
+            maxHeight: "calc(100dvh - 48px)",
+            overflowY: "auto",
+            padding: "var(--section-card-padding)",
+          }}>
               <div
                 style={{
                   display: "flex",
@@ -2781,9 +2760,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 }
               `}</style>
 
-            </LayerSurface>
-          </div>
-        </ModalPortal>
+        </PopupModal>
       )}
     </>
   );

@@ -11,6 +11,7 @@
 // missing the helper returns empty/zeroed defaults so the dashboard still
 // renders rather than throwing.
 import { getDatabaseClient } from "@/lib/database/client";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const db = getDatabaseClient();
 
@@ -85,7 +86,7 @@ export const setTechnicianSkills = async (userId, skills = []) => {
     }
     return { success: true };
   } catch (err) {
-    console.error("❌ setTechnicianSkills failed:", err);
+    logFailure("❌ setTechnicianSkills failed:", err);
     return { success: false, error: { message: err?.message || "Failed to save skills" } };
   }
 };

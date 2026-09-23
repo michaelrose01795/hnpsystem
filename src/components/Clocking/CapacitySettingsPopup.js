@@ -385,7 +385,7 @@ export default function CapacitySettingsPopup({
         .capacity-settings__date-list { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
         .capacity-settings__tech-list { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-content: start; gap: 8px; padding-right: 4px; }
         .capacity-settings__date-option { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; }
-        .capacity-settings__date-option input { width: 18px; height: 18px; accent-color: var(--accentMain); flex: 0 0 auto; }
+        .capacity-settings__date-option input { width: 18px; height: 18px; accent-color: var(--primary); flex: 0 0 auto; }
         .capacity-settings__date-option span { display: flex; flex-direction: column; gap: 2px; }
         .capacity-settings__date-option small, .capacity-settings__tech-person span, .capacity-settings__tech-person small { color: var(--text-1); font-size: 0.75rem; }
         .capacity-settings__tech-row { display: grid !important; grid-template-columns: minmax(0, 1fr) 116px; align-items: center; align-self: start; }

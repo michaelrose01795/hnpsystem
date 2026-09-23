@@ -10,6 +10,11 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import { SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
+import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+
+export function getServerSideProps() {
+  return redirectToHrManagerTab("training");
+}
 
 // Skeleton rows shown inside the Upcoming Expiries table while training data
 // loads. Keeps the outer page shell + header + assign-training form mounted so

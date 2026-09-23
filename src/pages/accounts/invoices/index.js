@@ -10,6 +10,7 @@ import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
 import InvoicesPageUi from "@/components/page-ui/accounts/invoices/accounts-invoices-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 const INVOICE_ROLES = ["ADMIN", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "SALES", "WORKSHOP", "WORKSHOP MANAGER", "PARTS", "PARTS MANAGER"];
 export default function InvoicesPage() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function InvoicesPage() {
       setInvoices(payload.data || []);
       setPagination((prev) => ({ ...prev, total: payload.pagination?.total || prev.total }));
     } catch (error) {
-      console.error("Failed to load invoices", error);
+      logFailure("Failed to load invoices", error);
     } finally {
       setLoading(false);
     }

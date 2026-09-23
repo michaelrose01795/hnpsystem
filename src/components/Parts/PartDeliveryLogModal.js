@@ -4,7 +4,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useUser } from "@/context/UserContext";
 import { CalendarField } from "@/components/ui/calendarAPI";
-import ModalPortal from "@/components/popups/ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
+import { logFailure } from "@/lib/utils/logFailure";
 
 export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, onDeliveryLogged }) {
   const { dbUserId } = useUser();
@@ -65,7 +66,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           });
         }
       } catch (err) {
-        console.error("Error fetching last delivery:", err);
+        logFailure("Error fetching last delivery:", err);
         setError("Failed to fetch previous delivery information");
       } finally {
         setLoading(false);
@@ -135,7 +136,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
         setSuccess("");
       }, 1500);
     } catch (err) {
-      console.error("Error logging delivery:", err);
+      logFailure("Error logging delivery:", err);
       setError(err.message || "Failed to log delivery");
     } finally {
       setSubmitting(false);
@@ -145,35 +146,19 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
   if (!isOpen) return null;
 
   return (
-    <ModalPortal>
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0, 0, 0, 0.6)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: "var(--z-modal)",
-          padding: "20px",
-        }}
-        onClick={onClose}
-      >
-        <div
-          style={{
-            width: "600px",
-            maxWidth: "95vw",
-            maxHeight: "90vh",
-            background: "var(--surface)",
-            borderRadius: "var(--radius-md)",
-            border: "none",
-            boxShadow: "var(--shadow-xl)",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
+    <PopupModal
+      isOpen
+      onClose={submitting ? undefined : onClose}
+      closeOnBackdrop={!submitting}
+      closeOnEscape={!submitting}
+      ariaLabel="Log part delivery"
+      cardStyle={{
+        width: "min(100%, 600px)",
+        maxHeight: "90vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}>
         {/* Header */}
         <div
           style={{
@@ -260,7 +245,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--input-ring)",
+                border: "1px solid var(--input-ring-color)",
                 fontSize: "14px",
               }}
             />
@@ -279,7 +264,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--input-ring)",
+                border: "1px solid var(--input-ring-color)",
                 fontSize: "14px",
               }}
             />
@@ -300,7 +285,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--input-ring)",
+                  border: "1px solid var(--input-ring-color)",
                   fontSize: "14px",
                 }}
               />
@@ -320,7 +305,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--input-ring)",
+                  border: "1px solid var(--input-ring-color)",
                   fontSize: "14px",
                 }}
               />
@@ -342,7 +327,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--input-ring)",
+                border: "1px solid var(--input-ring-color)",
                 fontSize: "14px",
               }}
             />
@@ -368,7 +353,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--input-ring)",
+                border: "1px solid var(--input-ring-color)",
                 fontSize: "14px",
                 resize: "vertical",
               }}
@@ -446,8 +431,6 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             {submitting ? "Logging..." : "Log Delivery"}
           </button>
         </div>
-        </div>
-      </div>
-    </ModalPortal>
+    </PopupModal>
   );
 }

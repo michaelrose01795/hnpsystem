@@ -18,38 +18,44 @@ import Layout from "@/components/Layout";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { MyJobCardShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
-import {
-  getJobByNumber,
-  updateJob,
-  updateJobStatus,
-  deleteJobFile,
-  markAllJobRequestsComplete,
-  saveWriteUpToDatabase,
-  updateJobRequestStatus,
-  updateJobRequestWorkDetails,
-  upsertJobRequestsForJob,
-  summarizeWriteUpTasks } from
-"@/lib/database/jobs";
-import { getVHCChecksByJob } from "@/lib/database/vhc";
-import { getClockingStatus } from "@/lib/database/clocking";
-import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
-import { fetchTrackingEntryForJob } from "@/lib/database/tracking";
-import { supabase } from "@/lib/database/supabaseClient";
-import WriteUpForm from "@/components/JobCards/WriteUpForm";
-import NotesTabNew from "@/components/NotesTab";
-import {
-  CustomerRequestsTab,
-  LocationUpdateModal,
-  WriteUpWorkspace
-} from "@/pages/job-cards/[jobNumber]";
-import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+// summarizeWriteUpTasks is pure and is called during render, so it comes from
+// the pure module rather than the database one.
+import { summarizeWriteUpTasks } from "@/lib/jobCards/writeUpTasks";
+
+// Loaded on demand - each resolves the Supabase browser client (213 KB). Every
+// function they export is called from a save, clock or tab handler here, and
+// the realtime channels subscribe from effects after mount, so none of this is
+// needed to render the job card a technician opens on the shop floor.
+const loadJobsDb = () => import("@/lib/database/jobs");
+const loadVhcDb = () => import("@/lib/database/vhc");
+const loadClockingDb = () => import("@/lib/database/clocking");
+const loadJobClockingDb = () => import("@/lib/database/jobClocking");
+const loadNotesDb = () => import("@/lib/database/notes");
+const loadJobStatusService = () => import("@/lib/services/jobStatusService");
+import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/realtimeClient";
+// Non-default tab bodies and on-demand widgets, code-split.
+//
+// Same reasoning as the six VHC modals above: these render only inside a tab or
+// a popup the technician has to open, but they were static imports, so every
+// technician job card downloaded roughly 300 KB of source it usually never
+// showed. The render guards that decide when they appear are unchanged.
+const techChunkLoading = () => <InlineLoading />;
+const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false, loading: techChunkLoading });
+const NotesTabNew = dynamic(() => import("@/components/NotesTab"), { ssr: false, loading: techChunkLoading });
+// The three job-card components the technician card reuses. These used to be
+// imported from "@/pages/job-cards/[jobNumber]", which pulled that entire
+// 13k-line page - and every tab, panel and modal it references - into this
+// route's first load. They now live in their own shared modules, so behaviour
+// is identical and the job-card page is no longer a dependency of this route.
+import CustomerRequestsTab from "@/components/JobCards/CustomerRequestsTab";
+import LocationUpdateModal from "@/components/JobCards/LocationUpdateModal";
+import WriteUpWorkspace from "@/components/JobCards/WriteUpWorkspace";
+const DocumentsUploadPopup = dynamic(() => import("@/components/popups/DocumentsUploadPopup"), { ssr: false });
 import ModalPortal from "@/components/popups/ModalPortal";
-import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
-import { createJobNote, getNotesByJob } from "@/lib/database/notes";
-import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { deriveJobTypeDisplay, formatDetectedJobTypeLabel } from "@/lib/jobType/display";
 import {
   getMainStatusMetadata,
@@ -61,7 +67,7 @@ import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
 import { getWriteUpCompletionState } from "@/features/jobCards/workflow/selectors";
-import VhcAssistantPanel from "@/features/vhcAssistant/components/VhcAssistantPanel";
+const VhcAssistantPanel = dynamic(() => import("@/features/vhcAssistant/components/VhcAssistantPanel"), { ssr: false, loading: techChunkLoading });
 import {
   normaliseDecisionStatus,
   projectVhcItems,
@@ -83,6 +89,7 @@ const UndersideDetailsModal = dynamic(() => import("@/components/VHC/UndersideDe
 import VhcCameraButton from "@/components/VHC/VhcCameraButton";
 import CustomerVideoButton from "@/components/VHC/CustomerVideoButton";
 import Button from "@/components/ui/Button";
+import PopupModal from "@/components/popups/popupStyleApi";
 const PhotoEditorModal = dynamic(() => import("@/components/VHC/PhotoEditorModal"), { ssr: false });
 const VideoEditorModal = dynamic(() => import("@/components/VHC/VideoEditorModal"), { ssr: false });
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -96,6 +103,7 @@ import themeConfig, {
 // Page layout styles — moved inline from appTheme.js (this was the only consumer).
 // Uses thin CSS variable wrapper aliases to keep the same token references.
 import TechJobDetailPageUi from "@/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui"; // Extracted presentation layer.
+import { logFailure } from "@/lib/utils/logFailure";
 const _p = { // CSS variable token aliases for this layout (matches appTheme palette)
   accent: "var(--primary)", // primary brand colour
   accentSoft: "var(--surface)", // light accent surface
@@ -637,19 +645,19 @@ export default function TechJobDetailPage() {
   useEffect(() => {
     if (activeTab === "parts" && jobCardId) {
       setAuthorizedVhcRowsLoading(true);
-      supabase.
+      void loadSupabaseClient().then((supabase) => supabase.
       from("vhc_checks").
       select("vhc_id, job_id, section, issue_title, issue_description, approval_status, authorization_state, labour_hours, parts_cost, pre_pick_location, note_text, severity, approved_at, approved_by, Complete, request_id").
       eq("job_id", jobCardId).
       eq("approval_status", "authorized").
       then(({ data, error }) => {
         if (error) {
-          console.error("Failed to refresh authorised VHC rows:", error);
+          logFailure("Failed to refresh authorised VHC rows:", error);
         } else {
           setAuthorizedVhcRows(data || []);
         }
         setAuthorizedVhcRowsLoading(false);
-      });
+      }));
     }
   }, [activeTab, jobCardId]);
 
@@ -672,7 +680,7 @@ export default function TechJobDetailPage() {
       setPartsRequestsLoading(true);
 
       try {
-        const { data, error } = await supabase.
+        const { data, error } = await (await loadSupabaseClient()).
         from("parts_requests").
         select(`
             request_id,
@@ -705,7 +713,7 @@ export default function TechJobDetailPage() {
 
         setPartsRequests(data || []);
       } catch (loadError) {
-        console.error("Failed to load parts requests:", loadError);
+        logFailure("Failed to load parts requests:", loadError);
         setPartsRequests([]);
       } finally {
         setPartsRequestsLoading(false);
@@ -724,10 +732,10 @@ export default function TechJobDetailPage() {
 
       setNotesLoading(true);
       try {
-        const fetchedNotes = await getNotesByJob(targetJobId);
+        const fetchedNotes = await (await loadNotesDb()).getNotesByJob(targetJobId);
         setNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []);
       } catch (error) {
-        console.error("Failed to load notes:", error);
+        logFailure("Failed to load notes:", error);
         setNotes([]);
       } finally {
         setNotesLoading(false);
@@ -746,7 +754,7 @@ export default function TechJobDetailPage() {
 
       setAuthorizedPartsLoading(true);
       try {
-        const { data: partsData, error: partsError } = await supabase.
+        const { data: partsData, error: partsError } = await (await loadSupabaseClient()).
         from("parts_job_items").
         select(
           `
@@ -780,7 +788,7 @@ export default function TechJobDetailPage() {
           throw partsError;
         }
 
-        const { data: vhcChecksData, error: vhcChecksError } = await supabase.
+        const { data: vhcChecksData, error: vhcChecksError } = await (await loadSupabaseClient()).
         from("vhc_checks").
         select("vhc_id, job_id, section, issue_title, issue_description, approval_status, authorization_state, labour_hours, parts_cost, pre_pick_location, note_text, severity, approved_at, approved_by, Complete, request_id").
         eq("job_id", targetJobId).
@@ -803,7 +811,7 @@ export default function TechJobDetailPage() {
 
         setAuthorizedParts(filtered);
       } catch (loadError) {
-        console.error("Failed to load authorised parts:", loadError);
+        logFailure("Failed to load authorised parts:", loadError);
         setAuthorizedParts([]);
         setAuthorizedVhcRows([]);
       } finally {
@@ -826,7 +834,7 @@ export default function TechJobDetailPage() {
         setStatusSnapshot(payload.snapshot);
       }
     } catch (snapshotError) {
-      console.error("Failed to load status snapshot:", snapshotError);
+      logFailure("Failed to load status snapshot:", snapshotError);
     }
   }, []);
 
@@ -857,7 +865,7 @@ export default function TechJobDetailPage() {
         });
       }
     } catch (statusError) {
-      console.error("Failed to load VHC customer status:", statusError);
+      logFailure("Failed to load VHC customer status:", statusError);
     }
   }, [jobNumber]);
 
@@ -871,14 +879,14 @@ export default function TechJobDetailPage() {
     }
 
     try {
-      const { success, data } = await getClockingStatus(dbUserId);
+      const { success, data } = await (await loadClockingDb()).getClockingStatus(dbUserId);
       if (success) {
         setClockingStatus(data);
       } else {
         setClockingStatus(null);
       }
     } catch (error) {
-      console.error("Error refreshing clocking status:", error);
+      logFailure("Error refreshing clocking status:", error);
       setClockingStatus(null);
     }
   }, [dbUserId]);
@@ -914,7 +922,7 @@ export default function TechJobDetailPage() {
           }
 
           if (Object.keys(subStatusUpdates).length > 0) {
-            const response = await updateJob(jobCardId, subStatusUpdates);
+            const response = await (await loadJobsDb()).updateJob(jobCardId, subStatusUpdates);
             if (response?.success && response.data) {
               setJobData((prev) => {
                 if (!prev?.jobCard) return prev;
@@ -928,11 +936,11 @@ export default function TechJobDetailPage() {
               });
             }
           }
-          await logJobSubStatus(jobCardId, targetStatus, dbUserId, restUpdates?.status_change_reason);
+          await (await loadJobStatusService()).logJobSubStatus(jobCardId, targetStatus, dbUserId, restUpdates?.status_change_reason);
           revalidateAllJobs(); // sync status change to other pages
           return { status: subStatusUpdates.status || targetStatus, subStatus: targetStatus };
         } catch (error) {
-          console.error("syncJobStatus error:", error);
+          logFailure("syncJobStatus error:", error);
           return null;
         }
       }
@@ -958,8 +966,8 @@ export default function TechJobDetailPage() {
         const targetLabel = targetMeta?.label || targetStatus;
         const response =
         statusAuditUpdates && Object.keys(statusAuditUpdates).length > 0 ?
-        await updateJob(jobCardId, { status: targetLabel, ...statusAuditUpdates }) :
-        await updateJobStatus(jobCardId, targetLabel);
+        await (await loadJobsDb()).updateJob(jobCardId, { status: targetLabel, ...statusAuditUpdates }) :
+        await (await loadJobsDb()).updateJobStatus(jobCardId, targetLabel);
         if (response?.success && response.data) {
           setJobData((prev) => {
             if (!prev?.jobCard) return prev;
@@ -975,7 +983,7 @@ export default function TechJobDetailPage() {
           return response.data;
         }
       } catch (error) {
-        console.error("syncJobStatus error:", error);
+        logFailure("syncJobStatus error:", error);
       }
 
       return null;
@@ -992,7 +1000,7 @@ export default function TechJobDetailPage() {
     }
 
     try {
-      const result = await getUserActiveJobs(workshopUserId);
+      const result = await (await loadJobClockingDb()).getUserActiveJobs(workshopUserId);
       if (result.success) {
         const match = result.data.find(
           (job) => Number(job.jobId) === Number(jobCardId)
@@ -1002,7 +1010,7 @@ export default function TechJobDetailPage() {
         setJobClocking(null);
       }
     } catch (refreshError) {
-      console.error("Failed to refresh job clocking", refreshError);
+      logFailure("Failed to refresh job clocking", refreshError);
       setJobClocking(null);
     }
   }, [dbUserId, user?.id, jobCardId]);
@@ -1014,7 +1022,7 @@ export default function TechJobDetailPage() {
     }
 
     try {
-      let query = supabase.
+      let query = (await loadSupabaseClient()).
       from("job_clocking").
       select("id, user_id, request_id, work_type, clock_in, clock_out");
       if (jobCardId) {
@@ -1027,10 +1035,38 @@ export default function TechJobDetailPage() {
       const rows = Array.isArray(data) ? data : [];
       setClockingRows(rows);
     } catch (fetchError) {
-      console.error("Failed to fetch clocked hours total:", fetchError);
+      logFailure("Failed to fetch clocked hours total:", fetchError);
       setClockingRows([]);
     }
   }, [jobCardId, jobNumber]);
+
+  // Read the tracker entry through /api/tracking/snapshot rather than calling
+  // `fetchTrackingEntryForJob()` in the browser.
+  //
+  // The direct call ran the tracking-event queries from this page under the
+  // public anon key and was, with the job card, the last browser-side read
+  // keeping key_tracking_events and vehicle_tracking_events open to anon. The
+  // route is role-guarded and runs the identical match server-side under the
+  // service role, returning the same entry shape (or null).
+  const loadTrackerEntry = useCallback(async ({ jobId, jobNumber: targetJobNumber, vehicleReg }) => {
+    if (!jobId && !targetJobNumber && !vehicleReg) return null;
+    try {
+      const params = new URLSearchParams();
+      if (jobId) params.set("jobId", String(jobId));
+      if (targetJobNumber) params.set("jobNumber", String(targetJobNumber));
+      if (vehicleReg) params.set("vehicleReg", String(vehicleReg));
+
+      const response = await fetch(buildApiUrl(`/api/tracking/snapshot?${params.toString()}`));
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Failed to load tracking data");
+      }
+      return payload.data || null;
+    } catch (loadError) {
+      logFailure("Failed to load tracking entry", loadError);
+      return null;
+    }
+  }, []);
 
   const fetchJobData = useCallback(async (options = {}) => {
     if (!jobNumber) return;
@@ -1038,7 +1074,7 @@ export default function TechJobDetailPage() {
     const silent = options?.silent === true;
     if (!silent) setLoading(true);
     try {
-      const { data: job, error: jobError } = await getJobByNumber(jobNumber, {
+      const { data: job, error: jobError } = await (await loadJobsDb()).getJobByNumber(jobNumber, {
         force: options?.force === true
       });
 
@@ -1050,18 +1086,19 @@ export default function TechJobDetailPage() {
 
       setJobData(job);
       setLiveWriteUpTasks(null);
-      const trackingResult = await fetchTrackingEntryForJob({
-        jobId: job?.jobCard?.id,
-        jobNumber: job?.jobCard?.jobNumber || jobNumber,
-        vehicleReg: job?.vehicle?.reg,
-      });
-      setTrackerEntry(trackingResult.success ? trackingResult.data : null);
+      setTrackerEntry(
+        await loadTrackerEntry({
+          jobId: job?.jobCard?.id,
+          jobNumber: job?.jobCard?.jobNumber || jobNumber,
+          vehicleReg: job?.vehicle?.reg,
+        })
+      );
       const mappedFiles = (job?.jobCard?.files || job?.files || []).map(mapJobFileRecord);
       setJobDocuments(mappedFiles);
 
       const jobCardIdForFetch = job?.jobCard?.id;
       if (jobCardIdForFetch) {
-        const checks = await getVHCChecksByJob(jobCardIdForFetch);
+        const checks = await (await loadVhcDb()).getVHCChecksByJob(jobCardIdForFetch);
         setVhcChecks(checks);
         await loadStatusSnapshot(jobCardIdForFetch);
       } else {
@@ -1078,7 +1115,7 @@ export default function TechJobDetailPage() {
       await loadVhcCustomerStatus();
       return job;
     } catch (fetchError) {
-      console.error("Error fetching job:", fetchError);
+      logFailure("Error fetching job:", fetchError);
       alert("Failed to load job");
       return null;
     } finally {
@@ -1093,7 +1130,8 @@ export default function TechJobDetailPage() {
   loadNotes,
   loadStatusSnapshot,
   loadVhcCustomerStatus,
-  fetchClockedHoursTotal]
+  fetchClockedHoursTotal,
+  loadTrackerEntry]
   );
 
   const refreshWorkspaceData = useCallback(async () => {
@@ -1161,19 +1199,19 @@ export default function TechJobDetailPage() {
           new Date().toISOString()
       }));
 
-      const trackingResult = await fetchTrackingEntryForJob({
+      const refreshedEntry = await loadTrackerEntry({
         jobId: payload.jobId,
         jobNumber: resolvedJobNumber,
         vehicleReg: resolvedReg
       });
-      if (trackingResult.success && trackingResult.data) {
-        setTrackerEntry(trackingResult.data);
+      if (refreshedEntry) {
+        setTrackerEntry(refreshedEntry);
       }
       setTrackerQuickModalOpen(false);
     } catch (saveError) {
-      console.error("Failed to save tracking entry", saveError);
+      logFailure("Failed to save tracking entry", saveError);
     }
-  }, [dbUserId, jobData, jobNumber]);
+  }, [dbUserId, jobData, jobNumber, loadTrackerEntry]);
 
   const handleUpdateRequests = useCallback(async (updatedRequests) => {
     if (!jobCardId) return;
@@ -1200,7 +1238,7 @@ export default function TechJobDetailPage() {
     }));
 
     try {
-      const requestResult = await upsertJobRequestsForJob(jobCardId, normalized);
+      const requestResult = await (await loadJobsDb()).upsertJobRequestsForJob(jobCardId, normalized);
       if (!requestResult?.success) {
         throw requestResult?.error || new Error("Failed to update job requests");
       }
@@ -1216,52 +1254,52 @@ export default function TechJobDetailPage() {
         specialRate: entry.specialRate,
         noteText: entry.noteText
       }));
-      const legacyResult = await updateJob(jobCardId, { requests: requestPayload });
+      const legacyResult = await (await loadJobsDb()).updateJob(jobCardId, { requests: requestPayload });
       if (!legacyResult?.success) {
         throw legacyResult?.error || new Error("Failed to update legacy request details");
       }
       await refreshWorkspaceData();
     } catch (requestError) {
-      console.error("Failed to update technician job requests:", requestError);
+      logFailure("Failed to update technician job requests:", requestError);
     }
   }, [jobCardId, refreshWorkspaceData]);
 
   const handleUpdateRequestStatus = useCallback(async (requestId, nextStatus) => {
     if (!requestId) return;
     try {
-      const result = await updateJobRequestStatus(requestId, nextStatus);
+      const result = await (await loadJobsDb()).updateJobRequestStatus(requestId, nextStatus);
       if (!result?.success) {
         throw result?.error || new Error("Failed to update request status");
       }
       await refreshWorkspaceData();
     } catch (requestError) {
-      console.error("Failed to update technician request status:", requestError);
+      logFailure("Failed to update technician request status:", requestError);
     }
   }, [refreshWorkspaceData]);
 
   const handleSaveRequestWorkDetails = useCallback(async (requestId, fields = {}) => {
     if (!requestId) return;
     try {
-      const result = await updateJobRequestWorkDetails(requestId, fields);
+      const result = await (await loadJobsDb()).updateJobRequestWorkDetails(requestId, fields);
       if (!result?.success) {
         throw result?.error || new Error("Failed to save request work details");
       }
       await refreshWorkspaceData();
     } catch (requestError) {
-      console.error("Failed to save technician request details:", requestError);
+      logFailure("Failed to save technician request details:", requestError);
     }
   }, [refreshWorkspaceData]);
 
   const handleMarkAllRequestsComplete = useCallback(async () => {
     if (!jobCardId) return;
     try {
-      const result = await markAllJobRequestsComplete(jobCardId);
+      const result = await (await loadJobsDb()).markAllJobRequestsComplete(jobCardId);
       if (!result?.success) {
         throw result?.error || new Error("Failed to mark all requests complete");
       }
       await refreshWorkspaceData();
     } catch (requestError) {
-      console.error("Failed to complete technician job requests:", requestError);
+      logFailure("Failed to complete technician job requests:", requestError);
     }
   }, [jobCardId, refreshWorkspaceData]);
 
@@ -1271,7 +1309,7 @@ export default function TechJobDetailPage() {
       return { success: false, error: "Job number is unavailable" };
     }
     try {
-      const result = await saveWriteUpToDatabase(targetJobNumber, writeUpData);
+      const result = await (await loadJobsDb()).saveWriteUpToDatabase(targetJobNumber, writeUpData);
       if (!result?.success) {
         throw result?.error || new Error("Failed to save write-up");
       }
@@ -1279,7 +1317,7 @@ export default function TechJobDetailPage() {
       revalidateAllJobs();
       return result;
     } catch (writeUpError) {
-      console.error("Failed to save technician write-up:", writeUpError);
+      logFailure("Failed to save technician write-up:", writeUpError);
       throw writeUpError instanceof Error
         ? writeUpError
         : new Error(String(writeUpError || "Failed to save write-up"));
@@ -1351,14 +1389,43 @@ export default function TechJobDetailPage() {
 
   useEffect(() => {
     if (!hasActiveClocking) return undefined;
+
+    // `clockingNow` has exactly two consumers: clockedMinutesTotal, rendered as
+    // `Xh Ymins` (whole minutes), and workspaceClockingEntries.hoursWorked,
+    // rounded to two decimal places of an hour (36-second granularity). A
+    // one-second tick re-rendered this 5,800-line page — the largest route in
+    // the app, and the one a technician leaves open at the ramp all day — many
+    // times more often than either value could change.
+    //
+    // The tick still runs every second and still updates the moment either
+    // displayed value moves; it just no longer commits state when neither has.
+    const signatureAt = (now) => {
+      const minutes = calculateClockingMinutesTotal(clockingRows, now);
+      const hours = clockingRows
+        .map((row) => {
+          if (row?.clock_out) return "";
+          const startedAt = row?.clock_in ? Date.parse(row.clock_in) : Number.NaN;
+          if (!Number.isFinite(startedAt) || now <= startedAt) return "";
+          return ((now - startedAt) / (1000 * 60 * 60)).toFixed(2);
+        })
+        .join(",");
+      return `${minutes}|${hours}`;
+    };
+
+    let lastSignature = signatureAt(Date.now());
     const intervalId = setInterval(() => {
-      setClockingNow(Date.now());
+      const now = Date.now();
+      const signature = signatureAt(now);
+      if (signature === lastSignature) return;
+      lastSignature = signature;
+      setClockingNow(now);
     }, 1000);
     return () => clearInterval(intervalId);
-  }, [hasActiveClocking]);
+  }, [hasActiveClocking, clockingRows]);
 
   useEffect(() => {
     if (!jobCardId) return undefined;
+    return subscribeWithDeferredClient((supabase) => {
     const channel = supabase.channel(`job-clockings-${jobCardId}`);
     const handleClockingChange = () => {
       fetchClockedHoursTotal();
@@ -1378,14 +1445,14 @@ export default function TechJobDetailPage() {
     );
 
     void channel.subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return channel;
+    });
   }, [jobCardId, fetchClockedHoursTotal, refreshJobClocking, loadStatusSnapshot]);
 
   useEffect(() => {
     if (!jobCardId) return undefined;
 
+    return subscribeWithDeferredClient((supabase) => {
     const channel = supabase.channel(`myjob-live-${jobCardId}`);
     const handleJobRefresh = () => {
       fetchJobData();
@@ -1425,9 +1492,8 @@ export default function TechJobDetailPage() {
     );
 
     void channel.subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return channel;
+    });
   }, [jobCardId, fetchJobData]);
 
   useEffect(() => {
@@ -1435,6 +1501,7 @@ export default function TechJobDetailPage() {
       return undefined;
     }
 
+    return subscribeWithDeferredClient((supabase) => {
     const channel = supabase.channel(`job-notes-${jobCardId}`);
     const handleChange = () => loadNotes(jobCardId);
 
@@ -1450,9 +1517,8 @@ export default function TechJobDetailPage() {
     );
 
     void channel.subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return channel;
+    });
   }, [jobCardId, loadNotes]);
 
   // Callback: Handle job clock out
@@ -1480,7 +1546,7 @@ export default function TechJobDetailPage() {
 
     setClockOutLoading(true);
     try {
-      const result = await clockOutFromJob(workshopUserId, jobCardId, jobClocking.clockingId);
+      const result = await (await loadJobClockingDb()).clockOutFromJob(workshopUserId, jobCardId, jobClocking.clockingId);
       if (result.success) {
         alert(`Clocked out from Job ${jobCardNumber}\n\nHours worked: ${result.hoursWorked}h`);
         setCurrentJob(null);
@@ -1500,7 +1566,7 @@ export default function TechJobDetailPage() {
         alert(result.error || "Failed to clock out of this job.");
       }
     } catch (clockOutError) {
-      console.error("Error clocking out from job:", clockOutError);
+      logFailure("Error clocking out from job:", clockOutError);
       alert(clockOutError.message || "Error clocking out. Please try again.");
     } finally {
       setClockOutLoading(false);
@@ -1577,7 +1643,7 @@ export default function TechJobDetailPage() {
         throw error;
       }
 
-      await createJobNote({
+      await (await loadNotesDb()).createJobNote({
         job_id: jobCardId,
         user_id: Number.isFinite(Number(requesterId)) ? Number(requesterId) : null,
         note_text: `Parts request sent directly to Parts: ${partRequired}`,
@@ -1592,7 +1658,7 @@ export default function TechJobDetailPage() {
       await fetchJobData();
       return { success: true, requestId: insertedRequest?.request_id };
     } catch (submitError) {
-      console.error("Failed to submit part request:", submitError);
+      logFailure("Failed to submit part request:", submitError);
       setPartsFeedback(submitError.message || "Failed to raise the part request. Try again.");
       return { success: false };
     } finally {
@@ -1624,7 +1690,7 @@ export default function TechJobDetailPage() {
           .update({ status: "cancelled", updated_at: new Date().toISOString() })
           .eq("request_id", requestId);
         if (error) throw error;
-        await createJobNote({
+        await (await loadNotesDb()).createJobNote({
           job_id: jobCardId,
           user_id: Number.isFinite(Number(actorId)) ? Number(actorId) : null,
           note_text: `Parts request #${requestId} cancelled by technician.`,
@@ -1636,9 +1702,9 @@ export default function TechJobDetailPage() {
         if (typeof updates.description === "string") safeUpdates.description = updates.description;
         if (updates.quantity !== undefined) safeUpdates.quantity = Math.max(1, Number(updates.quantity) || 1);
         safeUpdates.updated_at = new Date().toISOString();
-        const { error } = await supabase.from("parts_requests").update(safeUpdates).eq("request_id", requestId);
+        const { error } = await (await loadSupabaseClient()).from("parts_requests").update(safeUpdates).eq("request_id", requestId);
         if (error) throw error;
-        await createJobNote({
+        await (await loadNotesDb()).createJobNote({
           job_id: jobCardId,
           user_id: Number.isFinite(Number(actorId)) ? Number(actorId) : null,
           note_text: `Parts request #${requestId} edited by technician.`,
@@ -1661,7 +1727,7 @@ export default function TechJobDetailPage() {
             .eq("request_id", requestId);
           if (error) throw error;
         }
-        await createJobNote({
+        await (await loadNotesDb()).createJobNote({
           job_id: jobCardId,
           user_id: Number.isFinite(Number(actorId)) ? Number(actorId) : null,
           note_text: `Parts request #${requestId} marked as fitted.`,
@@ -1673,7 +1739,7 @@ export default function TechJobDetailPage() {
       await fetchJobData();
       return { success: true };
     } catch (error) {
-      console.error("Failed to update parts request:", error);
+      logFailure("Failed to update parts request:", error);
       setPartsFeedback(error.message || "Failed to update the parts request.");
       return { success: false };
     }
@@ -1685,7 +1751,7 @@ export default function TechJobDetailPage() {
       return { success: false };
     }
     const actorId = dbUserId ?? user?.id ?? null;
-    const result = await createJobNote({
+    const result = await (await loadNotesDb()).createJobNote({
       job_id: jobCardId,
       user_id: Number.isFinite(Number(actorId)) ? Number(actorId) : null,
       note_text: `Parts request #${requestId}: ${trimmedNote}`,
@@ -1730,7 +1796,7 @@ export default function TechJobDetailPage() {
       await fetchJobData();
       return { success: true };
     } catch (error) {
-      console.error("Failed to update job part:", error);
+      logFailure("Failed to update job part:", error);
       setPartsFeedback(error.message || "Failed to update part status.");
       return { success: false };
     }
@@ -1775,11 +1841,11 @@ export default function TechJobDetailPage() {
           _sectionStatus: updatedStatus || sectionStatus
         };
 
-        const result = await saveChecksheet(jobNumber, payloadWithStatus);
+        const result = await (await loadJobsDb()).saveChecksheet(jobNumber, payloadWithStatus);
         if (result.success) {
           console.log("VHC data saved successfully");
           if (!vhcStartedLogged && jobCardId) {
-            await logJobSubStatus(jobCardId, "VHC Started", dbUserId, "VHC started");
+            await (await loadJobStatusService()).logJobSubStatus(jobCardId, "VHC Started", dbUserId, "VHC started");
             setVhcStartedLogged(true);
           }
           if (saveTimeoutRef.current) {
@@ -1793,12 +1859,12 @@ export default function TechJobDetailPage() {
           }
           return true;
         }
-        console.error("VHC save failed:", result.error);
+        logFailure("VHC save failed:", result.error);
         setSaveStatus("error");
         setSaveError(result.error?.message || "Failed to save VHC data.");
         return false;
       } catch (err) {
-        console.error("Error saving VHC:", err);
+        logFailure("Error saving VHC:", err);
         setSaveStatus("error");
         setSaveError(err.message || "Unexpected error saving VHC data.");
         return false;
@@ -1828,7 +1894,7 @@ export default function TechJobDetailPage() {
     } else {
       // Reload VHC checks to ensure data is fresh
       if (jobCardId) {
-        const checks = await getVHCChecksByJob(jobCardId);
+        const checks = await (await loadVhcDb()).getVHCChecksByJob(jobCardId);
         setVhcChecks(checks);
       }
     }
@@ -2293,7 +2359,7 @@ export default function TechJobDetailPage() {
         }
       }
     } catch (error) {
-      console.error("Error updating VHC status:", error);
+      logFailure("Error updating VHC status:", error);
       if (shouldShowCompleteCard) {
         setVhcCompleteOverride(false);
       }
@@ -2410,7 +2476,7 @@ export default function TechJobDetailPage() {
     const confirmed = await confirm(`Update job status to "${newStatus}"?`);
     if (!confirmed) return;
 
-    const result = await updateJobStatus(jobCardId, newStatus);
+    const result = await (await loadJobsDb()).updateJobStatus(jobCardId, newStatus);
 
     if (result?.success && result.data) {
       alert("Status updated successfully!");
@@ -2462,7 +2528,7 @@ export default function TechJobDetailPage() {
 
     setNotesSubmitting(true);
     try {
-      const result = await createJobNote({
+      const result = await (await loadNotesDb()).createJobNote({
         job_id: jobCardId,
         user_id: dbUserId || null,
         note_text: trimmedNote,
@@ -2477,7 +2543,7 @@ export default function TechJobDetailPage() {
       setShowAddNote(false);
       await loadNotes(jobCardId);
     } catch (error) {
-      console.error("Failed to add note:", error);
+      logFailure("Failed to add note:", error);
       alert(error?.message || "Failed to add note");
     } finally {
       setNotesSubmitting(false);
@@ -2493,7 +2559,7 @@ export default function TechJobDetailPage() {
       try {
         const storagePath = deriveStoragePathFromUrl(file.url);
         if (storagePath) {
-          const { error: removeError } = await supabase.storage.
+          const { error: removeError } = await (await loadSupabaseClient()).storage.
           from(JOB_DOCUMENT_BUCKET).
           remove([storagePath]);
           if (removeError) {
@@ -2501,7 +2567,7 @@ export default function TechJobDetailPage() {
           }
         }
 
-        const result = await deleteJobFile(file.id);
+        const result = await (await loadJobsDb()).deleteJobFile(file.id);
         if (!result?.success) {
           alert(result?.error?.message || "Failed to delete document");
           return;
@@ -2522,7 +2588,7 @@ export default function TechJobDetailPage() {
           };
         });
       } catch (deleteError) {
-        console.error("Failed to delete document:", deleteError);
+        logFailure("Failed to delete document:", deleteError);
         alert(deleteError?.message || "Failed to delete document");
       }
     },
@@ -2544,9 +2610,9 @@ export default function TechJobDetailPage() {
 
       const storagePath = deriveStoragePathFromUrl(oldDoc.url);
       if (storagePath) {
-        await supabase.storage.from(JOB_DOCUMENT_BUCKET).remove([storagePath]).catch(() => {});
+        await (await loadSupabaseClient()).storage.from(JOB_DOCUMENT_BUCKET).remove([storagePath]).catch(() => {});
       }
-      await deleteJobFile(oldDoc.id).catch(() => {});
+      await (await loadJobsDb()).deleteJobFile(oldDoc.id).catch(() => {});
 
       const newDoc = mapJobFileRecord({
         file_id: data.file?.fileId || null,
@@ -2581,14 +2647,23 @@ export default function TechJobDetailPage() {
       // silently ignore — gallery refreshes on next fetch
     }}, [jobNumber]);
 
-  // Handler: VHC button click - only navigate if VHC is required
+  // Handler: VHC button click - only navigate if VHC is required.
+  //
+  // The tab state this switches lives in `activeTab` (declared above and
+  // handed to the page-ui); it called a `setSelectedTab` that has never been
+  // declared anywhere in this file. The call would have thrown a ReferenceError
+  // the moment it ran - it never did, because this helper is currently
+  // unreferenced: the live VHC entry point is the tab bar in the page-ui, which
+  // calls setActiveTab directly, and `visibleTabs` already omits the VHC tab
+  // when the job does not require one. Pointed at the real owner so the helper
+  // is correct if it is wired back up; no UI or workflow is changed by this.
   const handleVhcClick = () => {
     if (!jobData?.jobCard?.vhcRequired) {
       alert("VHC is not required for this job.");
       return;
     }
     // Switch to VHC tab
-    setSelectedTab("vhc");
+    setActiveTab("vhc");
   };
 
   // Helper: Get dynamic VHC button text based on job status
@@ -2891,11 +2966,12 @@ export default function TechJobDetailPage() {
   user?.role ?
   [user.role] :
   [];
-  const hasRoleAccess = userRoles.some((roleName) => {
+  const hasFullAccess = hasAllAccessRole(userRoles); // All Access demo login
+  const hasRoleAccess = hasFullAccess || userRoles.some((roleName) => {
     const normalized = String(roleName).toLowerCase();
     return normalized.includes("tech") || normalized.includes("mot");
   });
-  const hasMotRoleAccess = userRoles.some((roleName) =>
+  const hasMotRoleAccess = hasFullAccess || userRoles.some((roleName) =>
   String(roleName).toLowerCase().includes("mot")
   );
   const isTech =
@@ -2925,9 +3001,9 @@ export default function TechJobDetailPage() {
     if (!jobCardId) return;
 
     if (technicianWorkspaceState.shouldPersistReopen) {
-      updateJob(jobCardId, {
+      loadJobsDb().then((m) => m.updateJob(jobCardId, {
         tech_completion_status: TECH_JOB_STATUS.AUTHORISED_ITEMS,
-      }).then((statusResult) => {
+      })).then((statusResult) => {
         if (statusResult?.success && statusResult.data) {
           setJobData((prev) => {
             if (!prev?.jobCard) return prev;
@@ -2959,7 +3035,7 @@ export default function TechJobDetailPage() {
     const canCompleteJobLocal = writeUpTechComplete && (!requiresVhc || isVhcCompleted);
     if (canCompleteJobLocal) return;
 
-    updateJob(jobCardId, { tech_completion_status: null }).then((statusResult) => {
+    loadJobsDb().then((m) => m.updateJob(jobCardId, { tech_completion_status: null })).then((statusResult) => {
       if (statusResult?.success && statusResult.data) {
         setJobData((prev) => {
           if (!prev?.jobCard) return prev;
@@ -3151,7 +3227,7 @@ export default function TechJobDetailPage() {
         currentTechStatus: jobCard?.techCompletionStatus ?? null,
       });
       const resolvedWorkType = isMotClockIn ? "mot" : engineWorkType;
-      const result = await clockInToJob(
+      const result = await (await loadJobClockingDb()).clockInToJob(
         workshopUserId,
         jobCardId,
         jobCardNumber,
@@ -3177,7 +3253,7 @@ export default function TechJobDetailPage() {
         alert(result.error || "Failed to clock in to this job.");
       }
     } catch (clockInError) {
-      console.error("Error clocking in to job:", clockInError);
+      logFailure("Error clocking in to job:", clockInError);
       alert(clockInError.message || "Error clocking in. Please try again.");
     } finally {
       setClockInLoading(false);
@@ -3195,7 +3271,7 @@ export default function TechJobDetailPage() {
       }
       setClockOutLoading(true);
       try {
-        const result = await clockOutFromJob(
+        const result = await (await loadJobClockingDb()).clockOutFromJob(
           workshopUserId,
           jobCardId,
           jobClocking.clockingId
@@ -3214,7 +3290,7 @@ export default function TechJobDetailPage() {
         await fetchClockedHoursTotal();
         await refreshClockingStatus();
       } catch (clockOutError) {
-        console.error("Error clocking out from job:", clockOutError);
+        logFailure("Error clocking out from job:", clockOutError);
         alert(clockOutError.message || "Error clocking out. Please try again.");
         return;
       } finally {
@@ -3252,7 +3328,7 @@ export default function TechJobDetailPage() {
     const hasAuthorisedItemsOutstanding = resolvedTechStatus === TECH_JOB_STATUS.AUTHORISED_ITEMS;
 
     if (jobCardId) {
-      const statusResult = await updateJob(jobCardId, { tech_completion_status: resolvedTechStatus });
+      const statusResult = await (await loadJobsDb()).updateJob(jobCardId, { tech_completion_status: resolvedTechStatus });
       if (!statusResult?.success) {
         console.warn("Failed to set completion status");
       } else if (statusResult.data) {
@@ -5306,19 +5382,6 @@ function getPreviewHeading(doc = {}) {
   return "Document preview";
 }
 
-const previewHeaderButtonStyle = {
-  padding: "6px 14px",
-  borderRadius: "var(--input-radius)",
-  backgroundColor: "rgba(var(--primary-rgb), 0.5)",
-  color: "var(--text-2)",
-  fontSize: "13px",
-  fontWeight: 600,
-  cursor: "pointer",
-  whiteSpace: "nowrap",
-  backdropFilter: "blur(12px)",
-  WebkitBackdropFilter: "blur(12px)"
-};
-
 function DocumentsTab({
   documents = [],
   canDelete,
@@ -5371,180 +5434,131 @@ function DocumentsTab({
       data-dev-text-preview="Documents tab"
       data-dev-auto-outline="cards">
       
-      {previewDoc && typeof document !== "undefined" && createPortal(
-        <div
-          onClick={() => setPreviewDoc(null)}
-          style={{
-            position: "fixed", inset: 0, zIndex: "var(--z-modal)",
-            backgroundColor: "var(--overlay)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "24px"
-          }}>
-          
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: "var(--surface)",
-              borderRadius: "var(--radius-xl)",
-              overflow: "hidden",
-              position: "relative",
-              display: "flex",
-              flexDirection: "column",
-              maxWidth: "min(92vw, 1000px)",
-              maxHeight: "90vh",
-              width: "100%",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.4)"
-            }}>
-            
-            <div
-              style={{
-                display: "flex", alignItems: "center", gap: "10px",
-                padding: "16px 20px",
-                backgroundColor: "rgba(var(--surface-rgb), 0.9)",
-                backdropFilter: "blur(18px)",
-                WebkitBackdropFilter: "blur(18px)",
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                zIndex: 2
-              }}>
-              
-              {isRenamingPreview ?
-              <>
+      {previewDoc ? (
+        <PopupModal
+          isOpen
+          onClose={() => { setPreviewDoc(null); setIsRenamingPreview(false); }}
+          ariaLabel={getPreviewHeading(previewDoc)}
+          cardClassName="app-settings-popup-card"
+          cardStyle={{ width: "min(1000px, 100%)", overflow: "hidden" }}
+        >
+          <div className="app-settings-popup app-media-editor-popup">
+            <header className="app-popup-compact-header">
+              {isRenamingPreview ? (
+                <>
                   <input
-                  autoFocus
-                  value={previewRenameValue}
-                  onChange={(e) => setPreviewRenameValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      const trimmed = previewRenameValue.trim();
-                      if (trimmed && typeof onRenameDocument === "function") {
-                        onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
-                        setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                    autoFocus
+                    value={previewRenameValue}
+                    onChange={(e) => setPreviewRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const trimmed = previewRenameValue.trim();
+                        if (trimmed && typeof onRenameDocument === "function") {
+                          onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
+                          setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                        }
+                        setIsRenamingPreview(false);
                       }
-                      setIsRenamingPreview(false);
-                    }
-                    if (e.key === "Escape") setIsRenamingPreview(false);
-                  }}
-                  style={{
-                    flex: 1, padding: "6px 10px",
-                    borderRadius: "var(--input-radius)",
-                    border: "1px solid var(--input-ring)",
-                    fontSize: "14px", fontWeight: 600,
-                    color: "var(--text-1)",
-                    backgroundColor: "rgba(var(--surface-rgb), 0.78)",
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
-                    outline: "none"
-                  }} />
-                
-                  <button
-                  type="button"
-                  onClick={() => {
-                    const trimmed = previewRenameValue.trim();
-                    if (trimmed && typeof onRenameDocument === "function") {
-                      onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
-                      setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
-                    }
-                    setIsRenamingPreview(false);
-                  }}
-                  style={previewHeaderButtonStyle}>
-                  
-                    Save
-                  </button>
-                  <button
-                  type="button"
-                  onClick={() => setIsRenamingPreview(false)}
-                  style={previewHeaderButtonStyle}>
-                  
-                    Cancel
-                  </button>
-                </> :
-
-              <>
-                  <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-1)" }}>
-                    {getPreviewHeading(previewDoc)}
-                  </span>
-                  {typeof onReplaceDocument === "function" && (isImageMime(previewDoc.type || previewDoc.file_type || "") || isVideoMime(previewDoc.type || previewDoc.file_type || "")) &&
-                <button
-                  type="button"
-                  onClick={() => {setEditingDoc(previewDoc);setPreviewDoc(null);}}
-                  style={previewHeaderButtonStyle}>
-                  
-                      Edit
-                    </button>
-                }
-                  {typeof onRenameDocument === "function" &&
-                <button
-                  type="button"
-                  onClick={() => {
-                    const currentName = previewDoc.name || previewDoc.file_name || "";
-                    setPreviewRenameValue(currentName);
-                    setIsRenamingPreview(true);
-                  }}
-                  style={previewHeaderButtonStyle}>
-                  
-                      Rename
-                    </button>
-                }
+                      if (e.key === "Escape") setIsRenamingPreview(false);
+                    }}
+                    aria-label="Document name"
+                    style={{ flex: "1 1 auto", minWidth: 0 }}
+                  />
+                  <div className="app-popup-compact-header__actions">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        const trimmed = previewRenameValue.trim();
+                        if (trimmed && typeof onRenameDocument === "function") {
+                          onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
+                          setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                        }
+                        setIsRenamingPreview(false);
+                      }}
+                    >
+                      Save
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => setIsRenamingPreview(false)}>
+                      Cancel
+                    </Button>
+                  </div>
                 </>
-              }
-              <button
-                type="button"
-                onClick={() => {setPreviewDoc(null);setIsRenamingPreview(false);}}
-                style={{
-                  width: "44px", height: "44px",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  border: "none", borderRadius: "var(--control-radius)",
-                  backgroundColor: "rgba(var(--primary-rgb), 0.5)",
-                  color: "var(--text-2)",
-                  fontSize: "18px", lineHeight: 1,
-                  cursor: "pointer", fontWeight: 400, flexShrink: 0,
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)"
-                }}
-                aria-label="Close preview">
-                
-                ×
-              </button>
-            </div>
+              ) : (
+                <>
+                  <h2>{getPreviewHeading(previewDoc)}</h2>
+                  <div className="app-popup-compact-header__actions">
+                    {typeof onReplaceDocument === "function" &&
+                    (isImageMime(previewDoc.type || previewDoc.file_type || "") ||
+                      isVideoMime(previewDoc.type || previewDoc.file_type || "")) ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => { setEditingDoc(previewDoc); setPreviewDoc(null); }}
+                        >
+                          Edit
+                        </Button>
+                      ) : null}
+                    {typeof onRenameDocument === "function" ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setPreviewRenameValue(previewDoc.name || previewDoc.file_name || "");
+                          setIsRenamingPreview(true);
+                        }}
+                      >
+                        Rename
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => { setPreviewDoc(null); setIsRenamingPreview(false); }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </>
+              )}
+            </header>
 
-            <div
+            <LayerTheme
+              radius="var(--radius-md)"
+              padding="0"
               style={{
-                flex: 1, overflow: "auto",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                backgroundColor: "var(--surface)",
-                minHeight: "300px"
-              }}>
-              
-              {isImageDocument(previewDoc) ?
-              <img
-                src={previewDoc.url || previewDoc.file_url || ""}
-                alt="Document preview"
-                style={{
-                  maxWidth: "100%", maxHeight: "90vh",
-                  objectFit: "contain", display: "block"
-                }} /> :
-              isVideoDocument(previewDoc) ?
-              <video
-                src={previewDoc.url || previewDoc.file_url || ""}
-                controls
-                title="Video preview"
-                style={{ width: "100%", maxHeight: "90vh", display: "block", backgroundColor: "var(--surface-dark, #111)" }} /> :
-
-
-              <iframe
-                src={previewDoc.url || previewDoc.file_url || ""}
-                title="Document preview"
-                style={{ width: "100%", height: "80vh", border: "none", display: "block" }} />
-
-              }
-            </div>
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flex: "1 1 auto",
+                minHeight: 0,
+                overflow: "auto",
+              }}
+            >
+              {isImageDocument(previewDoc) ? (
+                <img
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  alt="Document preview"
+                  style={{ display: "block", maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                />
+              ) : isVideoDocument(previewDoc) ? (
+                <video
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  controls
+                  title="Video preview"
+                  style={{ display: "block", width: "100%", maxHeight: "100%" }}
+                />
+              ) : (
+                <iframe
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  title="Document preview"
+                  style={{ width: "100%", height: "100%", minHeight: "60vh", display: "block" }}
+                />
+              )}
+            </LayerTheme>
           </div>
-        </div>,
-        document.body
-      )}
+        </PopupModal>
+      ) : null}
 
       <DevLayoutSection
         as="div"
@@ -5576,19 +5590,11 @@ function DocumentsTab({
             padding: "var(--control-padding)",
             fontSize: "14px"
           }} />
-        {typeof onManageDocuments === "function" &&
-        <button
-          type="button"
-          onClick={onManageDocuments}
-          style={{
-            padding: "9px 18px", borderRadius: "var(--radius-sm)", border: "none",
-            backgroundColor: "var(--primary)", color: "var(--text-2)",
-            fontWeight: "600", fontSize: "14px", cursor: "pointer"
-          }}>
-          
+        {typeof onManageDocuments === "function" ? (
+          <Button variant="primary" size="sm" onClick={onManageDocuments}>
             Upload Documents
-          </button>
-        }
+          </Button>
+        ) : null}
       </DevLayoutSection>
 
       {sortedDocuments.length === 0 ?
@@ -5675,7 +5681,7 @@ function DocumentsTab({
                   border: "none",
                   padding: 0,
                   cursor: docUrl ? "pointer" : "default",
-                  backgroundColor: isImage ? "var(--surface-dark, #111)" : typeMeta.bg,
+                  backgroundColor: isImage ? "var(--media-letterbox-bg)" : typeMeta.bg,
                   flexShrink: 0
                 }}>
                 

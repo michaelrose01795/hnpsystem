@@ -40,7 +40,7 @@ export default function AccountSummary({ summary }) {
               style={{
                 borderRadius: "var(--control-radius)",
                 padding: "16px",
-                background: card.emphasize ? "var(--theme)" : "var(--surface-2, var(--surface))"
+                background: card.emphasize ? "var(--theme)" : "var(--surface)"
               }}>
 
             <p

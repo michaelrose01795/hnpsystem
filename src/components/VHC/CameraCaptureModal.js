@@ -9,7 +9,7 @@
 import React from "react"; // React primitive (only needed for JSX here)
 import FullScreenCapture from "./mediaCapture/FullScreenCapture"; // New full-screen implementation
 
-export default function CameraCaptureModal({ isOpen, onClose, onCapture, initialMode = "photo" }) {
+export default function CameraCaptureModal({ isOpen, onClose, onCapture, initialMode = "photo", batchMode = false, onDone, onEditCapture = null }) {
   // Forward the simple capture callback. The new component emits a
   // second argument with additional metadata; we strip it here so the
   // legacy onCapture(file, type) signature still works everywhere.
@@ -23,6 +23,9 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
       isOpen={isOpen} // Control open state
       onClose={onClose} // User-initiated close
       onCapture={handleCapture} // File + type hand-off
+      batchMode={batchMode} // Accumulate captures until Done is pressed
+      onDone={onDone} // Batch hand-off: [{ file, meta }]
+      onEditCapture={onEditCapture} // Tray tap: edit one capture in place
       initialMode={initialMode} // Photo or video default
       allowModeSwitch // Allow users to toggle mode within the capture screen
       panel={null} // No concern panel in the plain capture path

@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { supabase } from "@/lib/database/supabaseClient";
 import { runQuery } from "@/lib/database/dashboard/utils";
+import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 // Demo fixtures are loaded on demand. A static import here put the whole
 // presentation dataset into /dashboard/admin's first-load bundle for the sake
 // of the presentation branch below, which only ever runs on a demo route.
@@ -98,6 +99,7 @@ export const getAdminDashboardData = async () => {
       supabase
         .from("users")
         .select("user_id", { count: "exact", head: true })
+        .neq("email", ALL_ACCESS_EMAIL) // the demo account is invisible to everyone else
         .gte("created_at", weekStart)
         .lte("created_at", todayEnd)
     ),

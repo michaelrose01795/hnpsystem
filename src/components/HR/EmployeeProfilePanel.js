@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { StatusTag } from "@/components/HR/MetricCard";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { logFailure } from "@/lib/utils/logFailure";
 
 // Outer "main" card uses the accent-surface theme colour; all inner blocks sit on --surface.
 const mainCardStyle = {
@@ -82,7 +83,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
     try {
       await navigator.clipboard.writeText(value);
     } catch (err) {
-      console.error("Copy failed", err);
+      logFailure("Copy failed", err);
     }
   };
 
@@ -108,15 +109,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
           type="button"
           onClick={onEdit}
           disabled={!onEdit}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--ghostbutton-ring)",
-            background: "var(--surface)",
-            color: "var(--text-1)",
-            fontWeight: 700,
-            cursor: onEdit ? "pointer" : "not-allowed",
-          }}
+          className="app-btn app-btn--ghost"
         >
           Edit employee details
         </button>
@@ -306,16 +299,8 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
             sectionType="toolbar"
             type="button"
             onClick={() => setShowDocumentsPopup(true)}
-            style={{
-              width: "100%",
-              padding: "var(--control-padding)",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              background: "rgba(var(--primary-rgb), 0.12)",
-              color: "var(--text-1)",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="app-btn app-btn--secondary"
+            style={{ width: "100%" }}
           >
             Upload document
           </DevLayoutSection>

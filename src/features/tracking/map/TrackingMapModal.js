@@ -7,23 +7,19 @@
 // let the topbar show through this popup.
 
 import React from "react";
-import useBodyModalLock from "@/hooks/useBodyModalLock";
+import PopupModal from "@/components/popups/popupStyleApi";
 import TrackingMap from "@/features/tracking/map/TrackingMap";
 
 export default function TrackingMapModal({ onClose, onRefresh, pins }) {
-  useBodyModalLock(true);
-
   return (
-    <div
-      className="popup-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Dealership site map">
-
-      <div className="tracking-map-modal-card">
-
-        <TrackingMap pins={pins} onRefresh={onRefresh} onClose={onClose} />
-      </div>
-    </div>
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      closeOnBackdrop={false}
+      ariaLabel="Dealership site map"
+      cardClassName="tracking-map-modal-card"
+    >
+      <TrackingMap pins={pins} onRefresh={onRefresh} onClose={onClose} />
+    </PopupModal>
   );
 }

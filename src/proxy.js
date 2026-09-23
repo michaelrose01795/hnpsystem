@@ -3,7 +3,6 @@ import { getToken } from "next-auth/jwt";
 import {
   canAccessHrManagerDashboard,
   HR_CORE_ROLES,
-  HR_MANAGER_ROLES,
   MANAGER_SCOPED_ROLES,
   normalizeRoles,
 } from "@/lib/auth/roles";
@@ -16,6 +15,7 @@ import {
   isPublicPath,
 } from "@/config/routeAccess";
 import { isSyntheticDevPlatformToken } from "@/lib/auth/devSession";
+import { isAllAccessToken } from "@/lib/auth/allAccessSession";
 
 const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
 const isVercelHost = (value = "") => /\.vercel\.app$/i.test(String(value));
@@ -50,7 +50,12 @@ const logProxyCheck = (message, details = {}) => {
 const redirectToLogin = (req, pathname) => {
   const loginUrl = new URL("/login", req.url);
   if (pathname !== "/") {
-    loginUrl.searchParams.set("redirectedFrom", pathname);
+    // Include the query string: a staff route often carries the state the user
+    // was actually looking at (?tab=, ?status=), and dropping it returns them to
+    // the right page in the wrong place. login.js re-authorises whatever lands
+    // here against the user who signs in, so this is a hint, never a grant.
+    const search = req.nextUrl?.search || "";
+    loginUrl.searchParams.set("redirectedFrom", `${pathname}${search}`);
   }
   return NextResponse.redirect(loginUrl);
 };
@@ -103,6 +108,14 @@ export async function proxy(req) {
     return NextResponse.next();
   }
 
+  // All Access demo login: a synthetic, code-minted session (gated by
+  // isDevAuthAllowed() at sign-in) whose whole purpose is to open every page for
+  // a demonstration. No real account is affected.
+  if (isAllAccessToken(token)) {
+    logProxyCheck("All Access demo full page access", { pathname });
+    return NextResponse.next();
+  }
+
   const roles = token?.roles?.length
     ? normalizeRoles(token.roles)
     : hasDevCookieAuth
@@ -116,12 +129,7 @@ export async function proxy(req) {
   });
   const hasHrCoreAccess = HR_CORE_ROLES.some((role) => roles.includes(role));
   const hasManagerAccess = MANAGER_SCOPED_ROLES.some((role) => roles.includes(role));
-  const hasAdminManagerAccess = HR_MANAGER_ROLES.some((role) => roles.includes(role));
   const hasHrManagerDashboardAccess = canAccessHrManagerDashboard(roles);
-
-  if (pathname.startsWith("/admin/users") && !hasAdminManagerAccess) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
-  }
 
   if (isHrRoute) {
     if (pathname.startsWith("/hr/manager")) {

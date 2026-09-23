@@ -19,6 +19,7 @@
 import { sanitiseDiagnostics, scrubString } from "@/lib/support/sanitise";
 import { findDevLayoutSectionSources } from "@/lib/dev-layout/sectionSourceMap";
 import { analyseDiagnostics } from "@/lib/support/diagnosticAnalysis";
+import { logErrorEvent, ERROR_KINDS } from "@/lib/support/autoErrorLog";
 
 // Buffer caps — small on purpose (cheap, bounded memory, never persisted unless
 // a report is filed). See plan §6.
@@ -280,19 +281,43 @@ export function installBrowserCapture(store, opts = {}) {
   }
 
   // --- window error + unhandledrejection ---
+  // These are the failures NO boundary and no try/catch saw: an event-handler
+  // throw, an async task that rejected with nobody listening, a script error.
+  // They go into the in-memory ring buffer (for the next captured bundle) AND
+  // straight to the durable trail, so an uncaught failure is recorded even
+  // though the user was never shown a recovery screen to report from.
   const onError = (event) => {
+    const message = event?.message || event?.error?.message;
     recordError(store, {
-      message: event?.message || event?.error?.message,
+      message,
       stack: event?.error?.stack,
       ts: now(),
+    });
+    logErrorEvent({
+      kind: ERROR_KINDS.RUNTIME,
+      error: event?.error,
+      message,
+      context: {
+        source: "window.error",
+        file: event?.filename || null,
+        line: Number.isInteger(event?.lineno) ? event.lineno : null,
+        column: Number.isInteger(event?.colno) ? event.colno : null,
+      },
     });
   };
   const onRejection = (event) => {
     const reason = event?.reason;
+    const message = reason?.message || String(reason ?? "unhandledrejection");
     recordError(store, {
-      message: reason?.message || String(reason ?? "unhandledrejection"),
+      message,
       stack: reason?.stack,
       ts: now(),
+    });
+    logErrorEvent({
+      kind: ERROR_KINDS.UNHANDLED_REJECTION,
+      error: reason,
+      message,
+      context: { source: "window.unhandledrejection" },
     });
   };
   window.addEventListener("error", onError);

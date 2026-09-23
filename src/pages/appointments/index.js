@@ -10,13 +10,8 @@ import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
 import { isMobileTechnician } from "@/lib/auth/roles"; // Scope appointments view for mobile mechanics
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
-import {
-  createOrUpdateAppointment,
-  getJobByNumberOrReg,
-  getJobsByDate // ✅ NEW: Get appointments by date
-} from "@/lib/database/jobs"; // DB functions
-import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Shared status transition helper
-import supabase from "@/lib/database/supabaseClient"; // Supabase client for live tech availability
+import { useCoalescedRefresh } from "@/hooks/useCoalescedRefresh"; // collapse realtime bursts into one refetch
+import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/realtimeClient";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
 import { fetchApprovedStaffAbsences } from "@/lib/hr/staffAbsences";
@@ -27,6 +22,19 @@ import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for
 import { getJobRequests } from "@/lib/canonical/fields";
 import AppointmentsUi from "@/components/page-ui/appointments/appointments-ui"; // Extracted presentation layer.
 import { WORKSHOP_APPOINTMENT_TIME_OPTIONS } from "@/lib/appointments/dateTime";
+import { logFailure } from "@/lib/utils/logFailure";
+
+// Loaded on demand - each of these resolves the 213 KB Supabase browser client.
+//
+// Nothing here is needed to RENDER the page: the DB helpers run from save and
+// check-in handlers, the four availability/hours queries run inside async
+// callbacks, and the two realtime channels subscribe from effects after mount.
+// Importing them statically put the whole client in front of first paint on the
+// page with the highest blocking time in the app. Realtime behaviour is
+// unchanged - see subscribeWithDeferredClient.
+const loadSupabase = loadSupabaseClient;
+const loadJobsDb = () => import("@/lib/database/jobs");
+const loadJobStatusService = () => import("@/lib/services/jobStatusService");
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
 // Calculate hours worked between two timestamps
@@ -41,6 +49,22 @@ const calculateDurationHours = (start, end) => {
   if (diffMs <= 0) return 0;
   return parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
 };
+
+// Shared Intl formatters, built once at module load rather than per call.
+//
+// Every toLocaleDateString / toLocaleTimeString call constructs a new
+// Intl.DateTimeFormat internally. These run per job row and per rendered day, so
+// the constructions dominated this page's render cost. Options are copied
+// verbatim from the call sites they replace, so output is unchanged.
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
+const FINISH_TIME_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 const getDateKey = (dateInput) => {
   const dateObj = dateInput instanceof Date ? dateInput : new Date(dateInput);
@@ -475,7 +499,7 @@ export default function Appointments() {
     const uniqueJobIds = Array.from(new Set(jobIds));
 
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabase()).
       from("job_requests").
       select("job_id, hours, request_source, vhc_item_id").
       in("job_id", uniqueJobIds);
@@ -494,7 +518,7 @@ export default function Appointments() {
 
       setJobRequestHours(aggregated);
     } catch (error) {
-      console.error("Error fetching job request hours:", error);
+      logFailure("Error fetching job request hours:", error);
     }
   }, []);
 
@@ -507,7 +531,7 @@ export default function Appointments() {
     const uniqueJobIds = Array.from(new Set(jobIds));
 
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabase()).
       from("vhc_checks").
       select("job_id, labour_hours, approval_status").
       in("job_id", uniqueJobIds);
@@ -529,7 +553,7 @@ export default function Appointments() {
 
       setJobVhcLabourHours(aggregated);
     } catch (error) {
-      console.error("Error fetching VHC labour hours:", error);
+      logFailure("Error fetching VHC labour hours:", error);
     }
   }, []);
 
@@ -540,7 +564,7 @@ export default function Appointments() {
     const endDate = dates[dates.length - 1].toISOString().split("T")[0];
 
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabase()).
       from(TECH_AVAILABILITY_TABLE).
       select(`
           id,
@@ -566,13 +590,13 @@ export default function Appointments() {
       const availabilityMap = buildTechAvailabilityMap(data || []);
       setTechAvailability(availabilityMap);
     } catch (error) {
-      console.error("Error fetching tech availability:", error);
+      logFailure("Error fetching tech availability:", error);
     }
   }, [dates]);
 
   const fetchTechUsers = useCallback(async () => {
     try {
-      const { data, error } = await supabase.
+      const { data, error } = await (await loadSupabase()).
       from("users").
       select("user_id, first_name, last_name, email, role, contracted_hours").
       in("role", TECH_USER_ROLES).
@@ -581,7 +605,7 @@ export default function Appointments() {
       if (error) throw error;
       setTechUsers(data || []);
     } catch (error) {
-      console.error("Error fetching tech users:", error);
+      logFailure("Error fetching tech users:", error);
       setTechUsers([]);
     }
   }, []);
@@ -597,7 +621,7 @@ export default function Appointments() {
       const map = buildStaffAbsenceMap(data, dates[0], dates[dates.length - 1]);
       setStaffAbsences(map);
     } catch (error) {
-      console.error("Error fetching staff absences:", error);
+      logFailure("Error fetching staff absences:", error);
       setStaffAbsences({});
     }
   }, [dates]);
@@ -614,7 +638,7 @@ export default function Appointments() {
         Object.fromEntries((payload.data || []).map((day) => [day.date, day]))
       );
     } catch (error) {
-      console.error("Error fetching technician capacity:", error);
+      logFailure("Error fetching technician capacity:", error);
       setCapacityScheduleByDate({});
     }
   }, [dates]);
@@ -657,43 +681,54 @@ export default function Appointments() {
     fetchStaffAbsences();
   }, [dates, fetchStaffAbsences]);
 
+  // Realtime refresh, coalesced.
+  //
+  // `job_clocking` is the busiest table in the dealership and this page's
+  // handler is the most expensive reaction to it anywhere in the app:
+  // fetchTechAvailability() re-reads every clocking row across the whole
+  // 60-day window, with the user relation joined, for every technician. Firing
+  // that straight from an unfiltered `event: "*"` callback meant a single
+  // technician clocking on re-downloaded two months of clocking data on every
+  // browser with /appointments open.
+  //
+  // Same refreshes, scheduled through useCoalescedRefresh: a burst collapses to
+  // one call, and a hidden tab defers until it is looked at again.
+  const scheduleTechAvailabilityRefresh = useCoalescedRefresh(fetchTechAvailability);
+  const scheduleJobsRevalidate = useCoalescedRefresh(mutateJobs);
+
   useEffect(() => {
     if (!dates.length) return;
 
-    const channel = supabase.
-    channel("job_clocking_changes").
-    on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
-      () => {
-        fetchTechAvailability();
-      }
-    ).
-    subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [dates, fetchTechAvailability]);
+    return subscribeWithDeferredClient((supabase) =>
+      supabase.
+      channel("job_clocking_changes").
+      on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
+        scheduleTechAvailabilityRefresh
+      ).
+      subscribe()
+    );
+  }, [dates, scheduleTechAvailabilityRefresh]);
 
   // Real-time subscription for jobs and appointments tables — revalidate SWR when data changes
   useEffect(() => {
-    const channel = supabase.
-    channel("appointments-page-jobs-sync") // unique channel name for this page
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "jobs" }, // listen for all job changes
-      () => {mutateJobs();} // trigger SWR revalidation (deduplicated)
-    ).
-    on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "appointments" }, // listen for appointment changes
-      () => {mutateJobs();} // trigger SWR revalidation (deduplicated)
-    ).
-    subscribe();
-
-    return () => {supabase.removeChannel(channel);}; // clean up on unmount
-  }, [mutateJobs]);
+    return subscribeWithDeferredClient((supabase) =>
+      supabase.
+      channel("appointments-page-jobs-sync") // unique channel name for this page
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs" }, // listen for all job changes
+        scheduleJobsRevalidate // trigger SWR revalidation (coalesced + deduplicated)
+      ).
+      on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" }, // listen for appointment changes
+        scheduleJobsRevalidate
+      ).
+      subscribe()
+    );
+  }, [scheduleJobsRevalidate]);
 
   useEffect(() => {
     setJobParamActive(true);
@@ -848,7 +883,7 @@ export default function Appointments() {
       // ✅ If not found locally, fetch from database
       if (!job) {
         console.log(`Job ${normalizedJobNumber} not found locally, fetching from DB...`);
-        const fetchedJob = await getJobByNumberOrReg(normalizedJobNumber);
+        const fetchedJob = await (await loadJobsDb()).getJobByNumberOrReg(normalizedJobNumber);
 
         if (!fetchedJob) {
           alert(`Error: Job ${normalizedJobNumber} does not exist in the system.\n\nPlease create the job card first before booking an appointment.`);
@@ -867,7 +902,7 @@ export default function Appointments() {
         time: time
       });
 
-      const appointmentResult = await createOrUpdateAppointment(
+      const appointmentResult = await (await loadJobsDb()).createOrUpdateAppointment(
         job.jobNumber, // Use job number for appointment creation
         appointmentDate,
         time,
@@ -877,7 +912,7 @@ export default function Appointments() {
 
       if (!appointmentResult.success) {
         const errorMessage = appointmentResult.error?.message || "Unknown error occurred";
-        console.error("Appointment booking failed:", errorMessage);
+        logFailure("Appointment booking failed:", errorMessage);
         alert(`Error booking appointment:\n\n${errorMessage}\n\nPlease check the job number and try again.`);
         setIsLoading(false);
         return;
@@ -935,7 +970,7 @@ export default function Appointments() {
       invalidateCache("jobs:"); // clear stale queryCache after appointment change
 
     } catch (error) {
-      console.error("Unexpected error booking appointment:", error);
+      logFailure("Unexpected error booking appointment:", error);
       alert(`Unexpected error:\n\n${error.message}\n\nPlease try again or contact support.`);
     } finally {
       setIsLoading(false);
@@ -970,7 +1005,7 @@ export default function Appointments() {
     setCheckingInJobId(job.id);
 
     try {
-      const result = await autoSetCheckedInStatus(
+      const result = await (await loadJobStatusService()).autoSetCheckedInStatus(
         job.id,
         dbUserId || user?.user_id || user?.id || "SYSTEM"
       );
@@ -1012,11 +1047,11 @@ export default function Appointments() {
         );
         invalidateCache("jobs:"); // clear stale queryCache so job card page gets fresh data
       } else {
-        console.error("❌ Check-in failed:", result.error);
+        logFailure("❌ Check-in failed:", result.error);
         alert(`❌ Failed to check in: ${result.error?.message || "Unknown error"}`);
       }
     } catch (error) {
-      console.error("❌ Error checking in:", error);
+      logFailure("❌ Error checking in:", error);
       alert("❌ Error checking in customer. Please try again.");
     } finally {
       setCheckingInJobId(null);
@@ -1025,12 +1060,28 @@ export default function Appointments() {
 
   // ---------------- Utilities ----------------
   const formatDate = (dateObj) =>
-  dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  SHORT_DATE_FORMATTER.format(dateObj);
 
   const formatDateNoYear = (dateObj) =>
-  dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  SHORT_DATE_FORMATTER.format(dateObj);
 
-  const getDayTechSummary = (date) => {
+  // Per-day technician summary.
+  //
+  // This is a pure function of the six values in the cache key below, but it was
+  // being re-run from scratch once per visible date row — ~60 rows — on every
+  // single render of the page. Each call builds a Map of that day's absences,
+  // walks every stored technician doing a `roster.find(...)` inside the loop
+  // (O(techs x roster)), synthesises placeholders, sorts and reduces. Typing one
+  // character into the appointments search box paid for all of it, ~60 times
+  // over, before React could paint.
+  //
+  // The computation is unchanged. Results are cached per date key in a Map that
+  // is thrown away whenever any input changes, so the output is always identical
+  // to recomputing — it is simply computed once per day per input set instead of
+  // once per day per render.
+  const dayTechSummaryCacheRef = useRef({ inputs: null, map: new Map() });
+
+  const computeDayTechSummary = (date) => {
     if (!date) {
       return {
         dateKey: "",
@@ -1158,6 +1209,31 @@ export default function Appointments() {
     };
   };
 
+  const getDayTechSummary = (date) => {
+    // Discard the cache the moment any input to computeDayTechSummary changes.
+    // Identity comparison is sufficient and exact: every one of these is either
+    // React state replaced wholesale on update, or a useMemo derived from state.
+    const inputs = [
+      techAvailability,
+      techHoursOverrides,
+      staffAbsences,
+      techUsers,
+      techUserNameMap,
+      capacityScheduleByDate,
+    ];
+    const cache = dayTechSummaryCacheRef.current;
+    if (!cache.inputs || inputs.some((value, index) => value !== cache.inputs[index])) {
+      cache.inputs = inputs;
+      cache.map = new Map();
+    }
+
+    const cacheKey = date ? date.toDateString() : "";
+    if (cache.map.has(cacheKey)) return cache.map.get(cacheKey);
+    const summary = computeDayTechSummary(date);
+    cache.map.set(cacheKey, summary);
+    return summary;
+  };
+
   const getTechHoursForDay = (date) => getDayTechSummary(date).totalTechs;
 
   const getEarliestTechStartForDate = (date) => {
@@ -1208,7 +1284,7 @@ export default function Appointments() {
     const totalHours = (parseHoursValue(jobHours) || 0) + (parseHoursValue(vhcHours) || 0);
     if (totalHours <= 0) return "-";
     const finish = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
-    return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    return FINISH_TIME_FORMATTER.format(finish);
   };
 
   const normalizeJobCategoryLabel = (rawLabel) => {
@@ -1359,7 +1435,7 @@ export default function Appointments() {
 
     const totalHours = getScheduledDurationHours(job);
     const finish = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
-    return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    return FINISH_TIME_FORMATTER.format(finish);
   };
 
   const getSchedulerBookingHours = (job) => {

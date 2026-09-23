@@ -5,7 +5,7 @@
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
-import { normalizeRoles } from "@/lib/auth/roles";
+import { hasAllAccessRole, normalizeRoles } from "@/lib/auth/roles";
 import {
   buildPersonalApiError,
   getPersonalSecurityState,
@@ -26,6 +26,9 @@ const ADMIN_ROLES = new Set([
 ]);
 
 function isAdminRole(roles = []) {
+  // The All Access demo login reads payslips without the personal-unlock step,
+  // so a walkthrough is not blocked by a PIN it has no way to hold.
+  if (hasAllAccessRole(roles)) return true;
   return normalizeRoles(roles).some((r) => ADMIN_ROLES.has(r));
 }
 

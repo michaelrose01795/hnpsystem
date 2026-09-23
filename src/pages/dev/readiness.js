@@ -20,12 +20,11 @@ import {
   Panel,
   SubSurface,
   StatCard,
-  Pill,
+  badgeClass,
   KeyValue,
   KeyValueGrid,
   EmptyState,
   LoadingBlock,
-  DevButton,
   DashboardGrid,
 } from "@/components/support/dev/supportDevUi";
 
@@ -62,22 +61,22 @@ function ReleaseCard({ release, onDecision }) {
       }
       actions={
         <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
-          <DevButton
-            variant="solid"
-            tone="success-base"
+          <button
+            type="button"
             onClick={() => onDecision(release, "approved")}
             title={isBlocked ? "Override: approve a blocked release" : "Approve this release"}
+            className="app-btn app-btn--primary"
           >
             {isBlocked ? "Approve (override)" : "Approve"}
-          </DevButton>
-          <DevButton
-            variant="solid"
-            tone="danger-base"
+          </button>
+          <button
+            type="button"
             onClick={() => onDecision(release, "blocked")}
             title="Block this release"
+            className="app-btn app-btn--danger"
           >
             Block
-          </DevButton>
+          </button>
         </div>
       }
     >
@@ -90,8 +89,8 @@ function ReleaseCard({ release, onDecision }) {
       </div>
 
       <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-        {r.grade && <Pill label={`Grade: ${r.grade}`} tone={gradeTone(r.grade)} strong />}
-        {r.recommendation && <Pill label={`Recommendation: ${r.recommendation}`} tone={recommendationTone(r.recommendation)} strong />}
+        {r.grade && <span className={badgeClass(gradeTone(r.grade), true)}>{`Grade: ${r.grade}`}</span>}
+        {r.recommendation && <span className={badgeClass(recommendationTone(r.recommendation), true)}>{`Recommendation: ${r.recommendation}`}</span>}
       </div>
 
       {/* Signals */}
@@ -129,10 +128,10 @@ function ReleaseCard({ release, onDecision }) {
               }}
             >
               <span style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", minWidth: 0 }}>
-                <Pill label={b.type} tone="danger-base" strong />
+                <span className="app-badge app-badge--danger-strong">{b.type}</span>
                 <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", wordBreak: "break-word" }}>{b.detail}</span>
               </span>
-              {b.weight != null && <Pill label={`weight ${b.weight}`} tone="danger-base" />}
+              {b.weight != null && <span className="app-badge app-badge--danger">{`weight ${b.weight}`}</span>}
             </div>
           ))}
         </SubSurface>
@@ -168,7 +167,7 @@ function ReleaseCard({ release, onDecision }) {
         <SubSurface>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
             <span style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Approval</span>
-            <Pill label={approval.status} tone={approvalTone(approval.status)} strong />
+            <span className={badgeClass(approvalTone(approval.status), true)}>{approval.status}</span>
           </div>
           <KeyValueGrid>
             <KeyValue label="Approver" value={approval.approverKey} />
@@ -242,7 +241,7 @@ function ReadinessView() {
 
   if (error) {
     return (
-      <Panel title="Deployment readiness" actions={<DevButton small onClick={reload}>Retry</DevButton>}>
+      <Panel title="Deployment readiness" actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Retry</button>}>
         <EmptyState title="Could not load readiness" message={error} />
       </Panel>
     );
@@ -255,7 +254,7 @@ function ReadinessView() {
       <Panel
         title="Deployment readiness"
         subtitle={`${data?.reportCount ?? 0} report(s) analysed across ${releases.length} release(s)`}
-        actions={<DevButton small onClick={reload}>Refresh</DevButton>}
+        actions={<button type="button" onClick={reload} className="app-btn app-btn--secondary app-btn--sm">Refresh</button>}
       />
 
       {releases.length === 0 ? (

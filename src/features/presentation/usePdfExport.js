@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { usePresentation } from "./PresentationProvider";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const KIND_LABEL = {
   main: "Overview",
@@ -99,7 +100,7 @@ export default function usePdfExport() {
       const date = new Date().toISOString().slice(0, 10);
       doc.save(`hnpsystem-presentation-${role}-${date}.pdf`);
     } catch (err) {
-      console.error("[presentation] PDF export failed", err);
+      logFailure("[presentation] PDF export failed", err);
       if (typeof window !== "undefined") {
         window.alert("PDF export failed. Please make sure jsPDF is installed.");
       }

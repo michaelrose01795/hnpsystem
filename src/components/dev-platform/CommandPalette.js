@@ -133,15 +133,7 @@ export function CommandPaletteProvider({ children }) {
               placeholder="Search commands… (arrow keys to move, Enter to run, Esc to close)"
               aria-label="Search commands"
               className="app-input"
-              style={{
-                width: "100%",
-                minHeight: 44,
-                padding: "10px 12px",
-                borderRadius: "var(--radius-md)",
-                fontSize: "var(--text-body)",
-                background: "var(--theme)",
-                color: "var(--text-1)",
-              }}
+              style={{ width: "100%" }}
             />
             <ul
               role="listbox"
@@ -174,10 +166,10 @@ export function CommandPaletteProvider({ children }) {
                     <span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
                       <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: i === active ? "var(--accentText)" : "var(--text-1)" }}>{cmd.title}</span>
                       {cmd.subtitle ? (
-                        <span style={{ fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cmd.subtitle}</span>
+                        <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cmd.subtitle}</span>
                       ) : null}
                     </span>
-                    <span style={{ marginLeft: "auto", fontSize: "var(--text-body-xs)", color: "var(--text-1)", opacity: 0.4 }}>{cmd.group}</span>
+                    <span style={{ marginLeft: "auto", fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.4 }}>{cmd.group}</span>
                   </li>
                 ))
               )}

@@ -4,8 +4,16 @@
 
 import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
+import { hasAllAccessRole } from "@/lib/auth/roles";
 import ReportLinkedTrend from "@/components/dashboards/ReportLinkedTrend";
-import { getManagersDashboardData } from "@/lib/database/dashboard/managers";
+// Loaded on demand.
+//
+// This module resolves the Supabase browser client, so importing it at module
+// scope put 213 KB of @supabase/supabase-js into this route's first-load
+// bundle — before the page could paint, for data that is only fetched from an
+// effect after mount. The queries still start on the same tick they did
+// before; only the download of the client moves off the critical path.
+const loadDashboardData = () => import("@/lib/database/dashboard/managers");
 import { useKpiValues } from "@/hooks/reporting/useReporting";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import {
@@ -15,6 +23,7 @@ import {
   PageShell,
 } from "@/components/ui";
 import ManagersDashboardUi from "@/components/page-ui/dashboard/managers/dashboard-managers-ui";
+import { logFailure } from "@/lib/utils/logFailure";
 
 const MANAGER_ROLES = [
   "service manager",
@@ -163,7 +172,7 @@ const twoColSplitStyle = {
 export default function ManagersDashboard() {
   const { user } = useUser();
   const userRoles = (user?.roles || []).map((role) => String(role).toLowerCase());
-  const hasAccess = MANAGER_ROLES.some((role) => userRoles.includes(role));
+  const hasAccess = hasAllAccessRole(userRoles) || MANAGER_ROLES.some((role) => userRoles.includes(role));
   const [data, setData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -175,10 +184,10 @@ export default function ManagersDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const payload = await getManagersDashboardData();
+        const payload = await (await loadDashboardData()).getManagersDashboardData();
         setData(payload);
       } catch (fetchError) {
-        console.error("Failed to load managers dashboard", fetchError);
+        logFailure("Failed to load managers dashboard", fetchError);
         setError(fetchError.message || "Unable to load manager data");
       } finally {
         setLoading(false);

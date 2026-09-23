@@ -33,32 +33,31 @@ const FILE_EXT_RE = /\.(js|jsx|ts|tsx)$/;
 // Do not increase this map. New files default to 0. Regenerate with:
 //   node tools/scripts/check-staff-controls.js --print-baseline
 const MIGRATION_BASELINE = new Map([
-["src/components/accounts/AccountTable.js", 2],
-  ["src/components/Admin/AdminUserForm.js", 2],
+  ["src/components/accounts/AccountTable.js", 2],
   ["src/components/Clocking/CapacitySettingsPopup.js", 1],
-  ["src/components/Clocking/EfficiencyTab.js", 8],
+  ["src/components/Clocking/EfficiencyTab.js", 5],
   ["src/components/companyAccounts/CompanyAccountForm.js", 3],
   ["src/components/Consumables/StockCheckPopup.js", 7],
   ["src/components/CookieBanner.js", 5],
   ["src/components/dev-layout-overlay/DevLayoutOverlay.js", 4],
-  ["src/components/dev-platform/CommandPalette.js", 1],
-  ["src/components/dev-platform/DevNotificationBell.js", 3],
-  ["src/components/dev-platform/sections/DevSidebarAccess.js", 5],
+  ["src/components/dev-platform/sections/DevSidebarAccess.js", 3],
   ["src/components/dev-platform/sections/InvestigationsSection.js", 1],
-  ["src/components/dev-platform/sections/PreferencesSection.js", 2],
+  ["src/components/dev-platform/sections/PreferencesSection.js", 1],
   ["src/components/dev-platform/sections/SupportOverviewSection.js", 2],
-  ["src/components/GlobalNotesWidget.js", 1],
   ["src/components/GlobalSearch.js", 3],
-  ["src/components/HR/EmployeeProfilePanel.js", 3],
+  ["src/components/HR/EmployeeProfilePanel.js", 2],
   ["src/components/HR/OvertimeEntriesEditor.js", 1],
   ["src/components/HR/SidebarAccessEditor.js", 4],
-  ["src/components/HR/StaffVehiclesCard.js", 30],
+  ["src/components/HR/StaffVehiclesCard.js", 21],
   ["src/components/HR/tabs/AttendanceTab.js", 1],
-  ["src/components/HR/tabs/EmployeesTab.js", 29],
+  ["src/components/HR/tabs/EmployeesTab.js", 27],
   ["src/components/JobCards/ClockingHistorySection.js", 2],
+  ["src/components/JobCards/CustomerRequestsTab.js", 4],
   ["src/components/JobCards/JobCardModal.js", 1],
+  ["src/components/JobCards/LocationUpdateModal.js", 0],
   ["src/components/JobCards/RequestPresetAutosuggestInput.js", 2],
-  ["src/components/JobCards/WriteUpForm.js", 18],
+  ["src/components/JobCards/WriteUpForm.js", 14],
+  ["src/components/JobCards/WriteUpWorkspace.js", 3],
   ["src/components/layout/StaffLayout.js", 2],
   ["src/components/LoanCars/FuelGauge.js", 1],
   ["src/components/LoanCars/LoanCarSchedulePanel.js", 3],
@@ -66,81 +65,62 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/NotesTab.js", 9],
   ["src/components/page-ui/accounts/payslips/payslips-ui.js", 3],
   ["src/components/page-ui/accounts/reports/accounts-reports-ui.js", 2],
-  ["src/components/page-ui/admin/users/admin-users-ui.js", 1],
-  ["src/components/page-ui/appointments/appointments-ui.js", 3],
+  ["src/components/page-ui/appointments/appointments-ui.js", 2],
   ["src/components/page-ui/clocking/clocking-technician-slug-ui.js", 3],
   ["src/components/page-ui/dev/dev-status-snapshot-ui.js", 2],
   ["src/components/page-ui/dev/dev-user-diagnostic-ui.js", 4],
-  ["src/components/page-ui/job-cards/ContactTab.js", 1],
-  ["src/components/page-ui/job-cards/job-cards-job-number-ui.js", 5],
-  ["src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js", 8],
+  ["src/components/page-ui/job-cards/job-cards-job-number-ui.js", 1],
+  ["src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js", 6],
   ["src/components/page-ui/job-cards/SchedulingTab.js", 1],
   ["src/components/page-ui/job-cards/ServiceHistoryTab.js", 2],
   ["src/components/page-ui/job-cards/ServiceHistoryTab.test.js", 1],
-  ["src/components/page-ui/job-cards/view/job-cards-view-ui.js", 5],
-  ["src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js", 3],
+  ["src/components/page-ui/job-cards/view/job-cards-view-ui.js", 4],
+  ["src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js", 0],
   ["src/components/page-ui/job-cards/WarrantyTab.js", 2],
-  ["src/components/page-ui/messages/messages-ui.js", 5],
-  ["src/components/page-ui/newsfeed-ui.js", 2],
+  ["src/components/page-ui/messages/messages-ui.js", 4],
   ["src/components/page-ui/parts/create-order/parts-create-order-order-number-ui.js", 4],
-  ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 32],
-  ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 22],
-  ["src/components/page-ui/parts/parts-delivery-planner-ui.js", 9],
+  ["src/components/page-ui/parts/create-order/parts-create-order-ui.js", 30],
+  ["src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js", 14],
+  ["src/components/page-ui/parts/parts-delivery-planner-ui.js", 8],
   ["src/components/page-ui/parts/parts-goods-in-ui.js", 49],
-  ["src/components/page-ui/parts/parts-manager-ui.js", 1],
-  ["src/components/page-ui/stock-catalogue-ui.js", 14],
+  ["src/components/page-ui/parts/parts-manager-ui.js", 0],
+  ["src/components/page-ui/stock-catalogue-ui.js", 10],
   ["src/components/page-ui/tech/tech-consumables-request-ui.js", 3],
   ["src/components/page-ui/valet/valet-ui.js", 2],
   ["src/components/page-ui/vhc/customer-preview/vhc-customer-preview-job-number-ui.js", 3],
   ["src/components/page-ui/vhc/customer-view/vhc-customer-view-job-number-ui.js", 1],
   ["src/components/page-ui/vhc/share/[jobNumber]/vhc-share-job-number-link-code-ui.js", 1],
-  ["src/components/Parts/DeliverySchedulerModal.js", 11],
+  ["src/components/Parts/DeliverySchedulerModal.js", 10],
   ["src/components/Parts/PartDeliveryLogModal.js", 9],
   ["src/components/PartsTab.js", 3],
   ["src/components/popups/CheckSheetPopup.js", 3],
-  ["src/components/popups/ConfirmationDialog.js", 2],
+  ["src/components/popups/ConfirmationDialog.js", 0],
   ["src/components/popups/ExistingCustomerPopup.js", 1],
-  ["src/components/popups/InvoiceBuilderPopup.js", 10],
+  ["src/components/popups/InvoiceBuilderPopup.js", 9],
   ["src/components/popups/NewCustomerPopup.js", 1],
-  ["src/components/popups/NextActionPrompt.js", 7],
+  ["src/components/popups/NextActionPrompt.js", 5],
   ["src/components/popups/Popup.js", 1],
   ["src/components/profile/personal/PersonalSettingsPopup.js", 3],
   ["src/components/profile/personal/widgets/PersonalWidgets.js", 4],
   ["src/components/profile/personal/WidgetSettingsModal.js", 6],
   ["src/components/profile/ProfilePersonalTab.js", 1],
   ["src/components/profile/ProfileWorkTab.js", 18],
-  ["src/components/reporting/accounts/AccountsUtilitiesTab.js", 1],
-  ["src/components/reporting/admin/AdminUtilitiesTab.js", 1],
-  ["src/components/reporting/KpiPanel.js", 1],
-  ["src/components/reporting/management/ExecutiveDrilldownTab.js", 1],
-  ["src/components/reporting/management/ManagementUtilitiesTab.js", 1],
-  ["src/components/reporting/mot/MotUtilitiesTab.js", 1],
-  ["src/components/reporting/paint/PaintUtilitiesTab.js", 1],
-  ["src/components/reporting/parts/PartsUtilitiesTab.js", 1],
-  ["src/components/reporting/SavedViewsBar.js", 4],
-  ["src/components/reporting/service/ServiceUtilitiesTab.js", 1],
-  ["src/components/reporting/valeting/ValetingUtilitiesTab.js", 1],
-  ["src/components/reporting/workshop/WorkshopUtilitiesTab.js", 1],
+  ["src/components/reporting/SavedViewsBar.js", 3],
   ["src/components/sidebar-access/SidebarGroupAccessModal.js", 1],
   ["src/components/StatusTracking/JobProgressTracker.js", 1],
   ["src/components/StatusTracking/StatusSidebar.js", 2],
   ["src/components/support/dev/SupportAssistedPanel.js", 1],
-  ["src/components/support/dev/supportDevUi.js", 2],
-  ["src/components/support/dev/SupportGithubPanel.js", 1],
-  ["src/components/support/dev/SupportReportDetail.js", 1],
-  ["src/components/support/dev/SupportTriagePanel.js", 1],
-  ["src/components/support/dev/SupportWorkspace.js", 3],
-  ["src/components/support/SupportControl.js", 1],
-  ["src/components/support/SupportErrorBoundary.js", 2],
+  ["src/components/support/dev/supportDevUi.js", 1],
+  ["src/components/support/dev/SupportWorkspace.js", 2],
+  ["src/components/support/SupportErrorBoundary.js", 1],
   ["src/components/support/SupportReportLauncher.js", 1],
-  ["src/components/support/SupportReportModal.js", 4],
   ["src/components/support/SupportScreenshotField.js", 5],
   ["src/components/topbar/AssistantPanel.js", 3],
   ["src/components/topbar/CommandPalette.js", 2],
   ["src/components/topbar/TeamPanel.js", 5],
   ["src/components/topbar/WorkspaceCustomiseOverlay.js", 4],
   ["src/components/topbar/WorkspacePanel.js", 4],
-  ["src/components/TopbarAlerts.js", 3],
+  ["src/components/TopbarAlerts.js", 2],
   ["src/components/ui/Button.js", 1],
   ["src/components/ui/calendarAPI/Calendar.js", 8],
   ["src/components/ui/calendarAPI/CalendarField.js", 2],
@@ -161,29 +141,29 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/VHC/IssueAutocomplete.js", 2],
   ["src/components/VHC/mediaCapture/ConcernPanel.js", 2],
   ["src/components/VHC/mediaCapture/ConcernPickerModal.js", 1],
-  ["src/components/VHC/mediaCapture/FullScreenCapture.js", 10],
-  ["src/components/VHC/mediaCapture/SectionCameraButton.js", 1],
+  ["src/components/VHC/mediaCapture/FullScreenCapture.js", 8],
+  ["src/components/VHC/mediaCapture/SectionCameraButton.js", 0],
   ["src/components/VHC/MediaUploadConfirmModal.js", 1],
   ["src/components/VHC/photoEditor/ShapeToolbar.js", 2],
-  ["src/components/VHC/PhotoEditorModal.js", 4],
+  ["src/components/VHC/PhotoEditorModal.js", 1],
   ["src/components/VHC/ServiceIndicatorDetailsModal.js", 5],
   ["src/components/VHC/TyreDiagram.js", 2],
   ["src/components/VHC/TyresSection.js", 1],
   ["src/components/VHC/UndersideDetailsModal.js", 3],
-  ["src/components/VHC/VhcCustomerDescriptionModal.js", 4],
-  ["src/components/VHC/VhcCustomerView.js", 7],
-  ["src/components/VHC/VhcDetailsPanel.js", 71],
+  ["src/components/VHC/VhcCustomerDescriptionModal.js", 1],
+  ["src/components/VHC/VhcCustomerView.js", 1],
+  ["src/components/VHC/VhcDetailsPanel.js", 39],
   ["src/components/VHC/videoEditor/TimelineTrimControl.js", 2],
   ["src/components/VHC/videoEditor/VideoMetaPanel.js", 2],
   ["src/components/VHC/WheelsHubsModal.js", 4],
   ["src/components/VHC/WheelsTyresDetailsModal.js", 9],
-  ["src/components/Workshop/JobClockingCard.js", 7],
+  ["src/components/Workshop/JobClockingCard.js", 6],
   ["src/features/3Dwebsite/components/DealershipEntrySection.js", 1],
   ["src/features/3Dwebsite/components/ScrollProgress.js", 1],
   ["src/features/invoices/components/InvoiceDetail.js", 3],
   ["src/features/invoices/components/InvoicePaymentModal.js", 3],
   ["src/features/invoices/components/InvoiceWorkspace.js", 1],
-  ["src/features/invoices/components/ProformaOverrideModal.js", 4],
+  ["src/features/invoices/components/ProformaOverrideModal.js", 0],
   ["src/features/payslips/PayslipsCard.js", 1],
   ["src/features/payslips/PayslipsListPopup.js", 1],
   ["src/features/roleTreeDemo/components/RoleTreeDemo.js", 1],
@@ -197,38 +177,34 @@ const MIGRATION_BASELINE = new Map([
   ["src/features/website/shop/CartPage.js", 3],
   ["src/features/website/shop/CheckoutPage.js", 9],
   ["src/features/website/WebsitePage.js", 2],
-  ["src/features/websiteManager/editors/fields.js", 2],
-  ["src/features/websiteManager/panels/ActivityPanel.js", 1],
-  ["src/features/websiteManager/panels/OverviewPanel.js", 1],
-  ["src/features/websiteManager/panels/PageContentPanel.js", 1],
-  ["src/features/websiteManager/panels/SeoPanel.js", 2],
-  ["src/features/websiteManager/panels/ShopPanel.js", 1],
-  ["src/pages/admin/compliance/breaches.js", 5],
-  ["src/pages/admin/compliance/dpias.js", 4],
-  ["src/pages/admin/compliance/ropa.js", 2],
-  ["src/pages/admin/compliance/sars.js", 1],
+  ["src/features/websiteManager/panels/SeoPanel.js", 0],
+  ["src/pages/admin/compliance/breaches.js", 2],
+  ["src/pages/admin/compliance/dpias.js", 1],
+  ["src/pages/admin/compliance/ropa.js", 1],
   ["src/pages/customers/[customerSlug].js", 3],
-  ["src/pages/deliveries/index.js", 1],
+  ["src/pages/deliveries/index.js", 0],
   ["src/pages/delivery-planner.js", 16],
   ["src/pages/dev/knowledge.js", 1],
-  ["src/pages/dev/user-diagnostic.js", 28],
-  ["src/pages/goods-in/index.js", 19],
+  ["src/pages/dev/user-diagnostic.js", 27],
+  ["src/pages/goods-in/index.js", 11],
   ["src/pages/hr/disciplinary.js", 1],
   ["src/pages/hr/performance.js", 1],
   ["src/pages/hr/settings.js", 1],
   ["src/pages/hr/training.js", 1],
-  ["src/pages/job-cards/[jobNumber].js", 44],
-  ["src/pages/messages/index.js", 2],
+  ["src/pages/job-cards/[jobNumber].js", 25],
   ["src/pages/new-order/[orderNumber].js", 1],
   ["src/pages/password-reset/new.js", 2],
-  ["src/pages/profile/privacy.js", 1],
   ["src/pages/stock-catalogue.js", 31],
-  ["src/pages/tech/[jobNumber].js", 11],
+  ["src/pages/tech/[jobNumber].js", 5],
   ["src/pages/valet/index.js", 3],
   ["src/pages/vhc/customer-preview/[jobNumber].js", 2],
 ]);
 
 const CONTROL_TAG_RE = /<(input|textarea|button)\b/;
+// Body of a style={{ ... }} prop, so VISUAL_STYLE_RE is tested against the
+// declarations themselves rather than against neighbouring attribute text.
+const STYLE_BODY_RE = /style=\{\{([\s\S]*?)\}\}/;
+const styleBody = (tag) => (tag.match(STYLE_BODY_RE) || ["", ""])[1];
 const SELECT_TAG_RE = /<select\b/;
 const VISUAL_STYLE_RE = /\b(background|backgroundColor|color|padding|border|borderRadius|font|fontSize|fontWeight|boxShadow|minHeight|height)\b/;
 const APP_INPUT_RE = /className=(?:"[^"]*\bapp-input\b[^"]*"|'[^']*\bapp-input\b[^']*'|{`[^`]*\bapp-input\b[^`]*`}|{[^}]*app-input[^}]*})/;
@@ -293,7 +269,7 @@ function findViolations(source) {
         violations.push({ line: lineNumber, reason: "raw <button>; use Button or .app-btn" });
         return;
       }
-      if (/style=/.test(openingTag) && VISUAL_STYLE_RE.test(openingTag)) {
+      if (VISUAL_STYLE_RE.test(styleBody(openingTag))) {
         violations.push({ line: lineNumber, reason: "button visual inline style; use staffglobal button classes" });
       }
       return;
@@ -312,7 +288,7 @@ function findViolations(source) {
       return;
     }
 
-    if (/style=/.test(openingTag) && VISUAL_STYLE_RE.test(openingTag)) {
+    if (VISUAL_STYLE_RE.test(styleBody(openingTag))) {
       violations.push({ line: lineNumber, reason: `${tagName} visual inline style; use .app-input/staffglobal` });
     }
   });
@@ -335,6 +311,40 @@ for (const file of files) {
       violations.push(`${relative}:${violation.line}: ${violation.reason}`);
     });
   }
+}
+
+// The job-card clocking form previously left its conditional "Just clock"
+// action behind when the neighbouring Save and Reset actions moved to Button.
+// The per-file migration baseline prevents aggregate debt from growing, but it
+// cannot identify one specific legacy control being swapped for another. Keep
+// this action on the canonical Button contract explicitly.
+const jobCardPath = "src/pages/job-cards/[jobNumber].js";
+const jobCardSource = fs.readFileSync(path.join(ROOT, jobCardPath), "utf8");
+const justClockStart = jobCardSource.indexOf("{isJustClockState && selectedTechnicianId ?");
+const justClockEnd = jobCardSource.indexOf("null}", justClockStart);
+
+if (justClockStart < 0 || justClockEnd < 0) {
+  violations.push(`${jobCardPath}: Just clock action contract could not be located`);
+} else {
+  const justClockAction = jobCardSource.slice(justClockStart, justClockEnd);
+  const requiredFragments = [
+    "<Button",
+    'variant="secondary"',
+    "busy={submitting}",
+    '"Just clock"',
+  ];
+  const forbiddenFragments = ["<button", "style={{"];
+
+  requiredFragments.forEach((fragment) => {
+    if (!justClockAction.includes(fragment)) {
+      violations.push(`${jobCardPath}: Just clock action missing staff contract fragment ${JSON.stringify(fragment)}`);
+    }
+  });
+  forbiddenFragments.forEach((fragment) => {
+    if (justClockAction.includes(fragment)) {
+      violations.push(`${jobCardPath}: Just clock action contains forbidden legacy fragment ${JSON.stringify(fragment)}`);
+    }
+  });
 }
 
 // Regression guard for the /jobs quick-note popup. This popup previously
@@ -428,6 +438,87 @@ if (dayJobsStart < 0 || dayJobsEnd < 0) {
 
 const staffGlobalPath = "src/styles/staffglobal.css";
 const staffGlobalSource = fs.readFileSync(path.join(ROOT, staffGlobalPath), "utf8");
+const buttonFamilyPath = "src/styles/families/buttons.css";
+const buttonFamilySource = fs.readFileSync(path.join(ROOT, buttonFamilyPath), "utf8");
+
+function cssRuleBody(source, selector) {
+  const start = source.indexOf(selector);
+  if (start < 0) return null;
+  const open = source.indexOf("{", start);
+  const close = source.indexOf("}", open);
+  if (open < 0 || close < 0) return null;
+  return source.slice(open + 1, close);
+}
+
+// Action buttons must retain their semantic brand/tint variants in every
+// layer. Form-control tokens are intentionally rebound to --surface inside
+// LayerTheme and must never be reused for buttons: doing so recreates the
+// black/white mode inversion that previously affected Goods In Supplier Search.
+const buttonContracts = [
+  {
+    path: buttonFamilyPath,
+    source: buttonFamilySource,
+    selector: "html.staff-scope .app-btn--primary",
+    // The fill may be the flat brand step or the deeper --primary-hover step:
+    // Primary sits one step deeper so it is not pixel-identical to the
+    // is-active / aria-selected paint, which uses flat --primary. Either is a
+    // brand accent; what matters is that it is never a form-control token.
+    required: [["--btn-bg: var(--primary)", "--btn-bg: var(--primary-hover)"], "--btn-color: var(--onAccentText)"],
+  },
+  {
+    path: buttonFamilyPath,
+    source: buttonFamilySource,
+    selector: "html.staff-scope .app-btn--secondary",
+    required: ["--btn-bg: var(--secondary)", "--btn-color: var(--accent-text-on-tint)"],
+  },
+  {
+    path: staffGlobalPath,
+    source: staffGlobalSource,
+    selector: "html.staff-scope button:not(.app-btn)",
+    required: ["background: var(--primary)", "color: var(--onAccentText)"],
+  },
+  {
+    path: staffGlobalPath,
+    source: staffGlobalSource,
+    selector: "html.staff-scope .app-table-action-btn",
+    required: ["background: var(--secondary)", "color: var(--accent-text-on-tint)"],
+  },
+  {
+    path: staffGlobalPath,
+    source: staffGlobalSource,
+    selector: "html.staff-scope .app-table-action-btn--primary",
+    required: ["background: var(--primary)", "color: var(--onAccentText)"],
+  },
+];
+const forbiddenButtonFillTokens = [
+  "var(--primary-control-bg)",
+  "var(--primary-control-color)",
+  "var(--control-bg)",
+  "var(--input-bg)",
+  "var(--surface)",
+  "var(--text-1)",
+  "var(--surfaceText)",
+];
+
+for (const contract of buttonContracts) {
+  const body = cssRuleBody(contract.source, contract.selector);
+  if (body == null) {
+    violations.push(`${contract.path}: canonical button rule ${contract.selector} could not be located`);
+    continue;
+  }
+  for (const fragment of contract.required) {
+    const alternatives = Array.isArray(fragment) ? fragment : [fragment];
+    if (!alternatives.some((alternative) => body.includes(alternative))) {
+      const expected = alternatives.map((alternative) => JSON.stringify(alternative)).join(" or ");
+      violations.push(`${contract.path}: ${contract.selector} missing ${expected}`);
+    }
+  }
+  for (const token of forbiddenButtonFillTokens) {
+    if (body.includes(token)) {
+      violations.push(`${contract.path}: ${contract.selector} must not use inverse/form-control token ${token}`);
+    }
+  }
+}
 
 // The canonical data-table row-control density contract. It lives in
 // staffglobal.css today (see the family-ownership ratchet in
