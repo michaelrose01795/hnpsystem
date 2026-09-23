@@ -11,6 +11,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import { useSupportReport } from "@/context/SupportReportContext";
+import SymbolButton from "@/components/ui/SymbolButton";
 
 // Lazy, client-only — the popup is never needed during SSR or first paint.
 const SupportReportModal = dynamic(() => import("@/components/support/SupportReportModal"), {
@@ -22,26 +23,10 @@ export default function SupportControl() {
 
   return (
     <>
-      <button
-        type="button"
-        className="app-btn app-btn--ghost"
-        onClick={() => openSupportReport()}
-        aria-label="Help and report a problem"
-        title="Help / report a problem"
-        style={{
-          // Square, 44px touch target with the "?" glyph centred.
-          minWidth: "44px",
-          minHeight: "44px",
-          width: "44px",
-          height: "44px",
-          padding: 0,
-          fontSize: "1.1rem",
-          fontWeight: 700,
-          lineHeight: 1,
-        }}
-      >
-        ?
-      </button>
+      <SymbolButton
+        symbol="help"
+        label="Help and report a problem"
+        onClick={() => openSupportReport()} />
       {isOpen && <SupportReportModal />}
     </>
   );

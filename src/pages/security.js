@@ -10,6 +10,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 const PASSWORD_MIN_LENGTH = 12;
 const SECURITY_PAGE_KEY = "account-security-page-card";
@@ -215,7 +216,11 @@ function RecentActivity() {
   }, []);
 
   if (events === null) {
-    return <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>Loading recent activity...</p>;
+    return (
+      <div style={{ overflowX: "auto" }}>
+        <TableSkeleton columns={["When", "Event", "IP", "Device"]} rows={5} label="Loading recent activity" />
+      </div>
+    );
   }
   if (error) {
     return <p style={{ margin: 0, color: "var(--danger-base)" }}>{error}</p>;
@@ -234,7 +239,7 @@ function RecentActivity() {
       data-dev-shell="0"
     >
       <table
-        style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}
+        className="app-data-table"
         data-dev-section="1"
         data-dev-section-key="account-security-activity-table"
         data-dev-section-type="data-table"
@@ -328,8 +333,24 @@ export default function AccountSecurityPage() {
       <Head>
         <title>Security - HNP System</title>
       </Head>
-      <div className="app-page-shell">
-        <SecurityPanel />
+      <div
+        className="app-page-shell"
+        // Centre this standalone page within the viewport; allow tall content to grow and scroll.
+        style={{ display: "grid", placeItems: "center", minHeight: "75svh", paddingBlock: "var(--page-stack-gap)" }}
+      >
+        <div
+          className="app-page-stack"
+          // Keep security settings readable on wide screens without constraining the profile popup.
+          style={{ maxWidth: "44rem", marginInline: "auto" }}
+        >
+          <header style={{ textAlign: "center" }}> {/* Page-specific alignment for the centred settings heading. */}
+            <h1>Security</h1>
+            <p>
+              Manage your password and review recent sign-in activity.
+            </p>
+          </header>
+          <SecurityPanel />
+        </div>
       </div>
     </ProtectedRoute>
   );

@@ -8,17 +8,27 @@
 //   Singletons  — one row, edited in place.
 //   Collections — delegated to <CollectionManager>, which supplies the list,
 //                 reorder, add / edit / delete and show / hide controls.
+//   Code-owned  — no editor: the public page renders these from a module
+//                 under src/features/website/data and never reads their rows,
+//                 so the panel names the file to edit instead of offering a
+//                 Save that would do nothing. Register:
+//                 @/features/website/data/codeOwnedContent.
 
 import React, { useCallback, useEffect, useState } from "react";
 import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { SECTION_SCHEMAS, SECTIONS_BY_PAGE } from "../editors/sectionSchemas";
 import SectionEditor from "../editors/SectionEditor";
 import CollectionManager from "./CollectionManager";
 import { fetchSection, patchSingleton } from "../websiteApi";
 import { StatusBadge, formatDateTime } from "../helpers";
+import {
+  CODE_OWNED_SECTIONS,
+  isCodeOwnedSection,
+} from "@/features/website/data/codeOwnedContent";
 
 export default function PageContentPanel({
   pages,
@@ -92,6 +102,22 @@ export default function PageContentPanel({
 function SectionPanel({ sectionKey }) {
   const schema = SECTION_SCHEMAS[sectionKey];
   if (!schema) return null;
+  // Code-owned sections render from a module under src/features/website/data,
+  // and the public page ignores their website_* rows entirely (see
+  // @/features/website/data/codeOwnedContent). Opening an editor here would
+  // save a row that never reaches the site, so name the file instead.
+  if (isCodeOwnedSection(sectionKey)) {
+    const entry = CODE_OWNED_SECTIONS[sectionKey];
+    return (
+      <Section title={schema.label}>
+        <EmptyState
+          variant="bare"
+          title="Set in code"
+          description={`${entry.label} is built from ${entry.file} (${entry.export}), not from the database. A developer edits that file to add, remove, reorder or reword its items. The heading, lead and running order of the block stay editable under Design and layout → Sections.`}
+        />
+      </Section>
+    );
+  }
   return schema.kind === "singleton" ? (
     <SingletonPanel sectionKey={sectionKey} schema={schema} />
   ) : (
@@ -138,7 +164,17 @@ function SingletonPanel({ sectionKey, schema }) {
           {error}
         </div>
       )}
-      {loading && <p className="website-manager__meta">Loading…</p>}
+      {loading && (
+        <div className="website-manager__table-scroll">
+          <TableSkeleton
+            className="app-data-table--compact"
+            columns={2}
+            rows={Math.max(1, Math.min(4, schema.fields.length))}
+            withHeadings={false}
+            label={`Loading ${schema.label.toLowerCase()}`}
+          />
+        </div>
+      )}
       {!loading && !editing && (
         <>
           <Summary data={data || {}} fields={schema.fields} />

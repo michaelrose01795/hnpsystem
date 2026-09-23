@@ -56,7 +56,7 @@ async function handler(req, res) {
       ? Math.min(Math.floor(requestedLimit), MAX_LIMIT)
       : JOBS_WORKLOAD_DEFAULT_LIMIT;
 
-  // Optional technician scope, used by /tech and /tech/dashboard.
+  // Optional technician scope, used by /tech and /dashboard/tech.
   //
   // This narrows the SAME rows this caller can already read unfiltered, so it
   // grants nothing — it only avoids shipping the whole workshop's workload to a

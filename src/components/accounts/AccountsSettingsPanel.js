@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Button, StatusMessage } from "@/components/ui";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { logFailure } from "@/lib/utils/logFailure";
 
 const initialSettings = {
@@ -159,7 +160,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <h1 style={{ margin: 0, color: "var(--primary)", fontSize: "1.75rem" }}>Account Settings</h1>
         {embedded && onClose ? (
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Close
           </Button>
         ) : null}
@@ -175,7 +176,20 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
               </Button>
             ) : null}
           </div>
-          {loading ? <p style={{ color: "var(--text-1)", margin: 0 }}>Loading settings…</p> : (
+          {loading ? (
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading settings" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <SkeletonKeyframes />
+              {["58%", "64%", "52%", "70%", "48%"].map((width, index) => (
+                <div key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", minHeight: "76px" }}>
+                  <div style={{ flex: "1 1 280px", display: "grid", gap: "8px" }}>
+                    <SkeletonBlock width="160px" height="16px" />
+                    <SkeletonBlock width={width} height="12px" />
+                  </div>
+                  <SkeletonBlock width={index === 4 ? "160px" : "96px"} height={index === 4 ? "44px" : "32px"} borderRadius={index === 4 ? undefined : "999px"} />
+                </div>
+              ))}
+            </div>
+          ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {settingRow("Manager Approval", "Require accounts manager approval before increasing credit limits over £5k.", toggleControl("requireManagerApproval"))}
               {settingRow("Manager Freeze Access", "Allow service and workshop managers to freeze/unfreeze accounts directly.", toggleControl("allowManagersToFreeze"))}
@@ -210,7 +224,13 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
           </div>
           {companyMessage && <StatusMessage tone={companyMessage.includes("saved") ? "success" : "danger"}>{companyMessage}</StatusMessage>}
           {companyLoading ? (
-            <p style={{ color: "var(--text-1)", margin: 0 }}>Loading company profile…</p>
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading company profile" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+              <SkeletonKeyframes />
+              {Array.from({ length: 12 }, (_, index) => <SkeletonBlock key={index} height="44px" />)}
+              <div style={{ gridColumn: "1 / -1" }}>
+                <SkeletonBlock height="84px" />
+              </div>
+            </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
               <input className="app-input" value={companyProfile.company_name} onChange={(event) => handleCompanyInputChange("company_name", event.target.value)} placeholder="Company name" />

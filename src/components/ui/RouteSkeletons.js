@@ -86,10 +86,10 @@ function TrackingRouteSkeleton() {
 
 export function RouteSkeleton({ href }) {
   const pathname = String(href || "").split("?")[0].split("#")[0];
-  if (pathname === "/tracking") {
+  if (pathname === "/tracking" || pathname === "/tracking/Key-Parking") {
     return <TrackingRouteSkeleton />;
   }
-  return <PageSkeleton />;
+  return <PageSkeleton href={pathname} />;
 }
 
 export { TrackingRouteSkeleton };

@@ -4,6 +4,7 @@ import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
 import LayerSurface from "@/components/ui/LayerSurface";
 import { MonthPicker } from "@/components/ui/monthPickerAPI";
+import { SectionSkeleton, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const pad = (value) => String(value).padStart(2, "0");
 const toDateKey = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -244,7 +245,22 @@ export default function CapacitySettingsPopup({
         {error ? <div className="capacity-settings__message capacity-settings__message--error" role="alert">{error}</div> : null}
 
         {loading ? (
-          <div className="capacity-settings__message">Loading technician capacity…</div>
+          compact ? (
+            <LayerTheme padding="12px" gap="10px" className="capacity-settings__compact-editor" role="status" aria-live="polite" aria-busy="true" aria-label="Loading technician capacity" style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}>
+              <SkeletonKeyframes />
+              <SkeletonBlock width="140px" height="16px" />
+              <SectionSkeleton layer="surface" titleWidth="160px" subtitleWidth="220px" rows={2} />
+            </LayerTheme>
+          ) : (
+            <div className="capacity-settings__layout" role="status" aria-live="polite" aria-busy="true" aria-label="Loading technician capacity">
+              <SectionSkeleton titleWidth="120px" subtitleWidth="80px" rows={6} />
+              <LayerTheme padding="12px" gap="10px" className="capacity-settings__editor">
+                <SkeletonKeyframes />
+                <SkeletonBlock width="160px" height="16px" />
+                {["150px", "130px", "170px"].map((width) => <SectionSkeleton key={width} layer="surface" titleWidth={width} subtitleWidth="220px" rows={1} />)}
+              </LayerTheme>
+            </div>
+          )
         ) : (
           compact ? (
             <LayerTheme padding="12px" gap="10px" className="capacity-settings__compact-editor" style={{ width: "100%", minWidth: 0, boxSizing: "border-box", overflow: "visible" }}>

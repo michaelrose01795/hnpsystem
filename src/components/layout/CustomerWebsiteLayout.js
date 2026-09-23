@@ -16,22 +16,38 @@
 // SupportReportLauncher is mounted here so a customer can always report an issue
 // (same private, sanitised diagnostics snapshot as the staff "?" control). It is
 // fixed bottom-left, out of the marketing content flow, and hidden from print.
-import React from "react";
+//
+// A staff preview embed (`/website?preview=…`, used by the website-manager
+// Preview and Design tabs) leaves the launcher off: inside those frames the
+// page is staff-facing panel content, not a customer visit, and a floating
+// pill over it is just chrome in the way.
+import React, { useEffect, useState } from "react";
 import SupportReportLauncher from "@/components/support/SupportReportLauncher";
 
 export default function CustomerWebsiteLayout({ children }) {
+  // Read after mount rather than from router.query so the server and the
+  // first client render agree (this layout is server-rendered).
+  const [isPreviewEmbed, setIsPreviewEmbed] = useState(false);
+  useEffect(() => {
+    try {
+      setIsPreviewEmbed(new URLSearchParams(window.location.search).has("preview"));
+    } catch {
+      setIsPreviewEmbed(false);
+    }
+  }, []);
+
   // No staff chrome — the website renders edge-to-edge under website-scope CSS.
   return (
     <>
       {children}
-      <div
-        // Discreet fixed anchor for the report launcher; kept out of the content
-        // flow and never printed. Non-surface wrapper, so no border rules apply.
-        className="app-website-support-launcher"
-        style={{ position: "fixed", left: "12px", bottom: "12px", zIndex: "var(--z-toast, 60)" }}
-      >
-        <SupportReportLauncher variant="secondary" label="Report a problem" />
+      {isPreviewEmbed ? null : (
+      // Discreet fixed anchor for the report launcher, positioned by
+      // .ws-support-launcher in custglobal.css. The className replaces the staff
+      // app-btn variant, so the button renders as the /website secondary control.
+      <div className="ws-support-launcher">
+        <SupportReportLauncher className="ws-support-launcher__button" label="Report a problem" />
       </div>
+      )}
     </>
   );
 }

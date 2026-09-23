@@ -19,6 +19,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";import LayerSurface from "@/components/ui/LayerSurface";
 import Button from "@/components/ui/Button";
+import WebsiteCookieConsent from "@/features/website/components/WebsiteCookieConsent";
 
 const STORAGE_KEY = "hnp.cookieConsent.v1";
 const ANON_COOKIE = "hnp_anon_id";
@@ -137,8 +138,21 @@ export default function CookieBanner() {
     // .app-btn as the red-wash secondary - handing both to .app-btn there
     // would flatten the accept/reject hierarchy the customer site relies on.
     setIsStaffScope(!document.documentElement.classList.contains("website-scope"));
+    // A staff preview embed (/website?preview=… inside a website-manager
+    // iframe) is panel content, not a customer visit: consent belongs to the
+    // real visit, and a pinned banner would sit over the section the staff
+    // member is looking at. Both conditions are required so a staff page that
+    // happens to carry ?preview= never loses its own banner.
+    let isPreviewEmbed = false;
+    try {
+      isPreviewEmbed =
+        new URLSearchParams(window.location.search).has("preview") &&
+        window.top !== window.self;
+    } catch {
+      isPreviewEmbed = false;
+    }
     const storedConsent = readStoredConsent();
-    if (!storedConsent || storedConsent.policyVersion !== POLICY_VERSION) {
+    if (!isPreviewEmbed && (!storedConsent || storedConsent.policyVersion !== POLICY_VERSION)) {
       setOpen(true);
     }
   }, []);
@@ -246,6 +260,24 @@ export default function CookieBanner() {
   };
 
   if (!mounted || !open) return null;
+
+  // /website: the customer design system renders its own panel
+  // (WebsiteCookieConsent, styled by custglobal.css .ws-consent); this
+  // component keeps the state, storage and consent API call.
+  if (!isStaffScope) {
+    return (
+      <WebsiteCookieConsent
+        categories={CATEGORIES}
+        selections={selections}
+        onToggle={(key, checked) => setSelections((prev) => ({ ...prev, [key]: checked }))}
+        showCustomise={showCustomise}
+        onCustomise={() => setShowCustomise(true)}
+        onSave={saveCustom}
+        onReject={rejectAll}
+        onAccept={acceptAll}
+      />
+    );
+  }
 
   return (
     <LayerSurface as="div" role="dialog" aria-label="Cookie consent" style={containerStyle}>

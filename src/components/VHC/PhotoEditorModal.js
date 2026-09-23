@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { logFailure } from "@/lib/utils/logFailure";
 
 const TOOLS = [
@@ -557,19 +558,19 @@ export default function PhotoEditorModal({
             />
             {!imageLoaded && (
               <div
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+                aria-label="Loading image"
                 style={{
                   position: "absolute",
                   inset: 0,
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                  color: "var(--text-1)",
                   pointerEvents: "none",
-                  fontSize: "var(--text-body-sm)",
                 }}
               >
-                Loading image...
+                <SkeletonKeyframes />
+                <SkeletonBlock width="100%" height="100%" borderRadius="0" />
               </div>
             )}
           </div>

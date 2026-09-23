@@ -10,7 +10,6 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
 import {
-  CAR_LOCATIONS,
   KEY_LOCATIONS,
   CAR_LOCATION_OPTIONS,
   KEY_LOCATION_OPTIONS,
@@ -18,19 +17,19 @@ import {
   ensureDropdownOption,
   emptyTrackingForm,
 } from "@/lib/jobCards/locations";
+import { toVehicleLocationFormValue } from "@/lib/tracking/vehicleLocations";
 
 export function LocationUpdateModal({ entry, onClose, onSave }) {
   const [form, setForm] = useState(() => ({
     ...emptyTrackingForm,
     ...entry,
-    vehicleLocation: entry?.vehicleLocation || CAR_LOCATIONS[0].label,
+    // Canonical only: legacy text that means a section opens on that section,
+    // anything else opens on the placeholder — never as a free-text option.
+    vehicleLocation: toVehicleLocationFormValue(entry?.vehicleLocation),
     keyLocation: normalizeKeyLocationLabel(entry?.keyLocation) || KEY_LOCATIONS[0].label,
     status: entry?.status || "Waiting For Collection"
   }));
-  const vehicleLocationOptions = useMemo(
-    () => ensureDropdownOption(CAR_LOCATION_OPTIONS, form.vehicleLocation),
-    [form.vehicleLocation]
-  );
+  const vehicleLocationOptions = CAR_LOCATION_OPTIONS;
   const keyLocationOptions = useMemo(
     () => ensureDropdownOption(KEY_LOCATION_OPTIONS, form.keyLocation),
     [form.keyLocation]
@@ -42,7 +41,8 @@ export function LocationUpdateModal({ entry, onClose, onSave }) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onSave({ ...form, actionType: "location_update", context: "update" });
+    // An unchosen vehicle location leaves that side unaddressed.
+    onSave({ ...form, vehicleLocation: form.vehicleLocation || undefined, actionType: "location_update", context: "update" });
   };
 
   return (

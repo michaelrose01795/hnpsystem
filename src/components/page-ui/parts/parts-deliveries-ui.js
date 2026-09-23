@@ -17,6 +17,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import DeliveryRow from "@/components/Deliveries/DeliveryRow";
 import DeliveryDetailPanel from "@/components/Deliveries/DeliveryDetailPanel";
@@ -271,19 +272,20 @@ export default function PartsDeliveriesPageUi(props) {
           data-dev-text-preview="Delivery day header"
           style={deliveryStyles.headerCard}
         >
-          {/* Summary strip — the shared .app-summary-* family, so it reads the
-              same as the stock and jobs summaries. Each tile filters the list. */}
+          {/* One toolbar row: status tiles (the shared .app-summary-* family —
+              each tile filters the list) on the left, then date / view controls
+              and the filters on the right. Wraps beneath the tiles when narrow. */}
           <LayerSurface
             data-presentation="deliveries-day-controls"
             sectionKey="parts-deliveries-summary"
             parentKey="parts-deliveries-header"
             sectionType="toolbar"
-            data-dev-text-preview="Delivery day totals"
+            data-dev-text-preview="Delivery day totals and filters"
             padding="var(--space-3)"
             gap="var(--space-sm)"
             radius="var(--radius-sm)"
           >
-            <div style={deliveryStyles.deliverySummaryRow}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "var(--space-sm)", width: "100%", minWidth: 0 }}>
               {/* A group, not a list: each tile is a status filter toggle, so it
                   carries aria-pressed rather than list semantics. */}
               <div
@@ -291,7 +293,8 @@ export default function PartsDeliveriesPageUi(props) {
                 role="group"
                 aria-label="Delivery day summary and status filters"
                 style={{
-                  width: "100%",
+                  flex: "2 1 420px",
+                  minWidth: 0,
                   gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
                 }}
               >
@@ -324,7 +327,7 @@ export default function PartsDeliveriesPageUi(props) {
                   );
                 })}
               </div>
-              <div style={deliveryStyles.viewControls}>
+              <div style={{ display: "flex", flexWrap: isMobile ? "wrap" : "nowrap", alignItems: "center", justifyContent: "flex-end", gap: "var(--space-sm)", flex: "1 1 auto", minWidth: 0 }}>
                 <CalendarField
                   className="app-delivery-month-picker"
                   name="selectedDate"
@@ -340,55 +343,60 @@ export default function PartsDeliveriesPageUi(props) {
                 >
                   {weekOpen ? "Today" : "Week"}
                 </Button>
-              </div>
-            </div>
-          </LayerSurface>
-
-          {/* Filters */}
-          <LayerSurface
-            sectionKey="parts-deliveries-filters"
-            parentKey="parts-deliveries-header"
-            sectionType="toolbar"
-            data-dev-text-preview="Delivery filters"
-            padding="var(--space-3)"
-            gap="var(--space-sm)"
-            radius="var(--radius-sm)"
-          >
-            <div style={isMobile ? deliveryStyles.filterRowMobile : deliveryStyles.filterRow}>
               <SearchBar
                 ariaLabel="Search deliveries"
                 onChange={(event) => setSearchTerm(event.target.value)}
                 onClear={() => setSearchTerm("")}
                 placeholder="Customer, invoice, job, postcode, part…"
                 value={searchTerm}
+                style={{ flex: "1 1 200px", minWidth: 0 }}
               />
-              <DropdownField
-                name="statusFilter"
-                options={statusOptions}
-                value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value)}
-                aria-label="Filter by status"
-              />
-              <DropdownField
-                name="driverFilter"
-                options={driverOptions}
-                value={driverFilter}
-                onValueChange={(value) => setDriverFilter(value)}
-                aria-label="Filter by driver"
-              />
-              <DropdownField
-                name="vehicleFilter"
-                options={vehicleOptions}
-                value={vehicleFilter}
-                onValueChange={(value) => setVehicleFilter(value)}
-                aria-label="Filter by delivery vehicle"
-              />
+              <FilterButton
+                activeCount={[statusFilter, driverFilter, vehicleFilter].filter((value) => value !== "all").length}
+                onClear={() => {
+                  setStatusFilter("all");
+                  setDriverFilter("all");
+                  setVehicleFilter("all");
+                }}
+              >
+                <FilterField label="Status" htmlFor="parts-deliveries-filter-status">
+                  <DropdownField
+                    id="parts-deliveries-filter-status"
+                    name="statusFilter"
+                    options={statusOptions}
+                    value={statusFilter}
+                    onValueChange={(value) => setStatusFilter(value)}
+                    aria-label="Filter by status"
+                  />
+                </FilterField>
+                <FilterField label="Driver" htmlFor="parts-deliveries-filter-driver">
+                  <DropdownField
+                    id="parts-deliveries-filter-driver"
+                    name="driverFilter"
+                    options={driverOptions}
+                    value={driverFilter}
+                    onValueChange={(value) => setDriverFilter(value)}
+                    aria-label="Filter by driver"
+                  />
+                </FilterField>
+                <FilterField label="Vehicle" htmlFor="parts-deliveries-filter-vehicle">
+                  <DropdownField
+                    id="parts-deliveries-filter-vehicle"
+                    name="vehicleFilter"
+                    options={vehicleOptions}
+                    value={vehicleFilter}
+                    onValueChange={(value) => setVehicleFilter(value)}
+                    aria-label="Filter by delivery vehicle"
+                  />
+                </FilterField>
+              </FilterButton>
               <Button variant="secondary" onClick={() => setRouteSettingsOpen(true)}>
                 Route
               </Button>
               <Button variant="ghost" onClick={clearFilters} disabled={!filtersActive}>
                 Clear
               </Button>
+              </div>
             </div>
           </LayerSurface>
         </LayerTheme>

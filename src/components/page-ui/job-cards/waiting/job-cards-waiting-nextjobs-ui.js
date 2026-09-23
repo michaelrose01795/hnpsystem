@@ -4,6 +4,7 @@ import React from "react"; // support extracted fragments.
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical "theme" layer primitive (alternates with LayerSurface)
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import { NextJobsSkeleton } from "@/components/ui/LoadingSkeleton";
 
 const toDevSectionKey = (value) =>
 String(value || "unknown").
@@ -16,7 +17,6 @@ replace(/^-|-$/g, "") || "unknown";
 export default function NextJobsPageUi(props) {
   const {
     DRAG_PREVIEW_OFFSET_PX,
-    InlineLoading,
     OUTSTANDING_GRID_MAX_HEIGHT_PX,
     PANEL_HEIGHT_PX,
     SearchBar,
@@ -57,13 +57,7 @@ export default function NextJobsPageUi(props) {
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
-      return <div style={{
-  padding: "40px",
-  display: "flex",
-  justifyContent: "center"
-}}>
-        <InlineLoading width={180} label="Loading roster" />
-      </div>; // render extracted page section.
+      return <NextJobsSkeleton />;
 
     case "section2":
       return <>
@@ -79,7 +73,7 @@ export default function NextJobsPageUi(props) {
       </>; // render extracted page section.
 
     case "section3":
-      return null; // render empty page state.
+      return <NextJobsSkeleton />;
 
     case "section4":
       return <>

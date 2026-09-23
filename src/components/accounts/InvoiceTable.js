@@ -9,8 +9,12 @@ import { isInvoiceSettled } from "@/lib/status/statusHelpers"; // Centralized in
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import ToolbarRow from "@/components/ui/ToolbarRow";
+import { SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import Button from "@/components/ui/Button";
+import DataTableShell from "@/components/ui/DataTableShell";
+import EmptyState from "@/components/ui/EmptyState";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
@@ -87,7 +91,6 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
   const Layer = accentSurface ? LayerTheme : LayerSurface;
   const router = useRouter();
   void onPageChange;
-  const [hoveredInvoiceId, setHoveredInvoiceId] = React.useState(null);
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
     onFilterChange({ ...filters, [name]: value });
@@ -159,13 +162,17 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                 onClear={() => onFilterChange({ ...filters, search: "" })}
                 style={{ flex: "1 1 240px" }} />
 
-              <DropdownField
-                name="status"
-                value={filters.status}
-                onChange={handleFilterChange}
-                placeholder="All statuses"
-                options={[{ label: "All Statuses", value: "", placeholder: true }, ...INVOICE_STATUSES.map((status) => ({ label: status, value: status }))]}
-                style={{ flex: "0 0 180px" }} />
+              <FilterButton activeCount={filters.status ? 1 : 0} onClear={() => onFilterChange({ ...filters, status: "" })}>
+                <FilterField label="Status" htmlFor="accounts-invoices-filter-status">
+                  <DropdownField
+                    id="accounts-invoices-filter-status"
+                    name="status"
+                    value={filters.status}
+                    onChange={handleFilterChange}
+                    placeholder="All statuses"
+                    options={[{ label: "All Statuses", value: "", placeholder: true }, ...INVOICE_STATUSES.map((status) => ({ label: status, value: status }))]} />
+                </FilterField>
+              </FilterButton>
 
               <div style={{ flex: "0 0 160px" }}>
                 <CalendarField name="from" placeholder="From date" value={filters.from} onChange={handleFilterChange} size="sm" />
@@ -185,13 +192,14 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
       </DevLayoutSection>
       }
       <DevLayoutSection sectionKey="accounts-invoices-table-scroll" sectionType="content-card" parentKey="accounts-invoices-table-card">
-        <div className="app-table-shell-scroll" style={{ overflowX: "auto", overflowY: filteredInvoices.length > 10 ? "auto" : "visible", maxHeight: filteredInvoices.length > 10 ? "640px" : "none" }}>
+        {/* Canonical global table (CLAUDE.md §3.0b rule 5a): DataTableShell owns the
+            scroll, staffglobal.css / families/tables.css own every visual. */}
+        <DataTableShell>
           <table
             data-dev-section-key="accounts-invoices-data-table"
             data-dev-section-type="data-table"
             data-dev-section-parent="accounts-invoices-table-card"
-            className="app-data-table app-table-shell app-table-shell--with-headings"
-            style={{ minWidth: "880px" }}>
+            className={navigationDisabled ? "app-data-table" : "app-data-table app-data-table--clickable"}>
             <thead data-dev-section-key="accounts-invoices-data-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="accounts-invoices-data-table">
             <tr>
               <th>Invoice</th>
@@ -203,15 +211,15 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
               <th>Due</th>
             </tr>
             </thead>
-            <tbody data-dev-section-key="accounts-invoices-data-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="accounts-invoices-data-table">
+            <tbody data-dev-section-key="accounts-invoices-data-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="accounts-invoices-data-table" aria-busy={loading ? "true" : undefined} aria-label={loading ? "Loading invoices" : undefined}>
             {loading &&
-              <tr>
-                <td colSpan={7} style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>Loading invoices…</td>
-              </tr>
+              Array.from({ length: 6 }, (_, index) => <SkeletonTableRow key={`invoice-skeleton-${index}`} cols={7} />)
               }
             {!loading && filteredInvoices.length === 0 &&
               <tr>
-                <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "var(--text-1)" }}>No invoices found.</td>
+                <td colSpan={7}>
+                  <EmptyState variant="bare" title="No invoices found." role="status" />
+                </td>
               </tr>
               }
             {!loading && filteredInvoices.map((invoice) => {
@@ -226,18 +234,15 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                         handleOpenInvoice(invoice);
                       }
                     }}
-                    onMouseEnter={() => setHoveredInvoiceId(invoice.invoice_id)}
-                    onMouseLeave={() => setHoveredInvoiceId((current) => current === invoice.invoice_id ? null : current)}
                     tabIndex={navigationDisabled ? undefined : 0}
                     role={navigationDisabled ? undefined : "button"}
-                    aria-label={navigationDisabled ? undefined : `Open invoice ${getInvoiceDisplayValue(invoice)}`}
-                    style={{ background: hoveredInvoiceId === invoice.invoice_id ? "rgba(var(--primary-rgb), 0.12)" : "transparent", transition: "background-color 0.18s ease", cursor: navigationDisabled ? "default" : "pointer" }}>
+                    aria-label={navigationDisabled ? undefined : `Open invoice ${getInvoiceDisplayValue(invoice)}`}>
 
-                  <td style={{ fontWeight: 600 }}>{getInvoiceDisplayValue(invoice)}</td>
+                  <td><strong>{getInvoiceDisplayValue(invoice)}</strong></td>
                   <td>{getCustomerDisplayValue(invoice)}</td>
                   <td>{getAccountDisplayValue(invoice)}</td>
                   <td>{invoice.job_number || "—"}</td>
-                  <td style={{ fontWeight: 600 }}>{currencyFormatter.format(getInvoiceAmountValue(invoice))}</td>
+                  <td data-table-cell="nowrap"><strong>{currencyFormatter.format(getInvoiceAmountValue(invoice))}</strong></td>
                   <td>
                     {/* .app-badge — staffglobal status bubble; rule in
                         staffglobal.css snaps it to 32px inside .app-data-table. */}
@@ -256,7 +261,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
               })}
             </tbody>
           </table>
-        </div>
+        </DataTableShell>
       </DevLayoutSection>
     </Layer>);
 

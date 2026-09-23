@@ -85,12 +85,14 @@ describe("recentActivity", () => {
     expect(classifyRoute("/customers/acme-ltd")).toMatchObject({ category: "customer", label: "Acme Ltd" });
     expect(classifyRoute("/reports/workshop")).toMatchObject({ category: "report", label: "Workshop report" });
     expect(classifyRoute("/vhc/00076")).toMatchObject({ category: "workflow", label: "VHC 00076" });
-    expect(classifyRoute("/new-order/123").label).toBe("New Order: 123");
+    expect(classifyRoute("/new-order").label).toBe("New Order");
+    expect(classifyRoute("/order/P00001").label).toBe("Order: P00001");
   });
 
   it("ignores non-record / root routes", () => {
     expect(classifyRoute("/")).toBeNull();
     expect(classifyRoute("/dashboard/workshop")).toBeNull();
+    expect(classifyRoute("/order")).toBeNull(); // the register is a list, not a record
     expect(classifyRoute("")).toBeNull();
   });
 

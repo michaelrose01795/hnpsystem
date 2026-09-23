@@ -8,7 +8,7 @@
 import React, { useMemo, useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
 import { SearchBar } from "@/components/ui/searchBarAPI";
-import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { SkeletonBlock, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useDrilldown, buildExportUrl } from "@/hooks/reporting/useReporting";
 import { reportDevKey } from "./reportDevOverlay";
 
@@ -78,37 +78,14 @@ const displayCell = (value, key) => {
   return cell(value);
 };
 
+// Loading placeholder for the drill-down table. Rows, cascade and shimmer all
+// come from the shared table skeleton (<TableSkeleton>, styled in
+// src/styles/families/loaders.css) inside the same scroll shell the loaded
+// table uses, so nothing shifts when the rows arrive.
 function DrilldownTableSkeleton() {
-  const columns = ["Record", "Customer", "Status", "Date", "Value"];
   return (
     <div className="app-table-shell-scroll" data-report-table-pan style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
-      <SkeletonKeyframes />
-      <table className="app-data-table app-table-shell app-table-shell--with-headings" style={{ width: "100%" }}>
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th key={column} style={{ textAlign: "left", whiteSpace: "nowrap" }}>
-                {column}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: 6 }).map((_, rowIndex) => (
-            <tr key={rowIndex}>
-              {columns.map((column, columnIndex) => (
-                <td key={column} style={{ whiteSpace: "nowrap" }}>
-                  <SkeletonBlock
-                    width={columnIndex === 0 ? "180px" : columnIndex === 1 ? "150px" : "92px"}
-                    height="14px"
-                    borderRadius="999px"
-                  />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <TableSkeleton columns={["Record", "Customer", "Status", "Date", "Value"]} rows={6} label="Loading drill-down records" />
     </div>
   );
 }

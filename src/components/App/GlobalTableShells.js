@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 
+import { applyStacking } from "@/lib/ui/tableStacking";
+
 const TABLE_SELECTOR = "table";
 const HEADING_SELECTOR = "thead";
 const BODY_SELECTOR = "tbody";
@@ -16,7 +18,7 @@ function classifyTable(table) {
   if (!(table instanceof HTMLTableElement)) return;
 
   if (table.dataset.appTableShell === "off") {
-    table.classList.remove("app-table-shell", "app-table-shell--with-headings", "app-table-shell--rows-only");
+    table.classList.remove("app-table-shell", "app-table-shell--with-headings", "app-table-shell--rows-only", "app-data-table--stack");
     return;
   }
 
@@ -24,9 +26,23 @@ function classifyTable(table) {
   if (!hasBody) return;
 
   const hasHeadings = Boolean(table.tHead || table.querySelector(HEADING_SELECTOR));
-  table.classList.add("app-table-shell");
-  table.classList.toggle("app-table-shell--with-headings", hasHeadings);
-  table.classList.toggle("app-table-shell--rows-only", !hasHeadings);
+
+  /* Mobile stacked-card mode. Applied here rather than per call site so that
+     every raw table in the app gets it too, reusing this observer instead of
+     installing another one. Opt out per table with data-app-table-stack="off".
+     The resize handler below re-runs classification, so this flips live. */
+  const stacked = applyStacking(table);
+
+  /* A stacked table drops its desktop table chrome entirely. .app-table-shell
+     sets min-width: max-content, which on its own guarantees horizontal
+     overflow at the 375px floor - the exact thing stacking exists to prevent -
+     plus !important cell paddings and row backgrounds that the stacked rules
+     could not override without adding !important of their own (families/
+     tables.css is at its important-budget of 3). Removing the classes is both
+     cheaper and more honest than out-specifying them. */
+  table.classList.toggle("app-table-shell", !stacked);
+  table.classList.toggle("app-table-shell--with-headings", hasHeadings && !stacked);
+  table.classList.toggle("app-table-shell--rows-only", !hasHeadings && !stacked);
 
   const wrapper = table.closest(WRAPPER_SELECTOR) || table.parentElement;
   if (wrapper instanceof HTMLElement && wrapper.dataset.appTableShell !== "off") {
@@ -203,7 +219,7 @@ export default function GlobalTableShells() {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["data-app-table-shell"],
+      attributeFilter: ["data-app-table-shell", "data-app-table-stack"],
     });
 
     window.addEventListener("resize", handleResize);

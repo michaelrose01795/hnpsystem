@@ -695,11 +695,9 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
     overflow: "hidden"
   };
 
-  const tableStyle = {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "0.9rem"
-  };
+  // Table chrome comes from the global .app-data-table class in
+  // staffglobal.css; the UI applies it directly, so nothing is declared here.
+  const tableStyle = {};
 
   const tableHeaderStyle = {
     textAlign: "left",
@@ -757,7 +755,7 @@ export default function UserClockingHistory({ slug: slugOverride, embedded = fal
     cursor: "pointer"
   };
 
-  return <UserClockingHistoryUi view="section1" activeJobs={activeJobs} activeJobsLoading={activeJobsLoading} badgeBaseStyle={badgeBaseStyle} basePanelStyle={basePanelStyle} buttonPrimaryStyle={buttonPrimaryStyle} buttonSecondaryStyle={buttonSecondaryStyle} CalendarField={CalendarField} clockInDate={clockInDate} ClockingHistorySection={ClockingHistorySection} clockOutDate={clockOutDate} deriveStatus={deriveStatus} DropdownField={DropdownField} entries={entries} error={error} formatDuration={formatDuration} formatTime={formatTime} formError={formError} formFinishTime={formFinishTime} formJobNumber={formJobNumber} formStartTime={formStartTime} formSubmitting={formSubmitting} formSuccess={formSuccess} handleJobNumberChange={handleJobNumberChange} handleManualEntrySubmit={handleManualEntrySubmit} historyRefreshSignal={historyRefreshSignal} inputStyle={inputStyle} isManager={isManager} lastClockedJobId={lastClockedJobId} lastClockedJobNumber={lastClockedJobNumber} loading={loading} managerBadgeStyle={managerBadgeStyle} PageContainer={embedded ? EmbeddedShell : PageContainer} PageWrapper={embedded ? EmbeddedShell : PageWrapper} requestOptions={requestOptions} selectedJobLockedMessage={selectedJobLockedMessage} selectedRequest={selectedRequest} setClockInDate={setClockInDate} setClockOutDate={setClockOutDate} setFormError={setFormError} setFormFinishTime={setFormFinishTime} setFormJobNumber={setFormJobNumber} setFormStartTime={setFormStartTime} setFormSuccess={setFormSuccess} setJobRequests={setJobRequests} setSelectedJobId={setSelectedJobId} setSelectedJobLockedMessage={setSelectedJobLockedMessage} setSelectedRequest={setSelectedRequest} STATUS_BADGE_STYLES={STATUS_BADGE_STYLES} STATUS_STATES={STATUS_STATES} tableCellStyle={tableCellStyle} tableHeaderStyle={tableHeaderStyle} tableStyle={tableStyle} tableWrapperStyle={tableWrapperStyle} TimePickerField={TimePickerField} />;
+  return <UserClockingHistoryUi view="section1" embedded={embedded} activeJobs={activeJobs} activeJobsLoading={activeJobsLoading} badgeBaseStyle={badgeBaseStyle} basePanelStyle={basePanelStyle} buttonPrimaryStyle={buttonPrimaryStyle} buttonSecondaryStyle={buttonSecondaryStyle} CalendarField={CalendarField} clockInDate={clockInDate} ClockingHistorySection={ClockingHistorySection} clockOutDate={clockOutDate} deriveStatus={deriveStatus} DropdownField={DropdownField} entries={entries} error={error} formatDuration={formatDuration} formatTime={formatTime} formError={formError} formFinishTime={formFinishTime} formJobNumber={formJobNumber} formStartTime={formStartTime} formSubmitting={formSubmitting} formSuccess={formSuccess} handleJobNumberChange={handleJobNumberChange} handleManualEntrySubmit={handleManualEntrySubmit} historyRefreshSignal={historyRefreshSignal} inputStyle={inputStyle} isManager={isManager} lastClockedJobId={lastClockedJobId} lastClockedJobNumber={lastClockedJobNumber} loading={loading} managerBadgeStyle={managerBadgeStyle} PageContainer={embedded ? EmbeddedShell : PageContainer} PageWrapper={embedded ? EmbeddedShell : PageWrapper} requestOptions={requestOptions} selectedJobLockedMessage={selectedJobLockedMessage} selectedRequest={selectedRequest} setClockInDate={setClockInDate} setClockOutDate={setClockOutDate} setFormError={setFormError} setFormFinishTime={setFormFinishTime} setFormJobNumber={setFormJobNumber} setFormStartTime={setFormStartTime} setFormSuccess={setFormSuccess} setJobRequests={setJobRequests} setSelectedJobId={setSelectedJobId} setSelectedJobLockedMessage={setSelectedJobLockedMessage} setSelectedRequest={setSelectedRequest} STATUS_BADGE_STYLES={STATUS_BADGE_STYLES} STATUS_STATES={STATUS_STATES} tableCellStyle={tableCellStyle} tableHeaderStyle={tableHeaderStyle} tableStyle={tableStyle} tableWrapperStyle={tableWrapperStyle} TimePickerField={TimePickerField} />;
 
 
 

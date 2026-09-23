@@ -1,6 +1,8 @@
 // file location: src/components/accounts/AccountTable.js // file path header
 import React from "react"; // import React to define component
 import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
+import { SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import PropTypes from "prop-types";
 
 const columnDefinitions = [
@@ -87,20 +89,11 @@ export default function AccountTable({
             </th>
           </tr>
           </thead>
-          <tbody>
+          <tbody aria-busy={loading ? "true" : undefined} aria-label={loading ? "Loading accounts" : undefined}>
             {loading &&
-            <tr>
-                <td
-                colSpan={columnDefinitions.length + 1}
-                style={{
-                  padding: "28px",
-                  textAlign: "center",
-                  color: "var(--text-1)"
-                }}>
-
-                  Loading accounts…
-                </td>
-              </tr>
+            Array.from({ length: 6 }, (_, index) =>
+            <SkeletonTableRow key={`account-skeleton-${index}`} cols={columnDefinitions.length + 1} />
+            )
             }
             {!loading && accounts.length === 0 &&
             <tr>
@@ -154,20 +147,22 @@ export default function AccountTable({
                   })}
                   <td style={{ textAlign: "right" }}>
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
-                      {/* In-row action buttons — .app-table-action-btn locks height to
-                          --table-action-btn-height (32px) per the staffglobal table style. */}
-                      <button
+                      {/* In-row actions use the canonical Button: secondary for the
+                          read-only View, primary for Edit. */}
+                      <Button
                         type="button"
-                        className="app-table-action-btn app-table-action-btn--ghost"
+                        variant="secondary"
+                        size="xs"
                         onClick={() => onSelectAccount && onSelectAccount(account, "view")}>
                         View
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
-                        className="app-table-action-btn"
+                        variant="primary"
+                        size="xs"
                         onClick={() => onSelectAccount && onSelectAccount(account, "edit")}>
                         Edit
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>);

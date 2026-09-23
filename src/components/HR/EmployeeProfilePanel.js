@@ -1,66 +1,95 @@
-﻿// file location: src/components/HR/EmployeeProfilePanel.js
-import React, { useState } from "react";
+// file location: src/components/HR/EmployeeProfilePanel.js
+// Right-hand employee detail panel for the HR Manager > Employees tab.
+//
+// Layout contract (CLAUDE.md §3.0 / §3.0a-2):
+//   .hr-employees-detail-panel (structural, transparent)
+//     <LayerTheme>  .hr-employee-profile-panel   -- its own scroll container
+//       <LayerSurface> sticky header card
+//       <LayerSurface> section cards (two columns once the panel is wide)
+//         <LayerTheme> nested stat tiles inside those cards
+//
+// All appearance lives in the `.hr-employee-*` rules in staffglobal.css — this
+// file carries no one-off visual styling.
+import React, { useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useUser } from "@/context/UserContext";
+import { canViewSensitiveHrDetails, normalizeRoles } from "@/lib/auth/roles";
 import { StatusTag } from "@/components/HR/MetricCard";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+import DataTableShell from "@/components/ui/DataTableShell";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
+import { resolveDocumentCategory, resolveDocumentStatus } from "@/lib/hr/employeeDocuments";
 import { logFailure } from "@/lib/utils/logFailure";
 
-// Outer "main" card uses the accent-surface theme colour; all inner blocks sit on --surface.
-const mainCardStyle = {
-  borderRadius: "var(--radius-md)",
-  background: "var(--theme)",
-  padding: "20px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "16px",
-};
+const NOT_PROVIDED = /^(not provided|n\/a|none)$/i;
 
-const subCardStyle = {
-  borderRadius: "var(--radius-md)",
-  border: "none",
-  background: "var(--surface)",
-  padding: "16px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-};
-
-const labelStyle = {
-  fontSize: "0.72rem",
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  color: "var(--text-1)",
-  fontWeight: 600,
-};
-
-export default function EmployeeProfilePanel({ employee, onEdit }) {
+export default function EmployeeProfilePanel({
+  employee,
+  onEdit,
+  onSelectEmployee = null,
+  resolveEmployeeByUserId = null,
+}) {
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
+  const { data: session } = useSession();
+  const { user } = useUser();
+
+  // Pay, home address, emergency contacts and HR documents are gated through the
+  // existing role system rather than a panel-local rule (src/lib/auth/roles.js).
+  const canViewSensitive = useMemo(
+    () => canViewSensitiveHrDetails(normalizeRoles(session?.user?.roles || user?.roles || [])),
+    [session?.user?.roles, user?.roles]
+  );
+
+  const lineManagers = useMemo(() => {
+    if (!employee?.lineManagers?.length) return [];
+    return employee.lineManagers.map((manager) => {
+      const match = resolveEmployeeByUserId ? resolveEmployeeByUserId(manager.userId) : null;
+      return {
+        userId: manager.userId,
+        name: match?.name || manager.name,
+        description: match ? [match.jobTitle, match.department].filter(Boolean).join(" · ") : "",
+        selectable: Boolean(match && onSelectEmployee),
+      };
+    });
+  }, [employee?.lineManagers, resolveEmployeeByUserId, onSelectEmployee]);
+
+  const emergency = useMemo(
+    () => parseEmergencyContact(employee?.emergencyContact),
+    [employee?.emergencyContact]
+  );
+
+  const documents = useMemo(() => employee?.documents || [], [employee?.documents]);
+
+  // Category / Status / Expiry only earn a column when the stored records
+  // actually carry that information.
+  const documentColumns = useMemo(() => {
+    const now = new Date();
+    return {
+      category: documents.some((doc) => resolveDocumentCategory(doc)),
+      status: documents.some((doc) => resolveDocumentStatus(doc, now)),
+      expires: documents.some((doc) => doc.expiresOn),
+    };
+  }, [documents]);
 
   if (!employee) {
     return (
-      <DevLayoutSection
+      <LayerTheme
         sectionKey="hr-employee-profile-panel"
         parentKey="hr-employees-detail-panel"
         sectionType="section-shell"
         shell
         disableFallback
         className="hr-employee-profile-panel hr-employee-profile-panel--empty"
-        style={{
-          ...mainCardStyle,
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "240px",
-          textAlign: "center",
-        }}
       >
-        <p style={{ ...labelStyle, color: "var(--text-1)", margin: 0 }}>Employee Profile</p>
-        <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-1)" }}>
-          Select an employee from the list to view their profile.
+        <p className="hr-employee-empty-title">Employee Profile</p>
+        <p className="hr-employee-empty-copy">
+          Select an employee from the directory to view their profile. Role, employment, pay,
+          contact details and documents appear here.
         </p>
-        <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-1)" }}>
-          Details, documents, and employment information will appear here.
-        </p>
-      </DevLayoutSection>
+      </LayerTheme>
     );
   }
 
@@ -70,14 +99,15 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
     [employee.firstName, employee.lastName].filter(Boolean).join(" ") ||
     "Employee";
 
+  // Status, job title and department already lead the header, so the chip row
+  // only carries what is not shown above it.
   const chips = [
     employee.employmentType,
-    employee.department,
-    employee.jobTitle,
-    employee.status,
+    employee.contractedHours ? `${employee.contractedHours} hrs / week` : null,
+    employee.startDate ? `Started ${formatDate(employee.startDate)}` : null,
+    describeTenure(employee.startDate),
   ].filter(Boolean);
 
-  const profileParentKey = "hr-employee-profile-panel";
   const handleCopy = async (value) => {
     if (!value || typeof navigator === "undefined" || !navigator.clipboard?.writeText) return;
     try {
@@ -87,290 +117,458 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
     }
   };
 
+  const email = cleanValue(employee.email);
+  const phone = cleanValue(employee.phone);
+  const address = cleanValue(employee.address);
+  const phoneWithExtension = employee.extension && phone ? `${phone} ext. ${employee.extension}` : phone;
+
   return (
-    <DevLayoutSection
+    <LayerTheme
       sectionKey="hr-employee-profile-panel"
       parentKey="hr-employees-detail-panel"
       sectionType="section-shell"
       shell
       disableFallback
       className="hr-employee-profile-panel"
-      backgroundToken="accent-surface"
-      style={mainCardStyle}
+      radius="var(--radius-md)"
+      padding="0"
+      gap="0"
     >
-      <DevLayoutSection
-        sectionKey="hr-employee-profile-edit-row"
-        parentKey={profileParentKey}
-        sectionType="toolbar"
-        className="hr-employee-profile-edit-row"
-        style={{ display: "flex", justifyContent: "flex-end" }}
-      >
-        <button
-          type="button"
-          onClick={onEdit}
-          disabled={!onEdit}
-          className="app-btn app-btn--ghost"
-        >
-          Edit employee details
-        </button>
-      </DevLayoutSection>
-
-      <DevLayoutSection
+      <LayerSurface
         sectionKey="hr-employee-profile-header"
-        parentKey={profileParentKey}
+        parentKey="hr-employee-profile-panel"
         sectionType="content-card"
-        backgroundToken="surface"
         className="hr-employee-profile-header-card"
-        style={subCardStyle}
+        radius="var(--radius-md) var(--radius-md) 0 0"
+        padding="var(--space-4) var(--space-5)"
+        gap="var(--space-2)"
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <StatusTag label={employee.status} tone={employee.status === "Active" ? "success" : "default"} />
-            <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.9rem" }}>
-              {employee.jobTitle || "Job title"} - {employee.department || "Department"}
+        <div className="hr-employee-profile-identity">
+          <span className="hr-employee-profile-avatar" aria-hidden="true">
+            {buildInitials(displayName)}
+          </span>
+          <div className="hr-employee-profile-names">
+            <h2 className="hr-employee-profile-name">{displayName}</h2>
+            <p className="hr-employee-profile-meta">
+              <span className="hr-employee-profile-job-title">{employee.jobTitle || "Job title"}</span>
+              <span className="hr-employee-profile-meta-divider" aria-hidden="true" />
+              <span className="hr-employee-profile-department">{employee.department || "Department"}</span>
             </p>
           </div>
-          <h2 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 700, color: "var(--text-1)" }}>
-            {displayName}
-          </h2>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {chips.length === 0 ? (
-              <span style={{ ...labelStyle, textTransform: "none", letterSpacing: "0.02em" }}>
-                No highlights yet.
-              </span>
-            ) : (
-              chips.map((chip) => (
-                <span
-                  key={chip}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "var(--radius-pill)",
-                    border: "none",
-                    background: "rgba(var(--accent-base-rgb), 0.12)",
-                    color: "var(--text-1)",
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {chip}
-                </span>
-              ))
-            )}
+          <div className="hr-employee-profile-header-actions">
+            <StatusTag
+              label={employee.status || "Unknown"}
+              tone={employee.status === "Active" ? "success" : "warning"}
+            />
+            <Button type="button" variant="ghost" size="sm" onClick={onEdit} disabled={!onEdit}>
+              Edit details
+            </Button>
           </div>
         </div>
-      </DevLayoutSection>
+
+        {chips.length > 0 && (
+          <div className="hr-employee-profile-chips">
+            {chips.map((chip) => (
+              <span key={chip} className="hr-employee-chip">
+                {chip}
+              </span>
+            ))}
+          </div>
+        )}
+      </LayerSurface>
 
       <DevLayoutSection
         as="section"
         sectionKey="hr-employee-profile-sections"
-        parentKey={profileParentKey}
+        parentKey="hr-employee-profile-panel"
         sectionType="section-shell"
         className="hr-employee-profile-sections"
-        style={{ display: "grid", gap: "16px" }}
       >
-        <CardBlock title="Role & Access" sectionKey="hr-employee-role-access" parentKey="hr-employee-profile-sections">
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-            <KeyValue label="Role (Permissions)" value={employee.role} sectionKey="hr-employee-role" parentKey="hr-employee-role-access" />
-            <KeyValue label="Job Title" value={employee.jobTitle} sectionKey="hr-employee-job-title" parentKey="hr-employee-role-access" />
-            <KeyValue label="Department" value={employee.department} sectionKey="hr-employee-department" parentKey="hr-employee-role-access" />
+        <CardBlock
+          title="Role & Access"
+          subtitle="What this person does, and what the system lets them do."
+          sectionKey="hr-employee-role-access"
+        >
+          <div className="hr-employee-field-grid">
             <KeyValue
-              label="Line Managers"
-              value={
-                employee.lineManagers?.length
-                  ? employee.lineManagers.map((manager) => manager.name).join(", ")
-                  : "Not assigned"
-              }
-              sectionKey="hr-employee-line-managers"
+              label="Job Title"
+              value={employee.jobTitle}
+              helper="Position held"
+              sectionKey="hr-employee-job-title"
+              parentKey="hr-employee-role-access"
+            />
+            <KeyValue
+              label="Department"
+              value={employee.department}
+              helper="Reporting area"
+              sectionKey="hr-employee-department"
+              parentKey="hr-employee-role-access"
+            />
+            <KeyValue
+              label="System Role"
+              value={employee.role}
+              helper="Drives permissions, not job title"
+              sectionKey="hr-employee-role"
+              parentKey="hr-employee-role-access"
+            />
+            <KeyValue
+              label="Sidebar Access"
+              value={employee.sidebarAccess ? "Custom override" : "Role default"}
+              helper="Managed from Edit details"
+              sectionKey="hr-employee-sidebar-access"
               parentKey="hr-employee-role-access"
             />
           </div>
+
+          <DevLayoutSection
+            as="div"
+            sectionKey="hr-employee-line-managers"
+            parentKey="hr-employee-role-access"
+            sectionType="content-card"
+            className="hr-employee-key-value hr-employee-key-value--wide"
+          >
+            <div className="hr-employee-key-value-head">
+              <span className="hr-employee-label">Line Manager</span>
+              {onEdit && (
+                <Button type="button" variant="ghost" size="xxs" pill onClick={onEdit}>
+                  {lineManagers.length ? "Change" : "Assign"}
+                </Button>
+              )}
+            </div>
+            {lineManagers.length ? (
+              <div className="hr-employee-manager-list">
+                {lineManagers.map((manager) =>
+                  manager.selectable ? (
+                    <button
+                      key={manager.userId}
+                      type="button"
+                      className="hr-employee-manager-link"
+                      onClick={() => onSelectEmployee(manager.userId)}
+                      title={`Open the profile for ${manager.name}`}
+                    >
+                      <span className="hr-employee-manager-name">{manager.name}</span>
+                      {manager.description && (
+                        <span className="hr-employee-manager-meta">{manager.description}</span>
+                      )}
+                    </button>
+                  ) : (
+                    <span key={manager.userId} className="hr-employee-manager-static">
+                      <span className="hr-employee-manager-name">{manager.name}</span>
+                    </span>
+                  )
+                )}
+              </div>
+            ) : (
+              <span className="hr-employee-value hr-employee-value--muted">Not assigned</span>
+            )}
+          </DevLayoutSection>
         </CardBlock>
 
-        <CardBlock title="Tenure & Probation" sectionKey="hr-employee-tenure-probation" parentKey="hr-employee-profile-sections">
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+        <CardBlock
+          title="Employment"
+          subtitle="Contract, service and probation."
+          sectionKey="hr-employee-employment"
+        >
+          <div className="hr-employee-field-grid">
+            <KeyValue
+              label="Employment Type"
+              value={employee.employmentType}
+              sectionKey="hr-employee-employment-type"
+              parentKey="hr-employee-employment"
+            />
+            <KeyValue
+              label="Employment Status"
+              value={employee.status}
+              sectionKey="hr-employee-employment-status"
+              parentKey="hr-employee-employment"
+            />
             <KeyValue
               label="Start Date"
               value={formatDate(employee.startDate)}
               helper={formatEmploymentTenure(employee.startDate)}
               sectionKey="hr-employee-start-date"
-              parentKey="hr-employee-tenure-probation"
+              parentKey="hr-employee-employment"
             />
             <KeyValue
               label="Probation End"
               value={formatDate(employee.probationEnd)}
               helper={formatProbationStatus(employee.probationEnd)}
               sectionKey="hr-employee-probation-end"
-              parentKey="hr-employee-tenure-probation"
+              parentKey="hr-employee-employment"
             />
           </div>
         </CardBlock>
 
-        <CardBlock title="Compensation & Hours" sectionKey="hr-employee-compensation-hours" parentKey="hr-employee-profile-sections">
-          <div style={{ display: "grid", gap: "12px" }}>
-            <DevLayoutSection
-              sectionKey="hr-employee-basic-salary"
-              parentKey="hr-employee-compensation-hours"
-              sectionType="stat-card"
-              className="hr-employee-basic-salary-card"
-              style={{
-                borderRadius: "var(--radius-md)",
-                border: "none",
-                background: "var(--theme)",
-                padding: "14px",
-              }}
-            >
-              <div style={labelStyle}>Basic Salary</div>
-              <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--text-1)" }}>
-                {formatCurrencyValue(employee.annualSalary)}
-              </div>
-            </DevLayoutSection>
-            <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-              <KeyValue label="Hourly Rate" value={formatCurrencyValue(employee.hourlyRate)} helper="Base rate" sectionKey="hr-employee-hourly-rate" parentKey="hr-employee-compensation-hours" />
-              <KeyValue label="Contracted Hours" value={formatHours(employee.contractedHours)} helper="Per week" sectionKey="hr-employee-contracted-hours" parentKey="hr-employee-compensation-hours" />
-            </div>
-          </div>
-        </CardBlock>
 
-        <CardBlock title="Contact Information" sectionKey="hr-employee-contact-information" parentKey="hr-employee-profile-sections">
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-            <KeyValue
+        <CardBlock
+          title="Contact Information"
+          subtitle="How to reach this employee."
+          sectionKey="hr-employee-contact-information"
+        >
+          <div className="hr-employee-contact-list">
+            <ContactRow
               label="Email"
-              value={employee.email}
+              value={email}
               sectionKey="hr-employee-email"
-              parentKey="hr-employee-contact-information"
               actions={
-                employee.email && (
-                  <ActionRow>
-                    <ActionButton onClick={() => handleCopy(employee.email)}>Copy</ActionButton>
-                    <ActionButton onClick={() => (window.location.href = `mailto:${employee.email}`)}>Email</ActionButton>
-                  </ActionRow>
-                )
+                email ? (
+                  <>
+                    <ActionButton onClick={() => handleCopy(email)}>Copy</ActionButton>
+                    <ActionLink href={`mailto:${email}`}>Email</ActionLink>
+                  </>
+                ) : null
               }
             />
-            <KeyValue
+            <ContactRow
               label="Phone"
-              value={employee.phone}
+              value={phoneWithExtension}
               sectionKey="hr-employee-phone"
-              parentKey="hr-employee-contact-information"
               actions={
-                employee.phone && (
-                  <ActionRow>
-                    <ActionButton onClick={() => handleCopy(employee.phone)}>Copy</ActionButton>
-                    <ActionButton onClick={() => (window.location.href = `tel:${employee.phone}`)}>Call</ActionButton>
-                  </ActionRow>
-                )
+                phone ? (
+                  <>
+                    <ActionButton onClick={() => handleCopy(phone)}>Copy</ActionButton>
+                    <ActionLink href={`tel:${sanitizeTel(phone)}`}>Call</ActionLink>
+                  </>
+                ) : null
               }
             />
-            <KeyValue
-              label="Emergency Contact"
-              value={employee.emergencyContact}
-              sectionKey="hr-employee-emergency-contact"
-              parentKey="hr-employee-contact-information"
-              actions={
-                employee.emergencyContact && (
-                  <ActionRow>
-                    <ActionButton onClick={() => handleCopy(employee.emergencyContact)}>Copy</ActionButton>
-                  </ActionRow>
-                )
-              }
-            />
-            <KeyValue
-              label="Address"
-              value={employee.address}
-              sectionKey="hr-employee-address"
-              parentKey="hr-employee-contact-information"
-              actions={
-                employee.address && (
-                  <ActionRow>
-                    <ActionButton onClick={() => handleCopy(employee.address)}>Copy</ActionButton>
-                  </ActionRow>
-                )
-              }
-            />
+            {canViewSensitive ? (
+              <ContactRow
+                label="Home Address"
+                value={address}
+                multiline
+                sectionKey="hr-employee-address"
+                actions={address ? <ActionButton onClick={() => handleCopy(address)}>Copy</ActionButton> : null}
+              />
+            ) : (
+              <ContactRow label="Home Address" value="" restricted sectionKey="hr-employee-address" />
+            )}
           </div>
         </CardBlock>
 
-        <CardBlock title="Documents" action={null} sectionKey="hr-employee-documents" parentKey="hr-employee-profile-sections">
-          <DevLayoutSection
-            as="button"
-            sectionKey="hr-employee-upload-document"
-            parentKey="hr-employee-documents"
-            sectionType="toolbar"
-            type="button"
-            onClick={() => setShowDocumentsPopup(true)}
-            className="app-btn app-btn--secondary"
-            style={{ width: "100%" }}
+        {canViewSensitive ? (
+          <CardBlock
+            title="Emergency Contact"
+            subtitle="Who to call in an emergency."
+            sectionKey="hr-employee-emergency"
           >
-            Upload document
-          </DevLayoutSection>
-          <DevLayoutSection
-            as="div"
-            sectionKey="hr-employee-documents-list"
-            parentKey="hr-employee-documents"
-            sectionType="data-table"
-            style={{ display: "grid", gap: "10px" }}
+            {emergency ? (
+              <div className="hr-employee-contact-list">
+                <ContactRow
+                  label="Contact"
+                  value={emergency.name || emergency.raw}
+                  helper={emergency.relationship || undefined}
+                  sectionKey="hr-employee-emergency-contact"
+                  actions={<ActionButton onClick={() => handleCopy(emergency.raw)}>Copy</ActionButton>}
+                />
+                {emergency.phone && (
+                  <ContactRow
+                    label="Emergency Phone"
+                    value={emergency.phone}
+                    sectionKey="hr-employee-emergency-phone"
+                    actions={
+                      <>
+                        <ActionButton onClick={() => handleCopy(emergency.phone)}>Copy</ActionButton>
+                        <ActionLink href={`tel:${sanitizeTel(emergency.phone)}`}>Call</ActionLink>
+                      </>
+                    }
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="hr-employee-empty-block">
+                No emergency contact recorded. Add one from Edit details.
+              </div>
+            )}
+          </CardBlock>
+        ) : (
+          <RestrictedBlock title="Emergency Contact" sectionKey="hr-employee-emergency" />
+        )}
+
+        {canViewSensitive ? (
+          <CardBlock
+            title="Pay & Hours"
+            subtitle="Salary, rates and payroll references."
+            fullWidth
+            sectionKey="hr-employee-pay-hours"
           >
-            {employee.documents?.length > 0 ? (
-              employee.documents.map((doc, index) => (
+            <div className="hr-employee-pay-layout">
+              <LayerTheme
+                sectionKey="hr-employee-basic-salary"
+                parentKey="hr-employee-pay-hours"
+                sectionType="stat-card"
+                className="hr-employee-stat-card"
+                radius="var(--radius-sm)"
+                padding="var(--space-3) var(--space-4)"
+                gap="var(--space-1)"
+              >
+                <span className="hr-employee-label">Basic Salary</span>
+                <span className="hr-employee-stat-value">{formatCurrencyValue(employee.annualSalary)}</span>
+                <span className="hr-employee-helper">Contracted hours × hourly rate</span>
+              </LayerTheme>
+              <div className="hr-employee-field-grid">
+                <KeyValue
+                  label="Hourly Rate"
+                  value={formatCurrencyValue(employee.hourlyRate)}
+                  helper="Base rate"
+                  sectionKey="hr-employee-hourly-rate"
+                  parentKey="hr-employee-pay-hours"
+                />
+                <KeyValue
+                  label="Overtime Rate"
+                  value={formatCurrencyValue(employee.overtimeRate)}
+                  helper="Per overtime hour"
+                  sectionKey="hr-employee-overtime-rate"
+                  parentKey="hr-employee-pay-hours"
+                />
+                <KeyValue
+                  label="Contracted Hours"
+                  value={formatHours(employee.contractedHours)}
+                  helper="Per week"
+                  sectionKey="hr-employee-contracted-hours"
+                  parentKey="hr-employee-pay-hours"
+                />
+                <KeyValue
+                  label="Payroll Reference"
+                  value={employee.payrollNumber}
+                  sectionKey="hr-employee-payroll-reference"
+                  parentKey="hr-employee-pay-hours"
+                />
+                <KeyValue
+                  label="National Insurance"
+                  value={employee.nationalInsurance}
+                  sectionKey="hr-employee-national-insurance"
+                  parentKey="hr-employee-pay-hours"
+                />
+              </div>
+            </div>
+          </CardBlock>
+        ) : (
+          <RestrictedBlock title="Pay & Hours" fullWidth sectionKey="hr-employee-pay-hours" />
+        )}
+
+        {canViewSensitive ? (
+          <CardBlock
+            title="Documents"
+            subtitle={documents.length ? `${documents.length} on file` : "Nothing on file yet"}
+            fullWidth
+            sectionKey="hr-employee-documents"
+            action={
+              <Button type="button" variant="secondary" size="sm" onClick={() => setShowDocumentsPopup(true)}>
+                Upload document
+              </Button>
+            }
+          >
+            {documents.length > 0 ? (
+              <DataTableShell visibleRows={6}>
                 <DevLayoutSection
-                  key={doc.id}
-                  sectionKey={`hr-employee-document-${doc.id || index + 1}`}
-                  parentKey="hr-employee-documents-list"
-                  sectionType="table-row"
-                  style={{
-                    borderRadius: "var(--radius-sm)",
-                    border: "none",
-                    background: "rgba(var(--grey-accent-rgb), 0.08)",
-                    padding: "12px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
+                  as="table"
+                  sectionKey="hr-employee-documents-list"
+                  parentKey="hr-employee-documents"
+                  sectionType="data-table"
+                  backgroundToken="surface"
+                  className="app-data-table hr-employee-documents-table"
                 >
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-1)" }}>
-                      {doc.name}
-                    </span>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-1)" }}>
-                      Type: {doc.type} - Uploaded {formatDate(doc.uploadedOn)}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: "var(--radius-pill)",
-                      border: "none",
-                      background: "transparent",
-                      color: "var(--primary)",
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
+                  <DevLayoutSection
+                    as="thead"
+                    sectionKey="hr-employee-documents-headings"
+                    parentKey="hr-employee-documents-list"
+                    sectionType="table-headings"
                   >
-                    View
-                  </button>
+                    <tr>
+                      <th scope="col" data-doc-col="name">
+                        Document
+                      </th>
+                      {documentColumns.category && (
+                        <th scope="col" data-doc-col="category" data-table-cell="nowrap">
+                          Category
+                        </th>
+                      )}
+                      {documentColumns.status && (
+                        <th scope="col" data-doc-col="status" data-table-cell="nowrap">
+                          Status
+                        </th>
+                      )}
+                      <th scope="col" data-doc-col="uploaded" data-table-cell="nowrap">
+                        Uploaded
+                      </th>
+                      {documentColumns.expires && (
+                        <th scope="col" data-doc-col="expires" data-table-cell="nowrap">
+                          Expires
+                        </th>
+                      )}
+                      <th scope="col" data-doc-col="actions" data-table-cell="nowrap">
+                        Actions
+                      </th>
+                    </tr>
+                  </DevLayoutSection>
+                  <tbody>
+                    {documents.map((doc, index) => {
+                      const status = resolveDocumentStatus(doc);
+                      return (
+                        <DevLayoutSection
+                          as="tr"
+                          key={doc.id || index}
+                          sectionKey={`hr-employee-document-${doc.id || index + 1}`}
+                          parentKey="hr-employee-documents-list"
+                          sectionType="table-row"
+                        >
+                          <td data-doc-col="name">{doc.name || "-"}</td>
+                          {documentColumns.category && (
+                            <td data-doc-col="category" data-table-cell="nowrap">
+                              {resolveDocumentCategory(doc) || "-"}
+                            </td>
+                          )}
+                          {documentColumns.status && (
+                            <td data-doc-col="status" data-table-cell="nowrap">
+                              {status ? <StatusTag label={status.label} tone={status.tone} /> : "-"}
+                            </td>
+                          )}
+                          <td data-doc-col="uploaded" data-table-cell="nowrap">
+                            {formatDate(doc.uploadedOn)}
+                          </td>
+                          {documentColumns.expires && (
+                            <td data-doc-col="expires" data-table-cell="nowrap">
+                              {formatDate(doc.expiresOn)}
+                            </td>
+                          )}
+                          <td data-doc-col="actions" data-table-cell="nowrap">
+                            {doc.url ? (
+                              <a
+                                className="app-table-action-btn"
+                                href={doc.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                View
+                              </a>
+                            ) : (
+                              <button type="button" className="app-table-action-btn" disabled>
+                                View
+                              </button>
+                            )}
+                          </td>
+                        </DevLayoutSection>
+                      );
+                    })}
+                  </tbody>
                 </DevLayoutSection>
-              ))
+              </DataTableShell>
             ) : (
               <DevLayoutSection
+                as="div"
                 sectionKey="hr-employee-documents-empty"
-                parentKey="hr-employee-documents-list"
+                parentKey="hr-employee-documents"
                 sectionType="content-card"
-                style={{
-                  borderRadius: "var(--radius-sm)",
-                  padding: "14px",
-                  color: "var(--text-1)",
-                  fontSize: "0.85rem",
-                }}
+                className="hr-employee-empty-block"
               >
                 No documents uploaded yet.
               </DevLayoutSection>
             )}
-          </DevLayoutSection>
-        </CardBlock>
+          </CardBlock>
+        ) : (
+          <RestrictedBlock title="Documents" fullWidth sectionKey="hr-employee-documents" />
+        )}
       </DevLayoutSection>
 
       <DocumentsUploadPopup
@@ -379,82 +577,153 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
         jobId={null}
         userId={employee?.userId || null}
       />
-    </DevLayoutSection>
+    </LayerTheme>
   );
 }
 
-function CardBlock({ title, action = null, children, sectionKey, parentKey }) {
+function CardBlock({ title, subtitle, action = null, children, sectionKey, fullWidth = false }) {
   return (
-    <DevLayoutSection
+    <LayerSurface
       as="section"
       sectionKey={sectionKey}
-      parentKey={parentKey}
+      parentKey="hr-employee-profile-sections"
       sectionType="content-card"
-      backgroundToken="surface"
-      className="hr-employee-card-block"
-      style={subCardStyle}
+      className={`hr-employee-card-block${fullWidth ? " hr-employee-card-block--full" : ""}`}
+      radius="var(--radius-md)"
+      padding="var(--space-4)"
+      gap="var(--space-3)"
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-1)" }}>{title}</div>
+      <div className="hr-employee-card-head">
+        <div className="hr-employee-card-heading">
+          <h3 className="hr-employee-card-title">{title}</h3>
+          {subtitle && <p className="hr-employee-card-subtitle">{subtitle}</p>}
+        </div>
         {action}
       </div>
       {children}
-    </DevLayoutSection>
+    </LayerSurface>
   );
 }
 
-function KeyValue({ label, value, helper, actions, sectionKey, parentKey }) {
+// Stands in for a gated card so the shape of the record — and the fact that the
+// section exists — stays visible without leaking any of the values.
+function RestrictedBlock({ title, sectionKey, fullWidth = false }) {
+  return (
+    <CardBlock title={title} sectionKey={sectionKey} fullWidth={fullWidth}>
+      <div className="hr-employee-empty-block">Restricted — your role cannot view this section.</div>
+    </CardBlock>
+  );
+}
+
+function KeyValue({ label, value, helper, sectionKey, parentKey }) {
   return (
     <DevLayoutSection
       as="div"
       sectionKey={sectionKey}
       parentKey={parentKey}
       sectionType="content-card"
-      backgroundToken="surface"
       className="hr-employee-key-value"
-      style={{ display: "flex", flexDirection: "column", gap: "6px" }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
-        <span style={labelStyle}>{label}</span>
-        {actions}
-      </div>
-      <span style={{ fontSize: "0.98rem", fontWeight: 600, color: "var(--text-1)" }}>
-        {value || "-"}
-      </span>
-      {helper && <span style={{ fontSize: "0.75rem", color: "var(--text-1)" }}>{helper}</span>}
+      <span className="hr-employee-label">{label}</span>
+      <span className="hr-employee-value">{cleanValue(value) || "-"}</span>
+      {helper && <span className="hr-employee-helper">{helper}</span>}
     </DevLayoutSection>
   );
 }
 
-function ActionRow({ children }) {
-  return <div style={{ display: "flex", gap: "6px" }}>{children}</div>;
+// Contact rows keep the label and its actions on one line and give the value a
+// full-width line of its own, so long emails and addresses never have to wrap
+// mid-word beside a button.
+function ContactRow({ label, value, helper, actions, multiline = false, restricted = false, sectionKey }) {
+  const valueClassName = [
+    "hr-employee-value",
+    "hr-employee-contact-value",
+    multiline ? "hr-employee-contact-value--multiline" : "",
+    restricted || !value ? "hr-employee-value--muted" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <DevLayoutSection
+      as="div"
+      sectionKey={sectionKey}
+      parentKey="hr-employee-contact-information"
+      sectionType="content-card"
+      className="hr-employee-contact-row"
+    >
+      <div className="hr-employee-key-value-head">
+        <span className="hr-employee-label">{label}</span>
+        {actions ? <span className="hr-employee-action-row">{actions}</span> : null}
+      </div>
+      <span className={valueClassName}>{restricted ? "Restricted" : value || "Not provided"}</span>
+      {helper && <span className="hr-employee-helper">{helper}</span>}
+    </DevLayoutSection>
+  );
 }
 
 function ActionButton({ children, onClick }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        padding: "4px 8px",
-        borderRadius: "var(--radius-pill)",
-        border: "none",
-        background: "transparent",
-        color: "var(--primary)",
-        fontSize: "0.65rem",
-        fontWeight: 600,
-        cursor: "pointer",
-        whiteSpace: "nowrap",
-      }}
-    >
+    <Button type="button" variant="ghost" size="xxs" pill onClick={onClick}>
       {children}
-    </button>
+    </Button>
   );
+}
+
+// Anchor rather than <Button> because mailto: / tel: need a real link, but it
+// wears the same ghost button classes so it matches the Copy control beside it.
+function ActionLink({ children, href }) {
+  return (
+    <a className="app-btn app-btn--ghost app-btn--xxs app-btn--pill" href={href}>
+      {children}
+    </a>
+  );
+}
+
+function cleanValue(value) {
+  const text = value === null || value === undefined ? "" : String(value).trim();
+  if (!text || NOT_PROVIDED.test(text)) return "";
+  return text;
+}
+
+function buildInitials(name) {
+  return String(name || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("");
+}
+
+function sanitizeTel(value) {
+  return String(value || "").replace(/[^\d+]/g, "");
+}
+
+// The directory flattens the emergency contact into one "name, phone,
+// relationship" string, so split it back out for the Call action. Anything that
+// does not match keeps its original text as the contact name.
+function parseEmergencyContact(value) {
+  const raw = cleanValue(value);
+  if (!raw) return null;
+  const parts = raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const phone = parts.find((part) => sanitizeTel(part).replace(/\D/g, "").length >= 6) || "";
+  const rest = parts.filter((part) => part !== phone);
+  return {
+    raw,
+    name: rest[0] || "",
+    relationship: rest.slice(1).join(", "),
+    phone,
+  };
 }
 
 function formatDate(value) {
   if (!value) return "-";
-  return new Date(value).toLocaleDateString();
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function formatHours(value) {

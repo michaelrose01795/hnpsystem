@@ -7,7 +7,9 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { PageShell, SectionShell } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import OrderListCard from "./OrderListCard";
+import { ListLoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function OrdersViewUi(props) {
   const {
@@ -56,18 +58,25 @@ export default function OrdersViewUi(props) {
                 onClear={() => onSearchValueChange("")}
                 style={{ flex: "1 1 18rem", minWidth: 0 }}
               />
-              <DropdownField
-                name="fulfilment"
-                ariaLabel="Filter orders by fulfilment type"
-                value={fulfilmentFilter}
-                onChange={(event) => onFulfilmentFilterChange(event.target.value)}
-                options={[
-                  { value: "all", label: "All fulfilment" },
-                  { value: "collection", label: "Collection" },
-                  { value: "delivery", label: "Delivery" }
-                ]}
-                style={{ flex: "0 1 13rem", minWidth: "11rem" }}
-              />
+              <FilterButton
+                activeCount={fulfilmentFilter !== "all" ? 1 : 0}
+                onClear={() => onFulfilmentFilterChange("all")}
+              >
+                <FilterField label="Fulfilment" htmlFor="orders-view-filter-fulfilment">
+                  <DropdownField
+                    id="orders-view-filter-fulfilment"
+                    name="fulfilment"
+                    ariaLabel="Filter orders by fulfilment type"
+                    value={fulfilmentFilter}
+                    onChange={(event) => onFulfilmentFilterChange(event.target.value)}
+                    options={[
+                      { value: "all", label: "All fulfilment" },
+                      { value: "collection", label: "Collection" },
+                      { value: "delivery", label: "Delivery" }
+                    ]}
+                  />
+                </FilterField>
+              </FilterButton>
             </DevLayoutSection>
             <DevLayoutSection sectionKey="orders-view-list-viewport" parentKey="orders-view-list-shell" sectionType="scroll-region" style={{
             flex: 1,
@@ -77,12 +86,7 @@ export default function OrdersViewUi(props) {
             flexDirection: "column",
             gap: "10px"
           }}>
-              {ordersLoading ? <LayerTheme sectionKey="orders-view-loading" parentKey="orders-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="32px" style={{
-              textAlign: "center",
-              color: "var(--surfaceTextMuted)"
-            }}>
-                  Loading orders...
-                </LayerTheme> : sortedOrders.length === 0 ? <LayerTheme sectionKey="orders-view-empty-state" parentKey="orders-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
+              {ordersLoading ? <ListLoadingSkeleton toolbar={false} /> : sortedOrders.length === 0 ? <LayerTheme sectionKey="orders-view-empty-state" parentKey="orders-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
                   <EmptyState variant="bare" role="status" icon="🔍" title={emptyStateMessage} />
                 </LayerTheme> : sortedOrders.map((order, index) => <OrderListCard key={order.id || order.orderNumber} sectionKey={`orders-view-order-row-${order.id || order.orderNumber || index + 1}`} parentKey="orders-view-list-viewport" order={order} index={index} onNavigate={() => onNavigateToOrder(order.orderNumber)} />)}
             </DevLayoutSection>

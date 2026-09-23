@@ -1,13 +1,14 @@
 // file location: src/pages/website/shop/success.js
+// Legacy route: opens the single /website/shop flow at the success checkpoint.
 
 import dynamic from "next/dynamic";
 
-const SuccessPage = dynamic(() => import("@/features/website/shop/SuccessPage"), {
+const ShopCheckoutFlow = dynamic(() => import("@/features/website/shop/ShopCheckoutFlow"), {
   ssr: false,
 });
 
 export default function Page() {
-  return <SuccessPage />;
+  return <ShopCheckoutFlow initialStep="success" />;
 }
 
 Page.getLayout = (page) => page;

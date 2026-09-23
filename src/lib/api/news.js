@@ -48,6 +48,12 @@ const engage = async (postId, action) =>
     })
   );
 
+// Small, badge-sized read: the count of updates this viewer still owes an
+// acknowledgement on. Deliberately not derived from fetchFeed() — the sidebar
+// renders on every page and must not pull the whole feed to show one number.
+export const fetchOutstandingAcks = async () =>
+  unwrap(await apiRequest("/api/news/outstanding-acks"));
+
 export const markPostRead = (postId) => engage(postId, "read");
 export const markPostUnread = (postId) => engage(postId, "unread");
 export const acknowledgePost = (postId) => engage(postId, "acknowledge");

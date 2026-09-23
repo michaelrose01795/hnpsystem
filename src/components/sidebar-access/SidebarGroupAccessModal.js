@@ -7,6 +7,7 @@ import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import InputField from "@/components/ui/InputField";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { StaffAlert, StaffModal } from "@/components/ui/StaffShowcasePrimitives";
 
 const displayName = (user) =>
@@ -202,12 +203,22 @@ export default function SidebarGroupAccessModal({
                   disabled={usersLoading || Boolean(usersError) || availableUsers.length === 0}
                   aria-expanded={showAddUser}
                 >
-                  + Add user
+                  Add user
                 </Button>
             ) : null}
           </div>
 
-          {usersLoading ? <p className="app-field-hint">Loading user directory...</p> : null}
+          {usersLoading ? (
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading user directory" style={{ display: "flex", flexDirection: "column" }}>
+              <SkeletonKeyframes />
+              {/* Mirrors the user rows below: one 44px nav row per staff user. */}
+              {["58%", "46%", "64%", "40%", "52%"].map((width, index) => (
+                <div key={index} style={{ display: "flex", alignItems: "center", minHeight: 44, marginInline: "8px" }}>
+                  <SkeletonBlock width={width} height="14px" />
+                </div>
+              ))}
+            </div>
+          ) : null}
           {usersError ? <StaffAlert tone="danger" title="User directory unavailable">{usersError}</StaffAlert> : null}
           {showAddUser && !readOnly ? (
             <LayerSurface gap="8px">

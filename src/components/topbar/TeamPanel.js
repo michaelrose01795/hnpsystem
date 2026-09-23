@@ -20,6 +20,7 @@ import React from "react";
 import { useRouter } from "next/router";
 import PopupModal from "@/components/popups/popupStyleApi";
 import LayerTheme from "@/components/ui/LayerTheme";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { selectableStates } from "@/config/topbar/availabilityStates";
 import { memberContactAction, audienceContactAction } from "@/config/topbar/communicationShortcuts";
@@ -122,16 +123,10 @@ function Row({ tone, icon, label, subtitle, href, onNavigate, messageHref, messa
         {href && <span aria-hidden="true" style={{ opacity: 0.4 }}>→</span>}
       </button>
       {messageHref && (
-        <button
-          type="button"
-          onClick={() => onNavigate(messageHref)}
-          className="app-btn app-btn--ghost"
-          aria-label={messageLabel || "Message"}
-          title={messageLabel || "Message"}
-          style={{ padding: "4px 8px", minHeight: 0, flexShrink: 0 }}
-        >
-          💬
-        </button>
+        <SymbolButton
+          symbol="message"
+          label={messageLabel || "Message"}
+          onClick={() => onNavigate(messageHref)} />
       )}
     </div>
   );
@@ -168,15 +163,10 @@ function DepartmentGroup({ group, onNavigate }) {
         title={`${group.name} · ${group.available} free`}
         action={
           contact?.href ? (
-            <button
-              type="button"
-              onClick={() => onNavigate(contact.href)}
-              className="app-btn app-btn--ghost"
-              style={{ padding: "2px 8px", minHeight: 0 }}
-              title={contact.label}
-            >
-              📣
-            </button>
+            <SymbolButton
+              symbol="announce"
+              label={contact.label}
+              onClick={() => onNavigate(contact.href)} />
           ) : null
         }
       />

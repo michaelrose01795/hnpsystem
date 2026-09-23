@@ -21,6 +21,12 @@
 // nowhere in the library, 16 of which mixed pages from two or three different
 // library modules, and 6 of which meant different page sets depending on the
 // role. Roles keep exactly the pages they had — only the grouping changed.
+//
+// 2026-09-22 tracker split: the four-tab /tracking page became four pages. The
+// Key/Parking tracker replaced /tracking in General; Loan Cars, Equipment/Tools
+// and Oil/Stock were added to every role below that holds the Service, Workshop
+// or Parts module AND may open the page (its API role list). Saved per-user
+// layouts receive the same additions through SIDEBAR_LAYOUT_MIGRATION.
 
 import { SIDEBAR_MODULE_LIBRARY, sortModulesByLibraryOrder } from "@/config/workspace/departments";
 
@@ -96,22 +102,22 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
     mod("department-management", ["/archive"]),
   ),
   "service": layout(
-    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-general", ["/newsfeed", "/messages", "/tracking/Key-Parking"]),
     mod("department-management", ["/archive"]),
-    mod("department-service", ["/dashboard/service", "/new-job", "/jobs"]),
+    mod("department-service", ["/dashboard/service", "/new-job", "/jobs", "/customers", "/tracking/Loan-car"]),
   ),
   "service manager": layout(
-    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-general", ["/newsfeed", "/messages", "/tracking/Key-Parking"]),
     mod("department-management", ["/dashboard/managers", "/archive"]),
-    mod("department-service", ["/dashboard/service", "/new-job", "/appointments", "/jobs"]),
-    mod("department-workshop", ["/nextjobs"]),
+    mod("department-service", ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers", "/tracking/Loan-car"]),
+    mod("department-workshop", ["/nextjobs", "/tracking/Equipment-Tools"]),
     mod("department-reports", ["/reports/workshop", "/reports/service", "/reports/mot", "/reports/paint", "/reports/valeting"]),
   ),
   "workshop manager": layout(
-    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-general", ["/newsfeed", "/messages", "/tracking/Key-Parking"]),
     mod("department-management", ["/dashboard/managers", "/archive"]),
-    mod("department-service", ["/new-job", "/appointments", "/jobs"]),
-    mod("department-workshop", ["/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs"]),
+    mod("department-service", ["/new-job", "/appointments", "/jobs", "/tracking/Loan-car"]),
+    mod("department-workshop", ["/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools"]),
     mod("department-reports", ["/reports/workshop", "/reports/mot", "/reports/paint", "/reports/valeting"]),
   ),
   "after sales director": layout(
@@ -120,13 +126,13 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
     mod("department-reports", ["/reports/workshop", "/reports/service", "/reports/mot", "/reports/paint", "/reports/accounts", "/reports/valeting", "/reports/admin", "/reports/overview"]),
   ),
   "techs": layout(
-    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
-    mod("department-workshop", ["/dashboard/workshop"]),
-    mod("department-tech", ["/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request"]),
+    mod("department-general", ["/newsfeed", "/messages", "/tracking/Key-Parking"]),
+    mod("department-workshop", ["/dashboard/workshop", "/tracking/Equipment-Tools"]),
+    mod("department-tech", ["/dashboard/tech", "/tech", "/tech/efficiency", "/consumables-request"]),
   ),
   "technician": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
-    mod("department-workshop", ["/dashboard/workshop"]),
+    mod("department-workshop", ["/dashboard/workshop", "/tracking/Equipment-Tools"]),
   ),
   "tech": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
@@ -134,25 +140,24 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   ),
   "mobile technician": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
-    mod("department-service", ["/new-job", "/appointments"]),
-    mod("department-workshop", ["/mobile/dashboard"]),
-    mod("department-tech", ["/tech", "/consumables-request"]),
+    mod("department-service", ["/new-job", "/appointments", "/tracking/Loan-car"]),
+    mod("department-tech", ["/tech", "/consumables-request", "/dashboard/mobile"]),
   ),
   "parts": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-management", ["/archive"]),
-    mod("department-parts", ["/dashboard/parts", "/order", "/stock-catalogue", "/deliveries", "/goods-in"]),
+    mod("department-parts", ["/dashboard/parts", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock"]),
   ),
   "parts manager": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-management", ["/dashboard/managers", "/archive"]),
-    mod("department-parts", ["/dashboard/parts", "/parts-manager", "/order", "/stock-catalogue", "/deliveries", "/goods-in"]),
+    mod("department-parts", ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock"]),
     mod("department-reports", ["/reports/parts"]),
   ),
   "parts driver": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-management", ["/archive"]),
-    mod("department-parts", ["/deliveries"]),
+    mod("department-parts", ["/deliveries", "/tracking/Oil-Stock"]),
   ),
   "mot tester": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
@@ -160,7 +165,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
     mod("department-reports", ["/reports/mot"]),
   ),
   "valet service": layout(
-    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-general", ["/newsfeed", "/messages", "/tracking/Key-Parking"]),
     mod("department-valeting", ["/dashboard/valeting", "/valet"]),
     mod("department-reports", ["/reports/valeting"]),
   ),
@@ -178,7 +183,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
     mod("department-management", ["/website-manager", "/archive"]),
   ),
   "admin": layout(
-    mod("department-general", ["/newsfeed", "/messages", "/tracking"]),
+    mod("department-general", ["/newsfeed", "/messages", "/tracking/Key-Parking"]),
     mod("department-management", ["/dashboard/admin", "/website-manager", "/archive"]),
     mod("department-accounts", ["/accounts/payslips"]),
     mod("department-reports", ["/reports/admin"]),
@@ -244,7 +249,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   "aftersales manager": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-management", ["/archive"]),
-    mod("department-service", ["/jobs"]),
+    mod("department-service", ["/jobs", "/customers", "/tracking/Loan-car"]),
     mod("department-workshop", ["/nextjobs"]),
     mod("department-reports", ["/reports/service"]),
   ),

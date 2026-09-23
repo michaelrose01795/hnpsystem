@@ -91,6 +91,7 @@ against the current tree.
 | `undefined-tokens` | 187 | **0** | `var(--x)` where `--x` is defined nowhere |
 | `raw-colours` | 423 | **63** | Hex literals in staff UI code |
 | `one-off-styling` | 11,950 | 11,843 | Inline styles setting a governed visual property |
+| `table-overrides` | — | 61 (added 2026-09-22) | Feature CSS targeting table structure, or feature classes on `table`/`tr`/`th`/`td` |
 
 §7 records what migration pass 1 changed and what it deliberately left.
 
@@ -126,7 +127,7 @@ npm run check:design:list     # full hit list, grouped by rule and file
 npm run check:design:update   # lock in an improvement
 ```
 
-Three hard rules and five ratchets:
+Three hard rules and six ratchets:
 
 | Rule | Kind | Catches |
 |---|---|---|
@@ -138,11 +139,33 @@ Three hard rules and five ratchets:
 | `undefined-tokens` | ratchet | New reference to a token that does not exist |
 | `raw-colours` | ratchet | New hex literal |
 | `one-off-styling` | ratchet | New inline visual styling |
+| `table-overrides` | ratchet | A feature restyling its own table — see below |
 
 **A file with no baseline entry is held to zero.** A new file that ships a hex
 colour or an inline `background` fails immediately, while every existing file
 keeps exactly the styling it has. `--update` refuses to raise a count or add an
 entry; `--accept-new` is required for a deliberate re-baseline.
+
+### On `table-overrides`
+
+Every staff table takes its look from one place: `.app-data-table` in
+`staffglobal.css` + `families/tables.css`, wrapped in `DataTableShell`. The
+Stock tab on `/tracking` shipped a compact list that forked it: a `--theme`
+card inset around the table, a `min-width: 860px` that forced sideways scroll,
+right-aligned column classes, and its own row cursor/focus rules.
+`family-ownership` could not see any of that — the rules were layout-only or
+never named `.app-data-table`. This ratchet counts, per file:
+
+- **CSS** — any rule outside `staffglobal.css` / `families/` whose selector
+  targets table structure (`.app-data-table`, `.app-table-scroll`,
+  `.app-table-shell`, or a `table`/`thead`/`tbody`/`tfoot`/`tr`/`th`/`td`
+  element), whatever it declares.
+- **JSX** — any `className` on a `table`/`thead`/`tbody`/`tfoot`/`tr`/`th`/`td`
+  other than the canonical `app-data-table*` / `app-table-*` classes.
+
+Style the **content** inside a cell with a feature class instead. Use
+`data-table-cell="nowrap"` for numeric columns, and the `--clickable` /
+`--workflow` / `--rounded` variants for row behaviour and shape.
 
 ### Coverage widened
 
@@ -156,7 +179,7 @@ fails if either scope is narrowed again.
 
 Full check set, all wired into `predev` and `prebuild`: `check:borders`,
 `check:layers`, `check:dropdowns`, `check:staff-controls`, `check:text-contrast`,
-`check:design`.
+`check:symbols` (§8), `check:design`.
 
 ---
 
@@ -175,6 +198,9 @@ These apply to **new** code. They do not require touching existing pages.
    pointing at a token that is not defined.
 5. No inline `style={{ background / color / padding / border / font … }}`.
    Layout-only inline styles are fine.
+5a. Tables are `<DataTableShell><table className="app-data-table …">` and
+   nothing else. Never wrap one in a card, give it a width, or put a feature
+   class on the table, a row or a cell — style the content inside the cell.
 6. Do not add `!important`. The budget only goes down.
 7. Do not restyle an existing page while doing unrelated work.
 8. HNPSystem branding and the existing spacing / radius / density scales stay as
@@ -380,3 +406,121 @@ The gates got more accurate; none of them got weaker.
 
 Baselines were re-derived from `HEAD` and re-locked, so every number above is a
 real reduction rather than an accumulated `--update`.
+
+---
+
+## 8. Symbols — one registry, one shape
+
+An icon-only button is a symbol. There is exactly one way to draw one:
+
+```jsx
+<SymbolButton symbol="close" label="Close" />
+```
+
+There are **two sizes and no others**: 44px standing on its own, and 32px inside
+an `.app-data-table` row, where the circle drops to `--table-action-btn-height`
+so it lines up with the other in-row actions instead of growing the row. The
+table size applies automatically from the family file — no call site opts in —
+and `.app-symbol-btn--table` is the same thing by hand for a row-list that is
+not a real `<table>`. Width and height always come down together: a symbol is a
+circle, never an oval.
+
+This is why `staffglobal.css` excludes `.app-symbol-btn` from the blanket
+`.app-data-table button { height: … !important }` rule. That rule forces only
+the height, which left the circle 44×32.
+
+| Concern | Canonical source |
+|---|---|
+| The artwork | `SYMBOLS` in `src/components/ui/SymbolButton.js` |
+| Which labels become a mark | `SYMBOL_FOR_LABEL` in `src/lib/ui/symbolLabels.js` |
+| The circle | `src/styles/families/symbols.css` (`.app-symbol-btn`) |
+| Where it is used | `src/lib/ui/symbolUsage.generated.js` — generated, never hand-edited |
+
+A stray emoji, a bare `×`, or a one-off inline `<svg>` inside a `<button>` is a
+violation: it produces a "delete" that looks different on the newsfeed than in
+a modal, and usually below the 44px touch floor. If the mark you need does not
+exist, **add it to `SYMBOLS`** rather than inlining one — that is the whole
+point of the registry, and it is why every symbol shares one 24-unit viewBox
+and paints in `currentColor`.
+
+Where a control genuinely cannot be the circle, it may still take the mark:
+import the bare `<Symbol>` and keep your own surface. The camera HUD in
+`FullScreenCapture.js` does exactly this — it sits over live video, so it keeps
+the blurred `--hud-*` fill while `close` is still the same drawing as
+everywhere else.
+
+### A mark or words, never both
+
+The other half of the same law. `+ Add Part`, `← Back`, `🔄 Refresh` are a mark
+typed into the label — a hand-drawn one, so it drifts between call sites and is
+the wrong size on every screen. `Button` already resolves a label to its mark
+through `SYMBOL_FOR_LABEL`; when it does, the words become the accessible name
+and the mark stands alone.
+
+**The fix is almost always to drop the glyph, not to force a symbol.** "Add
+Part" says more than a bare `+` ever can, and `symbol="add"` would delete the
+word "Part". Only a label the mark says on its own belongs in the map — that is
+the bar `symbolLabels.js` sets for itself. Strip the glyph and the map decides:
+"Add Part" stays as words, "Back" becomes a chevron, both without the call site
+choosing.
+
+Two things this rule deliberately leaves alone:
+
+- **Status ticks** — `Copied ✓`, `✓ Checked In`, `✗ Declined`. These report a
+  state rather than name an action, which is why `symbolLabels.js` also keeps
+  "Approve" as words: a bare tick on an authorisation reads as something else.
+- **Counting notation** — `+ {hiddenCount} more`. The `+` belongs to the number.
+
+### What is mapped
+
+Adding a key to `SYMBOL_FOR_LABEL` changes every module at once — that file is
+the app-wide sweep, not a per-page edit. Mapped in this pass: `view`,
+`update` / `update details`, `remove`, `export` / `export summary`,
+`open` / `open job` / `open job card(s)`, `search catalogue`,
+`supplier search`, `edit notes`, `add part(s)`, `add new account`,
+`new account`, `new payslip`. Two new marks were drawn for these: **view**
+(an eye) and **export** (a record with the arrow leaving it — deliberately not
+an arrow out of a tray, which is already `upload`).
+
+Left as words on purpose:
+
+- **`Export CSV` / `Export PDF`** sit side by side; one shared mark would make
+  them the same button.
+- **`Update details`** on /goods-in toggles to `Hide details` — the label *is*
+  the state, so a fixed mark would lose it.
+- **Multi-word `View X` / `Add X`** where the noun is the information.
+
+One structural limit: only `<Button>` resolves a label to a mark. A raw
+`<button className="app-btn">` renders its words verbatim, so those call sites
+pick up nothing until they move to the component — which is what the
+`check-staff-controls` migration baseline already tracks.
+
+### Enforcement
+
+```
+npm run check:symbols                                    # guard + regenerate the index
+node tools/scripts/check-symbols.js --print-baseline     # re-derive the ceiling
+node tools/scripts/check-symbols.js --audit-exceptions   # what is each exception hiding?
+```
+
+`check-symbols.js` does one scan for three answers. It **guards** — hand-rolled
+icon-only buttons are held to `MIGRATION_BASELINE`, which is currently **empty**
+because the staff app has none left, so any new one fails the build. It catches
+**marks typed into labels**, with no baseline at all: 39 of them were stripped
+in this pass, so the rule starts clean. And it
+**indexes** — every file using the symbol family is written to
+`symbolUsage.generated.js`, which the "Symbols (.app-symbol-btn)" showcase on
+`/dev/user-diagnostic` feeds straight into its "Where used" popup. The popup is
+therefore a report of what the code does, not a register someone has to
+remember to update.
+
+Two exclusions are structural rather than debt:
+
+- **`/website`** (`src/pages/website/`, `src/features/website/`,
+  `src/features/3Dwebsite/`) is the customer design system. `.app-symbol-btn` is
+  `html.staff-scope`, so the two must not meet — see `website-isolation` above.
+- **`ALLOWED_EXCEPTIONS`** covers controls owned by another family that draws
+  its own marks (calendar month arrows), marks that sit inside a chip or a tab
+  rather than standing alone, and steppers that are part of a number field.
+  Each entry carries its reason; `--audit-exceptions` shows what it is hiding so
+  entries that stopped doing work can be deleted.

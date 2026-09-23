@@ -1,7 +1,11 @@
+npm i next@latest
 
+--------
 
-CHECK
-have it so by default the capture screen auto uses the back drives camera not face facing camera etc
+TODO
+make sure the spelling, grammer etc works within all popups text boxes abosultely everythign wtihin the whole repo where the user has to type soemthign etc. 
+
+--------
 
 TODO
 Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.css setting for popup style etc. it needs to be having the theme colour background blur as well as all the button in the top right corner etc the "Review Media" popup content also needs to a deep dive to fix as well as something is correct etc. 
@@ -11,86 +15,33 @@ Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.
 ----check all of these for ui design/style-----
 
 
-CHECk
-Workshop
-
-
--------------------
-
-CHECk
-Reception
-
-
--------------------
-
 TODO
 Admin
 
--------------------
-
-CHECk
-Parts
+TODO
+remove "Pages & sections Design & layout Shop Media SEO Analytics" from the "/website-manager" page
 
 
--------------------
-
-
-CHECk
-MOT
-
--------------------
-
-
-CHECk
-Valeting
-
--------------------
-
-
-CHECk
-Accounts
-
-
--------------------
-
-CHECk
-Reports
-
--------------------
-
-CHECK 
-/new-order/P00001
-
-CHECK
-Within the "/jobs" page there is an "Order" button within the tab section at the top, this needs to change, remove this order button from the tab section and make a new page which mirrors the current style of the "Order" section and name the page "/Order" so if i put within the url /order it opens up 
-
-CHECK
-Within the "/new-order/P00001" for example, have it os the page full follows the staffgloabl.css setting. orgainse the page to work the best and to have sections correctly with "--theme" colour backgrounds cards etc to make it look near and easy to figure out. /Order page is connected to the "Parts" modual within the sidebar so add that to the parts section. this /order page also links full wihtin the "/deliveries" page as they work together. the /orders page can have collection as well as delivers so make something so it can tell the diff with a status of postage for example. mkae sure everything within the ""/new-order/P00001" page is connected to the data base and all works together etc with the otehr parts page 
-
-CHECK
-Remove the "Orders View Filter Shell | 1.2.2.1.1.1 | key orders-view-filter-shell | file src/components/profile/ProfileWorkTab.js:1917 (dynamic pattern) | route /order | where Orders View Filter Shell | parent orders-view-shell 1.2.2.1.1" card and move the search bar with a filter dropdown for collection or deleviry onto the same row as the search bar. 
+---------
 
 TODO
-QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
+Tracking pages and feauture updates
 
--------------------
 
 
 TODO
-newsfeed
+On the phone app in portrait mode, the top menu and status buttons are missing, although they appear in landscape; inspect the shared mobile header and fix the layout so these controls stay visible and tappable in portrait without breaking landscape or desktop.
 
-CHECK
-same happens with the catagories dropdown, deep dive to fix this. 
+
+
+----- FIlter button ------
+CHECK all pages for the filter option is working correctly 
+
+
 
 TODO
-QUESTION, how does the user create a P0000 job for example for it to even be shown within the /orders page
+messsages age for the all access user add mock data within the database so they have messages etc
+
 
 TODO
-"yes make "The sidebar request requires a global navigation change in:
-
-- `src/config/workspace/departments.js`
-- `src/config/workspace/roleDefaults.js`
-
-This will add Orders to the Parts module for Parts and Parts Manager users and affect shared navigation across the app. It cannot be implemented locally because `StaffSidebar` derives its links from this manifest.
-
-Please confirm that I may make this global navigation change alongside the local `/new-order/[orderNumber]`, `/order`, database API, and `/deliveries` integration work." change"
+"Extra screen space detected" to be opened by a button as well as screen size etc. lets have the butotn within the rigth click section, when the user rigth clicks anywhere add a button section within there like milti workspace as the name etc. when with the multie screen section the only which which chanes within the ui dislay is the surface colour card which is outisde "App Layout Page Card | 1.2.2.1 | key app-layout-page-card | file src/components/layout/StaffLayout.js:1825 | route /messages | where App Layout Page Card | parent app-layout-main-shell 1.2.2 | 1 child" card for example wil strink, the topbar will go the full width and the sidebars will do the same, popups will be in the middle of the surface colour card the (main page card) when in this view and wont distrub the visiblity of the otehr pages which might be open. if a new page is opened that section has to be selcted by clicking within the main page card like if u was on windows going from one app to another etc. when clciked the sidebar will then be linked to that mian card section, if you click onot anothe the sidebar will move again etc. within the content within the main page cards will change size just like the screen is changing size but not the sidebar or the topbar etc if that makes sense. deep dive to make this mutle dispace screen perfect etc. 

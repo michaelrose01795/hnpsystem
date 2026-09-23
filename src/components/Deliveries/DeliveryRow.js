@@ -22,6 +22,7 @@ import React from "react";
 import Link from "next/link";
 import LayerSurface from "@/components/ui/LayerSurface";
 import Button from "@/components/ui/Button";
+import { Symbol } from "@/components/ui/SymbolButton";
 import {
   deliveryStatusBadgeClass,
   deliveryStatusLabel,
@@ -176,30 +177,52 @@ export default function DeliveryRow({
 
   const actionCell = (
     <div style={deliveryStyles.rowActions}>
-      <Button variant="ghost" size="sm" onClick={() => onSelect(delivery)} aria-pressed={selected}>
+      {/* Details keeps its toggle state without words: aria-pressed paints the
+          mark with the primary fill when the row is open (families/buttons.css).
+          The symbol is passed here rather than mapped in symbolLabels.js, because
+          a bare "Details" button elsewhere has no pressed state to show. */}
+      <Button
+        variant="ghost"
+        size="sm"
+        symbol="details"
+        onClick={() => onSelect(delivery)}
+        aria-pressed={selected}
+      >
         {selected ? "Hide details" : "Details"}
       </Button>
+      {/* These three are <a>/<Link>, not <Button>, so no label resolution runs
+          on them — the mark is passed in and app-btn--has-symbol squares them
+          off, which is what Button does internally for a resolved label. */}
       {navigate ? (
         <a
-          className="app-btn app-btn--secondary app-btn--sm"
+          className="app-btn app-btn--secondary app-btn--sm app-btn--has-symbol"
           href={navigate}
           target="_blank"
           rel="noreferrer"
+          aria-label="Navigate"
+          title="Navigate"
         >
-          Navigate
+          <Symbol symbol="navigate" className="app-btn__symbol" />
         </a>
       ) : null}
       {phone ? (
-        <a className="app-btn app-btn--secondary app-btn--sm" href={telHref(phone)}>
-          Call
+        <a
+          className="app-btn app-btn--secondary app-btn--sm app-btn--has-symbol"
+          href={telHref(phone)}
+          aria-label={`Call ${phone}`}
+          title={`Call ${phone}`}
+        >
+          <Symbol symbol="call" className="app-btn__symbol" />
         </a>
       ) : null}
       {delivery.invoice_id ? (
         <Link
-          className="app-btn app-btn--secondary app-btn--sm"
+          className="app-btn app-btn--secondary app-btn--sm app-btn--has-symbol"
           href={`/accounts/invoices/${encodeURIComponent(delivery.invoice_id)}`}
+          aria-label="Invoice"
+          title="Invoice"
         >
-          Invoice
+          <Symbol symbol="invoice" className="app-btn__symbol" />
         </Link>
       ) : null}
       {delivery.pod_photo_url || delivery.pod_signature_url ? (

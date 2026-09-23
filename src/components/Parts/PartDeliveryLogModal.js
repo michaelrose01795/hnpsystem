@@ -4,7 +4,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useUser } from "@/context/UserContext";
 import { CalendarField } from "@/components/ui/calendarAPI";
+import SymbolButton from "@/components/ui/SymbolButton";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { SectionSkeleton } from "@/components/ui/LoadingSkeleton";
 import { logFailure } from "@/lib/utils/logFailure";
 
 export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, onDeliveryLogged }) {
@@ -176,21 +178,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
               {selectedPart?.part_number} · {selectedPart?.name}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "8px 12px",
-              borderRadius: "var(--radius-xs)",
-              background: "var(--surface)",
-              color: "var(--text-1)",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: 600,
-            }}
-          >
-            ✕
-          </button>
+          <SymbolButton symbol="close" label="Close" onClick={onClose} />
         </div>
 
         {/* Content */}
@@ -205,8 +193,8 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           }}
         >
           {loading && (
-            <div style={{ padding: "20px", textAlign: "center", color: "var(--text-1)", opacity: 0.72 }}>
-              Loading previous delivery information...
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading previous delivery information">
+              <SectionSkeleton titleWidth="180px" subtitleWidth="140px" rows={4} />
             </div>
           )}
 
@@ -236,7 +224,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
               Supplier
             </label>
-            <input
+            <input className="app-input"
               type="text"
               value={formData.supplier}
               onChange={(e) => handleChange("supplier", e.target.value)}
@@ -255,7 +243,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
               Order Reference
             </label>
-            <input
+            <input className="app-input"
               type="text"
               value={formData.orderReference}
               onChange={(e) => handleChange("orderReference", e.target.value)}
@@ -275,7 +263,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
               <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
                 Qty Ordered *
               </label>
-              <input
+              <input className="app-input"
                 type="number"
                 min="1"
                 value={formData.qtyOrdered}
@@ -295,7 +283,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
               <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
                 Qty Received *
               </label>
-              <input
+              <input className="app-input"
                 type="number"
                 min="0"
                 value={formData.qtyReceived}
@@ -316,7 +304,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
               Unit Cost (£)
             </label>
-            <input
+            <input className="app-input"
               type="number"
               step="0.01"
               min="0"
@@ -344,7 +332,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>
               Notes
             </label>
-            <textarea
+            <textarea className="app-input"
               value={formData.notes}
               onChange={(e) => handleChange("notes", e.target.value)}
               placeholder="Additional notes about this delivery..."

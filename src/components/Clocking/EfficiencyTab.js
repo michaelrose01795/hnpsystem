@@ -24,6 +24,7 @@ import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
@@ -175,7 +176,7 @@ function MetricGridSkeleton({ count, statCardStyle }) {
   );
 }
 
-function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, tableWrapperStyle, tableStyle }) {
+function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, tableWrapperStyle }) {
   return (
     <DevLayoutSection
       sectionKey={sectionKey}
@@ -186,7 +187,7 @@ function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, t
     >
       <SkeletonBlock width={titleWidth} height="18px" />
       <div className="efficiency-table-wrap" style={tableWrapperStyle} aria-hidden="true">
-        <table style={tableStyle}>
+        <table className="app-data-table">
           <thead><tr>{Array.from({ length: 9 }).map((_, index) => <th key={index}><SkeletonBlock width={index === 2 ? "112px" : "72px"} height="11px" /></th>)}</tr></thead>
           <tbody>{Array.from({ length: 5 }).map((_, index) => <SkeletonTableRow key={index} cols={9} />)}</tbody>
         </table>
@@ -195,7 +196,7 @@ function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, t
   );
 }
 
-function EfficiencyContentSkeleton({ individual, themedSectionStyle, statCardStyle, tableWrapperStyle, tableStyle }) {
+function EfficiencyContentSkeleton({ individual, themedSectionStyle, statCardStyle, tableWrapperStyle }) {
   return (
     <div
       className="efficiency-content-skeleton"
@@ -235,7 +236,6 @@ function EfficiencyContentSkeleton({ individual, themedSectionStyle, statCardSty
         titleWidth={individual ? "84px" : "190px"}
         themedSectionStyle={themedSectionStyle}
         tableWrapperStyle={tableWrapperStyle}
-        tableStyle={tableStyle}
       />
     </div>
   );
@@ -1176,11 +1176,9 @@ export default function EfficiencyTab({
     overflow: "hidden",
   };
 
-  const tableStyle = {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "0.9rem",
-  };
+  // Table chrome comes from the global .app-data-table class in
+  // staffglobal.css (width, border-spacing, row rule, sticky header, row
+  // height). Nothing table-level is declared locally any more.
 
   const thStyle = {
     textAlign: "left",
@@ -1439,7 +1437,7 @@ export default function EfficiencyTab({
                 size="sm"
                 onClick={openAddModal}
               >
-                + Add Job Entry
+                Add Job Entry
               </Button>
             )}
           </DevLayoutSection>
@@ -1503,26 +1501,6 @@ export default function EfficiencyTab({
               onChange={(event) => setFilterDate(event.target.value)}
             />
           </div>
-          {activeTab === "overall" && (
-            <div style={{ width: "100%", maxWidth: "220px", flex: "1 1 180px" }}>
-              <DropdownField
-                id="efficiencyOverviewTech"
-                className="compact-picker efficiency-tech-filter-dropdown"
-                style={{ width: "100%" }}
-                value={overviewTechFilter}
-                onChange={(event) => setOverviewTechFilter(event.target.value)}
-                placeholder="All technicians"
-                options={[
-                  { key: "all", value: "all", label: "All technicians" },
-                  ...technicians.map((tech) => ({
-                    key: `tech-${tech.user_id}`,
-                    value: String(tech.user_id),
-                    label: tech.first_name,
-                  })),
-                ]}
-              />
-            </div>
-          )}
           <div className="efficiency-search-wrap" style={{ width: "100%", flex: "2 1 280px", minWidth: "220px" }}>
             <SearchBar
               value={searchTerm}
@@ -1532,6 +1510,29 @@ export default function EfficiencyTab({
               ariaLabel="Search efficiency entries"
             />
           </div>
+          {activeTab === "overall" && (
+            <FilterButton
+              activeCount={overviewTechFilter !== "all" ? 1 : 0}
+              onClear={() => setOverviewTechFilter("all")}
+            >
+              <FilterField label="Technician" htmlFor="efficiencyOverviewTech">
+                <DropdownField
+                  id="efficiencyOverviewTech"
+                  value={overviewTechFilter}
+                  onChange={(event) => setOverviewTechFilter(event.target.value)}
+                  placeholder="All technicians"
+                  options={[
+                    { key: "all", value: "all", label: "All technicians" },
+                    ...technicians.map((tech) => ({
+                      key: `tech-${tech.user_id}`,
+                      value: String(tech.user_id),
+                      label: tech.first_name,
+                    })),
+                  ]}
+                />
+              </FilterField>
+            </FilterButton>
+          )}
         </div>
       </DevLayoutSection>
 
@@ -1564,7 +1565,6 @@ export default function EfficiencyTab({
           themedSectionStyle={themedSectionStyle}
           statCardStyle={statCardStyle}
           tableWrapperStyle={tableWrapperStyle}
-          tableStyle={tableStyle}
         />
       )}
 
@@ -1707,7 +1707,7 @@ export default function EfficiencyTab({
               data-dev-section-type="data-table"
               data-dev-section-parent="tech-efficiency-overall-breakdown"
             >
-              <table style={tableStyle}>
+              <table className="app-data-table">
                 <thead style={{ background: "var(--theme-hover)" }}>
                   <tr>
                     <th style={themedTableHeadingStyle}>Technician</th>
@@ -1834,7 +1834,7 @@ export default function EfficiencyTab({
               data-dev-section-parent="tech-efficiency-tech-entries"
             >
               <div style={{ maxHeight: "520px", overflowY: "auto" }}>
-                <table style={tableStyle}>
+                <table className="app-data-table">
                   <thead style={{ background: "var(--theme-hover)" }}>
                     <tr>
                       <th style={themedTableHeadingStyle}>Date</th>
@@ -2151,7 +2151,7 @@ export default function EfficiencyTab({
               {/* Entries table */}
               <div style={tableWrapperStyle}>
                 <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                  <table style={tableStyle}>
+                  <table className="app-data-table">
                     <thead>
                       <tr>
                         <th style={thStyle}>Date</th>
@@ -2571,7 +2571,7 @@ export default function EfficiencyTab({
             gap: 8px !important;
             justify-content: flex-start !important;
           }
-          :global(.efficiency-filter-shell > div:first-child > div) {
+          :global(.efficiency-filter-shell > div:first-child > div:not(.app-filter)) {
             min-width: min(100%, 180px) !important;
             max-width: 100% !important;
           }

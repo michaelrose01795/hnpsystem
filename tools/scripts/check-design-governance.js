@@ -20,7 +20,7 @@
 //   - Pins which existing files and components are canonical (rule 1).
 //   - Keeps the staff and customer design systems isolated (rule 2).
 //   - Keeps the other design checks covering all staff code (rule 3).
-//   - Ratchets five categories of drift so nothing NEW is introduced (4-8).
+//   - Ratchets six categories of drift so nothing NEW is introduced (4-9).
 //
 // Rules:
 //
@@ -43,6 +43,8 @@
 //   7. raw-colours          RATCHET - hex colour literals in staff UI code.
 //   8. one-off-styling      RATCHET - inline style objects in staff JSX that
 //                                     set governed visual properties.
+//   9. table-overrides      RATCHET - feature CSS targeting table structure,
+//                                     or feature classes on table/tr/th/td.
 //
 // RATCHET rules read tools/design-baselines/design-governance.json. A count may
 // fall (run --update to record the improvement) but never rise. A file with no
@@ -298,7 +300,8 @@ const FAMILY_OWNERS = [
   [/\.app-tab(?![\w-])|\.app-tab--|\.tab-api/, "src/styles/families/tabs.css"],
   [/\.app-toolbar|\.app-layout-toolbar-row/, "src/styles/families/toolbars.css"],
   [/\.dropdown-api|\.app-dropdown/, "src/styles/families/dropdowns.css"],
-  [/\.skeleton-block/, "src/styles/families/loaders.css"],
+  [/\.skeleton-block|\.skeleton-chart|\.skeleton-table/, "src/styles/families/loaders.css"],
+  [/\.app-symbol-btn|\.app-symbol-row/, "src/styles/families/symbols.css"],
   [/\.app-page-card|\.app-section-card|\.app-layout-surface|\.app-layout-stat-card/, "src/styles/families/cards.css"],
 ];
 
@@ -533,6 +536,104 @@ function collectOneOffStyling() {
 }
 
 // ---------------------------------------------------------------------------
+// Rule 9 - table overrides (RATCHET)
+// ---------------------------------------------------------------------------
+// Every staff table takes its look from ONE place: .app-data-table in
+// staffglobal.css + families/tables.css, wrapped in DataTableShell. A feature
+// that restyles its own table - a min-width that forces sideways scroll, a
+// right-aligned column class, a row cursor/focus rule, a card inset around the
+// table - silently forks the table system, and family-ownership cannot see it:
+// those rules are layout-only or never name .app-data-table at all.
+//
+// So this rule counts, per file:
+//   CSS - any rule outside the canonical table files whose selector targets
+//         table structure (.app-data-table / .app-table-scroll /
+//         .app-table-shell, or a table/thead/tbody/tfoot/tr/th/td element),
+//         whatever it declares. Layout counts: min-width is what broke it.
+//   JSX - any className on a <table>/<thead>/<tbody>/<tfoot>/<tr>/<th>/<td>
+//         other than the canonical app-data-table* / app-table-* classes.
+//         Style the CONTENT inside a cell with a feature class instead; use
+//         data-table-cell="nowrap" for numeric columns and the --clickable /
+//         --workflow variants for row behaviour.
+const TABLE_CANONICAL_CSS = ["src/styles/staffglobal.css", "src/styles/families/"];
+const TABLE_TARGET_RE =
+  /\.app-data-table|\.app-table-scroll|\.app-table-shell|(^|[\s>+~,(])(table|thead|tbody|tfoot|tr|th|td)(?=$|[\s.:#[>+~,)])/;
+const TABLE_TAG_RE = /<(table|thead|tbody|tfoot|tr|th|td)(?=[\s>/])/g;
+const CANONICAL_TABLE_CLASS_RE = /^(app-data-table(--[\w-]+)?|app-table-[\w-]+)$/;
+
+// The opening tag's attribute text, stepping over {...} so an arrow function
+// (`onClick={() => ...}`) does not end the tag early.
+function openingTagAttrs(text, start) {
+  let depth = 0;
+  for (let i = start; i < text.length && i < start + 2000; i += 1) {
+    const ch = text[i];
+    if (ch === "{") depth += 1;
+    else if (ch === "}") depth -= 1;
+    else if (ch === ">" && depth === 0) return text.slice(start, i);
+  }
+  return "";
+}
+
+// Non-canonical class names in a className attribute. An expression with no
+// string literal (className={cls}) is unknowable, so it counts as one.
+function nonCanonicalTableClasses(attrs) {
+  const plain = attrs.match(/className\s*=\s*"([^"]*)"/);
+  let literals;
+  if (plain) {
+    literals = [plain[1]];
+  } else {
+    const start = attrs.search(/className\s*=\s*\{/);
+    if (start === -1) return [];
+    let depth = 0;
+    let end = attrs.indexOf("{", start);
+    for (let i = end; i < attrs.length; i += 1) {
+      if (attrs[i] === "{") depth += 1;
+      else if (attrs[i] === "}" && --depth === 0) {
+        end = i;
+        break;
+      }
+    }
+    const expr = attrs.slice(attrs.indexOf("{", start) + 1, end);
+    literals = [...expr.matchAll(/"([^"]*)"|'([^']*)'|`([^`]*)`/g)].map((m) =>
+      (m[1] ?? m[2] ?? m[3]).replace(/\$\{[^}]*\}/g, " ")
+    );
+    if (!literals.length) return ["{expression}"];
+  }
+  return literals
+    .join(" ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((cls) => !CANONICAL_TABLE_CLASS_RE.test(cls));
+}
+
+function collectTableOverrides() {
+  const hits = new Map();
+  const detail = new Map();
+  const add = (file, what) => {
+    hits.set(file, (hits.get(file) || 0) + 1);
+    if (!detail.has(file)) detail.set(file, []);
+    detail.get(file).push(what);
+  };
+  for (const file of CSS_FILES) {
+    if (TABLE_CANONICAL_CSS.some((p) => file.startsWith(p))) continue;
+    if (VISUAL_EXEMPT.some((p) => file.startsWith(p))) continue;
+    for (const { selector } of rulesOf(read(file))) {
+      if (/data-dev-overlay|data-dev-section/.test(selector)) continue;
+      if (TABLE_TARGET_RE.test(selector)) add(file, selector.slice(0, 110));
+    }
+  }
+  for (const file of JS_FILES) {
+    if (VISUAL_EXEMPT.some((p) => file.startsWith(p))) continue;
+    const text = read(file);
+    for (const match of text.matchAll(TABLE_TAG_RE)) {
+      const bad = nonCanonicalTableClasses(openingTagAttrs(text, match.index));
+      if (bad.length) add(file, `<${match[1]}> ${bad.slice(0, 3).join(" ")}`);
+    }
+  }
+  return { hits, detail };
+}
+
+// ---------------------------------------------------------------------------
 // Ratchet plumbing
 // ---------------------------------------------------------------------------
 const RATCHETS = [
@@ -560,6 +661,11 @@ const RATCHETS = [
     "one-off-styling",
     collectOneOffStyling,
     "inline style(s) setting a governed visual property. Use the shared component or its canonical class instead.",
+  ],
+  [
+    "table-overrides",
+    collectTableOverrides,
+    "local table styling. Tables take their look from .app-data-table (staffglobal.css + families/tables.css) in DataTableShell - style the content inside a cell, never the table/tr/th/td.",
   ],
 ];
 

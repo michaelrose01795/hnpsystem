@@ -4,6 +4,7 @@
 import { getDatabaseClient } from "@/lib/database/client";
 import { getDisplayName } from "@/lib/users/displayName";
 import { excludeAllAccessUser } from "@/lib/database/allAccessVisibility";
+import { SERVICE_DESK_ROLES, WORKSHOP_MANAGER_ROLES } from "@/lib/auth/roles";
 
 const db = getDatabaseClient();
 const USERS_TABLE = "users";
@@ -187,6 +188,16 @@ const fetchUsersByRoles = async (roles) => {
 export const getTechnicianUsers = () => fetchUsersByRoles(DEFAULT_TECH_ROLES);
 
 export const getMotTesterUsers = () => fetchUsersByRoles(DEFAULT_TEST_ROLES);
+
+// The service desk plus the managers who run it — the people a job card can
+// name as its service advisor or as owner of the next customer update. Role
+// names come from src/lib/auth/roles.js; users.role stores them title-cased.
+const toDirectoryRole = (role) => String(role || "").replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+export const getServiceAdvisorUsers = () =>
+  fetchUsersByRoles(
+    Array.from(new Set([...SERVICE_DESK_ROLES, ...WORKSHOP_MANAGER_ROLES])).map(toDirectoryRole)
+  );
 
 export const getAllUsers = async ({ includeInactive = false } = {}) => {
   const { data, error } = await withOptionalSidebarAccessColumn((columns) => {

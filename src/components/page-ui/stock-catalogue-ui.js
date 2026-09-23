@@ -4,8 +4,12 @@ import Link from "next/link";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
+import DataTableShell from "@/components/ui/DataTableShell";
+import { InlineLoading, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 const QUICK_FILTERS = [
   { id: "all", label: "All parts" },
@@ -276,7 +280,7 @@ export default function StockCataloguePageUi(props) {
             >
               <span className="app-summary-label">{label}</span>
               <strong className="app-summary-value">
-                {stockSummaryLoading ? "…" : value ?? 0}
+                {stockSummaryLoading ? <InlineLoading width={32} height={14} label="Loading" /> : value ?? 0}
               </strong>
               </LayerSurface>)}
             </div>
@@ -351,10 +355,12 @@ export default function StockCataloguePageUi(props) {
           searchJob(jobSearch);
         }} style={{
           display: "flex",
-          gap: "12px",
+          justifyContent: "flex-end",
           flex: "1 1 320px",
-          maxWidth: "640px"
+          maxWidth: "420px",
+          marginLeft: "auto"
         }}>
+              {/* No submit button: pressing Enter in the field submits the form. */}
               <SearchBar
                 type="search"
                 placeholder="Job number or registration"
@@ -365,9 +371,6 @@ export default function StockCataloguePageUi(props) {
                 disabled={jobLoading}
                 style={{ flex: 1, minWidth: 0 }}
               />
-              <Button type="submit" variant="primary" busy={jobLoading}>
-                Search
-              </Button>
             </form>
           </div>
 
@@ -746,7 +749,15 @@ export default function StockCataloguePageUi(props) {
     }} id="stock-catalogue">
           <h2 style={sectionTitleStyle}>Stock Catalogue</h2>
 
-          <div className="tab-api" style={{ height: "auto", minHeight: "44px", flexWrap: "wrap", marginBottom: "var(--layout-card-gap)" }}>
+          {/* Tabs on the left, search + filter pushed right on the same row; wraps below on narrow widths. */}
+          <div style={{
+        display: "flex",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "var(--layout-card-gap)",
+        marginBottom: "var(--layout-card-gap)"
+      }}>
+          <div className="tab-api" style={{ height: "auto", minHeight: "44px", flexWrap: "wrap", flex: "0 1 auto" }}>
             {QUICK_FILTERS.map((filter) => <button
               key={filter.id}
               type="button"
@@ -765,56 +776,68 @@ export default function StockCataloguePageUi(props) {
           <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-filters" data-dev-section-type="filter-row" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory search and filters" style={{
         display: "flex",
         gap: "12px",
-        marginBottom: "12px",
-        alignItems: "flex-end",
-        flexWrap: "wrap"
+        alignItems: "center",
+        justifyContent: "flex-end",
+        flex: "1 1 320px",
+        marginLeft: "auto"
       }}>
             <SearchBar placeholder="Search part number, description, OEM code" value={inventorySearch} onChange={event => setInventorySearch(event.target.value)} onClear={() => setInventorySearch("")} style={{
-          flex: 1
+          flex: "1 1 auto",
+          minWidth: 0,
+          maxWidth: "420px"
         }} />
 
             {/* Two-step filter dropdown */}
-            <div style={{
-          display: "flex",
-          gap: "8px"
+            <FilterButton activeCount={[statusFilter, locationFilter, categoryFilter, supplierFilter].filter(value => value !== "all").length} onClear={() => {
+          setFilterType("status");
+          setStatusFilter("all");
+          setLocationFilter("all");
+          setLocationSearchTerm("");
+          setCategoryFilter("all");
+          setSupplierFilter("all");
+          setDisplayLimit(20);
         }}>
-              <DropdownField
-                ariaLabel="Choose which catalogue filter to apply"
-                value={filterType}
-                options={[
-                  { value: "status", label: "Filter by Status" },
-                  { value: "location", label: "Filter by Location" },
-                  { value: "category", label: "Filter by Category" },
-                  { value: "supplier", label: "Filter by Supplier" },
-                ]}
-                onChange={e => {
-                  setFilterType(e.target.value);
-                  setStatusFilter("all");
-                  setLocationFilter("all");
-                }}
-                style={{ minWidth: "140px", width: "auto" }}
-              />
+              <FilterField label="Filter Type" htmlFor="stock-catalogue-filter-type">
+                <DropdownField
+                  id="stock-catalogue-filter-type"
+                  ariaLabel="Choose which catalogue filter to apply"
+                  value={filterType}
+                  options={[
+                    { value: "status", label: "Filter by Status" },
+                    { value: "location", label: "Filter by Location" },
+                    { value: "category", label: "Filter by Category" },
+                    { value: "supplier", label: "Filter by Supplier" },
+                  ]}
+                  onChange={e => {
+                    setFilterType(e.target.value);
+                    setStatusFilter("all");
+                    setLocationFilter("all");
+                  }}
+                />
+              </FilterField>
 
-              {filterType === "status" && <DropdownField
-                ariaLabel="Filter catalogue by stock status"
-                value={statusFilter}
-                options={[
-                  { value: "all", label: "All Status" },
-                  { value: "low_stock", label: "Low Stock" },
-                  { value: "in_stock", label: "Good Stock" },
-                  { value: "high_stock", label: "High Stock" },
-                  { value: "back_order", label: "Back Order" },
-                ]}
-                onChange={e => setStatusFilter(e.target.value)}
-                style={{ minWidth: "140px", width: "auto" }}
-              />}
+              {filterType === "status" && <FilterField label="Status" htmlFor="stock-catalogue-filter-status">
+                <DropdownField
+                  id="stock-catalogue-filter-status"
+                  ariaLabel="Filter catalogue by stock status"
+                  value={statusFilter}
+                  options={[
+                    { value: "all", label: "All Status" },
+                    { value: "low_stock", label: "Low Stock" },
+                    { value: "in_stock", label: "Good Stock" },
+                    { value: "high_stock", label: "High Stock" },
+                    { value: "back_order", label: "Back Order" },
+                  ]}
+                  onChange={e => setStatusFilter(e.target.value)}
+                />
+              </FilterField>}
 
-              {filterType === "location" && <div style={{
+              {filterType === "location" && <FilterField label="Location" htmlFor="stock-catalogue-filter-location"><div style={{
             position: "relative"
           }}>
-                  <input className="app-input" type="text" placeholder="Search location..." value={locationSearchTerm} onChange={e => setLocationSearchTerm(e.target.value)} onFocus={() => {
+                  <input id="stock-catalogue-filter-location" className="app-input" type="text" placeholder="Search location..." value={locationSearchTerm} onChange={e => setLocationSearchTerm(e.target.value)} onFocus={() => {
               document.getElementById('location-dropdown').style.display = 'block';
-            }} style={{ minWidth: "140px", width: "auto" }} />
+            }} />
                   <div id="location-dropdown" style={{
               display: "none",
               position: "absolute",
@@ -864,26 +887,33 @@ export default function StockCataloguePageUi(props) {
                           {code}
                         </div>)}
                   </div>
-                </div>}
-              {filterType === "category" && <DropdownField
-                ariaLabel="Filter catalogue by category"
-                value={categoryFilter}
-                options={[{ value: "all", label: "All categories" }, ...categories.map(category => ({ value: category, label: category }))]}
-                onChange={event => {
-                  setCategoryFilter(event.target.value);
-                  setDisplayLimit(20);
-                }}
-              />}
-              {filterType === "supplier" && <DropdownField
-                ariaLabel="Filter catalogue by supplier"
-                value={supplierFilter}
-                options={[{ value: "all", label: "All suppliers" }, ...suppliers.map(supplier => ({ value: supplier, label: supplier }))]}
-                onChange={event => {
-                  setSupplierFilter(event.target.value);
-                  setDisplayLimit(20);
-                }}
-              />}
-            </div>
+                </div></FilterField>}
+              {filterType === "category" && <FilterField label="Category" htmlFor="stock-catalogue-filter-category">
+                <DropdownField
+                  id="stock-catalogue-filter-category"
+                  ariaLabel="Filter catalogue by category"
+                  value={categoryFilter}
+                  options={[{ value: "all", label: "All categories" }, ...categories.map(category => ({ value: category, label: category }))]}
+                  onChange={event => {
+                    setCategoryFilter(event.target.value);
+                    setDisplayLimit(20);
+                  }}
+                />
+              </FilterField>}
+              {filterType === "supplier" && <FilterField label="Supplier" htmlFor="stock-catalogue-filter-supplier">
+                <DropdownField
+                  id="stock-catalogue-filter-supplier"
+                  ariaLabel="Filter catalogue by supplier"
+                  value={supplierFilter}
+                  options={[{ value: "all", label: "All suppliers" }, ...suppliers.map(supplier => ({ value: supplier, label: supplier }))]}
+                  onChange={event => {
+                    setSupplierFilter(event.target.value);
+                    setDisplayLimit(20);
+                  }}
+                />
+              </FilterField>}
+            </FilterButton>
+          </div>
           </div>
 
           {inventoryError && <div style={{
@@ -894,22 +924,14 @@ export default function StockCataloguePageUi(props) {
               {inventoryError}
             </div>}
 
-          <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory results scroll area" style={{
-        maxHeight: "min(58dvh, 620px)",
-        overflowY: "auto",
-        overflowX: "auto"
-      }}>
-            {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory loading state" style={{
-          color: "var(--surfaceTextMuted)"
-        }}>Loading inventory...</div> : inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory empty state" style={{
+          {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory loading state" aria-busy="true">
+              <TableSkeleton columns={["Part Number", "Part details", "Category / supplier", "Bin", "Stock", "Unit cost", "Reorder", "Status", "Actions"]} rows={6} label="Loading inventory" />
+            </div> :inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory empty state" style={{
           color: "var(--surfaceTextMuted)"
         }}>No parts found. Refine your search.</div> : <>
-                <table className="app-data-table app-data-table--rounded" data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory results table" style={{
-            ...tableStyle,
-            fontSize: "var(--text-body)",
-            tableLayout: "fixed",
-            minWidth: "960px"
-          }}>
+              {/* Canonical table shell: no horizontal scroll, vertical scroll past 10 rows. */}
+              <DataTableShell data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory results scroll area">
+                <table className="app-data-table app-data-table--rounded app-data-table--clickable" data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory results table">
                   <colgroup>
                     <col style={{ width: "9%" }} />
                     <col style={{ width: "16%" }} />
@@ -921,34 +943,23 @@ export default function StockCataloguePageUi(props) {
                     <col style={{ width: "10%" }} />
                     <col style={{ width: "8%" }} />
                   </colgroup>
-                  <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
-                    <tr style={{
-                background: "var(--surface)",
-                color: "var(--danger)"
-              }}>
+                  <thead>
+                    <tr>
                       <th>Part Number</th>
                       <th>Part details</th>
                       <th>Category / supplier</th>
-                      <th style={{ whiteSpace: "nowrap" }}>Bin</th>
+                      <th data-table-cell="nowrap">Bin</th>
                       <th>Stock</th>
-                      <th>Unit cost</th>
-                      <th style={{ whiteSpace: "nowrap" }}>Reorder</th>
-                      <th style={{ whiteSpace: "nowrap" }}>Status</th>
-                      <th>Actions</th>
+                      <th data-table-cell="nowrap">Unit cost</th>
+                      <th data-table-cell="nowrap">Reorder</th>
+                      <th data-table-cell="nowrap">Status</th>
+                      <th data-table-cell="nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredInventory.slice(0, displayLimit).map(part => <tr key={part.id} onClick={() => {
                 setSelectedPart(part);
                 setIsPartModalOpen(true);
-              }} style={{
-                borderBottom: "var(--separating-line)",
-                cursor: "pointer",
-                transition: "background 0.15s ease"
-              }} onMouseEnter={e => {
-                e.currentTarget.style.background = "var(--surface)";
-              }} onMouseLeave={e => {
-                e.currentTarget.style.background = "transparent";
               }}>
                           <td data-label="Part number" style={{
                   fontWeight: 600,
@@ -957,8 +968,8 @@ export default function StockCataloguePageUi(props) {
                 }}>
                             {part.part_number}
                           </td>
-                          <td data-label="Part details" style={{ overflow: "hidden" }}>
-                            <div title={part.name} style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{part.name}</div>
+                          <td data-label="Part details">
+                            <div title={part.name} style={{ fontWeight: 600 }}>{part.name}</div>
                             <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>
                               OEM {part.oem_reference || "—"}
                             </div>
@@ -967,7 +978,7 @@ export default function StockCataloguePageUi(props) {
                             <div>{part.category || "Uncategorised"}</div>
                             <div style={{ color: "var(--text-1)", fontSize: "var(--text-caption)" }}>{part.supplier || "No supplier"}</div>
                           </td>
-                          <td data-label="Bin" style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{part.storage_location || "—"}</td>
+                          <td data-label="Bin" data-table-cell="nowrap" style={{ fontWeight: 600 }}>{part.storage_location || "—"}</td>
                           <td data-label="Stock">
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(48px, 1fr))", gap: "var(--space-sm)", fontVariantNumeric: "tabular-nums" }}>
                               <span><small style={{ display: "block", color: "var(--text-1)" }}>Hand</small><strong>{numberValue(part.qty_in_stock)}</strong></span>
@@ -978,8 +989,8 @@ export default function StockCataloguePageUi(props) {
                               Required by open jobs: {numberValue(part.open_job_count)}
                             </div> : null}
                           </td>
-                          <td data-label="Unit cost" style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(part.unit_cost)}</td>
-                          <td data-label="Reorder" style={{ fontVariantNumeric: "tabular-nums" }}>
+                          <td data-label="Unit cost" data-table-cell="nowrap" style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatCurrency(part.unit_cost)}</td>
+                          <td data-label="Reorder" data-table-cell="nowrap" style={{ fontVariantNumeric: "tabular-nums" }}>
                             <strong>{numberValue(part.reorder_level)}</strong>
                             {availableStock(part) < numberValue(part.reorder_level) ? <div style={{ color: "var(--danger)", fontSize: "var(--text-caption)" }}>
                               {numberValue(part.reorder_level) - availableStock(part)} below
@@ -988,23 +999,25 @@ export default function StockCataloguePageUi(props) {
                               {numberValue(part.qty_on_order)} expected soon
                             </div> : null}
                           </td>
-                          <td data-label="Status">
+                          <td data-label="Status" data-table-cell="nowrap">
                             <span className={`app-badge ${stockStatusBadgeTone(part.stock_status)}`}>
                               {(part.stock_status || "in_stock").replace(/_/g, " ")}
                             </span>
                           </td>
-                          <td data-label="Actions">
-                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={event => {
-                              event.stopPropagation();
-                              setSelectedPart(part);
-                              setIsPartModalOpen(true);
-                            }}>
-                              View
-                            </button>
+                          <td data-label="Actions" data-table-cell="nowrap">
+                            <SymbolButton
+                              symbol="view"
+                              label="View part"
+                              onClick={event => {
+                                event.stopPropagation();
+                                setSelectedPart(part);
+                                setIsPartModalOpen(true);
+                              }} />
                           </td>
                         </tr>)}
                   </tbody>
                 </table>
+              </DataTableShell>
 
                 {/* Load More Button */}
                 {(() => {
@@ -1021,7 +1034,6 @@ export default function StockCataloguePageUi(props) {
                     </div>;
           })()}
               </>}
-          </div>
         </div>
 
         {/* Part Details Modal */}

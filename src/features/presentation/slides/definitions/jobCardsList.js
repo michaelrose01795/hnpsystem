@@ -19,17 +19,10 @@ export const jobCardsListSlide = {
     },
     {
       kind: "tooltip",
-      anchor: "[data-presentation=\"job-cards-division-filter\"]",
+      anchor: "[data-presentation=\"job-cards-filters\"]",
       position: "bottom",
-      title: "Retail and sales split",
-      body: "Managers can separate retail workshop jobs from sales prep and PDI work without maintaining two lists.",
-    },
-    {
-      kind: "tooltip",
-      anchor: "[data-presentation=\"job-cards-status-filter\"]",
-      position: "bottom",
-      title: "Status filters",
-      body: "One click filters to in progress, awaiting parts, ready for collection or booked jobs, matching the questions reception gets all day.",
+      title: "Division and status filters",
+      body: "The filter button separates retail workshop jobs from sales prep and PDI work, and narrows to in progress, awaiting parts, ready for collection or booked jobs, matching the questions reception gets all day.",
     },
     {
       kind: "tooltip",

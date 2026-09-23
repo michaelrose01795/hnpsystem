@@ -12,6 +12,8 @@ import {
   widgetInsetSurfaceStyle,
 } from "@/components/profile/personal/widgets/shared";
 import Button from "@/components/ui/Button";
+import LayerSurface from "@/components/ui/LayerSurface";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { formatMonthLabel } from "@/lib/profile/calculations";
 import { FIXED_OUTGOING_CATEGORY_OPTIONS } from "@/lib/profile/personalFinance";
 
@@ -242,7 +244,37 @@ function RecurringRulesSection() {
       description="Add the days and hours that should auto-log overtime."
     >
       {isLoading ? (
-        <EmptyState>Loading recurring rules…</EmptyState>
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label="Loading recurring rules"
+          style={{ display: "grid", gap: "8px" }}
+        >
+          <SkeletonKeyframes />
+          {/* Mirrors a recurring rule row: day, hours, pattern, parity and a Remove pill. */}
+          {[0, 1].map((rowIndex) => (
+            <LayerSurface
+              key={rowIndex}
+              radius="var(--radius-sm)"
+              padding="10px"
+              gap="8px"
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobile
+                  ? "minmax(0, 1fr)"
+                  : "minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) auto",
+                alignItems: "center",
+              }}
+            >
+              <SkeletonBlock height="var(--control-height)" />
+              <SkeletonBlock height="var(--control-height)" />
+              <SkeletonBlock height="var(--control-height)" />
+              <SkeletonBlock width="70%" height="14px" />
+              <SkeletonBlock width="84px" height="32px" borderRadius="var(--radius-pill)" />
+            </LayerSurface>
+          ))}
+        </div>
       ) : (
         <>
           {rules.length === 0 ? (

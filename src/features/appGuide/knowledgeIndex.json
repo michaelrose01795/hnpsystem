@@ -87,9 +87,9 @@
     {
       "id": "page-tracker",
       "type": "page",
-      "title": "Tracker",
+      "title": "Key/Parking Tracker",
       "keywords": ["tracker", "tracking", "vehicle tracker", "job tracker", "location", "vehicle status", "track"],
-      "route": "/tracking",
+      "route": "/tracking/Key-Parking",
       "roles": ["techs", "service", "service manager", "workshop manager", "valet service", "admin"],
       "description": "The Tracker page shows a live board of vehicle and job progress across the workshop.",
       "details": "The Tracker provides a visual overview of where vehicles are in the service process. Staff can see which jobs are active, which are waiting, and where each vehicle is located within the workshop workflow. It is used by Techs, Service, Managers, Valet Service, and Admins. This is the same section referenced by the /tracking slash command in Floating Notes.",

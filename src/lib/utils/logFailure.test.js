@@ -44,17 +44,17 @@ describe("logFailure", () => {
 
   it("strips the emoji prefix and trailing colon from the label", () => {
     logFailure("❌ getAllJobs error:", new Error("nope"));
-    expect(spy).toHaveBeenCalledWith("getAllJobs error: nope");
+    expect(spy).toHaveBeenCalledWith("%s", "getAllJobs error: nope");
   });
 
   it("keeps a bracketed namespace on the label", () => {
     logFailure("[reporting] snapshot failed", "timeout");
-    expect(spy).toHaveBeenCalledWith("[reporting] snapshot failed: timeout");
+    expect(spy).toHaveBeenCalledWith("%s", "[reporting] snapshot failed: timeout");
   });
 
   it("prints context alongside the headline", () => {
     logFailure("upload failed", new Error("413"), { jobNumber: "J1" });
-    expect(spy).toHaveBeenCalledWith("upload failed: 413", { jobNumber: "J1" });
+    expect(spy).toHaveBeenCalledWith("%s", "upload failed: 413", { jobNumber: "J1" });
   });
 
   it("collapses a burst of the same failure into one line", () => {
@@ -67,7 +67,7 @@ describe("logFailure", () => {
     vi.advanceTimersByTime(5000);
     logFailure("poll failed", "offline");
     expect(spy).toHaveBeenCalledTimes(2);
-    expect(spy).toHaveBeenLastCalledWith("poll failed: offline (x20)");
+    expect(spy).toHaveBeenLastCalledWith("%s", "poll failed: offline (x20)");
   });
 
   it("does not collapse two different failures together", () => {

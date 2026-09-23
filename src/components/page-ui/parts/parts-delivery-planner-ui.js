@@ -2,6 +2,8 @@
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
+import { SectionSkeleton, SkeletonBlock, SkeletonKeyframes, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function PartsDeliveryPlannerPageUi(props) {
   const {
@@ -200,10 +202,14 @@ export default function PartsDeliveryPlannerPageUi(props) {
           flexDirection: "column",
           gap: "14px"
         }}>
-                {jobsLoading ? <p style={{
-            color: "var(--info)",
-            margin: 0
-          }}>Loading scheduled deliveries…</p> : jobsError ? <p style={{
+                {jobsLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading scheduled deliveries" style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "14px"
+          }}>
+                    <SectionSkeleton titleWidth="140px" subtitleWidth="60px" rows={2} />
+                    <SectionSkeleton titleWidth="120px" subtitleWidth="60px" rows={3} />
+                  </div> : jobsError ? <p style={{
             color: "var(--danger)",
             margin: 0
           }}>{jobsError}</p> : jobQueueByDate.length === 0 ? <p style={{
@@ -313,21 +319,16 @@ export default function PartsDeliveryPlannerPageUi(props) {
           flexWrap: "wrap",
           gap: "12px"
         }}>
-                <label style={{
-            fontSize: "0.85rem",
-            color: "var(--info-dark)"
-          }}>
-                  <span style={{
-              display: "block",
-              fontWeight: 600,
-              marginBottom: "4px"
-            }}>Filter by day</span>
-                  <DropdownField
-                    value={selectedDate}
-                    onChange={event => setSelectedDate(event.target.value)}
-                    options={[{ value: "", label: "All days" }, ...dateOptions]}
-                  />
-                </label>
+                <FilterButton activeCount={selectedDate ? 1 : 0} onClear={() => setSelectedDate("")}>
+                  <FilterField label="Day" htmlFor="parts-delivery-planner-filter-day">
+                    <DropdownField
+                      id="parts-delivery-planner-filter-day"
+                      value={selectedDate}
+                      onChange={event => setSelectedDate(event.target.value)}
+                      options={[{ value: "", label: "All days" }, ...dateOptions]}
+                    />
+                  </FilterField>
+                </FilterButton>
                 {selectedDate && <button type="button" onClick={() => setSelectedDate("")} style={{
             padding: "8px 14px",
             borderRadius: "var(--radius-pill)",
@@ -341,10 +342,14 @@ export default function PartsDeliveryPlannerPageUi(props) {
                     Clear day filter
                   </button>}
               </div>
-              {loading ? <p style={{
-          color: "var(--info)",
-          margin: 0
-        }}>Loading delivery runs…</p> : error ? <p style={{
+              {loading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading delivery runs" style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px"
+        }}>
+                  <SectionSkeleton titleWidth="160px" subtitleWidth="260px" rows={2} />
+                  <SectionSkeleton titleWidth="140px" subtitleWidth="220px" rows={2} />
+                </div> : error ? <p style={{
           color: "var(--primary)",
           margin: 0
         }}>{error}</p> : filteredRunsByDate.length === 0 ? <p style={{
@@ -510,17 +515,15 @@ export default function PartsDeliveryPlannerPageUi(props) {
           padding: "18px",
           color: "var(--danger)"
         }}>{collectionError}</div> : collectionLoading ? <div style={{
-          padding: "18px",
-          color: "var(--info)"
-        }}>Loading collection schedule…</div> : <div style={{
           ...collectionTableScrollStyle,
           overflowX: "auto"
         }}>
-                  <table style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            minWidth: "640px"
-          }}>
+                  <TableSkeleton columns={["Day / Date", "Collections", "Total parts", "Earliest slot", "Load"]} rows={5} label="Loading collection schedule" style={{ minWidth: "640px" }} />
+                </div> : <div style={{
+          ...collectionTableScrollStyle,
+          overflowX: "auto"
+        }}>
+                  <table className="app-data-table" style={{ minWidth: "640px" }}>
                     <thead>
                       <tr style={{
                 background: "var(--surface)",
@@ -688,16 +691,23 @@ export default function PartsDeliveryPlannerPageUi(props) {
                   </strong>
                 </div>
               </div>
-              {collectionLoading ? <p style={{
-          margin: 0,
-          color: "var(--info)"
-        }}>Loading collection jobs…</p> : <div style={collectionListScrollStyle}>
+              {collectionLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading collection jobs" style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px"
+        }}>
+                  <SkeletonKeyframes />
+                  {["55%", "45%", "60%"].map((width, index) => <LayerSurface key={index} radius="var(--radius-md)" padding="14px" gap="6px">
+                      <SkeletonBlock width={width} height="16px" />
+                      <SkeletonBlock width="75%" height="12px" />
+                    </LayerSurface>)}
+                </div> : <div style={collectionListScrollStyle}>
                   {selectedCollectionJobs.length === 0 ? <p style={{
             margin: 0,
             color: "var(--info-dark)"
           }}>
                       No collections scheduled for {formatDate(selectedCollectionDate)}.
-                    </p> : selectedCollectionJobs.map(job => <button key={job.id} type="button" onClick={() => router.push(`/new-order/${job.order_number}`)} style={{
+                    </p> : selectedCollectionJobs.map(job => <button key={job.id} type="button" onClick={() => router.push(`/order/${job.order_number}`)} style={{
             border: "none",
             borderRadius: "var(--radius-md)",
             padding: "14px",

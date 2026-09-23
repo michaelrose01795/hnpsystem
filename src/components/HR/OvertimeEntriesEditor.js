@@ -5,6 +5,8 @@ import { SectionCard } from "@/components/Section"; // section card layout — g
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import { CalendarField } from "@/components/ui/calendarAPI"; // Date input component
 import { TimePickerField } from "@/components/ui/timePickerAPI";
+import LayerTheme from "@/components/ui/LayerTheme"; // theme layer wrapping data tables (CLAUDE.md §3.0)
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
 
 function formatTime(value) {
   if (!value) return "—";
@@ -161,38 +163,40 @@ export default function OvertimeEntriesEditor({
         </div>
       )}
 
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-              <th style={{ textAlign: "left", paddingBottom: "10px" }}>Date</th>
-              <th>Start</th>
-              <th>End</th>
-              <th>Hours</th>
-            </tr>
-          </thead>
-          <tbody>
-            {localEntries.length === 0 ? (
+      <LayerTheme padding="var(--space-3)" gap="0">
+        <DataTableShell>
+          <table className="app-data-table">
+            <thead>
               <tr>
-                <td colSpan={4} style={{ padding: "16px 0", color: "var(--text-1)" }}>
-                  No overtime sessions logged for this period.
-                </td>
+                <th>Date</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Hours</th>
               </tr>
-            ) : (
-              localEntries.map((entry) => (
-                <tr key={entry.id} style={{ borderTop: "var(--separating-line)" }}>
-                  <td style={{ padding: "12px 0", fontWeight: 600 }}>
-                    {new Date(entry.date).toLocaleDateString()}
+            </thead>
+            <tbody>
+              {localEntries.length === 0 ? (
+                <tr>
+                  <td colSpan={4} style={{ color: "var(--text-1)" }}>
+                    No overtime sessions logged for this period.
                   </td>
-                  <td>{formatTime(entry.start)}</td>
-                  <td>{formatTime(entry.end)}</td>
-                  <td>{Number(entry.totalHours).toFixed(2)}h</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                localEntries.map((entry) => (
+                  <tr key={entry.id}>
+                    <td style={{ fontWeight: 600 }}>
+                      {new Date(entry.date).toLocaleDateString()}
+                    </td>
+                    <td>{formatTime(entry.start)}</td>
+                    <td>{formatTime(entry.end)}</td>
+                    <td>{Number(entry.totalHours).toFixed(2)}h</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </DataTableShell>
+      </LayerTheme>
 
       <div style={{ marginTop: "16px", display: "flex", gap: "16px", alignItems: "center" }}>
         <StatusTag label={`Sessions: ${totals.sessions}`} tone="default" />

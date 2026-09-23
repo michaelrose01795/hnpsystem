@@ -1,21 +1,318 @@
 /* file location: src/styles/families/error-recovery.css
  *
- * The in-app error experience — the recovery screen an error boundary renders
- * (SupportErrorBoundary / PageErrorScreen) and the "Report a problem" popup.
+ * The in-app recovery experience. One family, three screens:
  *
- * Only the pieces that appear in MORE THAN ONE of those places live here. The
- * reference code is the clearest case: the same short "ERR-…" line is shown on
- * the recovery screen, on the framework error pages, and again inside the report
- * popup, and it must read identically in all three — it is what a staff member
- * quotes to support and what the automatically-captured error events are filed
- * under.
+ *   • the error boundary's recovery screen (SupportErrorBoundary, all three
+ *     levels) and the framework error pages that reuse it (404 / 500 / _error
+ *     via PageErrorScreen),
+ *   • the access-denied screen at /unauthorised,
+ *   • the "Report a problem" popup (reference line only).
  *
- * Tokens only (CLAUDE.md §3.1). No borders: this is not one of the five allowed
- * outline use-cases (§3.0a).
+ * All three are the same moment — "you have landed somewhere you cannot
+ * continue from" — so they share a shape: a badge, a headline, one paragraph,
+ * a facts list you can quote to support, and a row of recovery actions. What
+ * differs is tone, and tone is a modifier here, never a second implementation.
+ *
+ * Tokens only (CLAUDE.md §3.1). No borders: none of this is one of the five
+ * allowed outline use-cases (§3.0a). The rules between fact rows are
+ * --separating-line, which IS allowed as a line within a list.
  */
 
-/* The "Reference: ERR-K3F9Q2" line. Quiet by default — it is not the message,
- * it is the thing you read out when the message did not help. */
+/* ===========================================================================
+   Shared shell
+   ======================================================================== */
+
+/* Centring wrapper. Route/app-level recovery fills the viewport so it reads as
+   the primary content; a section-level one stays compact because the page
+   around it still works. */
+.app-recovery {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 60svh;
+  padding: 24px;
+}
+
+.app-recovery--section {
+  min-height: 0;
+  padding: 12px;
+}
+
+/* Applied to the <LayerSurface>/<LayerTheme> card. The layer primitive owns
+   background / radius / padding / flex-direction inline, so this class only
+   sets what it does not: measure and alignment. */
+.app-recovery__card {
+  width: 100%;
+  max-width: 34rem;
+  align-items: center;
+  text-align: center;
+}
+
+.app-recovery__card--section {
+  max-width: 28rem;
+}
+
+/* ===========================================================================
+   Badge, headline, message
+   ======================================================================== */
+
+.app-recovery__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Tone carries the meaning now that nothing has a coloured outline (§3.0a): a
+   fault is danger-tinted, a "reload needed" or "you cannot come in here" is
+   warning-tinted, and a page that simply does not exist is informational. */
+.app-recovery__badge--danger {
+  background: var(--danger-surface);
+  color: var(--danger-dark);
+}
+
+.app-recovery__badge--warning {
+  background: var(--warning-surface);
+  color: var(--warning-dark);
+}
+
+.app-recovery__badge--info {
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+}
+
+.app-recovery__badge--section {
+  width: 40px;
+  height: 40px;
+  font-size: 1.25rem;
+}
+
+.app-recovery__title {
+  margin: 0;
+  color: var(--accentText);
+  font-size: var(--text-h2);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.app-recovery__title--section {
+  font-size: var(--text-h3);
+}
+
+.app-recovery__message {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--text-1);
+  opacity: 0.78;
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+
+/* The quiet closing reassurance ("nothing was lost", "we already have a record
+   of this"). Deliberately the smallest thing on the screen. */
+.app-recovery__hint {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--text-1);
+  opacity: 0.62;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+
+/* ===========================================================================
+   Facts list
+   ---------------------------------------------------------------------------
+   The quotable detail: which page, when, and the reference code. Shared by the
+   recovery screen and /unauthorised so there is one fact-list in the app, not
+   two that drift apart.
+   ======================================================================== */
+
+.app-recovery-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  /* No column gap: the row rule below must run unbroken across both cells, so
+     the label carries the spacing as padding instead. */
+  gap: 0;
+  width: 100%;
+  margin: 0;
+  text-align: left;
+}
+
+/* Every row clears the 44px control floor (§3.6) so the list reads as evenly
+   spaced rows rather than tight text, and stays comfortable on a phone. Both
+   cells carry the floor because a grid row is only as tall as its tallest
+   cell. */
+.app-recovery-facts__label,
+.app-recovery-facts__value {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height);
+  margin: 0;
+  padding-block: 8px;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.app-recovery-facts__label {
+  padding-inline-end: 16px;
+  color: var(--text-1);
+  opacity: 0.62;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+/* The answer, not the question — full-strength text and a touch heavier so the
+   eye lands on it before the label. */
+.app-recovery-facts__value {
+  gap: 8px;
+  justify-content: space-between;
+  color: var(--text-1);
+  font-size: var(--text-body);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+/* Row rule between fact pairs — the allowed "line within a list" (§3.0a).
+   Skipped on the first pair so the block never opens with a stray rule. */
+.app-recovery-facts__label:not(:first-of-type),
+.app-recovery-facts__value:not(:first-of-type) {
+  border-top: var(--separating-line);
+}
+
+/* Routes and reference codes: monospaced so a character can be read back over
+   the phone without ambiguity, and selectable in one drag. */
+.app-recovery-facts__value--mono {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-body-sm);
+  font-weight: 400;
+}
+
+.app-recovery-facts__code {
+  user-select: all;
+}
+
+/* A per-row action (copy the reference code). Never grows the 44px row. */
+.app-recovery-facts__row-btn {
+  flex: 0 0 auto;
+  user-select: none;
+}
+
+@media (max-width: 520px) {
+  .app-recovery-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Stacked, the label + value PAIR is the row, so the 44px floor moves onto
+     the pair — keeping it on each cell would double every row's height. */
+  .app-recovery-facts__label {
+    min-height: 0;
+    padding-block: 10px 0;
+    padding-inline-end: 0;
+  }
+
+  .app-recovery-facts__value {
+    min-height: 0;
+    padding-block: 2px 10px;
+  }
+
+  /* One rule per pair once the columns stack — the rule belongs above the
+     label, never between a label and its own value. */
+  .app-recovery-facts__value:not(:first-of-type) {
+    border-top: none;
+  }
+}
+
+/* ===========================================================================
+   Actions
+   ======================================================================== */
+
+.app-recovery__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 44px touch-target floor (§3.6) for every recovery action. */
+.app-recovery__actions > .app-btn {
+  min-height: var(--control-height);
+}
+
+/* On a phone the actions stack full-width, so the recovery the user most likely
+   wants is a thumb wide rather than a small pill floating mid-row. */
+@media (max-width: 520px) {
+  .app-recovery__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ===========================================================================
+   Technical details (staff, role-gated at render)
+   ======================================================================== */
+
+.app-recovery__details {
+  width: 100%;
+  text-align: left;
+}
+
+.app-recovery__summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height);
+  color: var(--text-1);
+  opacity: 0.7;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.app-recovery__summary:hover {
+  opacity: 1;
+}
+
+.app-recovery__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app-recovery__panel-row {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.app-recovery__panel-key {
+  color: var(--text-1);
+  opacity: 0.62;
+  font-weight: 600;
+}
+
+.app-recovery__panel-value {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-caption);
+  user-select: all;
+}
+
+/* ===========================================================================
+   Reference line (the report popup)
+   ---------------------------------------------------------------------------
+   The recovery screens now carry the reference code as a facts row with its own
+   copy button. Inside the report popup there is no facts list, so the same code
+   still reads as a quiet single line.
+   ======================================================================== */
+
 .app-error-reference {
   margin: 0;
   color: var(--text-1);
@@ -25,8 +322,26 @@
 }
 
 /* The code itself. Selectable in one drag so it can be copied without fighting
- * the surrounding prose. */
+   the surrounding prose. */
 .app-error-reference__code {
   font-weight: 600;
   user-select: all;
+}
+
+/* ===========================================================================
+   Access denied (/unauthorised)
+   ---------------------------------------------------------------------------
+   A permission refusal is NOT an error — nothing broke, the user simply does
+   not hold the role the route requires. It reuses the shell above (card, badge,
+   title, message, facts, actions) with its own calm warning tone, and it does
+   not reuse the boundary's automatic error logging.
+   ======================================================================== */
+
+.app-access-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--layout-card-gap);
+  width: 100%;
+  text-align: center;
 }

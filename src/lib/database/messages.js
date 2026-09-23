@@ -5,8 +5,113 @@ import { supabase, supabaseService } from "@/lib/database/supabaseClient";
 import { getDisplayName } from "@/lib/users/displayName";
 import { ALL_ACCESS_EMAIL } from "@/lib/database/allAccessVisibility";
 import { logFailure } from "@/lib/utils/logFailure";
+import {
+  NOTIFICATION_LEVEL_VALUES,
+  PRIORITY_VALUES,
+  STATUS_VALUES,
+  deriveConversationType,
+  departmentFromHash,
+  extractMentionIds,
+  jobNumberFromHash,
+  sanitizeLinks,
+  linkKey,
+  typeSupportsWorkflow,
+} from "@/lib/messages/conversationModel";
 
 const dbClient = supabaseService || supabase;
+
+// ---------------------------------------------------------------------------
+// Conversation-hub columns (supabase/migrations/20260924120000_messages_
+// conversation_hub.sql). Until that migration runs, every thread query falls
+// back to the legacy column set, so messaging keeps working and only the hub
+// settings (status, priority, links, owner, notification level) are missing.
+// A failed probe is retried every few minutes, so running the migration takes
+// effect without a server restart.
+// ---------------------------------------------------------------------------
+const HUB_THREAD_COLUMNS =
+  "conversation_type, status, priority, department, job_number, assigned_to, linked_records,";
+const HUB_RETRY_MS = 5 * 60 * 1000;
+let hubColumnsReady = null; // null = not probed yet
+let hubColumnsCheckedAt = 0;
+
+const isMissingColumnError = (error) =>
+  Boolean(error) &&
+  (error.code === "42703" ||
+    error.code === "PGRST204" ||
+    /column .* does not exist|could not find the .* column/i.test(String(error.message || "")));
+
+const shouldTryHubColumns = () =>
+  hubColumnsReady !== false || Date.now() - hubColumnsCheckedAt > HUB_RETRY_MS;
+
+// Runs `run(withHub)` against the hub column set, and once more against the
+// legacy set when the hub columns do not exist yet.
+const withHubFallback = async (run) => {
+  if (shouldTryHubColumns()) {
+    const result = await run(true);
+    if (!result.error) {
+      hubColumnsReady = true;
+      return result;
+    }
+    if (!isMissingColumnError(result.error)) return result;
+    hubColumnsReady = false;
+    hubColumnsCheckedAt = Date.now();
+  }
+  return run(false);
+};
+
+export const isConversationHubReady = async () => {
+  if (hubColumnsReady === null || (hubColumnsReady === false && shouldTryHubColumns())) {
+    await withHubFallback((withHub) =>
+      dbClient
+        .from("message_threads")
+        .select(withHub ? "thread_id, conversation_type" : "thread_id")
+        .limit(1)
+    );
+  }
+  return hubColumnsReady === true;
+};
+
+const HUB_MIGRATION_MESSAGE =
+  "Conversation settings need the messages conversation-hub migration (20260924120000_messages_conversation_hub.sql) to be run in Supabase.";
+
+const assertHubReady = async () => {
+  if (!(await isConversationHubReady())) {
+    const error = new Error(HUB_MIGRATION_MESSAGE);
+    error.statusCode = 409;
+    error.code = "MIGRATION_PENDING";
+    throw error;
+  }
+};
+
+const buildThreadSelect = (withHub) => `
+      thread_id,
+      thread_type,
+      title,
+      unique_hash,
+      created_by,
+      created_at,
+      updated_at,
+      ${withHub ? HUB_THREAD_COLUMNS : ""}
+      participants:message_thread_members(
+        user_id,
+        role,
+        joined_at,
+        last_read_at,
+        ${withHub ? "notification_level," : ""}
+        user:users!message_thread_members_user_id_fkey(user_id, first_name, last_name, email, role, extension, job_title, department)
+      ),
+      recent_messages:messages!messages_thread_id_fkey(
+        message_id,
+        thread_id,
+        content,
+        created_at,
+        sender_id,
+        receiver_id,
+        sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role),
+        metadata,
+        saved_forever
+      )
+    `;
 const isServiceClient = Boolean(supabaseService);
 
 const assertMessagingWriteAccess = () => {
@@ -28,6 +133,8 @@ const formatUserProfile = (user) => {
     email: user.email || "",
     role: user.role || "",
     extension: user.extension || "",
+    jobTitle: user.job_title || "",
+    department: user.department || "",
     name: buildFullName(user),
   };
 };
@@ -37,6 +144,7 @@ const formatMemberRow = (row) => ({
   role: row.role,
   joinedAt: row.joined_at,
   lastReadAt: row.last_read_at,
+  notificationLevel: row.notification_level || "all",
   profile: formatUserProfile(row.user),
 });
 
@@ -100,7 +208,16 @@ const normalizeConversationEntry = (entry, fallback = {}) => {
     senderId: senderId || null,
     receiverId: receiverId || null,
     sender: normalizeStoredSenderProfile(entry.sender) || fallback.sender || null,
-    metadata: stripConversationMetadata(entry.metadata ?? fallback.metadata ?? null),
+    // An entry that carries its own `metadata` key (every _conversation log
+    // entry does, even when it is null) keeps it. Only a legacy row without
+    // one falls back — otherwise a plain message would inherit the conversation
+    // row's metadata, which is the LATEST message's (a task, a pin, a leave
+    // request), and every earlier message would render as that card.
+    metadata: stripConversationMetadata(
+      Object.prototype.hasOwnProperty.call(entry, "metadata")
+        ? entry.metadata
+        : fallback.metadata ?? null
+    ),
     savedForever: Boolean(entry.savedForever ?? entry.saved_forever ?? fallback.savedForever),
   };
 };
@@ -221,9 +338,39 @@ const formatThreadRow = (row, currentUserId, membershipMap = {}) => {
 
   const memberMeta = membershipMap[row.thread_id];
   const lastReadAt = memberMeta?.last_read_at || null;
-  const hasUnread =
+  const notificationLevel = memberMeta?.notification_level || "all";
+  const hasNewMessages =
     Boolean(lastMessage) &&
     (!lastReadAt || new Date(lastMessage.createdAt) > new Date(lastReadAt));
+
+  // The whole transcript already rides along on the latest row (the
+  // _conversation log), so unread and mention counts cost no extra query.
+  const readCutoff = lastReadAt ? new Date(lastReadAt).getTime() : 0;
+  const unreadEntries = getConversationLog(row.recent_messages?.[0]?.metadata).filter(
+    (entry) =>
+      normalizeUserId(entry?.senderId) !== currentUserId &&
+      new Date(entry?.createdAt || 0).getTime() > readCutoff
+  );
+  const unreadMentionCount = unreadEntries.filter((entry) =>
+    (entry?.metadata?.mentions || []).map(Number).includes(currentUserId)
+  ).length;
+  const unreadCount = hasNewMessages ? Math.max(unreadEntries.length, 1) : 0;
+
+  // The member's notification level decides what counts as "unread" here —
+  // a muted chat never flags, a mentions-only chat flags only for a mention.
+  const hasUnread =
+    notificationLevel === "none"
+      ? false
+      : notificationLevel === "mentions"
+        ? hasNewMessages && unreadMentionCount > 0
+        : hasNewMessages;
+
+  const conversationType = deriveConversationType({
+    conversationType: row.conversation_type,
+    members,
+    uniqueHash: row.unique_hash,
+  });
+  const hashDepartment = departmentFromHash(row.unique_hash);
 
   let title = row.title;
   if (!title) {
@@ -240,9 +387,14 @@ const formatThreadRow = (row, currentUserId, membershipMap = {}) => {
     }
   }
 
+  const assignee = row.assigned_to
+    ? members.find((member) => member.userId === row.assigned_to) || null
+    : null;
+
   return {
     id: row.thread_id,
     type: row.thread_type,
+    conversationType,
     title: title || "Group chat",
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -250,7 +402,21 @@ const formatThreadRow = (row, currentUserId, membershipMap = {}) => {
     members,
     lastMessage,
     hasUnread,
+    hasNewMessages,
+    unreadCount: hasUnread ? unreadCount : 0,
+    unreadMentionCount,
+    notificationLevel,
     lastReadAt,
+    // Workflow fields. `hubReady` is false until the migration runs, so the UI
+    // can tell "not set" apart from "cannot be stored yet".
+    hubReady: row.status !== undefined,
+    status: row.status || "open",
+    priority: row.priority || "normal",
+    department: row.department || hashDepartment || null,
+    jobNumber: row.job_number || jobNumberFromHash(row.unique_hash),
+    assignedTo: row.assigned_to || null,
+    assigneeName: assignee?.profile?.name || null,
+    linkedRecords: Array.isArray(row.linked_records) ? row.linked_records : [],
   };
 };
 
@@ -259,18 +425,28 @@ const getMembershipMap = (rows = []) =>
     acc[row.thread_id] = {
       threadId: row.thread_id,
       last_read_at: row.last_read_at,
+      notification_level: row.notification_level || "all",
     };
     return acc;
   }, {});
+
+const fetchMembershipRows = async (userIdNum, threadIdNum = null) => {
+  const result = await withHubFallback((withHub) => {
+    let query = dbClient
+      .from("message_thread_members")
+      .select(withHub ? "thread_id, last_read_at, notification_level" : "thread_id, last_read_at")
+      .eq("user_id", userIdNum);
+    if (threadIdNum) query = query.eq("thread_id", threadIdNum);
+    return query;
+  });
+  return result;
+};
 
 export const getThreadsForUser = async (userId) => {
   const userIdNum = normalizeUserId(userId);
   if (!userIdNum) return [];
 
-  const { data: membershipRows, error: membershipError } = await dbClient
-    .from("message_thread_members")
-    .select("thread_id, last_read_at")
-    .eq("user_id", userIdNum);
+  const { data: membershipRows, error: membershipError } = await fetchMembershipRows(userIdNum);
 
   if (membershipError) {
     logFailure("❌ getThreadsForUser membership error:", membershipError);
@@ -282,44 +458,18 @@ export const getThreadsForUser = async (userId) => {
   const threadIds = membershipRows.map((row) => row.thread_id);
   const membershipMap = getMembershipMap(membershipRows);
 
-  const { data: threadRows, error } = await dbClient
-    .from("message_threads")
-    .select(
-      `
-      thread_id,
-      thread_type,
-      title,
-      unique_hash,
-      created_by,
-      created_at,
-      updated_at,
-      participants:message_thread_members(
-        user_id,
-        role,
-        joined_at,
-        last_read_at,
-        user:users!message_thread_members_user_id_fkey(user_id, first_name, last_name, email, role, extension)
-      ),
-      recent_messages:messages!messages_thread_id_fkey(
-        message_id,
-        thread_id,
-        content,
-        created_at,
-        sender_id,
-        receiver_id,
-        sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role),
-        metadata,
-        saved_forever
-      )
-    `
-    )
-    .in("thread_id", threadIds)
-    .order("created_at", {
-      ascending: false,
-      foreignTable: "recent_messages",
-    })
-    .limit(1, { foreignTable: "recent_messages" })
-    .order("updated_at", { ascending: false });
+  const { data: threadRows, error } = await withHubFallback((withHub) =>
+    dbClient
+      .from("message_threads")
+      .select(buildThreadSelect(withHub))
+      .in("thread_id", threadIds)
+      .order("created_at", {
+        ascending: false,
+        foreignTable: "recent_messages",
+      })
+      .limit(1, { foreignTable: "recent_messages" })
+      .order("updated_at", { ascending: false })
+  );
 
   if (error) {
     logFailure("❌ getThreadsForUser thread fetch error:", error);
@@ -343,10 +493,7 @@ export const getUnreadThreadCountForUser = async (userId) => {
   const userIdNum = normalizeUserId(userId);
   if (!userIdNum) return 0;
 
-  const { data: membershipRows, error: membershipError } = await dbClient
-    .from("message_thread_members")
-    .select("thread_id, last_read_at")
-    .eq("user_id", userIdNum);
+  const { data: membershipRows, error: membershipError } = await fetchMembershipRows(userIdNum);
 
   if (membershipError) {
     logFailure("❌ getUnreadThreadCountForUser membership error:", membershipError);
@@ -354,9 +501,15 @@ export const getUnreadThreadCountForUser = async (userId) => {
   }
   if (!membershipRows?.length) return 0;
 
+  // Muted conversations never count towards the badge. (Mentions-only chats
+  // still count here: telling them apart would mean pulling every transcript,
+  // which is exactly what this cheap path exists to avoid.)
   const lastReadByThread = new Map(
-    membershipRows.map((row) => [row.thread_id, row.last_read_at || null])
+    membershipRows
+      .filter((row) => row.notification_level !== "none")
+      .map((row) => [row.thread_id, row.last_read_at || null])
   );
+  if (!lastReadByThread.size) return 0;
 
   const { data: threadRows, error } = await dbClient
     .from("message_threads")
@@ -380,44 +533,18 @@ export const getUnreadThreadCountForUser = async (userId) => {
 };
 
 const fetchThreadRecord = async (threadId) => {
-  const { data, error } = await dbClient
-    .from("message_threads")
-    .select(
-      `
-      thread_id,
-      thread_type,
-      title,
-      unique_hash,
-      created_by,
-      created_at,
-      updated_at,
-      participants:message_thread_members(
-        user_id,
-        role,
-        joined_at,
-        last_read_at,
-        user:users!message_thread_members_user_id_fkey(user_id, first_name, last_name, email, role, extension)
-      ),
-      recent_messages:messages!messages_thread_id_fkey(
-        message_id,
-        thread_id,
-        content,
-        created_at,
-        sender_id,
-        receiver_id,
-        sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role),
-        metadata,
-        saved_forever
-      )
-    `
-    )
-    .eq("thread_id", threadId)
-    .order("created_at", {
-      ascending: false,
-      foreignTable: "recent_messages",
-    })
-    .limit(1, { foreignTable: "recent_messages" })
-    .maybeSingle();
+  const { data, error } = await withHubFallback((withHub) =>
+    dbClient
+      .from("message_threads")
+      .select(buildThreadSelect(withHub))
+      .eq("thread_id", threadId)
+      .order("created_at", {
+        ascending: false,
+        foreignTable: "recent_messages",
+      })
+      .limit(1, { foreignTable: "recent_messages" })
+      .maybeSingle()
+  );
 
   if (error) throw error;
   return data;
@@ -433,32 +560,44 @@ const getThreadSnapshotForUser = async (threadId, userId) => {
 
   const [threadRow, membershipResult] = await Promise.all([
     fetchThreadRecord(threadIdNum),
-    dbClient
-      .from("message_thread_members")
-      .select("thread_id, last_read_at")
-      .eq("thread_id", threadIdNum)
-      .eq("user_id", userIdNum)
-      .maybeSingle(),
+    fetchMembershipRows(userIdNum, threadIdNum),
   ]);
 
   if (membershipResult?.error && membershipResult?.error?.code !== "PGRST116") {
     throw membershipResult.error;
   }
 
-  const membershipData = membershipResult?.data || null;
+  const membershipData = membershipResult?.data?.[0] || null;
 
   if (!threadRow || !membershipData) {
     return null;
   }
 
-  const memberMeta = membershipData;
+  return formatThreadRow(threadRow, userIdNum, getMembershipMap([membershipData]));
+};
 
-  return formatThreadRow(threadRow, userIdNum, {
-    [threadIdNum]: {
-      threadId: memberMeta.thread_id,
-      last_read_at: memberMeta.last_read_at,
-    },
-  });
+// Throws unless `userId` belongs to the thread. Returns the member row.
+export const assertThreadMember = async (threadId, userId) => {
+  const threadIdNum = Number(threadId);
+  const userIdNum = normalizeUserId(userId);
+  if (!threadIdNum || !userIdNum) {
+    const error = new Error("threadId and userId are required.");
+    error.statusCode = 400;
+    throw error;
+  }
+  const { data, error } = await dbClient
+    .from("message_thread_members")
+    .select("member_id, role")
+    .eq("thread_id", threadIdNum)
+    .eq("user_id", userIdNum)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    const denied = new Error("You are not part of this conversation.");
+    denied.statusCode = 403;
+    throw denied;
+  }
+  return data;
 };
 
 const normalizeMemberConfigs = (entries = []) => {
@@ -976,6 +1115,154 @@ export const createGroupThread = async ({ title, memberIds = [], createdBy }) =>
   return snapshot;
 };
 
+// Department, job and announcement conversations.
+//
+//   department   one standing chat per department (unique_hash department:<name>).
+//                Creating it again just joins the creator and the picked people.
+//                `includeDepartment` adds every active user whose users.department
+//                matches.
+//   job          one internal chat per job card (unique_hash jobteam:<number>).
+//                The job must exist.
+//   announcement a broadcast channel; the creator leads, only leaders post.
+//
+// The hash doubles as the type marker for databases where the conversation-hub
+// migration has not run yet (see deriveConversationType).
+export const createConversationThread = async ({
+  type,
+  title = "",
+  memberIds = [],
+  createdBy,
+  department = "",
+  jobNumber = "",
+  includeDepartment = false,
+  priority = "normal",
+}) => {
+  assertMessagingWriteAccess();
+  const creatorId = normalizeUserId(createdBy);
+  if (!creatorId) throw new Error("Creator is required to start a conversation.");
+
+  let uniqueHash = null;
+  let resolvedTitle = String(title || "").trim() || null;
+  let resolvedDepartment = null;
+  let resolvedJobNumber = null;
+  const extraMemberIds = [];
+
+  if (type === "department") {
+    resolvedDepartment = String(department || "").trim();
+    if (!resolvedDepartment) throw new Error("Choose the department this chat is for.");
+    uniqueHash = `department:${resolvedDepartment.toLowerCase()}`;
+    resolvedTitle = resolvedTitle || `${resolvedDepartment} team`;
+    if (includeDepartment) {
+      const { data: deptUsers, error: deptError } = await dbClient
+        .from("users")
+        .select("user_id")
+        .eq("is_active", true)
+        .ilike("department", resolvedDepartment)
+        .neq("email", ALL_ACCESS_EMAIL);
+      if (deptError) throw deptError;
+      (deptUsers || []).forEach((row) => extraMemberIds.push(row.user_id));
+    }
+  } else if (type === "job") {
+    resolvedJobNumber = String(jobNumber || "").trim().replace(/^#/, "");
+    if (!resolvedJobNumber) throw new Error("Enter the job number this chat is about.");
+    const { data: jobRow, error: jobError } = await dbClient
+      .from("jobs")
+      .select("job_number, vehicle_reg, customer")
+      .eq("job_number", resolvedJobNumber)
+      .maybeSingle();
+    if (jobError && jobError.code !== "PGRST116") throw jobError;
+    if (!jobRow) throw new Error(`Job ${resolvedJobNumber} was not found.`);
+    uniqueHash = `jobteam:${resolvedJobNumber}`;
+    resolvedTitle =
+      resolvedTitle ||
+      [`Job ${resolvedJobNumber}`, jobRow.vehicle_reg, jobRow.customer].filter(Boolean).join(" · ");
+  } else if (type === "announcement") {
+    if (!resolvedTitle) throw new Error("Give the announcement channel a name.");
+    uniqueHash = `announcement:${creatorId}:${Date.now()}`;
+    if (department) {
+      resolvedDepartment = String(department).trim();
+      if (includeDepartment) {
+        const { data: deptUsers, error: deptError } = await dbClient
+          .from("users")
+          .select("user_id")
+          .eq("is_active", true)
+          .ilike("department", resolvedDepartment)
+          .neq("email", ALL_ACCESS_EMAIL);
+        if (deptError) throw deptError;
+        (deptUsers || []).forEach((row) => extraMemberIds.push(row.user_id));
+      }
+    }
+  } else {
+    return createGroupThread({ title, memberIds, createdBy });
+  }
+
+  const wantedMembers = sanitizeIds([...memberIds, ...extraMemberIds]).filter(
+    (id) => id !== creatorId
+  );
+  if (type === "announcement" && !wantedMembers.length) {
+    throw new Error("Add at least one person (or a whole department) to the announcement channel.");
+  }
+
+  const { data: existing, error: existingError } = await dbClient
+    .from("message_threads")
+    .select("thread_id")
+    .eq("unique_hash", uniqueHash)
+    .maybeSingle();
+  if (existingError && existingError.code !== "PGRST116") throw existingError;
+
+  let threadId = existing?.thread_id || null;
+  let isNew = false;
+  if (!threadId) {
+    const basePayload = {
+      thread_type: "group",
+      title: resolvedTitle,
+      unique_hash: uniqueHash,
+      created_by: creatorId,
+    };
+    const hubPayload = {
+      ...basePayload,
+      conversation_type: type,
+      department: resolvedDepartment,
+      job_number: resolvedJobNumber,
+      priority: PRIORITY_VALUES.includes(priority) ? priority : "normal",
+      linked_records: resolvedJobNumber
+        ? sanitizeLinks([{ recordType: "job_card", recordId: resolvedJobNumber, label: `Job ${resolvedJobNumber}` }])
+        : [],
+    };
+    const { data: inserted, error: insertError } = await withHubFallback((withHub) =>
+      dbClient
+        .from("message_threads")
+        .insert(withHub ? hubPayload : basePayload)
+        .select("thread_id")
+        .single()
+    );
+    if (insertError) {
+      if (insertError.code !== "23505") throw insertError;
+      const { data: raceRow } = await dbClient
+        .from("message_threads")
+        .select("thread_id")
+        .eq("unique_hash", uniqueHash)
+        .maybeSingle();
+      threadId = raceRow?.thread_id || null;
+    } else {
+      threadId = inserted.thread_id;
+      isNew = true;
+    }
+  }
+  if (!threadId) throw new Error("Unable to create the conversation.");
+
+  await addMembersToThread(threadId, [
+    // The creator of a new channel leads it; joining an existing standing
+    // department/job chat makes you an ordinary member.
+    { userId: creatorId, role: isNew ? "leader" : "member" },
+    ...wantedMembers.map((userId) => ({ userId, role: "member" })),
+  ]);
+
+  const snapshot = await getThreadSnapshotForUser(threadId, creatorId);
+  if (!snapshot) throw new Error("Unable to load the new conversation.");
+  return snapshot;
+};
+
 const sanitizeIds = (ids = []) =>
   Array.from(
     new Set(
@@ -1335,7 +1622,7 @@ export const sendThreadMessage = async ({
   if (threadIdNum) {
     const { data: membership, error } = await dbClient
       .from("message_thread_members")
-      .select("member_id")
+      .select("member_id, role")
       .eq("thread_id", threadIdNum)
       .eq("user_id", senderUserId)
       .maybeSingle();
@@ -1345,15 +1632,41 @@ export const sendThreadMessage = async ({
       throw new Error("You are not part of this conversation.");
     }
 
-    const { data: threadRow, error: threadError } = await dbClient
-      .from("message_threads")
-      .select("thread_type")
-      .eq("thread_id", threadIdNum)
-      .maybeSingle();
+    const { data: threadRow, error: threadError } = await withHubFallback((withHub) =>
+      dbClient
+        .from("message_threads")
+        .select(withHub ? "thread_type, unique_hash, conversation_type" : "thread_type, unique_hash")
+        .eq("thread_id", threadIdNum)
+        .maybeSingle()
+    );
 
     if (threadError) throw threadError;
     if (!threadRow) {
       throw new Error("Conversation not found.");
+    }
+
+    const conversationType = deriveConversationType({
+      conversationType: threadRow.conversation_type,
+      uniqueHash: threadRow.unique_hash,
+    });
+    if (conversationType === "announcement" && membership.role !== "leader") {
+      const denied = new Error("Only channel leaders can post in an announcement channel.");
+      denied.statusCode = 403;
+      throw denied;
+    }
+
+    // Mentions are only honoured for people who are in the conversation — a
+    // hand-typed token for anyone else is left as plain text.
+    const mentionIds = extractMentionIds(content);
+    if (mentionIds.length) {
+      const { data: memberRows } = await dbClient
+        .from("message_thread_members")
+        .select("user_id")
+        .eq("thread_id", threadIdNum)
+        .in("user_id", mentionIds);
+      const valid = (memberRows || []).map((row) => row.user_id);
+      metadata = { ...(metadata || {}), mentions: valid };
+      if (!valid.length) delete metadata.mentions;
     }
 
     if (threadRow.thread_type === "direct") {
@@ -1479,17 +1792,20 @@ export const updateThreadMessageMetadata = async ({
       return entry;
     }
 
-    return {
-      ...entry,
-      metadata: {
-        ...(entry.metadata || {}),
-        ...(metadataPatch || {}),
-        leaveRequest: {
-          ...(entry.metadata?.leaveRequest || {}),
-          ...(metadataPatch?.leaveRequest || {}),
-        },
-      },
+    const nextMetadata = {
+      ...(entry.metadata || {}),
+      ...(metadataPatch || {}),
     };
+    // leaveRequest is deep-merged, and only when the patch carries one —
+    // otherwise an unrelated patch would stamp an empty leaveRequest on the
+    // message and it would start rendering as a leave request.
+    if (metadataPatch?.leaveRequest) {
+      nextMetadata.leaveRequest = {
+        ...(entry.metadata?.leaveRequest || {}),
+        ...metadataPatch.leaveRequest,
+      };
+    }
+    return { ...entry, metadata: nextMetadata };
   });
 
   await persistThreadConversationRows({
@@ -1499,6 +1815,222 @@ export const updateThreadMessageMetadata = async ({
   });
 
   return nextEntries.find((entry) => String(entry.id) === messageKey) || null;
+};
+
+// ---------------------------------------------------------------------------
+// Message actions: pin, tasks, reminders, edit, delete.
+//
+// Messages live in the thread's _conversation log, so every action is a
+// read-modify-write of that one row.
+// ---------------------------------------------------------------------------
+const MESSAGE_ACTIONS = [
+  "pin",
+  "unpin",
+  "task-done",
+  "task-reopen",
+  "reminder-done",
+  "reminder-reopen",
+  "edit",
+  "delete",
+];
+
+export const applyMessageAction = async ({ threadId, actorId, messageId, action, content = "" }) => {
+  assertMessagingWriteAccess();
+  if (!MESSAGE_ACTIONS.includes(action)) {
+    const error = new Error("Unknown message action.");
+    error.statusCode = 400;
+    throw error;
+  }
+  const threadIdNum = Number(threadId);
+  const actorUserId = normalizeUserId(actorId);
+  const messageKey = String(messageId || "").trim();
+  await assertThreadMember(threadIdNum, actorUserId);
+
+  const existingRows = await fetchThreadMessageRows(threadIdNum);
+  const entries = extractConversationEntriesFromRows(existingRows);
+  const index = entries.findIndex((entry) => String(entry.id) === messageKey);
+  if (index < 0) {
+    const error = new Error("Message not found in this conversation.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const entry = entries[index];
+  const metadata = { ...(entry.metadata || {}) };
+  const isOwn = normalizeUserId(entry.senderId) === actorUserId;
+  const [actor] = await hydrateConversationSenders([{ senderId: actorUserId }]);
+  const stamp = { byId: actorUserId, byName: actor?.sender?.name || "", at: new Date().toISOString() };
+  let nextContent = entry.content;
+
+  const requireOwn = () => {
+    if (!isOwn) {
+      const error = new Error("You can only change your own messages.");
+      error.statusCode = 403;
+      throw error;
+    }
+  };
+
+  switch (action) {
+    case "pin":
+      metadata.pinned = stamp;
+      break;
+    case "unpin":
+      delete metadata.pinned;
+      break;
+    case "task-done":
+    case "task-reopen":
+      if (!metadata.task) throw new Error("That message is not a task.");
+      metadata.task = {
+        ...metadata.task,
+        status: action === "task-done" ? "done" : "open",
+        completedBy: action === "task-done" ? stamp : null,
+      };
+      break;
+    case "reminder-done":
+    case "reminder-reopen":
+      if (!metadata.reminder) throw new Error("That message is not a reminder.");
+      metadata.reminder = {
+        ...metadata.reminder,
+        status: action === "reminder-done" ? "done" : "open",
+        completedBy: action === "reminder-done" ? stamp : null,
+      };
+      break;
+    case "edit": {
+      requireOwn();
+      const trimmed = String(content || "").trim();
+      if (!trimmed) throw new Error("A message cannot be empty.");
+      if (metadata.deleted) throw new Error("A deleted message cannot be edited.");
+      nextContent = trimmed.slice(0, 5000);
+      metadata.editedAt = stamp.at;
+      break;
+    }
+    case "delete":
+      requireOwn();
+      // The entry stays so replies and reactions keep their anchor; its
+      // content, attachments and action cards go.
+      nextContent = "This message was deleted.";
+      delete metadata.attachments;
+      delete metadata.task;
+      delete metadata.reminder;
+      delete metadata.pinned;
+      metadata.deleted = { at: stamp.at };
+      break;
+    default:
+      break;
+  }
+
+  const nextEntries = [...entries];
+  nextEntries[index] = { ...entry, content: nextContent, metadata };
+  await persistThreadConversationRows({ threadId: threadIdNum, entries: nextEntries, existingRows });
+
+  const [hydrated] = await hydrateConversationSenders([nextEntries[index]]);
+  return {
+    id: hydrated.id,
+    threadId: threadIdNum,
+    content: hydrated.content,
+    createdAt: hydrated.createdAt,
+    senderId: hydrated.senderId,
+    receiverId: hydrated.receiverId,
+    sender: hydrated.sender,
+    metadata: stripConversationMetadata(hydrated.metadata),
+    savedForever: Boolean(hydrated.savedForever),
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Conversation settings: status, priority, owner and linked DMS records.
+// Any member may change these — they describe the work, not the membership.
+// Status/priority only apply to work conversations (customer, job, department).
+// ---------------------------------------------------------------------------
+export const updateThreadSettings = async ({
+  threadId,
+  actorId,
+  status,
+  priority,
+  assignedTo,
+  addLinks = [],
+  removeLinks = [],
+}) => {
+  assertMessagingWriteAccess();
+  await assertHubReady();
+  const threadIdNum = Number(threadId);
+  const actorUserId = normalizeUserId(actorId);
+  await assertThreadMember(threadIdNum, actorUserId);
+
+  const current = await fetchThreadRecord(threadIdNum);
+  if (!current) {
+    const error = new Error("Conversation not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+  const members = (current.participants || []).map(formatMemberRow);
+  const conversationType = deriveConversationType({
+    conversationType: current.conversation_type,
+    members,
+    uniqueHash: current.unique_hash,
+  });
+
+  const patch = {};
+  if (status !== undefined || priority !== undefined) {
+    if (!typeSupportsWorkflow(conversationType)) {
+      const error = new Error("Status and priority apply to customer, job and department conversations.");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+  if (status !== undefined) {
+    if (!STATUS_VALUES.includes(status)) throw new Error("Unknown status.");
+    patch.status = status;
+  }
+  if (priority !== undefined) {
+    if (!PRIORITY_VALUES.includes(priority)) throw new Error("Unknown priority.");
+    patch.priority = priority;
+  }
+  if (assignedTo !== undefined) {
+    const assigneeId = assignedTo === null ? null : normalizeUserId(assignedTo);
+    if (assigneeId && !members.some((member) => member.userId === assigneeId)) {
+      throw new Error("The owner must be a member of this conversation.");
+    }
+    patch.assigned_to = assigneeId;
+  }
+  if (addLinks.length || removeLinks.length) {
+    const removeKeys = new Set(sanitizeLinks(removeLinks).map(linkKey));
+    const kept = sanitizeLinks(current.linked_records || []).filter(
+      (link) => !removeKeys.has(linkKey(link))
+    );
+    patch.linked_records = sanitizeLinks([...kept, ...addLinks]);
+  }
+
+  if (Object.keys(patch).length) {
+    const { error } = await dbClient
+      .from("message_threads")
+      .update(patch)
+      .eq("thread_id", threadIdNum);
+    if (error) throw error;
+  }
+
+  return getThreadSnapshotForUser(threadIdNum, actorUserId);
+};
+
+// Per-member notification level: all | mentions | none.
+export const setMemberNotificationLevel = async ({ threadId, userId, level }) => {
+  assertMessagingWriteAccess();
+  await assertHubReady();
+  if (!NOTIFICATION_LEVEL_VALUES.includes(level)) {
+    const error = new Error("Unknown notification level.");
+    error.statusCode = 400;
+    throw error;
+  }
+  const threadIdNum = Number(threadId);
+  const userIdNum = normalizeUserId(userId);
+  await assertThreadMember(threadIdNum, userIdNum);
+  const { error } = await dbClient
+    .from("message_thread_members")
+    .update({ notification_level: level })
+    .eq("thread_id", threadIdNum)
+    .eq("user_id", userIdNum);
+  if (error) throw error;
+  return getThreadSnapshotForUser(threadIdNum, userIdNum);
 };
 
 export const markMessageSaved = async ({ messageId, threadId = null, saved = true }) => {

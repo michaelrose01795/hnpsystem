@@ -1,6 +1,25 @@
 // file location: src/features/website/data/team.js
-// The Humphries & Parks team — 21 members across Management, Sales,
+//
+// The Meet the Team block on /website — 19 members across Management, Sales,
 // Aftersales and Admin. Photo URLs sourced from humphriesandparks.net.
+//
+// Code-owned: these two arrays are the ONE place the block comes from. The
+// public page ignores website_team_members / website_team_departments
+// entirely (see codeOwnedContent.js).
+//
+//   - someone joins   append an object to `team` with a `department` that
+//                     matches a `teamDepartments` id
+//   - someone leaves  delete their object — nothing else to update
+//   - a department    add or remove it in `teamDepartments`; a department
+//                     with no members left is not rendered at all, and with
+//                     no members anywhere the whole block comes off the page
+//   - reorder         move the objects; groups render in teamDepartments
+//                     order, members in the order written under each
+//
+// teamDepartments fields: id (matches team[].department), label (the heading).
+// team fields: id (stable React key), department, name, role, photo (URL —
+// a CDN link or a file in /public referenced from the site root). A member
+// with no photo renders as a name-and-role card rather than a broken image.
 
 export const teamDepartments = [
   { id: "management", label: "Management" },
@@ -11,8 +30,6 @@ export const teamDepartments = [
 
 export const team = [
   // ---------- Management ----------
-  { id: "marcus-joy", department: "management", name: "Marcus Joy", role: "Managing Director",
-    photo: "https://images.67degreescdn.co.uk/9gtLp2VPLmAx6eU_Vii3JKkRgv4=/377x278/smart/144/6/163828378061a63a045e1b6_marcusjoy.jpg" },
   { id: "owen-mcgahan", department: "management", name: "Owen McGahan", role: "General Manager",
     photo: "https://images.67degreescdn.co.uk/9YvT70mHGHzEo4P1n6fhd3eHhb4=/377x278/smart/144/6/163828375261a639e8a4715_owenmcgahan.jpg" },
   { id: "sam-kj", department: "management", name: "Sam Kingsland-Joy", role: "Director",
@@ -35,8 +52,6 @@ export const team = [
     photo: "https://images.67degreescdn.co.uk/I82-IyIRgQqsSi3LTq92HROJ-9M=/377x278/smart/144/6/1695282787650bf663b35e8_richardstockwell.jpg" },
   { id: "sophie-basham", department: "sales", name: "Sophie Basham", role: "Used Car Buyer",
     photo: "https://images.67degreescdn.co.uk/yepaeLzKYPRHKbH9vnORp5YAfSs=/377x278/smart/144/6/1699362198654a359641e85_sophiebteam.jpg" },
-  { id: "joelly-blyth", department: "sales", name: "Joelly Blyth", role: "Vehicle Progressor",
-    photo: "https://images.67degreescdn.co.uk/EBdUjb9jI1bx4tyCZmQXOYjyyPg=/377x278/smart/144/6/adcf15d2c869b841e549_joellymeettheteam.png" },
   { id: "mark-copping", department: "sales", name: "Mark Copping", role: "Sales Executive",
     photo: "https://images.67degreescdn.co.uk/D0Ps3JE4UeSU_uqij7xIBma9ZWY=/377x278/smart/144/6/b3d3238d773ae5c4c079_markcoppingmeetteam.png" },
 

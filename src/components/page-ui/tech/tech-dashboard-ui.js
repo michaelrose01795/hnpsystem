@@ -18,7 +18,7 @@ export default function TechsDashboardUi(props) {
     detailLabelStyle,
     emphasizedSectionSurfaceStyle,
     formatClockInLabel,
-    getStatusBadgeStyle,
+    getStatusBadgeTone,
     handleStartJob,
     isClockedIn,
     jobsListStyle,
@@ -283,7 +283,7 @@ export default function TechsDashboardUi(props) {
                 color: "var(--text-1)"
               }}>{job.makeModel || "Vehicle details missing"}</td>
                     <td>
-                      <span className="app-table-action-btn tech-dashboard-status-bubble" style={getStatusBadgeStyle(job.status)}>{job.status}</span>
+                      <span className={`app-badge app-badge--${getStatusBadgeTone(job.status)}`}>{job.status}</span>
                     </td>
                   </tr>)}
                 </tbody>

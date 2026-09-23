@@ -10,7 +10,9 @@ import {
   StaffPagination,
 } from "@/components/ui";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { STAFF_STYLE_REVIEW_STATUSES } from "@/lib/staff-style-review/auditParser";
 import { buildCodexPrompt } from "@/lib/staff-style-review/codexPrompt";
 import { buildReviewContext, storeReviewContext } from "@/lib/staff-style-review/reviewContext";
@@ -61,14 +63,16 @@ function TableCellText({ children }) {
   return <span style={TABLE_CELL_TEXT_STYLE} title={text}>{text}</span>;
 }
 
-function SelectFilter({ label, value, onChange, options }) {
+function SelectFilter({ label, id, value, onChange, options }) {
   return (
-    <DropdownField
-      label={label}
-      value={value}
-      onChange={onChange}
-      options={[{ value: "", label: "All" }, ...options]}
-    />
+    <FilterField label={label} htmlFor={id}>
+      <DropdownField
+        id={id}
+        value={value}
+        onChange={onChange}
+        options={[{ value: "", label: "All" }, ...options]}
+      />
+    </FilterField>
   );
 }
 
@@ -507,9 +511,28 @@ export default function StaffStyleReviewPage() {
 
       <StaffFilterBar
         actions={
-          <Button type="button" variant="secondary" onClick={() => { setSearch(""); setFilters(EMPTY_FILTERS); setPage(1); }}>
-            Reset filters
-          </Button>
+          <>
+            <FilterButton
+              activeCount={Object.values(filters).filter(Boolean).length}
+              onClear={() => { setFilters(EMPTY_FILTERS); setPage(1); }}
+            >
+              <SelectFilter label="Category" id="style-review-filter-category" value={filters.category} onChange={setFilter("category")} options={options.categories} />
+              <SelectFilter label="Route" id="style-review-filter-route" value={filters.route} onChange={setFilter("route")} options={options.routes} />
+              <SelectFilter label="Source File" id="style-review-filter-source-file" value={filters.sourceFile} onChange={setFilter("sourceFile")} options={options.sourceFiles} />
+              <SelectFilter label="Feature Area" id="style-review-filter-feature-area" value={filters.featureArea} onChange={setFilter("featureArea")} options={options.featureAreas} />
+              <SelectFilter label="Review Status" id="style-review-filter-review-status" value={filters.reviewStatus} onChange={setFilter("reviewStatus")} options={STAFF_STYLE_REVIEW_STATUSES} />
+              <SelectFilter
+                label="Partial Adoption"
+                id="style-review-filter-partial-adoption"
+                value={filters.partialAdoption}
+                onChange={setFilter("partialAdoption")}
+                options={[{ value: "true", label: "Partial adoption only" }, { value: "false", label: "No partial adoption note" }]}
+              />
+            </FilterButton>
+            <Button type="button" variant="secondary" onClick={() => { setSearch(""); setFilters(EMPTY_FILTERS); setPage(1); }}>
+              Reset filters
+            </Button>
+          </>
         }
       >
         <label>
@@ -522,17 +545,6 @@ export default function StaffStyleReviewPage() {
             placeholder="ID, route, section, issue, source or note"
           />
         </label>
-        <SelectFilter label="Category" value={filters.category} onChange={setFilter("category")} options={options.categories} />
-        <SelectFilter label="Route" value={filters.route} onChange={setFilter("route")} options={options.routes} />
-        <SelectFilter label="Source file" value={filters.sourceFile} onChange={setFilter("sourceFile")} options={options.sourceFiles} />
-        <SelectFilter label="Feature area" value={filters.featureArea} onChange={setFilter("featureArea")} options={options.featureAreas} />
-        <SelectFilter label="Review status" value={filters.reviewStatus} onChange={setFilter("reviewStatus")} options={STAFF_STYLE_REVIEW_STATUSES} />
-        <SelectFilter
-          label="Partial adoption"
-          value={filters.partialAdoption}
-          onChange={setFilter("partialAdoption")}
-          options={[{ value: "true", label: "Partial adoption only" }, { value: "false", label: "No partial adoption note" }]}
-        />
       </StaffFilterBar>
 
       <LayerTheme>
@@ -652,15 +664,10 @@ function FragmentRow({ finding, destination, onNavigate, onReview }) {
         <td>
           <div className="app-layout-toolbar-row app-toolbar--action">
             {destination && (
-              <button
-                type="button"
-                className="app-table-action-btn app-table-action-btn--ghost"
-                onClick={onNavigate}
-                aria-label={`Open ${destination}`}
-                title={`Open ${destination}`}
-              >
-                ↗
-              </button>
+              <SymbolButton
+                symbol="open"
+                label={`Open ${destination}`}
+                onClick={onNavigate} />
             )}
           </div>
         </td>

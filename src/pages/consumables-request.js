@@ -41,15 +41,6 @@ const cardStyle = {
   textAlign: "center"
 };
 
-const tableHeaderStyle = {
-  textAlign: "left", // Left align headers for readability
-  color: "var(--text-1)", // High-contrast header colour for readability
-  fontSize: "0.8rem", // Smaller uppercase header text
-  textTransform: "uppercase", // Uppercase for header emphasis
-  letterSpacing: "0.08em", // Add tracking to uppercase text
-  padding: "8px" // Space around header labels
-};
-
 const fieldLabelStyle = {
   fontSize: "0.78rem",
   fontWeight: 700,
@@ -453,7 +444,7 @@ const TechConsumableRequestPage = () => {
 
   }
 
-  return <TechConsumableRequestPageUi view="section2" addStockItemToSelection={addStockItemToSelection} addingTemporaryItem={addingTemporaryItem} applyStockSearch={applyStockSearch} clearStockSearch={clearStockSearch} createTemporaryStockItem={createTemporaryStockItem} DevLayoutSection={DevLayoutSection} fieldLabelStyle={fieldLabelStyle} filteredRequests={filteredRequests} findStockItemByName={findStockItemByName} handleStockSearchKeyDown={handleStockSearchKeyDown} isMobile={isMobile} loadingRequests={loadingRequests} openSendPopup={openSendPopup} pageWrapperStyle={pageWrapperStyle} removeSelectedStockItem={removeSelectedStockItem} requestCardMetaGridStyle={requestCardMetaGridStyle} requestCardStyle={requestCardStyle} requestError={requestError} requestForm={requestForm} requestMonth={requestMonth} requestPanelStyle={requestPanelStyle} requestsToolbarStyle={requestsToolbarStyle} SearchBar={SearchBar} searchTerm={searchTerm} selectedStockItems={selectedStockItems} sendError={sendError} sendLoading={sendLoading} sendSelectedByEmail={sendSelectedByEmail} sendSelectedToRequests={sendSelectedToRequests} setRequestForm={setRequestForm} setRequestMonth={setRequestMonth} setSearchTerm={setSearchTerm} setShowSendPopup={setShowSendPopup} setShowStockList={setShowStockList} showSendPopup={showSendPopup} showStockList={showStockList} statusBadgeStyles={statusBadgeStyles} stockError={stockError} stockItems={stockItems} stockLoading={stockLoading} stockMatches={stockMatches} successMessage={successMessage} tableHeaderStyle={tableHeaderStyle} updateSelectedStockQuantity={updateSelectedStockQuantity} visibleStockItems={visibleStockItems} />;
+  return <TechConsumableRequestPageUi view="section2" addStockItemToSelection={addStockItemToSelection} addingTemporaryItem={addingTemporaryItem} applyStockSearch={applyStockSearch} clearStockSearch={clearStockSearch} createTemporaryStockItem={createTemporaryStockItem} DevLayoutSection={DevLayoutSection} fieldLabelStyle={fieldLabelStyle} filteredRequests={filteredRequests} findStockItemByName={findStockItemByName} handleStockSearchKeyDown={handleStockSearchKeyDown} isMobile={isMobile} loadingRequests={loadingRequests} openSendPopup={openSendPopup} pageWrapperStyle={pageWrapperStyle} removeSelectedStockItem={removeSelectedStockItem} requestCardMetaGridStyle={requestCardMetaGridStyle} requestCardStyle={requestCardStyle} requestError={requestError} requestForm={requestForm} requestMonth={requestMonth} requestPanelStyle={requestPanelStyle} requestsToolbarStyle={requestsToolbarStyle} SearchBar={SearchBar} searchTerm={searchTerm} selectedStockItems={selectedStockItems} sendError={sendError} sendLoading={sendLoading} sendSelectedByEmail={sendSelectedByEmail} sendSelectedToRequests={sendSelectedToRequests} setRequestForm={setRequestForm} setRequestMonth={setRequestMonth} setSearchTerm={setSearchTerm} setShowSendPopup={setShowSendPopup} setShowStockList={setShowStockList} showSendPopup={showSendPopup} showStockList={showStockList} statusBadgeStyles={statusBadgeStyles} stockError={stockError} stockItems={stockItems} stockLoading={stockLoading} stockMatches={stockMatches} successMessage={successMessage} updateSelectedStockQuantity={updateSelectedStockQuantity} visibleStockItems={visibleStockItems} />;
 
 
 

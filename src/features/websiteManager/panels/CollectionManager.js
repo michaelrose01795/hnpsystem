@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import SectionEditor from "../editors/SectionEditor";
 import {
   fetchSection,
@@ -45,6 +46,14 @@ export default function CollectionManager({
   emptyTitle,
   emptyDescription,
   onChanged,
+  // Show only some of the rows (the Preview tab's New / Used tabs each list
+  // one half of the vehicles collection). Ordering still works on the whole
+  // list, so a hidden row never loses its place.
+  filterRow,
+  // Fired on every keystroke in the open editor, as (draft, rowId). The
+  // Preview tab forwards it into the embedded site so the change shows
+  // before it is saved.
+  onDraftChange,
 }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +143,12 @@ export default function CollectionManager({
     }
   };
 
+  // Rows to draw, each kept with its index in the FULL list so reordering
+  // stays correct while a filter is on.
+  const visibleRows = rows
+    .map((row, idx) => ({ row, idx }))
+    .filter(({ row }) => (filterRow ? filterRow(row) : true));
+
   const hasStatus = schema.fields.some((f) => f.name === "status");
   const singular = (addLabel || schema.label).replace(/s$/i, "").toLowerCase();
 
@@ -162,6 +177,12 @@ export default function CollectionManager({
           initialValue={editing.row || {}}
           onSave={handleSave}
           onCancel={close}
+          onChange={
+            onDraftChange
+              ? (draft) =>
+                  onDraftChange(draft, editing.mode === "edit" ? editing.row?.id : null)
+              : undefined
+          }
           onDelete={
             editing.mode === "edit" && !lockedIds.includes(editing.row?.id)
               ? handleDelete
@@ -171,9 +192,17 @@ export default function CollectionManager({
         />
       )}
 
-      {loading && <p className="website-manager__meta">Loading…</p>}
+      {loading && (
+        <div className="website-manager__table-scroll">
+          <TableSkeleton
+            columns={["#", "Item", ...columns.map((col) => col.label), ...(hasStatus ? ["Status"] : []), "Actions"]}
+            rows={4}
+            label="Loading items"
+          />
+        </div>
+      )}
 
-      {!loading && rows.length === 0 && (
+      {!loading && visibleRows.length === 0 && (
         <EmptyState
           variant="bare"
           title={emptyTitle || `No ${schema.label.toLowerCase()} yet`}
@@ -184,7 +213,7 @@ export default function CollectionManager({
         />
       )}
 
-      {!loading && rows.length > 0 && (
+      {!loading && visibleRows.length > 0 && (
         <div className="website-manager__table-scroll">
           <table className="app-data-table">
             <thead>
@@ -199,9 +228,9 @@ export default function CollectionManager({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, idx) => (
+              {visibleRows.map(({ row, idx }, position) => (
                 <tr key={row.id}>
-                  <td className="website-manager__cell-muted">{idx + 1}</td>
+                  <td className="website-manager__cell-muted">{position + 1}</td>
                   <td className="website-manager__cell-strong">
                     {schema.rowLabel ? schema.rowLabel(row) : row.id}
                   </td>

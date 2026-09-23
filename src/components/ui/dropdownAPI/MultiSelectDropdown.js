@@ -92,12 +92,35 @@ export default function MultiSelectDropdown({
     [normalizedOptions, searchTerm]
   );
 
-  const toggle = () => {
-    if (disabled) return;
-    setIsOpen((prev) => !prev);
+  const close = () => setIsOpen(false);
+
+  // Whether the menu was already open when the current press began. Read at
+  // mousedown, i.e. BEFORE the press focuses the input — the input opens the
+  // menu on focus, so by click time isOpen is always true and a click could
+  // never tell "open it" from "close it". The chevron used to toggle closed
+  // and then refocus the input, which reopened it in the same breath.
+  const wasOpenAtPressRef = useRef(false);
+  const handleControlMouseDown = () => {
+    wasOpenAtPressRef.current = isOpen;
   };
 
-  const close = () => setIsOpen(false);
+  // One press on any part of the control (search field, chevron, padding)
+  // toggles the menu: closes it if it was open, otherwise opens it and puts
+  // the caret in the search field.
+  const handleControlPress = (event) => {
+    event.stopPropagation();
+    if (disabled) return;
+    // Clicking into a search that is being typed is moving the caret, not
+    // asking to close.
+    const isCaretMove = event.currentTarget === controlInputRef.current && searchTerm !== "";
+    if (wasOpenAtPressRef.current && !isCaretMove) {
+      wasOpenAtPressRef.current = false;
+      close();
+      return;
+    }
+    setIsOpen(true);
+    controlInputRef.current?.focus();
+  };
 
   const handleOptionToggle = (option) => {
     if (disabled) return;
@@ -254,7 +277,8 @@ export default function MultiSelectDropdown({
       <div
         className="dropdown-api__control searchbar-api"
         style={dropdownTriggerButtonStyle}
-        onClick={() => controlInputRef.current?.focus()}
+        onMouseDown={handleControlMouseDown}
+        onClick={handleControlPress}
       >
         <input
           id={controlId}
@@ -267,10 +291,7 @@ export default function MultiSelectDropdown({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           onFocus={open}
-          onClick={(event) => {
-            event.stopPropagation();
-            open();
-          }}
+          onClick={handleControlPress}
           onChange={(event) => {
             setSearchTerm(event.target.value);
             if (!isOpen) open();
@@ -292,11 +313,10 @@ export default function MultiSelectDropdown({
           type="button"
           className="dropdown-api__chevron multiselect-dropdown-api__chevron"
           aria-label={isOpen ? "Close options" : "Open options"}
-          onClick={(event) => {
-            event.stopPropagation();
-            toggle();
-            setTimeout(() => controlInputRef.current?.focus(), 0);
-          }}
+          // Keep focus where it is on press, so pressing the chevron to close
+          // does not refocus the input (which would reopen the menu).
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={handleControlPress}
           disabled={disabled}
         >
           <DropdownChevron />

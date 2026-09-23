@@ -29,3 +29,63 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline-offset: 2px;
   box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.42) !important;
 }
+
+/* ========================================================================== */
+/* === Responsive sweep, 2026-09 — breakpoints: src/styles/breakpoints.js  === */
+/* ========================================================================== */
+/*
+ * .app-modal / .app-drawer already size fluidly — width: min(640px, 100%) —
+ * so they do not overflow a phone. What they do wrong at the floor is spend
+ * scarce width and height on chrome: a 16px inset on all four sides plus the
+ * panel's own card padding leaves a very small content box, and the footer's
+ * right-aligned buttons wrap into a ragged two-line block.
+ *
+ * Below the floor a modal therefore becomes a near-full-screen sheet, which is
+ * also the platform-native expectation for a phone dialog.
+ *
+ * The base rules live in staffglobal.css, which is imported after the families,
+ * so these selectors carry an extra :is() to out-specify them rather than
+ * relying on source order (and without adding !important — this family is at
+ * its important-budget of 2).
+ */
+@media (max-width: 375px) {
+  html.staff-scope :is(.app-modal, .app-drawer) {
+    padding: 0;
+  }
+
+  html.staff-scope :is(.app-modal) .app-modal__panel,
+  html.staff-scope :is(.app-modal) .app-modal__panel--sm,
+  html.staff-scope :is(.app-modal) .app-modal__panel--lg {
+    width: 100%;
+    max-width: 100%;
+    /* Full height, minus the safe-area inset so the sheet clears the home
+       indicator on a notched device (the viewport meta sets viewport-fit=cover,
+       so the inset is real and must be accounted for here). */
+    max-height: calc(100dvh - env(safe-area-inset-bottom));
+    border-radius: 0;
+  }
+
+  html.staff-scope :is(.app-drawer) .app-drawer__panel {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Stacked full-width actions. A right-aligned row of 2-3 buttons wraps into
+     an uneven block on a phone; full-width rows are unambiguous and each one
+     keeps the 44px touch target. Direct children only, so a button group
+     nested in the footer keeps its own internal layout. */
+  html.staff-scope :is(.app-modal__footer, .app-drawer__footer) > * {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  /* The header is a title plus a close control; once it wraps, space-between
+     leaves the close button stranded on its own line. */
+  html.staff-scope :is(.app-modal__header, .app-drawer__header) {
+    gap: var(--space-2);
+  }
+}

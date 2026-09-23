@@ -20,7 +20,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import dynamic from "next/dynamic";
 import Head from "next/head";
-import React, { useEffect } from "react"; // import React helpers
+import React, { useEffect, useState } from "react"; // import React helpers
 
 // Self-hosted Inter via next/font (no FOUT, no external request at runtime).
 // We need the resolved font-family string (next/font generates a hashed name
@@ -43,6 +43,7 @@ const APP_BROWSER_TITLE = "H&P DMS";
 import { SessionProvider } from "next-auth/react"; // import NextAuth session provider
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import { ThemeProvider } from "@/styles/themeProvider";
 import { setPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
@@ -60,7 +61,10 @@ import StaffProviders from "@/components/App/StaffProviders";
 // only add a chunk request to the critical path — and a boundary that arrives
 // late cannot catch a crash during the first render it is supposed to guard.
 import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
+import WebsiteRouteBoundary from "@/features/website/errors/WebsiteRouteBoundary";
+import { isFrameworkErrorRoute } from "@/features/website/errors/websiteErrorRoutes";
 import Layout from "@/components/Layout";
+import useWorkspaceEmbed from "@/features/workspaces/useWorkspaceEmbed";
 
 // Keep staff-only providers, shell code and global listeners out of the login
 // route's initial JavaScript. These chunks are requested only when rendered.
@@ -71,7 +75,15 @@ const GlobalTableShells = dynamic(() => import("@/components/App/GlobalTableShel
 const DevLayoutOverlayRoot = dynamic(() => import("@/components/dev-layout-overlay/DevLayoutOverlayRoot"), { ssr: false });
 const StaffStyleReviewHighlighter = dynamic(() => import("@/components/dev-platform/StaffStyleReviewHighlighter"), { ssr: false });
 const GlobalTooltip = dynamic(() => import("@/components/ui/GlobalTooltip"), { ssr: false });
+const GlobalContextMenu = dynamic(() => import("@/components/ui/GlobalContextMenu"), { ssr: false });
+// UK English spelling / grammar underlines + Tab word prediction on every prose field.
+const GlobalTypingAssist = dynamic(() => import("@/components/ui/typingAssist/GlobalTypingAssist"), { ssr: false });
 const ActivityTracker = dynamic(() => import("@/components/activity/ActivityTracker"), { ssr: false });
+// Customer help chat (bottom-right on /website). Its own chunk, requested only on website routes.
+const WebsiteHelpChat = dynamic(() => import("@/features/website/components/WebsiteHelpChat"), { ssr: false });
+// Runs only inside an extra workspace frame (multi-workspace shell) — reports
+// the frame's page/focus to the host and follows the host's sidebar.
+const WorkspaceEmbedBridge = dynamic(() => import("@/features/workspaces/WorkspaceEmbedBridge"), { ssr: false });
 // StaffProviders and Layout are imported STATICALLY (at the top of this file) and
 // must stay that way.
 //
@@ -110,6 +122,23 @@ const defaultGetLayout = (page) => <Layout>{page}</Layout>;
 
 const isWebsitePath = (path = "") => path === "/website" || path.startsWith("/website/");
 const isTrackingPath = (path = "") => path === "/tracking" || path.startsWith("/tracking/");
+
+// Which route-scoped stylesheets a /tracking page needs. Each tracker page
+// uses exactly one feature sheet (Loan car uses none — its styles are global),
+// and every sheet is render-blocking on a first paint, so a page links only its
+// own. Any other /tracking address keeps all three. Keep in step with
+// TRACKING_ROUTE_CSS in _document.js.
+const ALL_TRACKING_CSS = ["trackingMap", "trackingStock", "trackingEquipment"];
+const TRACKING_ROUTE_CSS = {
+  "/tracking/key-parking": ["trackingMap"],
+  "/tracking/loan-car": [],
+  "/tracking/oil-stock": ["trackingStock"],
+  "/tracking/equipment-tools": ["trackingEquipment"],
+};
+const trackingCssFor = (path = "") => {
+  if (!isTrackingPath(path)) return [];
+  return TRACKING_ROUTE_CSS[path.replace(/\/$/, "").toLowerCase()] || ALL_TRACKING_CSS;
+};
 
 // Add a route-scoped stylesheet once, if it is not already in the document.
 //
@@ -165,10 +194,33 @@ function AppWrapper({ Component, pageProps }) {
     isPublicVhcReportPath(pathname) ||
     isPublicVhcReportPath(asPathClean) ||
     Component.hideGlobalNotesWidget === true;
-  const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
-  const isTrackingRoute = isTrackingPath(pathname) || isTrackingPath(asPathWithoutQuery);
+  // The framework error pages (/404, /500, /_error) render under their own route
+  // pattern, and the prerendered /404 and /500 do not even carry the real URL in
+  // asPath. Read the browser address for those, so an error on a /website address
+  // keeps the website scope + stylesheet instead of flipping to staff styling.
+  const onFrameworkErrorRoute = isFrameworkErrorRoute(pathname);
+  const [errorRouteBrowserPath, setErrorRouteBrowserPath] = useState("");
+  useEffect(() => {
+    setErrorRouteBrowserPath(onFrameworkErrorRoute ? window.location.pathname : "");
+  }, [onFrameworkErrorRoute, asPath]);
+  const isWebsiteRoute =
+    isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery) || isWebsitePath(errorRouteBrowserPath);
+  const trackingCssKeys = (isTrackingPath(pathname) ? trackingCssFor(pathname) : trackingCssFor(asPathWithoutQuery)).join(",");
+  // /website-manager embeds website pages in an iframe with ?preview=…; the help
+  // chat stays off those previews.
+  const isWebsitePreviewEmbed = isWebsiteRoute && /[?&]preview=/.test(asPath);
   const isDevRoute = pathname === "/dev" || pathname.startsWith("/dev/") || asPathWithoutQuery === "/dev" || asPathWithoutQuery.startsWith("/dev/");
+  // Login routes get their own body class. The login page's viewport rules used
+  // to hang off `body:has(.login-page-wrapper)`; a `:has()` whose subject is the
+  // root makes EVERY DOM mutation in the app a candidate for a document-wide
+  // style recalculation, which showed up as dropped frames in any animation
+  // that also touches the DOM (see the sidebar collapse). A route class costs
+  // nothing and matches exactly the same pages.
+  const isLoginRoute = pathname === "/login" || pathname === "/loginPresentation";
+  // Extra workspace frame: the host document already shows the notes widget.
+  const embeddedWorkspaceId = useWorkspaceEmbed();
   const hideNotesWidget =
+    Boolean(embeddedWorkspaceId) ||
     isPresentationRoute ||
     isCustomerRoute ||
     isPublicVhcReportRoute ||
@@ -206,7 +258,7 @@ function AppWrapper({ Component, pageProps }) {
     // Attach the route's own stylesheet before flipping its scope class, so the
     // rules exist by the time the selector they hang off starts matching.
     if (isWebsiteRoute) ensureRouteScopedStylesheet("website");
-    if (isTrackingRoute) ensureRouteScopedStylesheet("trackingMap");
+    if (trackingCssKeys) trackingCssKeys.split(",").forEach(ensureRouteScopedStylesheet);
     const root = document.documentElement;
     const body = document.body;
     root.classList.toggle("website-scope", isWebsiteRoute);
@@ -215,8 +267,9 @@ function AppWrapper({ Component, pageProps }) {
     body?.classList.toggle("website-scope", isWebsiteRoute);
     body?.classList.toggle("staff-scope", !isWebsiteRoute);
     body?.classList.toggle("dev-scope", isDevRoute);
+    body?.classList.toggle("login-scope", isLoginRoute);
     return undefined;
-  }, [isWebsiteRoute, isTrackingRoute, isDevRoute]);
+  }, [isWebsiteRoute, trackingCssKeys, isDevRoute, isLoginRoute]);
 
   // Install / restore the /api/* fetch interceptor based on whether we're on a
   // /presentation/* route. Real routes always get the original window.fetch.
@@ -333,8 +386,9 @@ function AppWrapper({ Component, pageProps }) {
       // away the error that caused the developer to open F12 in the first
       // place; the [NAV] banner below is enough to find where a nav starts.
       native.log(
-        `%c[NAV] ${sourceLabel} → ${href || "(unknown)"}`,
-        "color:#fff;background:#0b66ff;padding:2px 6px;border-radius:3px;font-weight:600"
+        "%c%s",
+        "color:#fff;background:#0b66ff;padding:2px 6px;border-radius:3px;font-weight:600",
+        `[NAV] ${sourceLabel} → ${href || "(unknown)"}`
       );
       native.log(
         `[NAV] from ${window.location.pathname}${window.location.search}`
@@ -673,6 +727,11 @@ function AppWrapper({ Component, pageProps }) {
   // customer pages off those listeners entirely. The route boundary below also
   // reads it, to pick the softer customer recovery copy.
   const isCustomerFacingSurface = isWebsiteRoute || isCustomerRoute || isPublicVhcReportRoute;
+  // The dev layout overlay also runs on /website, but only once the provider
+  // has confirmed a dev user. Customers never have a staff session, so the
+  // overlay chunk is never requested on a real customer visit.
+  const { canAccess: canUseDevLayoutOverlay } = useDevLayoutOverlay();
+  const showDevLayoutOverlay = !isCustomerFacingSurface || (isWebsiteRoute && canUseDevLayoutOverlay);
 
   // ROUTE-LEVEL ERROR BOUNDARY.
   //
@@ -689,7 +748,13 @@ function AppWrapper({ Component, pageProps }) {
   // The `key` resets the boundary on navigation, so a crash screen never
   // survives into the next route. The app-shell boundary remains above as the
   // last resort for a crash in the layout itself.
-  const pageElement = (
+  // /website pages recover on the customer site's own error page (custglobal.css)
+  // rather than the staff recovery card.
+  const pageElement = isWebsiteRoute ? (
+    <WebsiteRouteBoundary key={pathname}>
+      <Component {...pageProps} />
+    </WebsiteRouteBoundary>
+  ) : (
     <RouteBoundary
       key={pathname}
       variant={isCustomerFacingSurface ? "customer" : "staff"}
@@ -706,12 +771,19 @@ function AppWrapper({ Component, pageProps }) {
       <RouteProgressBar />
       {!isCustomerFacingSurface && <GlobalDraftPersistence />}
       {!isCustomerFacingSurface && <GlobalTableShells />}
-      <PageAccessGuard pathname={pathname} />
+      <PageAccessGuard pathname={pathname} isWorkspaceFrame={Boolean(embeddedWorkspaceId)} />
+      {embeddedWorkspaceId && <WorkspaceEmbedBridge workspaceId={embeddedWorkspaceId} />}
       {getLayout(pageElement)}
       {!hideNotesWidget && <GlobalNotesWidget />}
-      <CookieBanner />
+      {/* Consent is the host window's; a workspace frame would stack a second banner. */}
+      {!embeddedWorkspaceId && <CookieBanner />}
+      {isWebsiteRoute && !isWebsitePreviewEmbed && <WebsiteHelpChat />}
       <GlobalTooltip />
-      {!isCustomerFacingSurface && <DevLayoutOverlayRoot />}
+      {/* In-app right-click menu — replaces the browser native context menu app-wide. */}
+      <GlobalContextMenu />
+      {/* Spelling, grammar and Tab prediction on text boxes. Off in the Website Manager preview iframe. */}
+      {!isWebsitePreviewEmbed && <GlobalTypingAssist />}
+      {showDevLayoutOverlay && <DevLayoutOverlayRoot />}
       {/* Renders nothing unless a Staff Style Review "Search" link put
           ?styleReviewHighlight= on the URL. */}
       {!isCustomerFacingSurface && <StaffStyleReviewHighlighter />}
@@ -723,7 +795,7 @@ function AppWrapper({ Component, pageProps }) {
 // changes (or on first paint). Pages reachable via the user's filtered
 // sidebar/topbar are allowed; everything else is rejected. See
 // src/lib/auth/pageAccess.js for the rule.
-function PageAccessGuard({ pathname }) {
+function PageAccessGuard({ pathname, isWorkspaceFrame = false }) {
   const router = useRouter();
   const { user, loading, sidebarAccessReady } = useUser();
   useEffect(() => {
@@ -747,12 +819,14 @@ function PageAccessGuard({ pathname }) {
       // running on the broader role-derived set, and remembering then could
       // store a route the snapshot goes on to deny. `pathname` is the route
       // PATTERN the check needs; asPath is the real URL worth returning to.
-      if (sidebarAccessReady) rememberStaffRoute(user.id, router.asPath);
+      // An extra workspace frame is not where the user "is", so it never
+      // overwrites the route the main window would return to.
+      if (sidebarAccessReady && !isWorkspaceFrame) rememberStaffRoute(user.id, router.asPath);
       return;
     }
     if (router.pathname === "/newsfeed") return;
     router.replace("/newsfeed");
-  }, [pathname, user, loading, router, sidebarAccessReady]);
+  }, [pathname, user, loading, router, sidebarAccessReady, isWorkspaceFrame]);
   return null;
 }
 
@@ -764,7 +838,12 @@ function LightweightLoginScope({ children }) {
     root.classList.add("staff-scope");
     body.classList.remove("website-scope", "dev-scope");
     body.classList.add("staff-scope");
+    // The login page's viewport rules hang off this class (they used to use
+    // `body:has(.login-page-wrapper)` — see the note in staffglobal.css). /login
+    // renders outside AppWrapper, so it sets the class itself.
+    body.classList.add("login-scope");
     restoreFetchInterceptor();
+    return () => body.classList.remove("login-scope");
   }, []);
 
   return children;

@@ -4,15 +4,21 @@ import { useRouter } from "next/router";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import { useDevLayoutRegistry } from "@/context/DevLayoutRegistryContext";
 import {
-  DEV_OVERLAY_FALLBACK_GROUPS,
+  DEV_OVERLAY_SURFACE_WEBSITE,
   getCategoryById,
   getCategoryIdForSectionType,
+  getDevOverlayFallbackGroups,
 } from "@/lib/dev-layout/categories";
 import {
   ensureDevLayoutSectionSources,
   findDevLayoutSectionSources,
   isDevLayoutSectionSourcesReady,
 } from "@/lib/dev-layout/sectionSourceMap";
+import {
+  ensureWebsiteClassSources,
+  findWebsiteClassSources,
+  isWebsiteClassSourcesReady,
+} from "@/lib/dev-layout/websiteClassSourceMap";
 import styles from "@/components/dev-layout-overlay/DevLayoutOverlay.module.css";
 
 // Default visibility thresholds (match the original overlay behaviour). Small
@@ -203,7 +209,7 @@ const getSectionTextPreview = (node) => {
   return parts.join(" ").trim().slice(0, 180);
 };
 
-const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode = "", isShell = false, backgroundToken = "", source = "explicit" }) => {
+const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode = "", isShell = false, backgroundToken = "", source = "explicit", cardContext = "" }) => {
   const computed = window.getComputedStyle(node);
   const rect = node.getBoundingClientRect();
   const textPreview = getSectionTextPreview(node);
@@ -233,6 +239,7 @@ const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode =
     pageContext: normalizeContextText(getClosestDataValue(node, "data-dev-page")),
     tabContext: normalizeContextText(activeTabLabel || getClosestDataValue(node, "data-dev-tab")),
     cardContext: normalizeContextText(
+      cardContext ||
       node.getAttribute("data-dev-card-section") ||
       node.getAttribute("data-dev-area") ||
       getClosestDataValue(node, "data-dev-card-section") ||
@@ -390,6 +397,156 @@ const addScopedAutoCardSections = ({ sectionsByKey, route, activeCategoryIds }) 
   });
 };
 
+// ----- Website surface (/website, custglobal.css) ---------------------------
+//
+// Customer pages register no data-dev-section-key, so everything on /website is
+// detected structurally, on every scan, for whatever route is mounted:
+//   1. the website fallback selectors in lib/dev-layout/categories.js
+//      (landmarks such as <main>/<section>/<article> plus the ws-* card classes)
+//   2. a style heuristic — any element that paints like a card (rounded, with a
+//      fill / shadow, padded or clipping) — so a NEW page, section or card shows
+//      up without anyone registering it.
+// Keys come from the element's own class / id rather than a running index, so a
+// copied locator still names the same card after siblings are added.
+const WEBSITE_CLASS_PREFIX = /^(?:ws|website)-/;
+
+const WEBSITE_AUTO_CARD_SKIP_TAGS = new Set([
+  "html", "body", "head", "script", "style", "noscript", "template", "br", "hr",
+  "button", "input", "select", "textarea", "option", "optgroup",
+  "img", "picture", "source", "video", "audio", "canvas", "iframe", "svg", "path",
+  "table", "thead", "tbody", "tfoot", "tr", "td", "th",
+]);
+
+// Elements that are usually text or chips. Only counted as cards when tall.
+const WEBSITE_INLINE_TAGS = new Set(["a", "span", "label", "li", "p", "dt", "dd", "h1", "h2", "h3", "h4", "h5", "h6"]);
+
+const getWebsiteClassTokens = (node) =>
+  String(node?.getAttribute?.("class") || "")
+    .split(/\s+/)
+    .filter((token) => WEBSITE_CLASS_PREFIX.test(token));
+
+const getWebsiteRouteSlug = (route) =>
+  sanitizeKey(String(route || "").split(/[?#]/)[0].replace(/\//g, "-")) || "website";
+
+const getWebsiteNodeDescriptor = (node) => {
+  const classTokens = getWebsiteClassTokens(node);
+  // Prefer the block class over a BEM modifier (ws-section over ws-section--tint).
+  const classToken = classTokens.find((token) => !token.includes("--")) || classTokens[0] || "";
+  const tagName = String(node?.tagName || "").toLowerCase();
+  return sanitizeKey([classToken || tagName, node?.id || ""].filter(Boolean).join("-"));
+};
+
+const getWebsiteCardContext = (node) => {
+  const heading = node.querySelector?.("h1, h2, h3, h4");
+  return truncateLabel(
+    heading?.textContent || node.getAttribute?.("aria-label") || node.getAttribute?.("data-presentation") || "",
+    60
+  );
+};
+
+const isWebsiteAutoCardCandidate = (node, viewportHeight) => {
+  if (!node || node.nodeType !== 1) return false;
+  const tagName = String(node.tagName || "").toLowerCase();
+  if (WEBSITE_AUTO_CARD_SKIP_TAGS.has(tagName)) return false;
+  if (node.getAttribute("data-dev-section-key") || node.getAttribute("role") === "button") return false;
+  if (node.closest("[data-dev-disable-fallback='1']") || isOverlayInternalNode(node)) return false;
+
+  // Geometry first: it is far cheaper than a computed-style read, and it keeps
+  // the heuristic to what is on (or about to scroll onto) the screen.
+  const rect = node.getBoundingClientRect();
+  if (!isMeasurableRect(rect, 96, 40)) return false;
+  if (WEBSITE_INLINE_TAGS.has(tagName) && rect.height < 64) return false;
+  if (rect.bottom < -viewportHeight || rect.top > viewportHeight * 2) return false;
+
+  const computed = window.getComputedStyle(node);
+  const display = String(computed.display || "");
+  if (display === "contents" || display === "none" || computed.visibility === "hidden") return false;
+  if (px(computed.borderTopLeftRadius) <= 0) return false;
+
+  const paintsSurface =
+    !isTransparentBackground(computed.backgroundColor) ||
+    (computed.backgroundImage && computed.backgroundImage !== "none") ||
+    (computed.boxShadow && computed.boxShadow !== "none");
+  if (!paintsSurface) return false;
+
+  const maxPadding = Math.max(px(computed.paddingTop), px(computed.paddingRight), px(computed.paddingBottom), px(computed.paddingLeft));
+  return maxPadding >= 8 || computed.overflow !== "visible";
+};
+
+const addWebsiteSections = ({ sectionsByKey, route, activeCategoryIds }) => {
+  const routeSlug = getWebsiteRouteSlug(route);
+  const seenNodes = new Set(Array.from(sectionsByKey.values()).map((entry) => entry.node));
+  const keyCounts = new Map();
+
+  const addNode = (node, type) => {
+    if (seenNodes.has(node)) return;
+    const baseKey = sanitizeKey(`${routeSlug}-${getWebsiteNodeDescriptor(node)}`) || `${routeSlug}-section`;
+    const count = (keyCounts.get(baseKey) || 0) + 1;
+    keyCounts.set(baseKey, count);
+    const key = count > 1 ? `${baseKey}-${count}` : baseKey;
+    if (sectionsByKey.has(key)) return;
+    seenNodes.add(node);
+
+    const explicitParent = node.parentElement?.closest?.("[data-dev-section-key]");
+    // Trust the matching group's type. classifyType's substring sniffing is
+    // tuned for staff class names and misreads customer ones (ws-*-table…).
+    const resolvedType = node.getAttribute("data-dev-section-type") || type;
+    sectionsByKey.set(
+      key,
+      buildEntry({
+        key,
+        node,
+        route,
+        order: sectionsByKey.size,
+        type: resolvedType,
+        parentKey: explicitParent ? sanitizeKey(explicitParent.getAttribute("data-dev-section-key")) : "",
+        isShell: resolvedType.includes("shell"),
+        cardContext: getWebsiteCardContext(node),
+        source: "website",
+      })
+    );
+  };
+
+  getDevOverlayFallbackGroups(DEV_OVERLAY_SURFACE_WEBSITE).forEach(({ selector, type, minWidth, minHeight, categoryId }) => {
+    if (activeCategoryIds && categoryId && !activeCategoryIds.has(categoryId)) return;
+    let nodes = [];
+    try {
+      nodes = Array.from(document.querySelectorAll(selector));
+    } catch {
+      return;
+    }
+    nodes.forEach((node) => {
+      if (!node || node.getAttribute("data-dev-section-key")) return;
+      if (node.closest("[data-dev-disable-fallback='1']") || isOverlayInternalNode(node)) return;
+      if (!isMeasurableRect(node.getBoundingClientRect(), minWidth, minHeight)) return;
+      addNode(node, type);
+    });
+  });
+
+  if (activeCategoryIds && !activeCategoryIds.has("section")) return;
+
+  const viewportHeight = window.innerHeight || 0;
+  Array.from(document.body.querySelectorAll("*")).forEach((node) => {
+    if (seenNodes.has(node)) return;
+    if (!isWebsiteAutoCardCandidate(node, viewportHeight)) return;
+    addNode(node, "content-card");
+  });
+};
+
+// Resolve a /website card to the file that renders it, via its most specific
+// customer class (the class used in the fewest files wins).
+const buildWebsiteSourceText = (section) => {
+  let best = null;
+  getWebsiteClassTokens(section.node).forEach((token) => {
+    const hits = findWebsiteClassSources(token);
+    if (hits.length && (!best || hits.length < best.hits.length)) best = { token, hits };
+  });
+  if (!best) return "";
+  const [first] = best.hits;
+  const more = best.hits.length > 1 ? ` (+${best.hits.length - 1} more)` : "";
+  return `${first.file}:${first.line} via .${best.token}${more}`;
+};
+
 const numberSections = (sections) => {
   const childrenByParent = new Map();
   sections.forEach((entry) => {
@@ -512,7 +669,8 @@ const isDevOverlayToggleControl = (node) => {
   return accessibleName === "overlay" || accessibleName === "toggle dev layout overlay";
 };
 
-const scanSections = ({ route, registry, activeCategoryIds }) => {
+const scanSections = ({ route, registry, activeCategoryIds, surface }) => {
+  const isWebsiteSurface = surface === DEV_OVERLAY_SURFACE_WEBSITE;
   const sectionsByKey = new Map();
   const explicitNodes = Array.from(document.querySelectorAll("[data-dev-section-key]")).filter(
     (node) => !isOverlayInternalNode(node)
@@ -574,8 +732,9 @@ const scanSections = ({ route, registry, activeCategoryIds }) => {
   // We only scan categories that are currently active — this prevents runaway
   // work and, critically, stops the overlay from recursively detecting its
   // own buttons/inputs/dialogs when those categories are toggled off.
+  // The website surface runs its own structural scan (addWebsiteSections).
   let fallbackIndex = 0;
-  DEV_OVERLAY_FALLBACK_GROUPS.forEach(({ selector, type, minWidth, minHeight, categoryId }) => {
+  (isWebsiteSurface ? [] : getDevOverlayFallbackGroups(surface)).forEach(({ selector, type, minWidth, minHeight, categoryId }) => {
     if (activeCategoryIds && categoryId && !activeCategoryIds.has(categoryId)) return;
     Array.from(document.querySelectorAll(selector)).forEach((node) => {
       if (!node || node.getAttribute("data-dev-section-key")) return;
@@ -608,7 +767,11 @@ const scanSections = ({ route, registry, activeCategoryIds }) => {
     });
   });
 
-  addScopedAutoCardSections({ sectionsByKey, route, activeCategoryIds });
+  if (isWebsiteSurface) {
+    addWebsiteSections({ sectionsByKey, route, activeCategoryIds });
+  } else {
+    addScopedAutoCardSections({ sectionsByKey, route, activeCategoryIds });
+  }
 
   addTableSubSections({ sectionsByKey, route });
 
@@ -622,15 +785,24 @@ const scanSections = ({ route, registry, activeCategoryIds }) => {
   });
 
   const byKey = new Map(sections.map((entry) => [entry.key, entry]));
+  // Website entries carry no key attribute in the DOM, so nest them by the
+  // nearest detected ancestor element instead (page > section > card > …).
+  const byNode = isWebsiteSurface ? new Map(sections.map((entry) => [entry.node, entry])) : null;
 
   sections.forEach((section) => {
     if (section.parentKey && byKey.has(section.parentKey)) return;
+    if (byNode) section.parentKey = "";
 
     let parentNode = section.node.parentElement;
     while (parentNode) {
       const parentKey = sanitizeKey(parentNode.getAttribute?.("data-dev-section-key") || "");
       if (parentKey && parentKey !== section.key && byKey.has(parentKey)) {
         section.parentKey = parentKey;
+        break;
+      }
+      const parentEntry = byNode?.get(parentNode);
+      if (parentEntry && parentEntry.key !== section.key) {
+        section.parentKey = parentEntry.key;
         break;
       }
       parentNode = parentNode.parentElement;
@@ -781,8 +953,13 @@ const buildSectionContextText = (section) => {
   return [page, tab, card].filter(Boolean).join(" > ");
 };
 
-const buildSectionLocatorText = (section, route) => {
+const buildSectionLocatorText = (section, route, surface) => {
+  const isWebsiteSurface = surface === DEV_OVERLAY_SURFACE_WEBSITE;
   const sources = findDevLayoutSectionSources(section.key);
+  const fileText = sources.length
+    ? formatSourceEntry(sources[0])
+    : (isWebsiteSurface && buildWebsiteSourceText(section)) || "not mapped";
+  const websiteClasses = isWebsiteSurface ? getWebsiteClassTokens(section.node).slice(0, 4) : [];
   const name = humanizeKey(section.key) || "Unnamed section";
   const contextText = buildSectionContextText(section);
   const relations = [];
@@ -796,7 +973,8 @@ const buildSectionLocatorText = (section, route) => {
   return [
     `${name} | ${section.number || "?"}`,
     `key ${section.key}`,
-    `file ${sources.length ? formatSourceEntry(sources[0]) : "not mapped"}`,
+    `file ${fileText}`,
+    websiteClasses.length ? `class ${websiteClasses.join(" ")}` : isWebsiteSurface ? `tag ${section.tagName}` : "",
     `route ${section.route || route}`,
     contextText ? `where ${contextText}` : "",
     relations.length ? relations.join(" | ") : "",
@@ -808,6 +986,9 @@ export default function DevLayoutOverlay() {
   const { registeredSections, syncComputedSections } = useDevLayoutRegistry();
   const {
     canAccess,
+    surface,
+    isWebsiteSurface,
+    websiteTrigger,
     hydrated,
     enabled,
     toggleEnabled,
@@ -845,6 +1026,18 @@ export default function DevLayoutOverlay() {
       cancelled = true;
     };
   }, [sourceMapReady]);
+  // Same on-demand pattern for the /website class map, loaded only on that surface.
+  const [websiteClassMapReady, setWebsiteClassMapReady] = useState(isWebsiteClassSourcesReady());
+  useEffect(() => {
+    if (!isWebsiteSurface || websiteClassMapReady) return undefined;
+    let cancelled = false;
+    void ensureWebsiteClassSources().then(() => {
+      if (!cancelled) setWebsiteClassMapReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isWebsiteSurface, websiteClassMapReady]);
   const rafRef = useRef(null);
   const panelRef = useRef(null);
 
@@ -872,7 +1065,7 @@ export default function DevLayoutOverlay() {
 
     const update = () => {
       const route = router.asPath || router.pathname || "/";
-      const scanned = scanSections({ route, registry: registeredSections, activeCategoryIds });
+      const scanned = scanSections({ route, registry: registeredSections, activeCategoryIds, surface });
       setSections(scanned);
       syncComputedSections(route, scanned);
     };
@@ -921,19 +1114,20 @@ export default function DevLayoutOverlay() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canAccess, enabled, router.asPath, router.pathname, registeredSections, syncComputedSections, activeCategorySignature]);
+  }, [canAccess, enabled, router.asPath, router.pathname, registeredSections, syncComputedSections, activeCategorySignature, surface]);
 
   const overlayBounds = useMemo(() => {
-    if (fullScreen) {
+    // /website has no staff chrome to keep clear of: the whole viewport is page.
+    if (fullScreen || isWebsiteSurface) {
       return getViewportBounds();
     }
     return resolveOverlayBounds(sections);
-  }, [fullScreen, sections]);
+  }, [fullScreen, isWebsiteSurface, sections]);
   const scopedSections = useMemo(() => {
     const withinBounds = (section) => {
       if (!overlayBounds) return true;
       if (!isRectIntersectingBounds(section.rect, overlayBounds)) return false;
-      if (!fullScreen && (isSidebarSection(section) || isTopbarSection(section))) {
+      if (!fullScreen && !isWebsiteSurface && (isSidebarSection(section) || isTopbarSection(section))) {
         return false;
       }
       return true;
@@ -947,7 +1141,7 @@ export default function DevLayoutOverlay() {
       if (categoryId && !isCategoryActive(categoryId)) return false;
       return true;
     });
-  }, [sections, overlayBounds, fullScreen, isCategoryActive]);
+  }, [sections, overlayBounds, fullScreen, isWebsiteSurface, isCategoryActive]);
   const stats = useMemo(() => {
     const issueCount = scopedSections.filter((section) => section.issueTags.length > 0).length;
     const shellCount = scopedSections.filter((section) => section.isShell).length;
@@ -997,12 +1191,12 @@ export default function DevLayoutOverlay() {
   const handleSectionCopy = useCallback(async (section) => {
     if (!section?.key) return;
     setSelectedSectionKey(section.key);
-    const locatorText = buildSectionLocatorText(section, currentRoute);
+    const locatorText = buildSectionLocatorText(section, currentRoute, surface);
     const copied = await copyText(`"${locatorText}"`);
     if (copied) {
       setCopiedSectionKey(section.key);
     }
-  }, [currentRoute]);
+  }, [currentRoute, surface]);
 
   const resolveSectionAtPoint = useCallback((clientX, clientY) => {
     const matches = scopedSections.filter((section) => {
@@ -1035,6 +1229,8 @@ export default function DevLayoutOverlay() {
       if (panelRef.current?.contains(event.target)) return null;
       if (event.target?.closest?.("[data-dev-overlay-label='1']")) return null;
       if (isDevOverlayToggleControl(event.target)) return null;
+      // Controls that must keep working while inspecting (the /website Dev link).
+      if (event.target?.closest?.("[data-dev-overlay-passthrough='1']")) return null;
       return resolveSectionAtPoint(event.clientX, event.clientY);
     };
 
@@ -1093,6 +1289,7 @@ export default function DevLayoutOverlay() {
         ref={panelRef}
         className={`${styles.panel} ${isJobCardsCreateRoute ? styles.panelCreate : ""}`.trim()}
         data-dev-overlay-internal="1"
+        data-dev-overlay-surface={surface}
         data-dev-section-key="dev-overlay-controls-panel"
         data-dev-section-type="page-shell"
         role="dialog"
@@ -1117,7 +1314,7 @@ export default function DevLayoutOverlay() {
                 {enabled ? "Overlay controls" : "Overlay disabled"}
               </h3>
               <p className={styles.subtitle}>
-                Route {currentRoute} - {stats.total} section{stats.total === 1 ? "" : "s"} detected
+                {isWebsiteSurface ? "Website route" : "Route"} {currentRoute} - {stats.total} section{stats.total === 1 ? "" : "s"} detected
               </p>
             </div>
           </div>
@@ -1135,6 +1332,7 @@ export default function DevLayoutOverlay() {
                 role="switch"
                 aria-checked={enabled}
                 aria-label="Toggle overlay master"
+                data-dev-overlay-control="switch"
                 className={`${styles.switch} ${enabled ? styles.switchOn : ""}`.trim()}
                 onClick={toggleEnabled}
               />
@@ -1161,21 +1359,25 @@ export default function DevLayoutOverlay() {
               </div>
             </div>
 
-            <div className={styles.controlRow}>
-              <span className={styles.controlLabel}>
-                <span>Full-screen scope</span>
-                <span className={styles.controlHint}>Extend overlay over the sidebar/topbar</span>
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={fullScreen}
-                aria-label="Toggle full-screen overlay"
-                className={`${styles.switch} ${fullScreen ? styles.switchOn : ""}`.trim()}
-                onClick={toggleFullScreen}
-                disabled={!enabled}
-              />
-            </div>
+            {/* /website always covers the full viewport — there is no staff chrome to scope around. */}
+            {!isWebsiteSurface && (
+              <div className={styles.controlRow}>
+                <span className={styles.controlLabel}>
+                  <span>Full-screen scope</span>
+                  <span className={styles.controlHint}>Extend overlay over the sidebar/topbar</span>
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={fullScreen}
+                  aria-label="Toggle full-screen overlay"
+                  data-dev-overlay-control="switch"
+                  className={`${styles.switch} ${fullScreen ? styles.switchOn : ""}`.trim()}
+                  onClick={toggleFullScreen}
+                  disabled={!enabled}
+                />
+              </div>
+            )}
 
             <div className={styles.controlRow}>
               <span className={styles.controlLabel}>
@@ -1187,6 +1389,7 @@ export default function DevLayoutOverlay() {
                 role="switch"
                 aria-checked={legacyMarkers}
                 aria-label="Toggle dotted markers"
+                data-dev-overlay-control="switch"
                 className={`${styles.switch} ${legacyMarkers ? styles.switchOn : ""}`.trim()}
                 onClick={toggleLegacyMarkers}
                 disabled={!enabled}
@@ -1255,6 +1458,7 @@ export default function DevLayoutOverlay() {
                     type="button"
                     role="switch"
                     aria-checked={active}
+                    data-dev-overlay-control="category"
                     className={`${styles.categoryPill} ${active ? styles.categoryPillActive : ""}`.trim()}
                     onClick={(event) => {
                       // Shift-click solos this category; plain click toggles it.
@@ -1285,6 +1489,11 @@ export default function DevLayoutOverlay() {
         </div>
 
         <p className={styles.footerHint} data-dev-section-key="dev-overlay-controls-footer" data-dev-section-type="section-card">
+          {isWebsiteSurface ? (
+            <>
+              Type <kbd>{websiteTrigger}</kbd> toggle |{" "}
+            </>
+          ) : null}
           <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> toggle |{" "}
           <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> cycle mode |{" "}
           <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> trace mode |{" "}
@@ -1305,8 +1514,12 @@ export default function DevLayoutOverlay() {
   return (
     <>
       <div
-        className={`${styles.root} ${styles.rootInspect} ${isJobCardsCreateRoute ? styles.rootCreate : ""}`.trim()}
+        // On /website the layer covers the whole viewport, including the top
+        // bar's Overlay / Dev buttons, so it lets clicks through; the document
+        // capture listeners above still select sections and block the page.
+        className={`${styles.root} ${styles.rootInspect} ${isJobCardsCreateRoute ? styles.rootCreate : ""} ${isWebsiteSurface ? styles.rootPassThrough : ""}`.trim()}
         data-dev-overlay-internal="1"
+        data-dev-overlay-surface={surface}
         aria-hidden="false"
         style={overlayStyle}
         onClick={handleOverlayClick}
@@ -1371,6 +1584,7 @@ export default function DevLayoutOverlay() {
               role="button"
               tabIndex={0}
               data-dev-overlay-label="1"
+              data-dev-overlay-selected={isSelected ? "1" : undefined}
               aria-label={`Copy locator for section ${section.number || "unknown"} ${section.key}`}
               title={`Copy locator: ${section.key}`}
               className={`${styles.label} ${styles.labelButton} ${isSelected ? styles.labelSelected : ""} ${isJobCardsCreateRoute ? styles.labelCreate : ""} ${sidebarSection ? styles.labelSidebar : ""} ${sidebarColumnSection ? styles.labelSidebarColumn : ""} ${primarySidebarSection ? styles.labelSidebarPrimary : ""} ${mode !== "labels" && !isJobCardsCreateRoute ? styles.labelDetails : ""}`}

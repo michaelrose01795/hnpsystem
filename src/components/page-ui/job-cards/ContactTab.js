@@ -23,6 +23,7 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import StatusMessage from "@/components/ui/StatusMessage";
+import { SectionSkeleton, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import MultiSelectDropdown from "@/components/ui/dropdownAPI/MultiSelectDropdown";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
@@ -854,7 +855,28 @@ function CommunicationHistorySection({ messages = [], loading = false }) {
         <span className="app-badge app-badge--neutral">{ordered.length}</span>
       </div>
 
-      {loading && <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.7 }}>Loading history…</p>}
+      {loading && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label="Loading history"
+          style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+        >
+          <SkeletonKeyframes />
+          {[0, 1, 2].map((index) => (
+            <div key={index} style={{ display: "flex", gap: "12px" }}>
+              <SkeletonBlock width="12px" height="12px" borderRadius="var(--radius-pill)" />
+              <SectionSkeleton
+                titleWidth={index % 2 ? "140px" : "180px"}
+                subtitleWidth={index % 2 ? "70%" : "85%"}
+                rows={1}
+                style={{ flex: 1 }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && ordered.length === 0 && (
         <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.7 }}>
@@ -925,7 +947,23 @@ function QuickMessageTemplatesSection({
         </Button>
       </div>
 
-      {loading && <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.7 }}>Loading templates…</p>}
+      {loading && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label="Loading templates"
+          style={{
+            display: "grid",
+            gap: "12px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          }}
+        >
+          {[0, 1, 2, 3].map((index) => (
+            <SectionSkeleton key={index} titleWidth={index % 2 ? "55%" : "70%"} subtitleWidth="90px" rows={0} />
+          ))}
+        </div>
+      )}
 
       {!loading && templates.length === 0 && (
         <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.7 }}>No templates available.</p>

@@ -108,10 +108,16 @@ export default function NewsPostCard({
         clamped={isCompact || post.content.length > 600}
       />
 
-      {post.links.length > 0 && <NewsRecordLinks links={post.links} />}
+      {(post.links.length > 0 || (!isCompact && post.attachments.length > 0)) && (
+        // Records and files share one line here too, each row only as wide as
+        // its own content, so a post with one of each costs one row.
+        <div className="app-news-section-row">
+          {post.links.length > 0 && <NewsRecordLinks links={post.links} />}
 
-      {!isCompact && post.attachments.length > 0 && (
-        <NewsAttachments attachments={post.attachments} />
+          {!isCompact && post.attachments.length > 0 && (
+            <NewsAttachments attachments={post.attachments} />
+          )}
+        </div>
       )}
 
       {post.requiresAck && (

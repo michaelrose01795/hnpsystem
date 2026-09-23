@@ -14,13 +14,27 @@ import {
   getWorkspaceGroupRoles,
   getWorkspaceGroups,
   getWorkspacePageCatalog,
+  migrateSidebarLayout,
   normalizeWorkspaceRole,
+  SIDEBAR_LAYOUT_MIGRATION,
 } from "@/config/workspace/manifest";
 
-export const SIDEBAR_ACCESS_VERSION = 5;
+// Owned by the saved-layout migration in departments.js: bumping it there is
+// what marks every older stored layout for upgrade.
+export const SIDEBAR_ACCESS_VERSION = SIDEBAR_LAYOUT_MIGRATION.version;
 export const SIDEBAR_ACCESS_UPDATED_EVENT = "hnp:sidebar-access-updated";
 const RETIRED_SIDEBAR_MODULE_KEYS = new Set(["department-account"]);
 const STANDALONE_SIDEBAR_HREFS = new Set(["/profile"]);
+
+// Preserve dashboard assignments in saved layouts after the route moves.
+const DASHBOARD_ROUTE_MOVES = new Map([
+  ["/mobile/dashboard", "/dashboard/mobile"],
+  ["/tech/dashboard", "/dashboard/tech"],
+]);
+const normalizeSidebarHref = (value) => {
+  const href = String(value || "").trim();
+  return DASHBOARD_ROUTE_MOVES.get(href) || SIDEBAR_LAYOUT_MIGRATION.hrefMoves[href] || href;
+};
 
 const managedGroups = () =>
   getAllSidebarItems().filter(
@@ -32,7 +46,9 @@ const slugifyKey = (value, fallback = "module") => {
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    // Runs are already collapsed to one dash above, so a single-dash trim is
+    // enough and stays linear on hostile input.
+    .replace(/^-|-$/g, "");
   return slug || fallback;
 };
 
@@ -55,7 +71,7 @@ function normaliseModules(rawModules) {
       : [];
     const items = [];
     for (const rawHref of rawItems) {
-      const href = String(rawHref || "").trim();
+      const href = normalizeSidebarHref(rawHref);
       if (
         !catalogHrefs.has(href) ||
         STANDALONE_SIDEBAR_HREFS.has(href) ||
@@ -97,7 +113,7 @@ export function syncAssignedStandardModules(modules) {
       : Array.isArray(module?.items)
       ? module.items.map((item) => typeof item === "string" ? item : item?.href)
       : [];
-    const items = sourceItems.filter((href) => {
+    const items = sourceItems.map(normalizeSidebarHref).filter((href) => {
       if (
         !knownHrefs.has(href) ||
         STANDALONE_SIDEBAR_HREFS.has(href) ||
@@ -179,7 +195,7 @@ export function normalizeSidebarAccess(raw) {
   const suppliedItems = Array.isArray(value.items) ? value.items : flattenModuleItems(modules);
   if (!Array.isArray(suppliedItems)) return undefined;
 
-  const items = [...new Set(suppliedItems.filter((href) => knownHrefs.has(href)))];
+  const items = [...new Set(suppliedItems.map(normalizeSidebarHref).filter((href) => knownHrefs.has(href)))];
   const knownGroupKeys = new Set(managedGroups().map((group) => group.department));
   const groups = Array.isArray(value.groups)
     ? [...new Set(value.groups.filter((key) => knownGroupKeys.has(key)))]
@@ -191,7 +207,7 @@ export function normalizeSidebarAccess(raw) {
     const stored = value.itemOrder?.[group.department];
     if (Array.isArray(stored)) {
       const groupHrefs = new Set(group.items.map((item) => item.href));
-      const order = [...new Set(stored.filter((href) => groupHrefs.has(href)))];
+      const order = [...new Set(stored.map(normalizeSidebarHref).filter((href) => groupHrefs.has(href)))];
       if (order.length > 0) itemOrder[group.department] = order;
     }
     const validModuleKeys = new Set((WORKSPACE_MODULES[group.department] || []).map((module) => module.key));
@@ -204,7 +220,7 @@ export function normalizeSidebarAccess(raw) {
   const catalogHrefs = new Set(getWorkspacePageCatalog().map((item) => item.href));
   if (value.pagePlacements && typeof value.pagePlacements === "object") {
     for (const [href, moduleKey] of Object.entries(value.pagePlacements)) {
-      const normalizedHref = String(href || "").trim();
+      const normalizedHref = normalizeSidebarHref(href);
       const normalizedModuleKey = slugifyKey(moduleKey, "");
       if (catalogHrefs.has(normalizedHref) && normalizedModuleKey) {
         pagePlacements[normalizedHref] = normalizedModuleKey;
@@ -225,7 +241,18 @@ export function normalizeSidebarAccess(raw) {
 }
 
 export function materializeSidebarAccess(role, currentValue) {
-  const normalized = normalizeSidebarAccess(currentValue);
+  // Upgrade an older saved layout for this user's role first (new pages joined
+  // to the modules they hold), exactly as the live sidebar renders it, so the
+  // editor never shows — or re-saves — a layout the user no longer sees.
+  let parsed = currentValue;
+  if (typeof currentValue === "string") {
+    try {
+      parsed = JSON.parse(currentValue);
+    } catch {
+      parsed = currentValue; // normalizeSidebarAccess rejects it below
+    }
+  }
+  const normalized = normalizeSidebarAccess(migrateSidebarLayout(parsed, [role].filter(Boolean)));
   if (normalized?.modules?.length > 0) return normalized;
 
   const defaults = getRoleDefaultSidebarAccess(role);

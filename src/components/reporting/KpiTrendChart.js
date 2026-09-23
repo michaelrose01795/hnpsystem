@@ -14,7 +14,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { ChartSkeleton } from "@/components/ui/LoadingSkeleton";
 import { formatKpiValue } from "@/utils/reporting/formatKpiValue";
 
 // Catmull-Rom → cubic-bezier smoothing for a rounded, premium line path.
@@ -87,6 +87,10 @@ function useTweenedNumber(target, animate) {
   return val;
 }
 
+// Loading placeholder for the trend graph. Shape and behaviour come entirely
+// from the shared chart skeleton (<ChartSkeleton>, styled in
+// src/styles/families/loaders.css) — rendered inside the real .report-graph
+// surface so padding, radius and backdrop match the loaded chart exactly.
 function TrendSkeleton({ height, sectionKey, parentKey, sectionType }) {
   return (
     <DevLayoutSection
@@ -98,28 +102,7 @@ function TrendSkeleton({ height, sectionKey, parentKey, sectionType }) {
       data-dev-text-preview="Loading KPI trend chart"
       style={{ minHeight: height + 58 }}
     >
-      <SkeletonKeyframes />
-      <div className="report-graph__plot" style={{ height, display: "flex", alignItems: "stretch" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, width: "100%", padding: "8px 4px 2px" }}>
-          {[46, 70, 54, 82, 62, 92, 58, 76].map((barHeight, index) => (
-            <SkeletonBlock
-              key={index}
-              width="100%"
-              height={`${Math.max(24, Math.round((barHeight / 100) * height))}px`}
-              borderRadius="var(--radius-sm)"
-              style={{ flex: "1 1 0", opacity: index % 2 === 0 ? 0.78 : 0.95 }}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="report-graph__panel">
-        <SkeletonBlock width="62px" height="12px" borderRadius="999px" />
-        <span style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-          <SkeletonBlock width="46px" height="10px" borderRadius="999px" />
-          <SkeletonBlock width="88px" height="18px" borderRadius="999px" />
-        </span>
-        <SkeletonBlock width="62px" height="12px" borderRadius="999px" />
-      </div>
+      <ChartSkeleton height={height} label="Loading KPI trend chart" />
     </DevLayoutSection>
   );
 }

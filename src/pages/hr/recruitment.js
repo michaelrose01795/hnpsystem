@@ -1,11 +1,15 @@
 // file location: src/pages/hr/recruitment.js
 import React from "react";
 import { SectionCard } from "@/components/Section";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import HrRecruitmentUi from "@/components/page-ui/hr/hr-recruitment-ui"; // Extracted presentation layer.
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
 import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+import LayerSurface from "@/components/ui/LayerSurface"; // third rung: nested inside a --theme SectionCard, so --surface (CLAUDE.md 3.0a-2)
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
+import EmptyState from "@/components/ui/EmptyState"; // canonical empty-state primitive
+import HrSummaryStrip from "@/components/HR/HrSummaryStrip"; // shared at-a-glance metric strip
+import { buildRecruitmentSummary } from "@/lib/hr/hrTabSummaries";
 
 export function getServerSideProps() {
   return redirectToHrManagerTab("recruitment");
@@ -13,6 +17,17 @@ export function getServerSideProps() {
 
 function RecruitmentContent() {
   const showPresentationMock = isPresentationMode();
+
+  // Hoisted so the summary strip and the tables below always read the same
+  // rows — no card can drift out of step with the headline numbers.
+  const openRoles = showPresentationMock ? hrPresentationData.openRoles : [];
+  const recruitmentTasks = showPresentationMock ? hrPresentationData.recruitmentTasks : [];
+  const applicants = showPresentationMock ? hrPresentationData.applicants : [];
+  const onboardingTasks = showPresentationMock ? hrPresentationData.onboardingTasks : [];
+
+  // Pipeline health: how many roles are live, where the candidates have got to,
+  // and what is still blocking a start date.
+  const summary = buildRecruitmentSummary({ openRoles, applicants, recruitmentTasks, onboardingTasks });
 
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
@@ -22,25 +37,16 @@ function RecruitmentContent() {
         </p>
       </header>
 
-      <DevLayoutSection
-        as="section"
-        sectionKey="hr-recruitment-row-1"
-        parentKey="hr-manager-tab-recruitment"
-        sectionType="section-shell"
-        shell
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--page-stack-gap)"
-        }}>
+      <HrSummaryStrip items={summary} parentKey="hr-manager-tab-recruitment" />
+
+      <SectionCard layer="theme"
+        sectionKey="hr-recruitment-open-roles" parentKey="hr-manager-tab-recruitment"
+        title="Open Roles"
+        subtitle="Current postings and their pipeline status">
         
-        <SectionCard
-          sectionKey="hr-recruitment-card-1" parentKey="hr-recruitment-row-1"
-          title="Open Roles"
-          subtitle="Current postings and their pipeline status">
-          
-          {showPresentationMock ? (
-            <div style={{ overflowX: "auto" }}>
+        {showPresentationMock ? (
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
               <table className="app-data-table">
                 <thead>
                   <tr>
@@ -51,7 +57,7 @@ function RecruitmentContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {hrPresentationData.openRoles.map((role) => (
+                  {openRoles.map((role) => (
                     <tr key={role.id}>
                       <td style={{ fontWeight: 600 }}>{role.title}</td>
                       <td>{role.department}</td>
@@ -61,21 +67,25 @@ function RecruitmentContent() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          ) : (
-            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-              TODO: Fetch job listings from Supabase recruitment table. Display role title, department, applicant count, pipeline stage, posted date, and a "New job listing" action.
-            </p>
-          )}
-        </SectionCard>
+            </DataTableShell>
+          </LayerSurface>
+        ) : (
+          <EmptyState
+            icon="📣"
+            title="No roles advertised"
+            description="Live postings appear here with their department, applicant count and pipeline stage."
+          />
+        )}
+      </SectionCard>
 
-        <SectionCard
-          sectionKey="hr-recruitment-card-2" parentKey="hr-recruitment-row-1"
-          title="Recruitment Tasks"
-          subtitle="Keep the hiring pipeline moving">
-          
-          {showPresentationMock ? (
-            <div style={{ overflowX: "auto" }}>
+      <SectionCard layer="theme"
+        sectionKey="hr-recruitment-tasks" parentKey="hr-manager-tab-recruitment"
+        title="Recruitment Tasks"
+        subtitle="Keep the hiring pipeline moving">
+        
+        {showPresentationMock ? (
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
               <table className="app-data-table">
                 <thead>
                   <tr>
@@ -86,7 +96,7 @@ function RecruitmentContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {hrPresentationData.recruitmentTasks.map((task) => (
+                  {recruitmentTasks.map((task) => (
                     <tr key={task.id}>
                       <td style={{ fontWeight: 600 }}>{task.description}</td>
                       <td>{task.role}</td>
@@ -96,80 +106,90 @@ function RecruitmentContent() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          ) : (
-            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-              TODO: Fetch recruitment tasks from Supabase. Display task descriptions linked to open roles with assign/complete actions.
-            </p>
-          )}
-        </SectionCard>
-      </DevLayoutSection>
+            </DataTableShell>
+          </LayerSurface>
+        ) : (
+          <EmptyState
+            icon="✅"
+            title="No hiring tasks"
+            description="Tasks attached to an open role — screening, scheduling, references — appear here with their owner."
+          />
+        )}
+      </SectionCard>
 
-      <SectionCard
-        sectionKey="hr-recruitment-card-3" parentKey="hr-manager-tab-recruitment"
+      <SectionCard layer="theme"
+        sectionKey="hr-recruitment-applicants-pipeline" parentKey="hr-manager-tab-recruitment"
         title="Applicants Pipeline"
         subtitle="Track candidates across the recruitment workflow">
         
         {showPresentationMock ? (
-          <div style={{ overflowX: "auto" }}>
-            <table className="app-data-table">
-              <thead>
-                <tr>
-                  <th>Applicant</th>
-                  <th>Role</th>
-                  <th>Stage</th>
-                  <th>Owner</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hrPresentationData.applicants.map((applicant) => (
-                  <tr key={applicant.id}>
-                    <td style={{ fontWeight: 600 }}>{applicant.name}</td>
-                    <td>{applicant.role}</td>
-                    <td>{applicant.stage}</td>
-                    <td>{applicant.owner}</td>
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Applicant</th>
+                    <th>Role</th>
+                    <th>Stage</th>
+                    <th>Owner</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {applicants.map((applicant) => (
+                    <tr key={applicant.id}>
+                      <td style={{ fontWeight: 600 }}>{applicant.name}</td>
+                      <td>{applicant.role}</td>
+                      <td>{applicant.stage}</td>
+                      <td>{applicant.owner}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTableShell>
+          </LayerSurface>
         ) : (
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch applicants from Supabase recruitment pipeline. Display applicant name, role applied for, current stage, last update, and hiring owner with import/export actions.
-          </p>
+          <EmptyState
+            icon="🧑"
+            title="No applicants in the pipeline"
+            description="Candidates appear here as they move through screening, interview and offer."
+          />
         )}
       </SectionCard>
 
-      <SectionCard
-        sectionKey="hr-recruitment-card-4" parentKey="hr-manager-tab-recruitment"
+      <SectionCard layer="theme"
+        sectionKey="hr-recruitment-onboarding-checklist" parentKey="hr-manager-tab-recruitment"
         title="Onboarding Checklist"
         subtitle="Tasks to complete once a candidate accepts an offer.">
         
         {showPresentationMock ? (
-          <div style={{ overflowX: "auto" }}>
-            <table className="app-data-table">
-              <thead>
-                <tr>
-                  <th>Task</th>
-                  <th>Owner</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hrPresentationData.onboardingTasks.map((task) => (
-                  <tr key={task.id}>
-                    <td style={{ fontWeight: 600 }}>{task.task}</td>
-                    <td>{task.owner}</td>
-                    <td>{task.status}</td>
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Task</th>
+                    <th>Owner</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {onboardingTasks.map((task) => (
+                    <tr key={task.id}>
+                      <td style={{ fontWeight: 600 }}>{task.task}</td>
+                      <td>{task.owner}</td>
+                      <td>{task.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </DataTableShell>
+          </LayerSurface>
         ) : (
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch onboarding checklist templates from Supabase. Display dynamic task list (IT access, PPE, induction, training) with completion toggles per new hire.
-          </p>
+          <EmptyState
+            icon="📦"
+            title="No onboarding checklist yet"
+            description="Once a candidate accepts, their IT access, PPE, induction and training tasks are tracked here."
+          />
         )}
       </SectionCard>
     </div>);

@@ -9,13 +9,14 @@ import { useUser } from "@/context/UserContext"; // shared authenticated user co
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { StatusTag } from "@/components/HR/MetricCard"; // HR UI components
 import { CalendarField } from "@/components/ui/calendarAPI";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
-import { SkeletonBlock, SkeletonMetricCard, SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
+import { SkeletonBlock, SkeletonKeyframes, SkeletonMetricCard, SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { calculateLeaveRequestDayTotals, normaliseLeaveDayType } from "@/lib/hr/leaveRequests";
 import {
@@ -1250,13 +1251,7 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
               Set overtime rules that auto-log hours on matching days. Period runs from the 26th to the 25th.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-1)", padding: "4px", flexShrink: 0 }}
-          >
-            ✕
-          </button>
+          <SymbolButton symbol="close" label="Close" onClick={onClose} />
         </div>
 
         {/* Smart summary strip — only shown when active rules exist */}
@@ -1288,7 +1283,13 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
 
         {/* Grouped rules list — click-to-edit, no Edit button */}
         {isLoading ? (
-          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-1)" }}>Loading rules…</div>
+          <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading rules" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {/* Mirrors the grouped rule rows (day list, hours, pattern) at their real height. */}
+            <SkeletonKeyframes />
+            {Array.from({ length: 3 }, (_, index) => (
+              <SkeletonBlock key={index} height="40px" borderRadius="var(--radius-sm)" />
+            ))}
+          </div>
         ) : grouped.length === 0 && !formMode ? (
           <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-1)", fontSize: "0.85rem" }}>
             <div style={{ marginBottom: "4px" }}>No recurring overtime rules set yet.</div>

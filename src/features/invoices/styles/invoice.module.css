@@ -2,19 +2,19 @@
 .invoiceShell { /* // outer container with padding and print friendly background */
   background: var(--surface); /* // match app surface color */
   border-radius: var(--radius-md); /* // soften corners */
-  padding: 24px; /* // internal spacing */
+  padding: var(--space-lg); /* // internal spacing */
   color: var(--text-1); /* // ensure readable text */
   display: flex; /* // use flex for vertical layout */
   flex-direction: column; /* // stack children vertically */
-  gap: 20px; /* // consistent spacing between sections */
+  gap: var(--space-6); /* // consistent spacing between sections */
 } /* // end invoiceShell */
 
 .companyHeader { /* // company info row */
   display: flex; /* // arrange children horizontally */
   justify-content: space-between; /* // separate company and print button */
   flex-wrap: wrap; /* // allow wrap for mobile */
-  gap: 16px; /* // spacing between columns */
-  padding-bottom: 16px; /* // spacing below content */
+  gap: var(--space-md); /* // spacing between columns */
+  padding-bottom: var(--space-md); /* // spacing below content */
 } /* // end companyHeader */
 
 .companyInfo { /* // container for company text */
@@ -34,7 +34,7 @@
 
 .printButton { /* // print button style */
   align-self: flex-start; /* // align to top */
-  padding: 10px 18px; /* // comfortable touch target */
+  padding: var(--space-2) var(--space-5); /* // comfortable touch target */
   border-radius: var(--radius-pill); /* // pill shape */
   border: none; /* // borderless button */
   background: var(--primary-selected); /* // accent background */
@@ -44,7 +44,7 @@
 } /* // end printButton */
 
 .primaryActionButton {
-  padding: 10px 18px;
+  padding: var(--space-2) var(--space-5);
   border-radius: var(--radius-pill);
   border: none;
   background: var(--primary-selected);
@@ -54,7 +54,7 @@
 }
 
 .secondaryActionButton {
-  padding: 10px 18px;
+  padding: var(--space-2) var(--space-5);
   border-radius: var(--radius-pill);
   border: var(--ghostbutton-ring);
   background: var(--surface);
@@ -66,12 +66,12 @@
 .headerGrid { /* // grid for invoice to/deliver to/job info */
   display: grid; /* // enable grid layout */
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* // responsive columns */
-  gap: 16px; /* // spacing between boxes */
+  gap: var(--space-md); /* // spacing between boxes */
 } /* // end headerGrid */
 
 .headerBox { /* // shared header card */
   border-radius: var(--radius-sm); /* // soft corners */
-  padding: 16px; /* // internal spacing */
+  padding: var(--space-md); /* // internal spacing */
   background: var(--theme); /* // themed inner-card layer (alternates with --surface shell) */
 } /* // end headerBox */
 
@@ -90,15 +90,15 @@
   font-size: 0.95rem; /* // comfortable size */
   display: flex; /* // flex column for spacing */
   flex-direction: column; /* // stack vertically */
-  gap: 4px; /* // spacing between lines */
+  gap: var(--space-xs); /* // spacing between lines */
 } /* // end headerList */
 
 .vehicleRow { /* // container for vehicle detail grid */
   display: grid; /* // grid layout */
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* // responsive columns */
-  gap: 12px; /* // spacing between columns */
+  gap: var(--space-3); /* // spacing between columns */
   border-radius: var(--radius-sm); /* // soft corners */
-  padding: 16px; /* // internal spacing — keep text off the card edge */
+  padding: var(--space-md); /* // internal spacing — keep text off the card edge */
   background: var(--theme); /* // themed inner-card layer */
 } /* // end vehicleRow */
 
@@ -116,10 +116,10 @@
 
 .requestBlock { /* // container for each request section */
   border-radius: var(--control-radius); /* // soft corners */
-  padding: 18px; /* // internal spacing — keep text off the card edge */
+  padding: var(--space-5); /* // internal spacing — keep text off the card edge */
   display: flex; /* // flex column reflow */
   flex-direction: column; /* // stack elements */
-  gap: 14px; /* // spacing */
+  gap: var(--space-4); /* // spacing */
   background: var(--theme); /* // themed inner-card layer */
 } /* // end requestBlock */
 
@@ -127,106 +127,28 @@
   display: flex; /* // align horizontally */
   flex-wrap: wrap; /* // allow wrap on small screens */
   justify-content: space-between; /* // push content apart */
-  gap: 10px; /* // spacing */
+  gap: var(--space-2); /* // spacing */
   align-items: flex-start; /* // pin content to top edge */
 } /* // end requestHeader */
 
-.partsTableWrapper { /* // enable horizontal scroll on small screens */
-  width: 100%; /* // full width */
-  overflow-x: auto; /* // allow horizontal scroll */
-  margin-top: 2px; /* // stable offset below header */
-} /* // end partsTableWrapper */
-
-.partsTable { /* // table for parts list */
-  width: 100%; /* // fill container */
-  border-collapse: collapse; /* // clean borders */
-  min-width: 640px; /* // ensure horizontal scroll on very small screens */
-  table-layout: fixed; /* // enforce identical column sizing across all sections */
-} /* // end partsTable */
-
-.partsTable th { /* // header cells */
-  text-align: left; /* // left align text */
-  font-size: 0.8rem; /* // small header text */
-  text-transform: uppercase; /* // printed style */
-  letter-spacing: 0.05em; /* // spacing */
-  color: var(--text-1); /* // muted color */
-  border-bottom: var(--separating-line); /* // underline header */
-  padding: 8px; /* // spacing */
-  background: var(--surface); /* // contrast header against themed request card */
-  position: sticky; /* // optional sticky header */
-  top: 0; /* // stick to top */
-} /* // end partsTable th */
-
-.partsTable td { /* // table cell styling */
-  padding: 8px; /* // consistent spacing */
-  border-bottom: var(--separating-line); /* // row divider */
-  font-size: 0.9rem; /* // text size */
-  vertical-align: top; /* // keep multi-line cells aligned from top */
-} /* // end partsTable td */
-
-.partsTable th:nth-child(1),
-.partsTable td:nth-child(1) {
-  width: 16%;
-}
-
-.partsTable th:nth-child(2),
-.partsTable td:nth-child(2) {
-  width: 34%;
-  white-space: normal; /* // allow long descriptions to wrap */
-  word-break: break-word; /* // wrap long terms/part names */
-  overflow-wrap: anywhere; /* // keep text inside column */
-  line-height: 1.35;
-}
-
-.partsTable th:nth-child(3),
-.partsTable td:nth-child(3) {
-  width: 12%;
-}
-
-.partsTable th:nth-child(4),
-.partsTable td:nth-child(4) {
-  width: 8%;
-}
-
-.partsTable th:nth-child(5),
-.partsTable td:nth-child(5) {
-  width: 11%;
-}
-
-.partsTable th:nth-child(6),
-.partsTable td:nth-child(6) {
-  width: 10%;
-}
-
-.partsTable th:nth-child(7),
-.partsTable td:nth-child(7) {
-  width: 9%;
-}
-
-.partsTable th:nth-child(3),
-.partsTable th:nth-child(4),
-.partsTable th:nth-child(5),
-.partsTable th:nth-child(6),
-.partsTable th:nth-child(7),
-.partsTable td:nth-child(3),
-.partsTable td:nth-child(4),
-.partsTable td:nth-child(5),
-.partsTable td:nth-child(6),
-.partsTable td:nth-child(7) {
-  white-space: nowrap; /* // keep numeric columns single-line */
-}
+/* .partsTableWrapper / .partsTable removed — the invoice parts table is now a
+   canonical .app-data-table inside <DataTableShell> (CLAUDE.md §3.4). Every
+   cell rule it used to carry (padding, header tint, row rules, sticky thead)
+   comes from the global table shell in staffglobal.css; the fixed column
+   widths that keep each request section's table aligned live there too, under
+   `.invoice-parts-table` keyed off data-parts-col. */
 
 .totalsFooter { /* // footer totals row */
   display: grid; /* // use grid for columns */
   grid-template-columns: repeat(auto-fit, minmax(160px, auto)); /* // responsive columns */
-  gap: 12px; /* // spacing */
-  padding-top: 12px; /* // spacing above totals */
+  gap: var(--space-3); /* // spacing */
+  padding-top: var(--space-3); /* // spacing above totals */
 } /* // end totalsFooter */
 
 .totalCard { /* // individual total card */
   background: var(--theme); /* // themed inner-card layer */
   border-radius: var(--control-radius-xs); /* // soft corners */
-  padding: 16px; /* // spacing — keep text off the card edge */
+  padding: var(--space-md); /* // spacing — keep text off the card edge */
 } /* // end totalCard */
 
 .totalCard span { /* // label text */
@@ -243,7 +165,7 @@
 
 .paymentDetails { /* // payment/bank detail box */
   border-radius: var(--radius-sm); /* // corners */
-  padding: 16px; /* // spacing */
+  padding: var(--space-md); /* // spacing */
   background: var(--theme); /* // themed inner-card layer */
 } /* // end paymentDetails */
 
@@ -257,12 +179,12 @@
 .paymentGrid { /* // layout for payment fields */
   display: grid; /* // grid layout */
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* // responsive columns */
-  gap: 10px; /* // spacing */
+  gap: var(--space-2); /* // spacing */
 } /* // end paymentGrid */
 
 .statusMessage { /* // shared style for error/empty states */
   border-radius: var(--radius-sm); /* // corners */
-  padding: 18px; /* // spacing */
+  padding: var(--space-5); /* // spacing */
   text-align: center; /* // center text */
 } /* // end statusMessage */
 
@@ -279,8 +201,8 @@
 .invoiceStatusBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   font-size: 0.85rem;
   font-weight: 700;
@@ -398,7 +320,7 @@
 .paymentField {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1);
   font-size: 0.85rem;
   color: var(--text-1);
 }
@@ -453,18 +375,8 @@
   font-size: 0.85rem;
 }
 
-.releasePromptBox {
-  border: none;
-  background: var(--warning-surface);
-  border-radius: var(--radius-sm);
-  padding: var(--space-3);
-  color: var(--warning-dark);
-}
-
-.releasePromptBox h4,
-.releasePromptBox p {
-  color: var(--warning-dark);
-}
+/* .releasePromptBox removed — the release prompt now renders the global
+   .app-status-message--warning banner from staffglobal.css. */
 
 /* .skeleton / .skeletonRow / @keyframes shimmer removed — dead code.
    Use <SkeletonBlock>, <SectionSkeleton>, or <InlineLoading> from
@@ -473,6 +385,5 @@
 @media (max-width: 640px) { /* // responsive tweaks for small screens */
   .invoiceShell { padding: 16px; } /* // reduce padding */
   .companyHeader { flex-direction: column; align-items: flex-start; } /* // stack header */
-  .partsTable { min-width: 520px; } /* // allow smaller scroll width */
   .paymentModalGrid { grid-template-columns: 1fr; }
 } /* // end media query */

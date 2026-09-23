@@ -41,7 +41,7 @@ Modules add no independent ACL. A module is visible when it contains at least on
 |---|---|---|
 | General | all authenticated users | pseudo-group |
 | Admin | management roles derived from `ROLE_DEPARTMENT_MAP` | page exceptions remain explicit |
-| Reception | service / aftersales roles | derived |
+| Service | service / aftersales roles | derived |
 | Workshop | workshop, technician and mobile-tech roles | derived |
 | MOT | mot tester | derived |
 | Parts | parts, parts manager, parts driver | derived |
@@ -69,7 +69,7 @@ Assigned: all authenticated users.
 - **Customers**
   - **Hidden** Customer directory/detail — `/customers`, `/customers/[customerSlug]`. Keep link/search-only; current `/customers` redirects to the customer portal, while staff detail is reached from jobs/search and has its own tab workspace.
 
-### Reception
+### Service
 
 Assigned: service, service-manager, aftersales-manager, after-sales-manager/director where configured.
 
@@ -91,8 +91,8 @@ Assigned: workshop-manager/controller, tech/technician/techs and mobile-technici
 
 - **Dashboards**
   - **D** Workshop Dashboard — `/dashboard/workshop` — workshop-manager, techs, technician.
-  - **D** My Work Dashboard — `/tech/dashboard` — techs.
-  - **D** Mobile Dashboard — `/mobile/dashboard` — mobile-technician; mobile-specific layout, still a workshop module page.
+  - **D** My Work Dashboard — `/dashboard/tech` — techs.
+  - **D** Mobile Dashboard — `/dashboard/mobile` — mobile-technician; mobile-specific layout, still a workshop module page.
 - **Workshop Control**
   - **P** Next Jobs — `/nextjobs` — workshop-manager exception; shared queue.
   - **P** Job Cards — `/jobs` — workshop-manager exception; shared primary route.
@@ -134,7 +134,7 @@ Assigned: parts, parts-manager, parts-driver. Parts-driver currently receives th
   - **P** Deliveries — `/deliveries` — parts/parts-manager; `/deliveries/[deliveryId]` is **Detail**.
   - **P** Delivery / Collection Planner — `/delivery-planner` — parts/parts-manager; currently quick-action/tab-only visibility, promote to a Page in Phase 9.
 - **Ordering**
-  - **P** Create Order — `/new-order` — parts/parts-manager; `/new-order/[orderNumber]` is **Detail**.
+  - **P** Create Order — `/new-order` — parts/parts-manager; `/order/[orderNumber]` is **Detail**.
 - **Hidden compatibility**
   - **Redirect** `/parts` → `/stock-catalogue`.
 
@@ -172,7 +172,7 @@ Reports has no inherited Group audience. The Group appears only when at least on
 
 - **Operational Reports**
   - **P** Workshop — `/reports/workshop` — workshop/service/management/admin derived audience.
-  - **P** Reception — `/reports/service` — service/management/admin derived audience.
+  - **P** Service — `/reports/service` — service/management/admin derived audience.
   - **P** Parts — `/reports/parts` — parts/management/admin derived audience.
   - **P** MOT — `/reports/mot` — mot/service/workshop/management/admin derived audience.
   - **P** Valeting — `/reports/valeting` — valeting/service/workshop/management/admin derived audience.

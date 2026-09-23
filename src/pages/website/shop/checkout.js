@@ -1,13 +1,14 @@
 // file location: src/pages/website/shop/checkout.js
+// Legacy route: opens the single /website/shop flow at the details checkpoint.
 
 import dynamic from "next/dynamic";
 
-const CheckoutPage = dynamic(() => import("@/features/website/shop/CheckoutPage"), {
+const ShopCheckoutFlow = dynamic(() => import("@/features/website/shop/ShopCheckoutFlow"), {
   ssr: false,
 });
 
 export default function Page() {
-  return <CheckoutPage />;
+  return <ShopCheckoutFlow initialStep="details" />;
 }
 
 Page.getLayout = (page) => page;

@@ -2,7 +2,7 @@
  *
  * Canonical home for the Loader / Skeleton family.
  *
- * Variants: block, inline, row, card, page
+ * Variants: block, inline, row, card, page, chart, chart-bars, table
  * Component: src/components/ui/LoadingSkeleton.js
  * Showcase:  /dev/user-diagnostic#loader
  *
@@ -23,4 +23,311 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline: 2px solid #a78bfa !important;
   outline-offset: 2px;
   box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.32) !important;
+}
+
+/* ==========================================================================
+   Chart / graph / table skeletons — ONE shared loading system.
+
+   Every line graph, bar graph and data table in the app renders these classes
+   while it waits for data. The components own no styling of their own, so
+   changing the tokens or keyframes in THIS FILE restyles the loading state of
+   every graph and every table across every page and section at once.
+   loaders.css is pulled in by families/index.css, which is the first import in
+   staffglobal.css, so there is nothing else to wire up.
+
+   React primitives: ChartSkeleton and TableSkeleton in
+   src/components/ui/LoadingSkeleton.js. Do not hand-roll a chart or table
+   placeholder anywhere else.
+   ========================================================================== */
+
+html.staff-scope {
+  /* --- Chart skeleton -------------------------------------------------- */
+  /* The trace has to stay visible on a white card, so it mixes down from the
+     body text colour rather than using a shimmer tone — the shimmer tones sit
+     far too close to --surface to read as a line. --text-1 already flips
+     between light and dark, so one definition covers both modes. */
+  --skeleton-chart-line: color-mix(in srgb, var(--text-1) 30%, transparent);
+  --skeleton-chart-line-width: 2.5px;
+  --skeleton-chart-fill-top: var(--skeleton-base);
+  --skeleton-chart-fill-bottom: transparent;
+  --skeleton-chart-grid: color-mix(in srgb, var(--text-1) 10%, transparent);
+  --skeleton-chart-sweep: color-mix(in srgb, var(--text-1) 7%, transparent);
+  --skeleton-chart-gap: 12px;
+  --skeleton-chart-draw-duration: 2.6s;
+  --skeleton-chart-sweep-duration: 1.9s;
+  --skeleton-chart-grid-rows: 4;
+
+  /* --- Table skeleton -------------------------------------------------- */
+  --skeleton-table-cell-height: 14px;
+  --skeleton-table-cell-radius: 999px;
+  --skeleton-table-stagger: 80ms; /* cascade delay between rows */
+  --skeleton-table-duration: var(--skeleton-animation-duration, 1.8s);
+}
+
+/* --------------------------------------------------------------------------
+   Chart skeleton
+   -------------------------------------------------------------------------- */
+html.staff-scope .skeleton-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--skeleton-chart-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .skeleton-chart__plot {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--skeleton-radius, 8px);
+}
+
+/* Faint horizontal rules behind the line, so the placeholder reads as a plot
+   area rather than a grey box. */
+html.staff-scope .skeleton-chart__grid {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--skeleton-chart-grid) 0,
+    var(--skeleton-chart-grid) 1px,
+    transparent 1px,
+    transparent calc(100% / var(--skeleton-chart-grid-rows))
+  );
+  opacity: 0.55;
+  animation: skeleton-chart-grid-pulse var(--skeleton-animation-duration, 1.8s) ease-in-out infinite;
+  pointer-events: none;
+}
+
+html.staff-scope .skeleton-chart__svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Area under the line — a soft gradient wash that breathes with the scan. */
+html.staff-scope .skeleton-chart__area {
+  opacity: 0.9;
+  animation: skeleton-chart-grid-pulse var(--skeleton-animation-duration, 1.8s) ease-in-out infinite;
+}
+
+html.staff-scope .skeleton-chart__fill-top { stop-color: var(--skeleton-chart-fill-top); }
+html.staff-scope .skeleton-chart__fill-bottom { stop-color: var(--skeleton-chart-fill-bottom); }
+
+/* The line itself: a dash the length of the whole path, swept through it, so
+   the trace draws in from the left and off to the right forever. */
+html.staff-scope .skeleton-chart__line {
+  fill: none;
+  stroke: var(--skeleton-chart-line);
+  stroke-width: var(--skeleton-chart-line-width);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  animation: skeleton-chart-draw var(--skeleton-chart-draw-duration) ease-in-out infinite;
+}
+
+/* Ghost of the full path, so the shape stays legible between traces. */
+html.staff-scope .skeleton-chart__line--ghost {
+  stroke: var(--skeleton-chart-grid);
+  opacity: 0.7;
+  animation: none;
+  stroke-dasharray: none;
+}
+
+/* Bar variant — same tokens, columns instead of a trace. */
+html.staff-scope .skeleton-chart__bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+}
+
+html.staff-scope .skeleton-chart__bar {
+  flex: 1 1 0;
+  min-width: 0;
+  transform-origin: bottom center;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: linear-gradient(
+    to bottom,
+    var(--skeleton-chart-fill-top),
+    var(--skeleton-chart-fill-bottom)
+  );
+  animation: skeleton-chart-bar-rise var(--skeleton-chart-draw-duration) ease-in-out infinite;
+}
+
+html.staff-scope .skeleton-chart__bar:nth-child(1) { height: 46%; animation-delay: 0ms; }
+html.staff-scope .skeleton-chart__bar:nth-child(2) { height: 70%; animation-delay: 90ms; }
+html.staff-scope .skeleton-chart__bar:nth-child(3) { height: 54%; animation-delay: 180ms; }
+html.staff-scope .skeleton-chart__bar:nth-child(4) { height: 82%; animation-delay: 270ms; }
+html.staff-scope .skeleton-chart__bar:nth-child(5) { height: 62%; animation-delay: 360ms; }
+html.staff-scope .skeleton-chart__bar:nth-child(6) { height: 92%; animation-delay: 450ms; }
+html.staff-scope .skeleton-chart__bar:nth-child(7) { height: 58%; animation-delay: 540ms; }
+html.staff-scope .skeleton-chart__bar:nth-child(n + 8) { height: 76%; animation-delay: 630ms; }
+
+/* Light sweep across the whole plot — the shared "this is loading" signal. */
+html.staff-scope .skeleton-chart__sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    var(--skeleton-chart-sweep) 50%,
+    transparent 80%
+  );
+  opacity: 0.45;
+  transform: translateX(-100%);
+  animation: skeleton-chart-sweep var(--skeleton-chart-sweep-duration) ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* X-axis tick placeholders. */
+html.staff-scope .skeleton-chart__axis {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+html.staff-scope .skeleton-chart__tick {
+  display: block;
+  height: 10px;
+  width: 54px;
+  border-radius: var(--skeleton-table-cell-radius);
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-scan var(--skeleton-animation-duration, 1.8s) ease-in-out infinite;
+}
+
+html.staff-scope .skeleton-chart__tick--wide { width: 88px; height: 16px; }
+
+/* The report graph paints a dark premium surface, so the skeleton has to
+   re-bind onto that graph palette or it renders as a light grey slab on
+   near-black. Same classes, different rung. */
+html.staff-scope .report-graph .skeleton-chart {
+  --skeleton-chart-line: var(--report-graph-line);
+  --skeleton-chart-fill-top: rgba(var(--report-graph-line-rgb), 0.28);
+  --skeleton-chart-fill-bottom: rgba(var(--report-graph-line-rgb), 0);
+  --skeleton-chart-grid: rgba(var(--report-graph-line-rgb), 0.18);
+  --skeleton-chart-sweep: rgba(var(--report-graph-line-rgb), 0.16);
+  --skeleton-base: rgba(var(--report-graph-line-rgb), 0.18);
+  --skeleton-highlight: rgba(var(--report-graph-line-rgb), 0.34);
+}
+
+@keyframes skeleton-chart-draw {
+  0% { stroke-dashoffset: 1; }
+  100% { stroke-dashoffset: -1; }
+}
+
+@keyframes skeleton-chart-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes skeleton-chart-grid-pulse {
+  0%, 100% { opacity: 0.42; }
+  50% { opacity: 0.72; }
+}
+
+@keyframes skeleton-chart-bar-rise {
+  0%, 100% { transform: scaleY(0.82); opacity: 0.7; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
+   Table skeleton
+
+   Rendered inside a real .app-data-table so column widths, padding, row rules
+   and radii match the loaded table exactly — the rows do not shift when the
+   data lands. Cells shimmer in a top-to-bottom cascade rather than all at
+   once, which reads as a table filling in.
+   -------------------------------------------------------------------------- */
+html.staff-scope .skeleton-table__cell {
+  display: block;
+  width: 62%;
+  min-width: 24px;
+  height: var(--skeleton-table-cell-height);
+  border-radius: var(--skeleton-table-cell-radius);
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-scan var(--skeleton-table-duration) ease-in-out infinite;
+}
+
+/* Two anchors, one system: a full <TableSkeleton> table, or a single
+   <SkeletonTableRow> dropped into an existing .app-data-table. Both pick up
+   the same widths and the same cascade from the rules below. */
+
+/* Organic column widths so the placeholder does not read as a grid of
+   identical pills. Driven entirely from here — no per-table overrides. */
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row) td:first-child .skeleton-table__cell { width: 86%; }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row) td:last-child .skeleton-table__cell { width: 48%; }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(even) td .skeleton-table__cell { width: 54%; }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(even) td:first-child .skeleton-table__cell { width: 74%; }
+
+/* Header cells sit shorter and dimmer than body cells. */
+html.staff-scope .skeleton-table thead .skeleton-table__cell {
+  height: 10px;
+  width: 58%;
+  opacity: 0.8;
+}
+
+/* Row cascade — each row starts its shimmer a beat after the one above. */
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(1) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 0); }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(2) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 1); }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(3) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 2); }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(4) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 3); }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(5) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 4); }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(6) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 5); }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(7) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 6); }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(8) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 7); }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(9) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 8); }
+html.staff-scope :is(.skeleton-table tbody tr, tr.skeleton-table__row):nth-child(n + 10) .skeleton-table__cell { animation-delay: calc(var(--skeleton-table-stagger) * 9); }
+
+/* Within a row, later columns run slightly slower for a diagonal wipe. */
+html.staff-scope :is(.skeleton-table, tr.skeleton-table__row) td:nth-child(2) .skeleton-table__cell { animation-duration: calc(var(--skeleton-table-duration) * 1.05); }
+html.staff-scope :is(.skeleton-table, tr.skeleton-table__row) td:nth-child(3) .skeleton-table__cell { animation-duration: calc(var(--skeleton-table-duration) * 1.1); }
+html.staff-scope :is(.skeleton-table, tr.skeleton-table__row) td:nth-child(4) .skeleton-table__cell { animation-duration: calc(var(--skeleton-table-duration) * 1.15); }
+html.staff-scope :is(.skeleton-table, tr.skeleton-table__row) td:nth-child(n + 5) .skeleton-table__cell { animation-duration: calc(var(--skeleton-table-duration) * 1.2); }
+
+/* --------------------------------------------------------------------------
+   Reduced motion — hold a steady, legible placeholder instead of animating.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .skeleton-chart__line,
+  html.staff-scope .skeleton-chart__area,
+  html.staff-scope .skeleton-chart__grid,
+  html.staff-scope .skeleton-chart__bar,
+  html.staff-scope .skeleton-chart__tick,
+  html.staff-scope .skeleton-table__cell {
+    animation: none;
+  }
+  html.staff-scope .skeleton-chart__line { stroke-dasharray: none; }
+  html.staff-scope .skeleton-chart__sweep { display: none; }
+  html.staff-scope .skeleton-chart__bar { transform: none; }
+}
+
+/* --------------------------------------------------------------------------
+   Trace mode — extend the lavender outline to the new primitives.
+   -------------------------------------------------------------------------- */
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+  :where(
+    .skeleton-chart,
+    .skeleton-table__cell
+  ) {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
 }

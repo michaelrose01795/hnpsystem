@@ -5,6 +5,8 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
+import useWebsitePopover from "@/features/website/hooks/useWebsitePopover";
+
 export default function WebsiteNativeSelect({
   value,
   onChange,
@@ -15,6 +17,7 @@ export default function WebsiteNativeSelect({
   id,
   required,
   name,
+  "aria-label": ariaLabel,
 }) {
   const fallbackId = useId();
   const selectId = id || `website-native-select-${fallbackId}`;
@@ -22,6 +25,7 @@ export default function WebsiteNativeSelect({
   const rootRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
+  const panelRef = useWebsitePopover(open, rootRef);
 
   const selected = options.find((option) => String(option.value) === String(value));
   const displayText = selected?.label || placeholder;
@@ -77,7 +81,7 @@ export default function WebsiteNativeSelect({
       data-open={open ? "true" : "false"}
     >
       <select
-        id={selectId}
+        id={`${selectId}-native`}
         name={name}
         required={required}
         disabled={disabled}
@@ -98,6 +102,10 @@ export default function WebsiteNativeSelect({
         type="button"
         className={`website-native-select__trigger ${className}`}
         disabled={disabled}
+        id={selectId}
+        role="combobox"
+        aria-label={ariaLabel || name || placeholder}
+        aria-activedescendant={open && activeIdx >= 0 ? `${listId}-${activeIdx}` : undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -116,6 +124,9 @@ export default function WebsiteNativeSelect({
       </button>
       {open ? (
         <ul
+          ref={panelRef}
+          popover="manual"
+          data-website-popover="true"
           id={listId}
           role="listbox"
           aria-labelledby={selectId}
@@ -130,6 +141,7 @@ export default function WebsiteNativeSelect({
               return (
                 <li
                   key={`${option.value}-${idx}`}
+                  id={`${listId}-${idx}`}
                   role="option"
                   aria-selected={isSelected}
                   className={`website-native-select__option ${

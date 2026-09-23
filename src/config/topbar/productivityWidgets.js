@@ -22,7 +22,7 @@ const UPCOMING_SIGNALS = [
   { key: "overdueJobs", label: (n) => `${n} overdue job${n === 1 ? "" : "s"}`, href: "/job-cards", tone: "danger" },
   { key: "jobsWaiting", label: (n) => `${n} job${n === 1 ? "" : "s"} waiting to start`, href: "/nextjobs", tone: "warning" },
   { key: "waitingApprovals", label: (n) => `${n} approval${n === 1 ? "" : "s"} pending`, href: "/job-cards", tone: "warning" },
-  { key: "appointmentsToday", label: (n) => `${n} appointment${n === 1 ? "" : "s"} today`, href: "/job-cards/appointments", tone: "info" },
+  { key: "appointmentsToday", label: (n) => `${n} appointment${n === 1 ? "" : "s"} today`, href: "/appointments", tone: "info" },
   { key: "pendingDeliveries", label: (n) => `${n} pending deliver${n === 1 ? "y" : "ies"}`, href: "/deliveries", tone: "info" },
   { key: "partsOutstanding", label: (n) => `${n} part${n === 1 ? "" : "s"} outstanding`, href: "/goods-in", tone: "warning" },
 ];

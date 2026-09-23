@@ -22,8 +22,8 @@ that exists in that library, and only list pages that library module owns.
 
 Before this sweep there were 38 hand-authored modules whose keys existed nowhere
 in the library. 16 of them mixed pages from two or three different library
-modules (for example "Workshop Control" = Workshop pages + Reception pages, and
-"Fulfilment" = Reception `/jobs` + Parts `/deliveries`), and 6 meant different
+modules (for example "Workshop Control" = Workshop pages + Service pages, and
+"Fulfilment" = Service `/jobs` + Parts `/deliveries`), and 6 meant different
 page sets depending on the role (`management-overview` had five variants).
 **Roles kept exactly the pages they had — only the grouping changed.**
 
@@ -59,13 +59,13 @@ are the library's.
 
 - General: `/newsfeed`, `/messages`, `/tracking`
 - Admin: `/archive`
-- Reception: `/dashboard/service`, `/new-job`, `/jobs`
+- Service: `/dashboard/service`, `/new-job`, `/jobs`
 
 ### Service Manager
 
 - General: `/newsfeed`, `/messages`, `/tracking`
 - Admin: `/dashboard/managers`, `/archive`
-- Reception: `/dashboard/service`, `/new-job`, `/appointments`, `/jobs`
+- Service: `/dashboard/service`, `/new-job`, `/appointments`, `/jobs`
 - Workshop: `/nextjobs`
 - Reports: `/reports/workshop`, `/reports/service`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
 
@@ -73,7 +73,7 @@ are the library's.
 
 - General: `/newsfeed`, `/messages`, `/tracking`
 - Admin: `/dashboard/managers`, `/archive`
-- Reception: `/new-job`, `/appointments`, `/jobs`
+- Service: `/new-job`, `/appointments`, `/jobs`
 - Workshop: `/dashboard/workshop`, `/clocking`, `/consumables-tracker`, `/nextjobs`
 - Reports: `/reports/workshop`, `/reports/mot`, `/reports/paint`, `/reports/valeting`
 
@@ -87,13 +87,13 @@ are the library's.
 
 - General: `/newsfeed`, `/messages`, `/tracking`
 - Workshop: `/dashboard/workshop`
-- Tech: `/tech/dashboard`, `/tech`, `/tech/efficiency`, `/consumables-request`
+- Tech: `/dashboard/tech`, `/tech`, `/tech/efficiency`, `/consumables-request`
 
 ### Mobile Technician
 
 - General: `/newsfeed`, `/messages`
-- Reception: `/new-job`, `/appointments`
-- Workshop: `/mobile/dashboard`
+- Service: `/new-job`, `/appointments`
+- Workshop: `/dashboard/mobile`
 - Tech: `/tech`, `/consumables-request`
 
 ### Parts

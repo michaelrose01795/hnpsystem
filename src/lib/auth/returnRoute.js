@@ -44,7 +44,7 @@ const NON_RESTORABLE_EXACT = new Set([
   "/",
   "/login",
   "/loginPresentation",
-  "/unauthorized",
+  "/unauthorised",
   "/logout",
 ]);
 

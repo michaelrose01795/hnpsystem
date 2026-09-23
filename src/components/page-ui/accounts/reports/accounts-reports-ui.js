@@ -4,6 +4,7 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 import { Dropdown } from "@/components/ui/dropdownAPI"; // canonical dropdown
 import { MonthPicker } from "@/components/ui/monthPickerAPI"; // canonical month picker
 import { SearchBar } from "@/components/ui/searchBarAPI"; // canonical search bar
+import { SectionSkeleton, SkeletonMetricCard } from "@/components/ui/LoadingSkeleton"; // shared loading skeletons
 
 export default function AccountsReportsPageUi(props) {
   const {
@@ -118,10 +119,14 @@ export default function AccountsReportsPageUi(props) {
             </Button>
           </ToolbarRow>
 
-          {loading && <p style={{
-        color: "var(--text-1)",
-        margin: 0
-      }}>Loading reports…</p>}
+          {loading && <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading reports" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <LayerTheme style={metricsShellStyle}>
+                <div style={metricsGridStyle}>
+                  {Array.from({ length: 4 }, (_, index) => <SkeletonMetricCard key={index} layer="surface" />)}
+                </div>
+              </LayerTheme>
+              <SectionSkeleton titleWidth="120px" subtitleWidth="220px" rows={3} />
+            </div>}
 
           {!loading && <>
               <LayerTheme as="section" sectionKey="accounts-reports-metrics-shell" sectionType="content-card" parentKey="accounts-reports-page-shell" style={metricsShellStyle}>

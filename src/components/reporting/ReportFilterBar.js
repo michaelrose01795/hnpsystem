@@ -1,7 +1,8 @@
 // file location: src/components/reporting/ReportFilterBar.js
 //
-// Shared reporting toolbar: date range, trend granularity, search, and the
-// report tab row in one surface. It emits a normalised-filter-shaped patch via
+// Shared reporting toolbar: search, the filter button (date range and trend
+// granularity live in its floating card), and the report tab row in one
+// surface. It emits a normalised-filter-shaped patch via
 // `onPatch`; the engine/filters.js does the real normalisation server-side.
 
 import React from "react";
@@ -9,6 +10,7 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { reportDevKey } from "./reportDevOverlay";
 
 // Mirror of filters.js DATE_PRESETS (the labels are presentation only).
@@ -26,6 +28,11 @@ const RANGE_OPTIONS = [
   { value: "month_to_date", label: "Month to date" },
   { value: "year_to_date", label: "Year to date" },
 ];
+
+// What the pickers show when the filter carries no value; "Clear all" in the
+// filter card returns both to these.
+const DEFAULT_RANGE = "last_30d";
+const DEFAULT_GRANULARITY = "day";
 
 const GRANULARITY_OPTIONS = [
   { value: "day", label: "Daily" },
@@ -55,9 +62,9 @@ const controlsStyle = {
   gap: 10,
   alignItems: "center",
   justifyContent: "flex-end",
-  // Basis = two 150px pickers + the search bar at its minimum + gaps. Below
+  // Basis = the search bar at its minimum + the filter button + gaps. Below
   // that the controls take a row of their own rather than squeezing the tabs.
-  flex: "1 1 470px",
+  flex: "1 1 240px",
   minWidth: 0,
 };
 
@@ -70,22 +77,11 @@ const tabsWrapStyle = {
   minWidth: 0,
 };
 
-// Both pickers share one fixed, even width so the date-range and granularity
-// dropdowns line up regardless of their (differing) label lengths. They may
-// shrink a little before the controls wrap, but never below a readable width.
-const pickerStyle = {
-  flex: "0 1 150px",
-  width: 150,
-  minWidth: 118,
-};
-
 // Search bar is the flexible control: it grows to fill the remaining space and
-// auto-shrinks (down to its min) so the control row stays on one line. Its max
-// width is capped so it stays even with the pickers.
+// auto-shrinks (down to its min) so the control row stays on one line.
 const searchStyle = {
   flex: "1 1 160px",
   minWidth: 140,
-  maxWidth: 320,
 };
 
 export default function ReportFilterBar({
@@ -99,6 +95,14 @@ export default function ReportFilterBar({
   children,
 }) {
   const filterKey = reportDevKey("report-filter", departmentLabel || "global");
+  const filterIdBase = `report-filter-${String(departmentLabel || "global").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+  const activeFilterCount =
+    ((filter.range || DEFAULT_RANGE) !== DEFAULT_RANGE ? 1 : 0) +
+    ((filter.granularity || DEFAULT_GRANULARITY) !== DEFAULT_GRANULARITY ? 1 : 0);
+
+  const clearFilters = () =>
+    onPatch({ range: DEFAULT_RANGE, from: null, to: null, granularity: DEFAULT_GRANULARITY });
 
   return (
     <LayerSurface
@@ -124,28 +128,6 @@ export default function ReportFilterBar({
         )}
 
         <div style={controlsStyle}>
-          <DropdownField
-            ariaLabel="Date range"
-            options={RANGE_OPTIONS}
-            value={filter.range || "last_30d"}
-            onChange={(event) => onPatch({ range: event.target.value, from: null, to: null })}
-            placeholder="Select range"
-            className="compact-picker"
-            style={pickerStyle}
-            size="sm"
-          />
-
-          <DropdownField
-            ariaLabel="Trend granularity"
-            options={GRANULARITY_OPTIONS}
-            value={filter.granularity || "day"}
-            onChange={(event) => onPatch({ granularity: event.target.value })}
-            placeholder="Select granularity"
-            className="compact-picker"
-            style={pickerStyle}
-            size="sm"
-          />
-
           <SearchBar
             type="search"
             ariaLabel="Filter records"
@@ -155,6 +137,30 @@ export default function ReportFilterBar({
             onClear={() => onPatch({ search: "" })}
             style={searchStyle}
           />
+
+          <FilterButton activeCount={activeFilterCount} onClear={clearFilters}>
+            <FilterField label="Date Range" htmlFor={`${filterIdBase}-range`}>
+              <DropdownField
+                id={`${filterIdBase}-range`}
+                ariaLabel="Date range"
+                options={RANGE_OPTIONS}
+                value={filter.range || DEFAULT_RANGE}
+                onChange={(event) => onPatch({ range: event.target.value, from: null, to: null })}
+                placeholder="Select range"
+              />
+            </FilterField>
+
+            <FilterField label="Granularity" htmlFor={`${filterIdBase}-granularity`}>
+              <DropdownField
+                id={`${filterIdBase}-granularity`}
+                ariaLabel="Trend granularity"
+                options={GRANULARITY_OPTIONS}
+                value={filter.granularity || DEFAULT_GRANULARITY}
+                onChange={(event) => onPatch({ granularity: event.target.value })}
+                placeholder="Select granularity"
+              />
+            </FilterField>
+          </FilterButton>
 
           {children && <div style={{ display: "flex", gap: 8, alignItems: "center" }}>{children}</div>}
         </div>

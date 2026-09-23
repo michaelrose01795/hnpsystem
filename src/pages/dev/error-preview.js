@@ -24,7 +24,7 @@
 //                  so the whole loop (trigger → log → persist → retrieve) can be
 //                  confirmed end to end in one place.
 //
-// Preview actions are inert on purpose: clicking "Try Again" on a PREVIEW would
+// Preview actions are inert on purpose: clicking "Try again" on a PREVIEW would
 // navigate you away from the page you are reviewing. The TRIGGERS section is
 // where the buttons really work.
 //
@@ -177,6 +177,14 @@ const PREVIEWS = [
 ];
 
 // A component that throws on render, on demand. Used by both crash triggers.
+// Mounts a recovery specimen on the layer rung it would really sit on, so the
+// preview shows the contrast production shows. See the call site for why this is
+// not simply a LayerTheme.
+function RecoveryPreviewStage({ level, children }) {
+  if (level === RECOVERY_LEVELS.ROUTE) return <>{children}</>;
+  return <LayerTheme>{children}</LayerTheme>;
+}
+
 function Exploder({ armed, label }) {
   if (armed) throw new Error(`Deliberate ${label} crash from /dev/error-preview`);
   return (
@@ -317,9 +325,14 @@ function ErrorPreviewPage() {
                 {preview.note}
               </p>
             </div>
-            {/* The recovery screen sits on a theme layer so it reads as a
-                specimen inside the page rather than as the page's own error. */}
-            <LayerTheme>
+            {/* The recovery screen now picks its own rung from `level` (a ROUTE
+                screen renders a --theme card because in production it sits
+                inside the --surface page card; APP and SECTION render --surface).
+                So the specimen is mounted on the rung it expects: a ROUTE
+                preview goes straight onto this LayerSurface, and the others get
+                a LayerTheme under them. Wrapping everything in LayerTheme would
+                stack theme-on-theme for exactly the screen staff see most. */}
+            <RecoveryPreviewStage level={preview.level}>
               <SupportErrorRecovery
                 plan={preview.plan}
                 error={genericError()}
@@ -328,7 +341,7 @@ function ErrorPreviewPage() {
                 variant={preview.variant}
                 handlers={INERT_HANDLERS}
               />
-            </LayerTheme>
+            </RecoveryPreviewStage>
           </LayerSurface>
         ))}
 
@@ -400,8 +413,8 @@ function ErrorPreviewPage() {
             <Link href="/this-route-does-not-exist" className="app-btn app-btn--secondary">
               Visit a 404
             </Link>
-            <Link href="/unauthorized" className="app-btn app-btn--ghost">
-              Visit /unauthorized
+            <Link href="/unauthorised" className="app-btn app-btn--ghost">
+              Visit /unauthorised
             </Link>
           </div>
         </LayerSurface>
@@ -506,7 +519,7 @@ function ErrorPreviewPage() {
                 }}
               >
                 Read back from <code>support_error_events</code>. Everything here was logged without
-                anyone pressing &ldquo;Report Problem&rdquo;.
+                anyone pressing &ldquo;Report a problem&rdquo;.
               </p>
             </div>
             <button

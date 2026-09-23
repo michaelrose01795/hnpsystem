@@ -48,6 +48,8 @@ import {
   resolveHome,
   isWorkspaceNavEnabled,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
+  SIDEBAR_LAYOUT_MIGRATION,
+  migrateSidebarLayout,
   WORKSPACE_DEPARTMENTS,
   WORKSPACE_NAV_SECTIONS,
   DEVELOPER_GROUP_LOCK,
@@ -60,7 +62,9 @@ import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { roleCategories } from "@/config/users";
 import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
-import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
+import { ALL_ACCESS_ROLE, EQUIPMENT_USER_ROLES } from "@/lib/auth/roles";
+import { LOAN_CAR_ROLES } from "@/features/loanCars/loanCarAccess";
+import { STOCK_ROLES } from "@/features/stockControl/stockAccess";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 import { getReportingFlag } from "@/lib/reporting/config/flags";
@@ -118,8 +122,10 @@ function buildGoldenSidebarSections() {
         { label: "News Feed", href: "/newsfeed", roles: [] },
         { label: "Messages", href: "/messages", roles: [] },
         {
-          label: "Tracker",
-          href: "/tracking",
+          // 2026-09-22 tracker split: /tracking's Key/Parking tab became this
+          // page; the other three tabs are workspace pages (see below).
+          label: "Key/Parking",
+          href: "/tracking/Key-Parking",
           roles: ["techs", "service", "service manager", "workshop manager", "valet service", "admin"],
         },
         { label: "Archive Job", href: "/archive", roles: [] },
@@ -211,8 +217,9 @@ function buildGoldenSidebarSections() {
       label: "Parts",
       category: "departments",
       items: [
-        // Job Cards intentionally absent — it is a Reception page, not a Parts one.
+        // Job Cards intentionally absent — it is a Service page, not a Parts one.
         { label: "Orders", href: "/order", roles: ["parts"] },
+        { label: "Create Order", href: "/new-order", roles: ["parts"] },
         { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts"] },
         { label: "Goods In", href: "/goods-in", roles: ["parts"] },
         { label: "Deliveries", href: "/deliveries", roles: ["parts"] },
@@ -222,8 +229,9 @@ function buildGoldenSidebarSections() {
       label: "Parts Manager",
       category: "departments",
       items: [
-        // See the Parts section above — Job Cards stays in Reception.
+        // See the Parts section above — Job Cards stays in Service.
         { label: "Orders", href: "/order", roles: ["parts manager"] },
+        { label: "Create Order", href: "/new-order", roles: ["parts manager"] },
         { label: "Stock Catalogue", href: "/stock-catalogue", roles: ["parts manager"] },
         { label: "Goods In", href: "/goods-in", roles: ["parts manager"] },
         { label: "Deliveries", href: "/deliveries", roles: ["parts manager"] },
@@ -335,7 +343,7 @@ function legacyFullLandablePaths(golden, roles) {
   );
   const legacyTopbarLinks = [
     { href: "/new-job", roles: SERVICE_ACTION_ROLES },
-    { href: "/job-cards/appointments", roles: SERVICE_ACTION_ROLES },
+    { href: "/appointments", roles: SERVICE_ACTION_ROLES },
     { href: "/delivery-planner", roles: legacyPartsTopbarRoles },
     { href: "/new-order", roles: legacyPartsTopbarRoles },
     { href: "/goods-in", roles: legacyPartsTopbarRoles },
@@ -346,8 +354,25 @@ function legacyFullLandablePaths(golden, roles) {
     { href: "/accounts/invoices", roles: legacyAccountsRoles },
     { href: "/accounts/reports", roles: legacyAccountsRoles },
   ];
+  // The Service context section. /customers is group-inherited (no per-page
+  // roles), so its reach is exactly the roles the service department is
+  // assigned — derived here from ROLE_DEPARTMENT_MAP so this reference cannot
+  // silently drift from the manifest's own derivation.
+  const legacyServiceRoles = new Set(
+    Object.entries(ROLE_DEPARTMENT_MAP)
+      .filter(([, department]) => department === "service")
+      .map(([role]) => role.toLowerCase())
+  );
+  const legacyServiceLinks = [{ href: "/customers", roles: legacyServiceRoles }];
+  // The tracker pages split out of /tracking are landable for exactly the roles
+  // their APIs answer — the capability modules' own role lists.
+  const trackerPageLinks = [
+    { href: "/tracking/Loan-car", roles: LOAN_CAR_ROLES },
+    { href: "/tracking/Equipment-Tools", roles: EQUIPMENT_USER_ROLES },
+    { href: "/tracking/Oil-Stock", roles: STOCK_ROLES },
+  ];
 
-  for (const link of [...legacyTopbarLinks, ...legacyAccountsLinks]) {
+  for (const link of [...legacyTopbarLinks, ...legacyAccountsLinks, ...legacyServiceLinks, ...trackerPageLinks]) {
     if (matches(Array.from(link.roles))) accessible.add(link.href);
   }
 
@@ -493,8 +518,8 @@ describe("workspace manifest - module bundle placement", () => {
 
   it("keeps the former topbar create and appointments pages on the Workshop Manager rail", () => {
     // These used to sit in a bespoke "Workshop Control" bundle that mixed
-    // Workshop and Reception pages. Post module-library sweep they are in the
-    // Reception library module, which owns them — the rail still carries them.
+    // Workshop and Service pages. Post module-library sweep they are in the
+    // Service library module, which owns them — the rail still carries them.
     const reception = getRoleWorkspaceModules(["workshop manager"])
       .find((module) => module.key === "department-service");
 
@@ -512,7 +537,7 @@ describe("workspace manifest - module bundle placement", () => {
       // Library order IS the sidebar rail order for every user (see the header
       // note on SIDEBAR_MODULE_LIBRARY).
       "General",
-      "Reception",
+      "Service",
       "Workshop",
       "Tech",
       "Parts",
@@ -528,17 +553,16 @@ describe("workspace manifest - module bundle placement", () => {
         hrefs: module.items.map((item) => item.href),
       }))
     ).toEqual([
-      { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
-      { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs"] },
+      { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking/Key-Parking"] },
+      { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers", "/tracking/Loan-car"] },
       { key: "department-workshop", hrefs: [
-        "/dashboard/workshop", "/mobile/dashboard", "/clocking", "/consumables-tracker",
-        "/tech/efficiency", "/nextjobs",
+        "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools",
       ] },
       { key: "department-tech", hrefs: [
-        "/tech/dashboard", "/tech", "/tech/efficiency", "/consumables-request",
+        "/dashboard/tech", "/tech", "/consumables-request", "/tech/efficiency", "/dashboard/mobile",
       ] },
-      // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Reception.
-      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/stock-catalogue", "/deliveries", "/goods-in"] },
+      // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Service.
+      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock"] },
       { key: "department-management", hrefs: [
         "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
         "/hr/manager", "/website-manager", "/archive",
@@ -553,13 +577,13 @@ describe("workspace manifest - module bundle placement", () => {
       ] },
     ]);
     expect(
-      moduleCatalog.find((module) => module.label === "Reception")?.items
+      moduleCatalog.find((module) => module.label === "Service")?.items
     ).toContainEqual(expect.objectContaining({ label: "Appointments", href: "/appointments" }));
     expect(
-      moduleCatalog.find((module) => module.label === "Reception")?.items
+      moduleCatalog.find((module) => module.label === "Service")?.items
     ).toContainEqual(expect.objectContaining({ label: "Create Job Card", href: "/new-job" }));
     expect(
-      moduleCatalog.find((module) => module.label === "Reception")?.items.map((item) => item.href)
+      moduleCatalog.find((module) => module.label === "Service")?.items.map((item) => item.href)
     ).not.toContain("/goods-in");
   });
 
@@ -588,7 +612,7 @@ describe("workspace manifest - module bundle placement", () => {
     const partsHrefs = getRoleWorkspaceModules(["parts"])
       .flatMap((navigationModule) => navigationModule.items.map((item) => item.href));
     const allAccessModules = getRoleWorkspaceModules([ALL_ACCESS_ROLE]);
-    const reception = allAccessModules.find((navigationModule) => navigationModule.label === "Reception");
+    const reception = allAccessModules.find((navigationModule) => navigationModule.label === "Service");
     const parts = allAccessModules.find((navigationModule) => navigationModule.label === "Parts");
 
     expect(serviceHrefs).not.toContain("/goods-in");
@@ -600,10 +624,11 @@ describe("workspace manifest - module bundle placement", () => {
   it("keeps the technician consumable request page in the Tech module", () => {
     const tech = getSidebarModuleCatalog().find((module) => module.key === "department-tech");
     expect(tech.items.map((item) => item.href)).toEqual([
-      "/tech/dashboard",
+      "/dashboard/tech",
       "/tech",
-      "/tech/efficiency",
       "/consumables-request",
+      "/tech/efficiency",
+      "/dashboard/mobile",
     ]);
   });
 
@@ -613,7 +638,7 @@ describe("workspace manifest - module bundle placement", () => {
       modules: [
         {
           key: "department-service",
-          label: "Reception",
+          label: "Service",
           items: ["/appointments"],
         },
         {
@@ -630,10 +655,16 @@ describe("workspace manifest - module bundle placement", () => {
       "department-service",
       "department-general",
     ]);
+    // A pre-split layout: the old /tracking button becomes Key/Parking, and
+    // the Service module it already holds gains Loan Cars.
+    expect(modules[0].items.map((item) => item.href)).toEqual([
+      "/appointments",
+      "/tracking/Loan-car",
+    ]);
     expect(modules[1].items.map((item) => item.href)).toEqual([
       "/newsfeed",
       "/messages",
-      "/tracking",
+      "/tracking/Key-Parking",
     ]);
     expect(sidebarAccess.modules[1].items).toEqual([
       "/tracking",
@@ -658,7 +689,7 @@ describe("workspace manifest - module bundle placement", () => {
       "/newsfeed",
       "/appointments",
       "/messages",
-      "/tracking",
+      "/tracking/Key-Parking",
     ]);
   });
 
@@ -680,7 +711,7 @@ describe("workspace manifest - module bundle placement", () => {
       items: ["/newsfeed", "/messages", "/appointments"],
     });
     const service = modules.find((navigationModule) => navigationModule.key === "department-service");
-    expect(service.label).toBe("Reception");
+    expect(service.label).toBe("Service");
     expect(service.items.map((item) => item.href)).toContain("/appointments");
   });
 
@@ -973,7 +1004,7 @@ describe("workspace manifest — department-first selectors", () => {
   it("getContextNav deduplicates a department's pages by href", () => {
     // Parts declares Stock Catalogue / Goods In / Deliveries in BOTH the Parts
     // and Parts Manager sections; the context nav shows each once. (Job Cards
-    // is no longer among them — /jobs belongs to Reception.)
+    // is no longer among them — /jobs belongs to Service.)
     const partsManager = getContextNav("parts", ["parts manager"]);
     const hrefs = partsManager.items.map((i) => i.href);
     expect(hrefs).not.toContain("/jobs");
@@ -1003,7 +1034,7 @@ describe("workspace manifest — department-first selectors", () => {
 
   it("getBreadcrumbTrail builds a Module › Page trail", () => {
     // "Parts" is the library module that owns /deliveries; the bespoke
-    // "Fulfilment" bundle (Reception + Parts pages) no longer exists.
+    // "Fulfilment" bundle (Service + Parts pages) no longer exists.
     const trail = getBreadcrumbTrail("/deliveries", ["parts"]);
     expect(trail.map((t) => t.label)).toEqual(["Parts", "Deliveries"]);
   });
@@ -1057,7 +1088,7 @@ describe("workspace manifest — department-first selectors", () => {
   it("getQuickActions filters topbar actions by role and active workspace", () => {
     expect(getQuickActions(["service"], "service").map((item) => item.href)).toEqual([
       "/new-job",
-      "/job-cards/appointments",
+      "/appointments",
     ]);
     expect(getQuickActions(["parts manager"], "parts").map((item) => item.href)).toEqual([
       "/delivery-planner",
@@ -1069,7 +1100,7 @@ describe("workspace manifest — department-first selectors", () => {
 
   it("getWorkspaceRail exposes department-first labels for visible workspaces", () => {
     const serviceRail = getWorkspaceRail(["service"]).map((d) => d.label);
-    expect(serviceRail).toContain("Reception");
+    expect(serviceRail).toContain("Service");
     expect(serviceRail).not.toContain("Parts");
 
     const adminRail = getWorkspaceRail(["admin manager"]).map((d) => d.label);
@@ -1144,9 +1175,9 @@ describe("workspace manifest — department-first selectors", () => {
 
   it("dashboards are role-filtered per group (Tech Dashboard only for techs)", () => {
     const techNav = getDepartmentWorkspaceNav("workshop", ["techs"]);
-    expect(techNav.dashboards.map((d) => d.href)).toContain("/tech/dashboard");
+    expect(techNav.dashboards.map((d) => d.href)).toContain("/dashboard/tech");
     const managerNav = getDepartmentWorkspaceNav("workshop", ["workshop manager"]);
-    expect(managerNav.dashboards.map((d) => d.href)).not.toContain("/tech/dashboard");
+    expect(managerNav.dashboards.map((d) => d.href)).not.toContain("/dashboard/tech");
     // A group with no dashboards (e.g. Developer) simply has an empty list.
     expect(getDepartmentWorkspaceNav("developer", ["dev"]).dashboards).toEqual([]);
   });
@@ -1192,7 +1223,6 @@ describe("workspace manifest — department-first selectors", () => {
     ]);
     expect(quickActions.items.map((tab) => tab.href)).toEqual([
       "/new-job",
-      "/job-cards/appointments",
       "/appointments",
     ]);
     expect(isPageTabActive(tabs.items.find((tab) => tab.href === "/clocking"), "/clocking/a-tech")).toBe(true);
@@ -1251,9 +1281,9 @@ describe("workspace group permission model", () => {
     expect(generalRoleless).toContain("/newsfeed");
     expect(generalRoleless).toContain("/messages");
     expect(generalRoleless).toContain("/archive");
-    // ...but a page carrying its own roles (Tracker) stays restricted.
-    expect(generalRoleless).not.toContain("/tracking");
-    expect(getContextNav("general", ["techs"]).items.map((i) => i.href)).toContain("/tracking");
+    // ...but a page carrying its own roles (Key/Parking) stays restricted.
+    expect(generalRoleless).not.toContain("/tracking/Key-Parking");
+    expect(getContextNav("general", ["techs"]).items.map((i) => i.href)).toContain("/tracking/Key-Parking");
   });
 
   it("individual page grants work across groups (Sales sees the Admin group's Website Manager)", () => {
@@ -1343,5 +1373,82 @@ describe("workspace group inheritance (Phase 8 — default permission model)", (
 describe("workspace manifest — feature flag", () => {
   it("workspace_nav_enabled is ON by default and remains env-roll-backable", () => {
     expect(isWorkspaceNavEnabled()).toBe(true);
+  });
+});
+
+describe("workspace manifest — tracker split saved-layout migration", () => {
+  const hrefsOf = (modules, key) =>
+    modules.find((navigationModule) => navigationModule.key === key)?.items.map((item) => item.href);
+
+  it("moves the old /tracking button to Key/Parking in whatever slot it held", () => {
+    const modules = getRoleWorkspaceModules(["techs"], {
+      modules: [{ key: "my-day", label: "My Day", items: ["/tracking", "/newsfeed"] }],
+    });
+    expect(hrefsOf(modules, "my-day")).toEqual(["/tracking/Key-Parking", "/newsfeed"]);
+    expect(resolveAccessiblePaths(["techs"], {
+      modules: [{ key: "my-day", label: "My Day", items: ["/tracking"] }],
+    }).has("/tracking/Key-Parking")).toBe(true);
+  });
+
+  it("adds each new page to the saved module that now owns it", () => {
+    const layout = {
+      version: 5,
+      items: ["/newsfeed", "/tracking", "/jobs", "/clocking", "/goods-in"],
+      modules: [
+        { key: "department-general", label: "General", items: ["/newsfeed", "/tracking"] },
+        { key: "department-service", label: "Service", items: ["/jobs"] },
+        { key: "department-workshop", label: "Workshop", items: ["/clocking"] },
+        { key: "department-parts", label: "Parts", items: ["/goods-in"] },
+      ],
+    };
+    const modules = getRoleWorkspaceModules([ALL_ACCESS_ROLE], layout);
+    expect(hrefsOf(modules, "department-general")).toEqual(["/newsfeed", "/tracking/Key-Parking"]);
+    expect(hrefsOf(modules, "department-service")).toEqual(["/jobs", "/tracking/Loan-car"]);
+    expect(hrefsOf(modules, "department-workshop")).toEqual(["/clocking", "/tracking/Equipment-Tools"]);
+    expect(hrefsOf(modules, "department-parts")).toEqual(["/goods-in", "/tracking/Oil-Stock"]);
+    // The stored row is read, never rewritten.
+    expect(layout.modules[1].items).toEqual(["/jobs"]);
+  });
+
+  it("never adds a page to a module the user does not hold", () => {
+    const modules = getRoleWorkspaceModules(["workshop manager"], {
+      items: ["/newsfeed", "/clocking"],
+      modules: [
+        { key: "department-general", label: "General", items: ["/newsfeed"] },
+        { key: "department-workshop", label: "Workshop", items: ["/clocking"] },
+      ],
+    });
+    // Workshop manager may open Loan Cars and Oil/Stock, but holds neither the
+    // Service nor the Parts module in this saved layout.
+    expect(modules.map((navigationModule) => navigationModule.key)).toEqual([
+      "department-general",
+      "department-workshop",
+    ]);
+    expect(hrefsOf(modules, "department-workshop")).toEqual(["/clocking", "/tracking/Equipment-Tools"]);
+  });
+
+  it("never adds a page the user's roles may not open", () => {
+    // Parts staff are not in the loan car role list.
+    const modules = getRoleWorkspaceModules(["parts"], {
+      modules: [{ key: "department-service", label: "Service", items: ["/jobs"] }],
+    });
+    expect(hrefsOf(modules, "department-service")).toEqual(["/jobs"]);
+  });
+
+  it("leaves a current-version layout exactly as saved", () => {
+    const layout = {
+      version: SIDEBAR_LAYOUT_MIGRATION.version,
+      modules: [{ key: "department-service", label: "Service", items: ["/jobs"] }],
+    };
+    expect(migrateSidebarLayout(layout, ["service"])).toBe(layout);
+    expect(hrefsOf(getRoleWorkspaceModules(["service"], layout), "department-service")).toEqual(["/jobs"]);
+  });
+
+  it("approves a new page in an items-only snapshot only where the role default holds it", () => {
+    const serviceMigrated = migrateSidebarLayout({ items: ["/jobs", "/tracking"] }, ["service"]);
+    expect(serviceMigrated.items).toEqual(["/jobs", "/tracking/Key-Parking", "/tracking/Loan-car"]);
+    // Techs may view loan cars but their default has no Service module.
+    const techsMigrated = migrateSidebarLayout({ items: ["/tracking"] }, ["techs"]);
+    expect(techsMigrated.items).toEqual(["/tracking/Key-Parking", "/tracking/Equipment-Tools"]);
   });
 });

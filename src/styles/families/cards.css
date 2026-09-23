@@ -115,3 +115,73 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline: 2px solid #16a34a !important;
   outline-offset: 2px;
 }
+
+/* ========================================================================== */
+/* === Responsive sweep, 2026-09 — breakpoints: src/styles/breakpoints.js  === */
+/* ========================================================================== */
+/*
+ * Card padding is cumulative down the nesting ladder, and that is what made
+ * card sections unusable on a phone. At the 375px floor the stack is:
+ *
+ *   viewport 375
+ *   - app shell gutter        2 x 10 = 20
+ *   - page card padding       2 x 24 = 48
+ *   - section card padding    2 x 20 = 40
+ *   = 267px of usable content width, before the content's own padding.
+ *
+ * A two-column field row inside that has ~125px per column, which is why
+ * labels wrapped to four lines and values overflowed. Shrinking the padding at
+ * each tier recovers ~44px, and at the floor tier another ~24px.
+ *
+ * These are token REBINDS, not new declarations: every card in the app already
+ * reads --page-card-padding / --section-card-padding, so the whole ladder
+ * follows automatically and no individual card needs touching. The 640px tier
+ * for --page-card-padding is already applied in staffglobal.css; this adds the
+ * section tier, which had --section-card-padding-sm defined but never bound,
+ * and the 375px floor tier.
+ */
+@media (max-width: 640px) {
+  html.staff-scope {
+    --section-card-padding: var(--section-card-padding-sm);
+    /* The radius scales with the padding — a 24px radius on a card with 16px
+       of padding eats its own corners, clipping the first and last characters
+       of the top line. */
+    --section-card-radius: var(--radius-sm);
+    --page-card-radius: var(--radius-lg);
+  }
+
+  /* Any card is allowed to shrink below its content's intrinsic width. Without
+     this a single long unbroken string (a VIN, a reg, a part number, an email)
+     sets the card's min-content width and pushes the entire page sideways —
+     the most common cause of horizontal scroll at the floor. */
+  html.staff-scope :is(
+      .app-page-card,
+      .app-section-card,
+      .app-layout-section-shell,
+      .app-layout-card,
+      .app-layout-surface-subtle,
+      .app-layout-surface-accent,
+      .app-layout-stat-card,
+      .app-layer-surface,
+      .app-layer-theme
+    ) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Stat cards are laid out in rows of 3-4 on desktop and each reserves 110px
+     of height for a number that is no taller on a phone. */
+  html.staff-scope .app-layout-stat-card {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 375px) {
+  /* The hard floor (iPhone SE). Nothing may scroll horizontally here. */
+  html.staff-scope {
+    --page-card-padding: 12px;
+    --page-card-padding-mobile: 12px;
+    --section-card-padding: 12px;
+    --page-stack-gap: var(--page-stack-gap-mobile);
+  }
+}

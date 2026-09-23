@@ -1,5 +1,6 @@
 // file location: src/lib/vhc/shareCode.test.js
 import { describe, expect, it } from "vitest";
+import { isPublicPath, isPublicVhcReportPath } from "@/config/routeAccess";
 import {
   generateShareCode,
   normaliseShareCode,
@@ -59,13 +60,19 @@ describe("normaliseShareCode", () => {
 });
 
 describe("buildCustomerReportUrl", () => {
+  it("makes the report public without opening the staff customers area", () => {
+    expect(isPublicPath(buildCustomerReportUrl("K7RM4XQP"))).toBe(true);
+    expect(isPublicVhcReportPath(buildCustomerReportUrl("K7RM4XQP"))).toBe(true);
+    expect(isPublicPath("/report/K7RM4XQP")).toBe(true);
+    expect(isPublicPath("/customers/123")).toBe(false);
+  });
   it("builds a two-segment relative path", () => {
-    expect(buildCustomerReportUrl("K7RM4XQP")).toBe("/report/K7RM4XQP");
+    expect(buildCustomerReportUrl("K7RM4XQP")).toBe("/customer/K7RM4XQP");
   });
 
   it("joins onto an origin without doubling the slash", () => {
     expect(buildCustomerReportUrl("K7RM4XQP", "https://example.com/")).toBe(
-      "https://example.com/report/K7RM4XQP"
+      "https://example.com/customer/K7RM4XQP"
     );
   });
 });

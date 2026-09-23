@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
@@ -61,7 +62,7 @@ function NewDpiaForm({ onCreated }) {
   if (!open) {
     return (
       <Button type="button" variant="primary" size="sm" onClick={() => setOpen(true)}>
-        + New DPIA
+        New DPIA
       </Button>
     );
   }
@@ -169,25 +170,27 @@ export default function DpiasPage() {
       <Section title="DPIA Register">
         {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>{error}</p>}
         {rows === null ? (
-          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          <div style={{ overflowX: "auto" }}>
+            <TableSkeleton columns={["System / Feature", "Status", "Risk", "Next review"]} rows={5} label="Loading DPIAs" />
+          </div>
         ) : rows.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No DPIAs on record.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+            <table className="app-data-table">
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>System / Feature</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Status</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Risk</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Next review</th>
+                  <th>System / Feature</th>
+                  <th>Status</th>
+                  <th>Risk</th>
+                  <th>Next review</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.system_or_feature}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                    <td>{row.system_or_feature}</td>
+                    <td>
                       <DropdownField
                         value={row.status}
                         disabled={busyId === row.id}
@@ -196,7 +199,7 @@ export default function DpiasPage() {
                         size="sm"
                       />
                     </td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                    <td>
                       <DropdownField
                         value={row.risk_level || "medium"}
                         disabled={busyId === row.id}
@@ -205,7 +208,7 @@ export default function DpiasPage() {
                         size="sm"
                       />
                     </td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.next_review)}</td>
+                    <td>{fmt(row.next_review)}</td>
                   </tr>
                 ))}
               </tbody>

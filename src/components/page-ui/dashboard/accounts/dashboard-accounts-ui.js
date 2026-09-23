@@ -1,6 +1,8 @@
 // file location: src/components/page-ui/dashboard/accounts/dashboard-accounts-ui.js
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerTheme from "@/components/ui/LayerTheme";
+import LayerSurface from "@/components/ui/LayerSurface";
+import { SkeletonBlock, SkeletonKeyframes, SkeletonMetricCard, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 function ThemeSection({ sectionKey, title, subtitle, children }) {
   return (
@@ -53,9 +55,9 @@ export default function AccountsDashboardUi(props) {
         }}
       >
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-1" title="Invoice stats">
-          {loading ? <p style={{
-        color: "var(--text-1)"
-      }}>Loading financial KPIs…</p> : error ? <p style={{
+          {loading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading financial KPIs" style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              {Array.from({ length: 3 }, (_, index) => <SkeletonMetricCard key={index} layer="surface" />)}
+            </div> : error ? <p style={{
         color: "var(--text-accent)"
       }}>{error}</p> : <div style={{
         display: "flex",
@@ -69,9 +71,9 @@ export default function AccountsDashboardUi(props) {
         </ThemeSection>
 
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-cashflow" title="Cashflow snapshot" subtitle="Movement across customer accounts in the last 7 days">
-          {loading ? <p style={{
-        color: "var(--text-1)"
-      }}>Loading cashflow…</p> : error ? <p style={{
+          {loading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading cashflow" style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              {Array.from({ length: 4 }, (_, index) => <SkeletonMetricCard key={index} layer="surface" />)}
+            </div> : error ? <p style={{
         color: "var(--text-accent)"
       }}>{error}</p> : <div style={{
         display: "flex",
@@ -86,25 +88,28 @@ export default function AccountsDashboardUi(props) {
         </ThemeSection>
 
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-transactions" title="Recent transactions" subtitle="Latest entries posted to customer accounts">
-          {loading ? <p style={{
-        color: "var(--text-1)"
-      }}>Loading transactions…</p> : error ? <p style={{
+          {loading ? <TableSkeleton columns={["Date", "Description", "Job", "Method", "Amount"]} rows={5} label="Loading transactions" /> : error ? <p style={{
         color: "var(--text-accent)"
       }}>{error}</p> : <TransactionTable transactions={data.recentTransactions} />}
         </ThemeSection>
 
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-balances" title="Credit watchlist" subtitle="Accounts ranked by how much of their credit limit is used">
-          {loading ? <p style={{
-        color: "var(--text-1)"
-      }}>Loading account balances…</p> : error ? <p style={{
+          {loading ? <TableSkeleton columns={["Account", "Type", "Balance", "Credit limit", "Usage"]} rows={5} label="Loading account balances" /> : error ? <p style={{
         color: "var(--text-accent)"
       }}>{error}</p> : <AccountBalanceTable accounts={data.creditAccounts} />}
         </ThemeSection>
 
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-2" title="Outstanding jobs" subtitle="Most recent completions without invoice">
-          {loading ? <p style={{
-        color: "var(--text-1)"
-      }}>Loading outstanding jobs…</p> : error ? <p style={{
+          {loading ? <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px" role="status" aria-live="polite" aria-busy="true" aria-label="Loading outstanding jobs">
+              <SkeletonKeyframes />
+              {["42%", "36%", "48%", "40%"].map((width, index) => <div key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                  <div style={{ display: "grid", gap: "6px", flex: 1, minWidth: 0 }}>
+                    <SkeletonBlock width="96px" height="16px" />
+                    <SkeletonBlock width={width} height="12px" />
+                  </div>
+                  <SkeletonBlock width="72px" height="12px" />
+                </div>)}
+            </LayerSurface> : error ? <p style={{
         color: "var(--text-accent)"
       }}>{error}</p> : <JobList jobs={data.outstandingJobs} />}
         </ThemeSection>

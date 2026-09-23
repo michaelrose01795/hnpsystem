@@ -82,11 +82,9 @@ const labelStyle = {
 // Surface (background, border, radius, padding, height) is intentionally left
 // to the global input rules in src/styles/staffglobal.css so this page matches the
 // rest of the app. Only typography props are kept here.
-const inputStyle = {
-  fontSize: "0.95rem",
-  fontFamily: "inherit",
-  color: "var(--text-1)"
-};
+// Control chrome comes from the global .app-input class in staffglobal.css,
+// which every field the goods-in UI renders now carries.
+const inputStyle = {};
 
 const addPartInputStyle = {
   ...inputStyle
@@ -2647,7 +2645,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                 overflow: "hidden"
               }}>
               
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <table className="app-data-table">
                   <thead style={{ background: "var(--surface)" }}>
                     <tr>
                       <th style={{ ...invoiceHeaderCellStyle, width: "90px" }}>Remove</th>
@@ -2701,7 +2699,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                   overflow: "hidden"
                 }}>
                 
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <table className="app-data-table">
                     <thead style={{ background: "var(--surface)" }}>
                       <tr>
                         <th style={{ ...invoiceHeaderCellStyle, width: "90px" }}>Add</th>

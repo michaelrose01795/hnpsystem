@@ -5,6 +5,7 @@ import { INVOICE_STATUSES } from "@/config/accounts";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import Button from "@/components/ui/Button";
 
@@ -27,13 +28,17 @@ export default function InvoiceTableToolbar({ filters, onFilterChange, onExport,
         onClear={() => onFilterChange({ ...filters, search: "" })}
         style={{ flex: "1 1 150px", minWidth: 120 }} />
 
-      <DropdownField
-        name="status"
-        value={filters.status}
-        onChange={handleFilterChange}
-        placeholder="All statuses"
-        options={[{ label: "All Statuses", value: "", placeholder: true }, ...INVOICE_STATUSES.map((status) => ({ label: status, value: status }))]}
-        style={{ flex: "0 0 150px" }} />
+      <FilterButton activeCount={filters.status ? 1 : 0} onClear={() => onFilterChange({ ...filters, status: "" })}>
+        <FilterField label="Status" htmlFor="invoice-toolbar-filter-status">
+          <DropdownField
+            id="invoice-toolbar-filter-status"
+            name="status"
+            value={filters.status}
+            onChange={handleFilterChange}
+            placeholder="All statuses"
+            options={[{ label: "All Statuses", value: "", placeholder: true }, ...INVOICE_STATUSES.map((status) => ({ label: status, value: status }))]} />
+        </FilterField>
+      </FilterButton>
 
       <div style={{ flex: "0 0 140px" }}>
         <CalendarField name="from" placeholder="From date" value={filters.from} onChange={handleFilterChange} size="sm" />

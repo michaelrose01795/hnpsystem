@@ -4,6 +4,7 @@
 
 import React, { useMemo, useState, useCallback } from "react"; // React core + hooks
 import { DropdownField } from "@/components/ui/dropdownAPI"; // Dropdown filter component
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 
@@ -507,7 +508,7 @@ export default function JobProgressTracker({
         minHeight: 0,
       }}
     >
-      {/* Header row: title with the user/action filters inline on the same row */}
+      {/* Header row: title with the filter button on the same row */}
       <div
         style={{
           display: "flex",
@@ -530,53 +531,33 @@ export default function JobProgressTracker({
           Timeline
         </h3>
 
-        {/* Compact filters — app-autowidth sizes each control to its longest
-            option, and the menu grows to max-content so no option is clipped. */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "10px",
-            alignItems: "flex-end",
+        {/* The user/action filters live in the shared filter button's card. */}
+        <FilterButton
+          activeCount={(selectedUser !== "all" ? 1 : 0) + (selectedAction !== "all" ? 1 : 0)}
+          onClear={() => {
+            setSelectedUser("all");
+            setSelectedAction("all");
           }}
         >
-          <DropdownField
-            id="timeline-filter-user"
-            label="Users"
-            className="app-autowidth"
-            options={userOptions}
-            value={selectedUser}
-            onChange={(event) => setSelectedUser(event.target.value)}
-            size="sm"
-            usePortal={false}
-            style={{ width: "fit-content" }}
-            menuStyle={{
-              position: "absolute",
-              top: "calc(100% + 6px)",
-              left: "auto",
-              right: 0,
-              minWidth: "max-content",
-            }}
-          />
-          <DropdownField
-            id="timeline-filter-action"
-            label="Actions"
-            className="app-autowidth"
-            options={actionOptions}
-            value={selectedAction}
-            onChange={(event) => setSelectedAction(event.target.value)}
-            size="sm"
-            usePortal={false}
-            style={{ width: "fit-content" }}
-            menuStyle={{
-              position: "absolute",
-              top: "calc(100% + 6px)",
-              left: "auto",
-              right: 0,
-              minWidth: "max-content",
-            }}
-          />
-        </div>
+          <FilterField label="User" htmlFor="timeline-filter-user">
+            <DropdownField
+              id="timeline-filter-user"
+              options={userOptions}
+              value={selectedUser}
+              onChange={(event) => setSelectedUser(event.target.value)}
+              size="sm"
+            />
+          </FilterField>
+          <FilterField label="Action" htmlFor="timeline-filter-action">
+            <DropdownField
+              id="timeline-filter-action"
+              options={actionOptions}
+              value={selectedAction}
+              onChange={(event) => setSelectedAction(event.target.value)}
+              size="sm"
+            />
+          </FilterField>
+        </FilterButton>
       </div>
 
       {/* Timeline content grows naturally; the Job Tracker sidebar owns scrolling. */}

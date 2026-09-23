@@ -11,8 +11,10 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
+import { offers as codeOffers } from "@/features/website/data/offers";
+import { vehicles as codeVehicles } from "@/features/website/data/vehicles";
 import { SECTIONS_BY_PAGE } from "../editors/sectionSchemas";
-import { fetchSection } from "../websiteApi";
 import { fetchProducts, fetchOrders } from "../shopApi";
 import { StatusBadge, StatCard, formatDateTime } from "../helpers";
 
@@ -34,11 +36,13 @@ export default function OverviewPanel({
     [pages]
   );
 
-  // Live stock counts. Vehicles + offers come from website_*; products and
-  // orders come from shop_*. Low-stock = stock_qty < 5 && published.
+  // Live stock counts. Vehicles come from website_*; products and orders come
+  // from shop_*. Low-stock = stock_qty < 5 && published. Offers are code-owned
+  // (src/features/website/data/offers.js), so counting website_offers rows here
+  // would report a number no visitor ever sees — count the code array instead.
   const [stock, setStock] = useState({
     vehicles: null,
-    offers: null,
+    offers: codeOffers.length,
     products: null,
     lowStock: [],
     pendingOrders: null,
@@ -47,16 +51,14 @@ export default function OverviewPanel({
   useEffect(() => {
     let active = true;
     (async () => {
-      const [vehicles, offers, products, orders] = await Promise.all([
-        fetchSection("vehicles").catch(() => []),
-        fetchSection("offers").catch(() => []),
+      const [products, orders] = await Promise.all([
         fetchProducts().catch(() => []),
         fetchOrders().catch(() => []),
       ]);
       if (!active) return;
       setStock({
-        vehicles: (vehicles || []).filter((v) => v.status === "published").length,
-        offers: (offers || []).filter((o) => o.status === "published").length,
+        vehicles: codeVehicles.length,
+        offers: codeOffers.length,
         products: (products || []).filter((p) => p.status === "published").length,
         lowStock: (products || []).filter(
           (p) => p.status === "published" && p.stock_qty < 5
@@ -159,17 +161,21 @@ export default function OverviewPanel({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <DropdownField
-            className="website-manager__toolbar-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Filter by status"
-            options={[
-              { value: "all", label: "All statuses" },
-              { value: "published", label: "Published only" },
-              { value: "draft", label: "Draft only" },
-            ]}
-          />
+          <FilterButton activeCount={statusFilter !== "all" ? 1 : 0} onClear={() => setStatusFilter("all")}>
+            <FilterField label="Status" htmlFor="website-pages-filter-status">
+              <DropdownField
+                id="website-pages-filter-status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                aria-label="Filter by status"
+                options={[
+                  { value: "all", label: "All statuses" },
+                  { value: "published", label: "Published only" },
+                  { value: "draft", label: "Draft only" },
+                ]}
+              />
+            </FilterField>
+          </FilterButton>
         </div>
 
         {filteredPages.length === 0 ? (
