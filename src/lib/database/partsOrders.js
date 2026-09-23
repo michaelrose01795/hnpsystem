@@ -33,6 +33,7 @@ const ORDER_SELECT = `
   invoice_total,
   invoice_status,
   invoice_notes,
+  customer_notes,
   notes,
   created_by,
   created_at,
@@ -67,7 +68,38 @@ const ORDER_UPDATE_FIELDS = new Set([
   "invoice_total",
   "invoice_status",
   "invoice_notes",
+  "customer_notes",
   "notes",
+]);
+
+const ORDER_CREATE_FIELDS = new Set([
+  "status",
+  "priority",
+  "customer_id",
+  "customer_name",
+  "customer_phone",
+  "customer_email",
+  "customer_address",
+  "vehicle_id",
+  "vehicle_reg",
+  "vehicle_make",
+  "vehicle_model",
+  "vehicle_vin",
+  "vehicle_details",
+  "notes",
+  "delivery_type",
+  "delivery_address",
+  "delivery_contact",
+  "delivery_phone",
+  "delivery_eta",
+  "delivery_window",
+  "delivery_status",
+  "delivery_notes",
+  "invoice_reference",
+  "invoice_total",
+  "invoice_status",
+  "invoice_notes",
+  "customer_notes",
 ]);
 
 const DELIVERY_JOB_STATUS = Object.freeze({
@@ -94,7 +126,7 @@ const plannedTime = (value) => {
 export const syncPartsOrderDeliveryJob = async (order) => {
   const orderNumber = normaliseOrderNumber(order?.order_number);
   const fulfilmentType = String(order?.delivery_type || "").toLowerCase();
-  if (!orderNumber || !["collection", "delivery"].includes(fulfilmentType)) return null;
+  if (!orderNumber || !["collection", "delivery", "courier"].includes(fulfilmentType)) return null;
 
   const items = Array.isArray(order.items) ? order.items : [];
   const firstItem = items[0] || {};
@@ -152,11 +184,19 @@ export const syncPartsOrderDeliveryJob = async (order) => {
  * Fetches all parts order cards ("parts orders") with their basic line items.
  * Used by the job-cards Orders tab to show recent activity.
  */
-export const getPartsOrders = async () => {
-  const { data, error } = await supabase
+export const getPartsOrders = async ({ customerId, customerName, vehicleReg, openOnly = false, limit } = {}) => {
+  let query = supabase
     .from("parts_order_cards")
     .select(ORDER_SELECT)
     .order("created_at", { ascending: false });
+
+  if (customerId) query = query.eq("customer_id", customerId);
+  else if (customerName) query = query.ilike("customer_name", String(customerName).trim());
+  if (vehicleReg) query = query.ilike("vehicle_reg", String(vehicleReg).trim());
+  if (openOnly) query = query.in("status", ["draft", "booked", "ready"]);
+  if (limit) query = query.limit(Math.min(Math.max(Number(limit) || 5, 1), 50));
+
+  const { data, error } = await query;
 
   if (error) {
     logFailure("❌ getPartsOrders error:", error);
@@ -164,6 +204,79 @@ export const getPartsOrders = async () => {
   }
 
   return data || [];
+};
+
+/**
+ * Invoice progress is derived from the invoices raised against the order
+ * rather than stepped by hand: an invoice existing means "issued", and every
+ * invoice on the order being settled means "paid". Returns null when nothing
+ * has been raised yet, so the stored value is left alone.
+ */
+const deriveInvoiceStatus = (invoices = []) => {
+  if (!Array.isArray(invoices) || invoices.length === 0) return null;
+  const settled = invoices.every(
+    (invoice) =>
+      invoice?.paid === true ||
+      String(invoice?.payment_status || "").trim().toLowerCase() === "paid"
+  );
+  return settled ? "paid" : "issued";
+};
+
+/**
+ * Bring an order's invoice fields back in step with the invoices table. Runs
+ * on read so the order reflects accounts activity without anyone updating a
+ * status by hand; a failure here never blocks the read.
+ */
+export const syncPartsOrderInvoiceStatus = async (order) => {
+  if (!order?.order_number) return order;
+  if (order.invoice_status === "cancelled") return order; // cancelling is an accounts decision, not a derived one.
+  // The reference goes into a PostgREST or() filter string, where a comma or a
+  // parenthesis would change the filter's meaning, so only plain tokens are used.
+  const rawReference = String(order.invoice_reference || "").trim();
+  const reference = /^[A-Za-z0-9._/-]{1,64}$/.test(rawReference) ? rawReference : "";
+  let query = supabase
+    .from("invoices")
+    .select("invoice_number, invoice_notes, paid, payment_status, grand_total, invoice_total, total");
+  query = reference
+    ? query.or(`order_number.eq.${order.order_number},invoice_number.eq.${reference}`)
+    : query.eq("order_number", order.order_number);
+  const { data, error } = await query;
+  if (error) {
+    logFailure("Unable to derive parts order invoice status:", error);
+    return order;
+  }
+
+  const invoices = data || [];
+  const derivedStatus = deriveInvoiceStatus(invoices);
+  if (!derivedStatus) return order;
+
+  const invoicedTotal = invoices.reduce(
+    (sum, invoice) =>
+      sum + (Number(invoice.grand_total ?? invoice.invoice_total ?? invoice.total) || 0),
+    0
+  );
+  const updates = {};
+  if (order.invoice_status !== derivedStatus) updates.invoice_status = derivedStatus;
+  if (!reference && invoices.length === 1 && invoices[0].invoice_number) {
+    updates.invoice_reference = invoices[0].invoice_number;
+  }
+  // Seed the order with the invoice's own notes so the notes popup opens on
+  // what the invoice document already says rather than on an empty box.
+  const invoicedNotes = invoices.find((invoice) => String(invoice.invoice_notes || "").trim())?.invoice_notes;
+  if (invoicedNotes && !String(order.invoice_notes || "").trim()) updates.invoice_notes = invoicedNotes;
+  if (invoicedTotal > 0 && Number(order.invoice_total || 0) !== invoicedTotal) {
+    updates.invoice_total = invoicedTotal;
+  }
+  if (Object.keys(updates).length === 0) return order;
+
+  try {
+    // updatePartsOrderByNumber also completes the order once delivery and
+    // invoice have both landed, so completion stays automatic too.
+    return (await updatePartsOrderByNumber(order.order_number, updates)) || order;
+  } catch (updateError) {
+    logFailure("Unable to store derived parts order invoice status:", updateError);
+    return { ...order, ...updates }; // still show the derived truth if the write failed.
+  }
 };
 
 export const getPartsOrderByNumber = async (orderNumber) => {
@@ -175,7 +288,69 @@ export const getPartsOrderByNumber = async (orderNumber) => {
     .eq("order_number", normalized)
     .maybeSingle();
   if (error) throw new Error(`Unable to load parts order: ${error.message}`);
-  return data || null;
+  if (!data) return null;
+  return await syncPartsOrderInvoiceStatus(data);
+};
+
+/**
+ * Replaces the line items on one parts order with the supplied set.
+ * Rows carrying an existing id are updated, rows without one are inserted, and
+ * any row missing from the payload is removed — this backs the "Edit parts"
+ * table on the parts order page.
+ */
+export const replacePartsOrderItems = async (orderNumber, items = []) => {
+  const normalized = normaliseOrderNumber(orderNumber);
+  if (!normalized) throw new Error("An order number is required.");
+
+  const { data: orderRecord, error: lookupError } = await supabase
+    .from("parts_order_cards")
+    .select("id")
+    .eq("order_number", normalized)
+    .maybeSingle();
+  if (lookupError) throw new Error(`Unable to load parts order: ${lookupError.message}`);
+  if (!orderRecord) return null;
+
+  const validItems = (Array.isArray(items) ? items : []).filter(
+    (item) => item && (item.part_name || item.part_number)
+  );
+  const cleanItem = (item) => ({
+    order_id: orderRecord.id,
+    part_catalog_id: item.part_catalog_id || null,
+    part_number: item.part_number ? String(item.part_number) : null,
+    part_name: item.part_name ? String(item.part_name) : null,
+    quantity: Number(item.quantity) || 0,
+    unit_price: Number(item.unit_price) || 0,
+    notes: item.notes ? String(item.notes) : null,
+    updated_at: new Date().toISOString(),
+  });
+
+  const keptIds = validItems.map((item) => item.id).filter(Boolean);
+  let deleteQuery = supabase.from("parts_order_card_items").delete().eq("order_id", orderRecord.id);
+  if (keptIds.length > 0) deleteQuery = deleteQuery.not("id", "in", `(${keptIds.join(",")})`);
+  const { error: deleteError } = await deleteQuery;
+  if (deleteError) throw new Error(`Unable to remove order items: ${deleteError.message}`);
+
+  for (const item of validItems.filter((entry) => entry.id)) {
+    const { error: updateError } = await supabase
+      .from("parts_order_card_items")
+      .update(cleanItem(item))
+      .eq("id", item.id)
+      .eq("order_id", orderRecord.id);
+    if (updateError) throw new Error(`Unable to update order items: ${updateError.message}`);
+  }
+
+  const newItems = validItems.filter((entry) => !entry.id).map(cleanItem);
+  if (newItems.length > 0) {
+    const { error: insertError } = await supabase.from("parts_order_card_items").insert(newItems);
+    if (insertError) throw new Error(`Unable to add order items: ${insertError.message}`);
+  }
+
+  await supabase
+    .from("parts_order_cards")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", orderRecord.id);
+
+  return await getPartsOrderByNumber(normalized);
 };
 
 export const updatePartsOrderByNumber = async (orderNumber, requestedUpdates = {}) => {
@@ -194,20 +369,147 @@ export const updatePartsOrderByNumber = async (orderNumber, requestedUpdates = {
     .maybeSingle();
   if (error) throw new Error(`Unable to update parts order: ${error.message}`);
   if (!data) return null;
-  await syncPartsOrderDeliveryJob(data);
-  return data;
+
+  let completeOrder = data;
+  if (
+    completeOrder.delivery_status === "delivered" &&
+    completeOrder.invoice_status === "paid" &&
+    completeOrder.status !== "complete"
+  ) {
+    const { data: completed, error: completionError } = await supabase
+      .from("parts_order_cards")
+      .update({ status: "complete", updated_at: new Date().toISOString() })
+      .eq("order_number", normalized)
+      .select(ORDER_SELECT)
+      .maybeSingle();
+    if (completionError) {
+      throw new Error(`Unable to complete parts order: ${completionError.message}`);
+    }
+    completeOrder = completed || completeOrder;
+  }
+
+  // The order's notes popup is now the only place invoice notes are written,
+  // so push them onto the invoice that carries them onto the document.
+  if (Object.prototype.hasOwnProperty.call(updates, "invoice_notes")) {
+    const { error: notesError } = await supabase
+      .from("invoices")
+      .update({ invoice_notes: updates.invoice_notes, updated_at: new Date().toISOString() })
+      .eq("order_number", normalized);
+    if (notesError) logFailure("Unable to copy invoice notes onto the invoice:", notesError);
+  }
+
+  await syncPartsOrderDeliveryJob(completeOrder);
+  return completeOrder;
 };
 
-export const createPartsOrder = async ({ order = {}, items = [], createdBy = null } = {}) => {
+export const searchPartsOrderCustomers = async (rawTerm) => {
+  const term = String(rawTerm || "").trim().replace(/[%_,]/g, "");
+  if (term.length < 2) return [];
+  const pattern = `%${term}%`;
+
+  const [{ data: customers, error: customerError }, { data: accounts, error: accountError }] =
+    await Promise.all([
+      supabase
+        .from("customers")
+        .select("id, firstname, lastname, email, mobile, telephone, address, postcode, contact_preference, created_at, updated_at")
+        .or(`firstname.ilike.${pattern},lastname.ilike.${pattern},name.ilike.${pattern},email.ilike.${pattern},mobile.ilike.${pattern},telephone.ilike.${pattern},postcode.ilike.${pattern}`)
+        .order("updated_at", { ascending: false })
+        .limit(15),
+      supabase
+        .from("company_accounts")
+        .select("id, account_number, company_name, trading_name, contact_name, contact_email, contact_phone, billing_address_line1, billing_address_line2, billing_city, billing_postcode, updated_at")
+        .or(`account_number.ilike.${pattern},company_name.ilike.${pattern},trading_name.ilike.${pattern},contact_name.ilike.${pattern},contact_email.ilike.${pattern},contact_phone.ilike.${pattern},billing_postcode.ilike.${pattern}`)
+        .order("updated_at", { ascending: false })
+        .limit(10),
+    ]);
+
+  if (customerError) throw new Error(`Unable to search customers: ${customerError.message}`);
+  if (accountError) throw new Error(`Unable to search customer accounts: ${accountError.message}`);
+
+  return [
+    ...(customers || []).map((customer) => ({ ...customer, result_type: "retail", account_type: "Retail" })),
+    ...(accounts || []).map((account) => ({
+      id: `account:${account.id}`,
+      account_id: account.id,
+      account_number: account.account_number,
+      firstname: account.trading_name || account.company_name || "",
+      lastname: "",
+      email: account.contact_email || "",
+      mobile: account.contact_phone || "",
+      telephone: account.contact_phone || "",
+      address: [account.billing_address_line1, account.billing_address_line2, account.billing_city].filter(Boolean).join(", "),
+      postcode: account.billing_postcode || "",
+      contact_name: account.contact_name || "",
+      result_type: "account",
+      account_type: "Trade account",
+      updated_at: account.updated_at,
+    })),
+  ].slice(0, 20);
+};
+
+const removeIncompleteOrder = async (orderId) => {
+  if (!orderId) return;
+  await supabase.from("parts_order_card_items").delete().eq("order_id", orderId);
+  await supabase.from("parts_order_cards").delete().eq("id", orderId);
+};
+
+const reserveCatalogueStock = async (items = []) => {
+  const reserved = [];
+  try {
+    for (const item of items) {
+      if (!item.part_catalog_id) continue;
+      // Lines the adviser has already resolved on /new-order (booked in at the
+      // counter, or on order with an arrival date) carry awaiting_stock. There
+      // is nothing on the shelf to reserve for those, so reserving the rest of
+      // the order must not fail on them.
+      if (item.awaiting_stock) continue;
+      const quantity = Number(item.quantity) || 0;
+      const { data: part, error: lookupError } = await supabase
+        .from("parts_catalog")
+        .select("id, part_number, qty_in_stock, qty_reserved")
+        .eq("id", item.part_catalog_id)
+        .maybeSingle();
+      if (lookupError || !part) throw new Error(`Unable to reserve ${item.part_number || "part"}.`);
+      const available = Math.max(0, Number(part.qty_in_stock || 0) - Number(part.qty_reserved || 0));
+      if (available < quantity) {
+        throw new Error(`${part.part_number || item.part_number || "Part"} only has ${available} available.`);
+      }
+      const nextReserved = Number(part.qty_reserved || 0) + quantity;
+      const { error: updateError } = await supabase
+        .from("parts_catalog")
+        .update({ qty_reserved: nextReserved, updated_at: new Date().toISOString() })
+        .eq("id", part.id);
+      if (updateError) throw new Error(`Unable to reserve ${part.part_number || "part"}.`);
+      reserved.push({ id: part.id, previous: Number(part.qty_reserved || 0) });
+    }
+    return reserved;
+  } catch (error) {
+    await Promise.all(
+      reserved.map((entry) =>
+        supabase
+          .from("parts_catalog")
+          .update({ qty_reserved: entry.previous, updated_at: new Date().toISOString() })
+          .eq("id", entry.id)
+      )
+    );
+    throw error;
+  }
+};
+
+export const createPartsOrder = async ({ order = {}, items = [], createdBy = null, reserveStock = false } = {}) => {
   const validItems = items.filter(
     (item) => item && (item.part_name || item.part_number) && Number(item.quantity) > 0
   );
-  if (!String(order.customer_name || "").trim()) throw new Error("Customer name is required.");
-  if (validItems.length === 0) throw new Error("Add at least one part to the order.");
+  const isDraft = order.status === "draft";
+  if (!isDraft && !String(order.customer_name || "").trim()) throw new Error("Customer name is required.");
+  if (!isDraft && validItems.length === 0) throw new Error("Add at least one part to the order.");
 
+  const safeOrder = Object.fromEntries(
+    Object.entries(order).filter(([key]) => ORDER_CREATE_FIELDS.has(key))
+  );
   const { data: orderRecord, error: orderError } = await supabase
     .from("parts_order_cards")
-    .insert([{ ...order, created_by: createdBy || order.created_by || null }])
+    .insert([{ ...safeOrder, created_by: createdBy || null }])
     .select("*")
     .maybeSingle();
   if (orderError || !orderRecord) {
@@ -223,14 +525,38 @@ export const createPartsOrder = async ({ order = {}, items = [], createdBy = nul
     unit_price: Number(item.unit_price) || 0,
     notes: item.notes || null,
   }));
-  const { data: savedItems, error: itemError } = await supabase
-    .from("parts_order_card_items")
-    .insert(itemPayload)
-    .select("*");
-  if (itemError) throw new Error(`Unable to save order items: ${itemError.message}`);
+  let savedItems = [];
+  if (itemPayload.length > 0) {
+    const { data, error: itemError } = await supabase
+      .from("parts_order_card_items")
+      .insert(itemPayload)
+      .select("*");
+    if (itemError) {
+      await removeIncompleteOrder(orderRecord.id);
+      throw new Error(`Unable to save order items: ${itemError.message}`);
+    }
+    savedItems = data || [];
+  }
 
-  const completeOrder = { ...orderRecord, items: savedItems || [] };
-  await syncPartsOrderDeliveryJob(completeOrder);
+  const completeOrder = { ...orderRecord, items: savedItems };
+  let reservations = [];
+  try {
+    if (!isDraft && reserveStock) reservations = await reserveCatalogueStock(validItems);
+    if (!isDraft) await syncPartsOrderDeliveryJob(completeOrder);
+  } catch (syncError) {
+    if (reservations.length > 0) {
+      await Promise.all(
+        reservations.map((entry) =>
+          supabase
+            .from("parts_catalog")
+            .update({ qty_reserved: entry.previous, updated_at: new Date().toISOString() })
+            .eq("id", entry.id)
+        )
+      );
+    }
+    await removeIncompleteOrder(orderRecord.id);
+    throw syncError;
+  }
   return completeOrder;
 };
 

@@ -3,6 +3,7 @@ import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer prim
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup"; // canonical staffglobal .tab-api tab system
 import Button from "@/components/ui/Button"; // canonical .app-btn button family
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton"; // shared loading skeletons
 
 export default function CompanyAccountDetailPageUi(props) {
   const {
@@ -123,7 +124,27 @@ export default function CompanyAccountDetailPageUi(props) {
 
           {/* Body */}
           {loading ?
-            <p className="app-status-message app-status-message--info" style={{ margin: 0 }}>Loading account…</p> :
+            <LayerSurface
+              as="div"
+              padding="var(--page-card-padding)"
+              gap="20px"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+              aria-label="Loading account">
+              <SkeletonKeyframes />
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {["96px", "120px", "88px", "110px"].map((width, index) => <SkeletonBlock key={index} width={width} height="36px" borderRadius="999px" />)}
+              </div>
+              <div style={{ minHeight: "200px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "var(--layout-card-gap)", alignContent: "start" }}>
+                {["70%", "55%", "80%", "60%", "75%", "50%"].map((width, index) =>
+                  <div key={index} style={{ display: "grid", gap: "6px" }}>
+                    <SkeletonBlock width="40%" height="12px" />
+                    <SkeletonBlock width={width} height="16px" />
+                  </div>
+                )}
+              </div>
+            </LayerSurface> :
           error ?
             <p className="app-status-message app-status-message--danger" style={{ margin: 0 }}>{error}</p> :
           !account ?

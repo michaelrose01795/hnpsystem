@@ -273,15 +273,15 @@ const getVhcOperationalStatus = (job) => {
   ].filter(Boolean).join(" · ");
 
   if (byWorkflow.awaiting_customer > 0) {
-    return { label: "VHC awaiting customer", tone: "warning", detail };
+    return { label: "VHC awaiting customer", tone: "warning-strong", detail };
   }
   if (byWorkflow.in_progress > 0 || byWorkflow.approved > 0) {
-    return { label: "VHC in progress", tone: "accent", detail };
+    return { label: "VHC in progress", tone: "accent-strong", detail };
   }
   if (byWorkflow.completed === summary.counts.total) {
     return { label: "VHC complete", tone: "success", detail };
   }
-  return { label: "VHC recorded", tone: detail ? "warning" : "neutral", detail };
+  return { label: "VHC recorded", tone: detail ? "warning" : "accent-soft", detail };
 };
 
 const getPartsOperationalStatus = (job) => {
@@ -289,10 +289,10 @@ const getPartsOperationalStatus = (job) => {
     ...(Array.isArray(job?.partsAllocations) ? job.partsAllocations : []),
     ...(Array.isArray(job?.partsRequests) ? job.partsRequests : []),
   ];
-  if (source.length === 0) return { label: "No parts status", tone: "neutral", detail: "" };
+  if (source.length === 0) return { label: "No parts", tone: "neutral", detail: "" };
 
   const activeParts = source.filter((part) => !["cancelled", "canceled", "removed"].includes(String(part?.status || "").trim().toLowerCase()));
-  if (activeParts.length === 0) return { label: "No parts status", tone: "neutral", detail: "" };
+  if (activeParts.length === 0) return { label: "No parts", tone: "neutral", detail: "" };
   const pipelineParts = activeParts.map((part) => {
     const rawStatus = String(part?.status || "").trim().toLowerCase();
     const status = ({
@@ -309,13 +309,13 @@ const getPartsOperationalStatus = (job) => {
   const stageCounts = pipeline.stageMap;
   const detail = `${activeParts.length} item${activeParts.length === 1 ? "" : "s"}`;
   if (stageCounts.on_order?.count > 0) {
-    return { label: "Parts on order", tone: "warning", detail };
+    return { label: "Parts on order", tone: "warning-strong", detail };
   }
   if ((stageCounts.waiting_authorisation?.count || 0) + (stageCounts.waiting_to_order?.count || 0) > 0) {
     return { label: "Parts pending", tone: "warning", detail };
   }
   if (stageCounts.pre_picked?.count > 0) {
-    return { label: "Parts preparing", tone: "accent", detail };
+    return { label: "Parts preparing", tone: "accent-strong", detail };
   }
   return { label: "Parts available", tone: "success", detail };
 };

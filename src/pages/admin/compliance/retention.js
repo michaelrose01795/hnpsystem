@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
 
@@ -77,35 +78,37 @@ export default function RetentionPage() {
         </p>
         {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>{error}</p>}
         {policies === null ? (
-          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          <div style={{ overflowX: "auto" }}>
+            <TableSkeleton columns={["Entity type", "Retention", "Action", "Legal basis", "Notes", "Run (log only)"]} rows={5} label="Loading retention policies" />
+          </div>
         ) : policies.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No policies configured.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+            <table className="app-data-table">
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Entity type</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Retention</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Action</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Legal basis</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Notes</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Run (log only)</th>
+                  <th>Entity type</th>
+                  <th>Retention</th>
+                  <th>Action</th>
+                  <th>Legal basis</th>
+                  <th>Notes</th>
+                  <th>Run (log only)</th>
                 </tr>
               </thead>
               <tbody>
                 {policies.map((row) => (
                   <tr key={row.entity_type}>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)", fontWeight: 600 }}>
+                    <td style={{ fontWeight: 600 }}>
                       {row.entity_type}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.retention_period}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.action}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.legal_basis || "—"}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                    <td>{row.retention_period}</td>
+                    <td>{row.action}</td>
+                    <td>{row.legal_basis || "—"}</td>
+                    <td>
                       {row.notes ? row.notes.slice(0, 80) : "—"}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                    <td>
                       <Button
                         type="button"
                         variant="secondary"
@@ -129,26 +132,26 @@ export default function RetentionPage() {
           <p style={{ margin: 0, color: "var(--text-1)" }}>No runs recorded yet.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+            <table className="app-data-table">
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>When</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Entity</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Action</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Dry-run?</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Processed</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Actioned</th>
+                  <th>When</th>
+                  <th>Entity</th>
+                  <th>Action</th>
+                  <th>Dry-run?</th>
+                  <th>Processed</th>
+                  <th>Actioned</th>
                 </tr>
               </thead>
               <tbody>
                 {runs.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.ran_at)}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.entity_type}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.action}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.dry_run ? "yes" : "no"}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.rows_processed}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.rows_actioned}</td>
+                    <td>{fmt(row.ran_at)}</td>
+                    <td>{row.entity_type}</td>
+                    <td>{row.action}</td>
+                    <td>{row.dry_run ? "yes" : "no"}</td>
+                    <td>{row.rows_processed}</td>
+                    <td>{row.rows_actioned}</td>
                   </tr>
                 ))}
               </tbody>

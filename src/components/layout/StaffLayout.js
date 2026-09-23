@@ -75,6 +75,8 @@ import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 import entranceStyles from "@/components/layout/StaffLayoutEntrance.module.css";
 import { trace, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 import { logFailure } from "@/lib/utils/logFailure";
+import WorkspaceHost, { GLOBAL_NAV_ATTRIBUTE } from "@/features/workspaces/WorkspaceHost";
+import useWorkspaceEmbed from "@/features/workspaces/useWorkspaceEmbed";
 
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
 
@@ -108,6 +110,120 @@ const PRESENTATION_SHELL_ROLES = [
   "valet service",
   "accounts manager",
 ];
+
+// Sidebar edge toggle (the red nub on the rail's edge) plus its hover tooltip.
+//
+// Extracted out of Layout so the hover state lives HERE rather than in the
+// layout: hovering the nub used to re-render the whole staff shell — including
+// the entire navigation tree — and the mouse enters/leaves it exactly when the
+// collapse animation starts, so that render landed on the animation's first
+// frames. Owning the state locally keeps a hover a hover.
+//
+// The tooltip is a sibling of the button, not a child, because the button's
+// clipPath would otherwise clip it.
+const NavEdgeToggle = React.memo(function NavEdgeToggle({
+  isOpen,
+  onToggle,
+  anchor,
+  nub,
+  height,
+  fontSize,
+  motion,
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onToggle}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setHovered(true)}
+        onBlur={() => setHovered(false)}
+        // Edge-toggle, not a square dismiss button — class exempts it from the
+        // global `[aria-label*="Close "]` close-button sizing rule.
+        className="app-sidebar-edge-toggle"
+        style={{
+          position: "fixed",
+          top: "50%",
+          // Drawn double-width starting one nub to the left of the anchor; the
+          // clip below hides that left half so the flat back never shows.
+          left: `${anchor - nub}px`,
+          transform: "translateY(-50%)",
+          width: `${nub * 2}px`,
+          height: `${height}px`,
+          borderRadius: "0 var(--radius-pill) var(--radius-pill) 0",
+          clipPath: `inset(0 0 0 ${nub}px)`, // reveal only the rounded outer half
+          // Full shorthand overrides the global --control-padding so the arrow
+          // centres in the visible nub; left pad = nub offsets the clipped half.
+          padding: `0 0 0 ${nub}px`,
+          boxSizing: "border-box",
+          border: "none",
+          background: "var(--primary)",
+          color: "var(--onAccentText)",
+          fontSize,
+          fontWeight: 700,
+          boxShadow: "none",
+          cursor: "pointer",
+          zIndex: 3600,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center", // centre the arrow within the visible half-circle nub
+          // Glide the edge nub in lockstep with the rail width (same
+          // direction-aware motion) so it tracks the sidebar edge smoothly.
+          transition: `left ${motion}`,
+        }}
+        aria-label={isOpen ? "Close navigation sidebar" : "Open navigation sidebar"}
+      >
+        {isOpen ? "‹" : "›"}
+      </button>
+
+      {/* Tooltip anchored ABOVE the edge toggle. Centred on the visible nub and
+          pinned just above it; it glides with the nub via the same
+          direction-aware motion. */}
+      {hovered && (
+        <div
+          role="tooltip"
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            left: `${anchor + nub / 2}px`,
+            bottom: `calc(50% + ${height / 2 + 10}px)`,
+            transform: "translateX(-50%)",
+            zIndex: 3601,
+            padding: "6px 10px",
+            borderRadius: "var(--control-radius-xs)",
+            background: "var(--primary-hover)",
+            color: "var(--onAccentText)",
+            fontSize: "12px",
+            fontWeight: 600,
+            lineHeight: 1.2,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+            boxShadow: "none",
+            transition: `left ${motion}`,
+          }}
+        >
+          {isOpen ? "Collapse sidebar" : "Expand sidebar"}
+          {/* Little caret pointing down at the nub. */}
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: "50%",
+              transform: "translateX(-50%) rotate(45deg)",
+              marginTop: "-4px",
+              width: 8,
+              height: 8,
+              background: "var(--primary-hover)",
+            }}
+          />
+        </div>
+      )}
+    </>
+  );
+});
 
 export default function Layout({
   children,
@@ -152,6 +268,11 @@ export default function Layout({
   const hideSidebar =
     router.pathname === "/login" || router.pathname === "/loginPresentation";
   const isMessagesRoute = router.pathname === "/messages";
+  // Set when this document is an extra workspace inside the multi-workspace
+  // shell (src/features/workspaces). It then renders the page only — the host
+  // document owns the sidebar, topbar and status drawer.
+  const embeddedWorkspaceId = useWorkspaceEmbed();
+  const isWorkspaceFrame = Boolean(embeddedWorkspaceId);
 
   const [viewportWidth, setViewportWidth] = useState(1440);
   const [viewportHeight, setViewportHeight] = useState(900);
@@ -187,7 +308,6 @@ export default function Layout({
   const mobileMenuButtonRef = useRef(null);
   const [portraitSidebarTop, setPortraitSidebarTop] = useState(10);
   const [isPortraitSidebarClosing, setIsPortraitSidebarClosing] = useState(false);
-  const [navToggleHover, setNavToggleHover] = useState(false);
   const workspaceNavEnabled = !presentationShell && isWorkspaceNavEnabled();
   const closeSidebar = useCallback(() => {
     const shouldAnimateClose =
@@ -265,6 +385,13 @@ export default function Layout({
   // scrollTop snaps to 0, the bar unfolds, it overflows again. The spacer keeps
   // a little range past the fold so the bar stays folded and all content shows.
   const [lockedBottomSpacer, setLockedBottomSpacer] = useState(0);
+  // True for the duration of a sidebar collapse/expand. The spacer measurement
+  // below is driven by a ResizeObserver, and the animating rail resizes the page
+  // card on every frame — so without this it ran ~20 forced layouts per toggle,
+  // right in the middle of the animation it was measuring. It is suspended while
+  // the rail moves and runs once when the motion settles.
+  const sidebarAnimatingRef = useRef(false);
+  const recomputeSpacerRef = useRef(null);
 
   // Auto-hide topbar (desktop). Lifted here — rather than owned inside
   // StaffTopbar — so the page card can react to the bar's folded state: when the
@@ -510,8 +637,9 @@ export default function Layout({
     // real department otherwise (the two are the same when nothing is previewed).
     department: topbarDepartmentCode,
     isPresentation: presentationShell,
-    // The KPI/insight sections are desktop-only, so don't poll on tablet/mobile.
-    enabled: !isTablet,
+    // The KPI/insight sections are desktop-only, so don't poll on tablet/mobile
+    // or inside a workspace frame (no topbar there).
+    enabled: !isTablet && !isWorkspaceFrame,
   });
   // Live KPI widgets (2.2) + Smart Insight prompts (2.6) as separate sections.
   const topbarSections = useMemo(
@@ -529,7 +657,7 @@ export default function Layout({
     : isTech;
   const topbarTechUserId = topbarPreviewUser ? topbarPreviewUser.id : dbUserId;
   const technicianTopbarKey =
-    !presentationShell && topbarIsTech && topbarTechUserId && !isTablet
+    !presentationShell && topbarIsTech && topbarTechUserId && !isTablet && !isWorkspaceFrame
       ? ["technician-topbar", Number(topbarTechUserId)]
       : null;
   const { data: technicianTopbarSnapshot } = useSWR(
@@ -561,7 +689,7 @@ export default function Layout({
   // labels, so it needs no navigationItems.
   const behaviourReadOnly = useBehaviourModel({
     currentAsPath: router.asPath,
-    enabled: !presentationShell && !hideSidebar && Boolean(user),
+    enabled: !presentationShell && !hideSidebar && Boolean(user) && !isWorkspaceFrame,
     record: false,
   });
   const topPages = useMemo(
@@ -691,12 +819,47 @@ export default function Layout({
       setLockedBottomSpacer((prev) => (Math.abs(prev - spacer) < 0.5 ? prev : spacer));
     };
 
-    const ro = new ResizeObserver(recompute);
+    recomputeSpacerRef.current = recompute;
+
+    // Coalesce: a resize notification per observed element per frame collapses
+    // into a single measurement, and nothing is measured at all while the
+    // sidebar is animating (the final size is measured when it settles).
+    let frame = 0;
+    const schedule = () => {
+      if (sidebarAnimatingRef.current || frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        if (sidebarAnimatingRef.current) return;
+        recompute();
+      });
+    };
+
+    const ro = new ResizeObserver(schedule);
     ro.observe(scroller);
     ro.observe(stack);
     recompute();
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+      recomputeSpacerRef.current = null;
+    };
   }, [lockViewport, router.pathname]);
+
+  // Hold the spacer measurement (above) still for the length of the rail motion,
+  // then take one reading at the settled width. The window covers the longer of
+  // the two directions (0.52s open) plus a frame of slack.
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    sidebarAnimatingRef.current = true;
+    const timer = window.setTimeout(() => {
+      sidebarAnimatingRef.current = false;
+      recomputeSpacerRef.current?.();
+    }, 560);
+    return () => {
+      window.clearTimeout(timer);
+      sidebarAnimatingRef.current = false;
+    };
+  }, [isSidebarOpen]);
 
   useEffect(() => {
     if (presentationShell) return;
@@ -708,7 +871,7 @@ export default function Layout({
   // navigations and only refetches when the slot rolls over. Layout is persistent
   // now, so this only runs once per slot change for the whole session.
   const welcomeQuoteSlotKey = useMemo(() => getWelcomeQuoteSlotKey(new Date()), []);
-  const welcomeQuoteKey = userIdForQuote
+  const welcomeQuoteKey = userIdForQuote && !isWorkspaceFrame
     ? `/api/welcome-quote?userId=${encodeURIComponent(String(userIdForQuote))}&slot=${welcomeQuoteSlotKey}`
     : null;
   useSWR(
@@ -1214,7 +1377,7 @@ export default function Layout({
   }
 
   if (hasPartsAccess) {
-    addNavItem("Parts Workspace", "/parts", {
+    addNavItem("Parts Workspace", "/stock-catalogue", {
       keywords: ["parts", "inventory", "vhc parts"],
       description: "Manage parts allocations and deliveries",
       section: "Parts",
@@ -1252,7 +1415,9 @@ export default function Layout({
     });
   }
 
-  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  // Stable identity so the memoised edge toggle isn't re-rendered by unrelated
+  // layout renders.
+  const toggleSidebar = useCallback(() => setIsSidebarOpen((prev) => !prev), []);
   const allowPresentationChromeInteraction = (event) =>
     Boolean(event.target?.closest?.("[data-presentation-allow-interaction='true']"));
   const lockChromeInteraction = presentationShell
@@ -1374,6 +1539,64 @@ export default function Layout({
     return <>{children}</>;
   }
 
+  // Extra workspace inside the multi-workspace shell: the page only, in the same
+  // fixed-card scroll model as the desktop page card. No sidebar, topbar, status
+  // drawer or command centre — the host document owns those. Toasts stay, so a
+  // page's own alerts appear in the workspace that raised them.
+  if (isWorkspaceFrame) {
+    const embedCardStyle = isMessagesRoute
+      ? { height: "100%", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }
+      : { height: "100%", minHeight: 0, overflow: "hidden" };
+    if (contentBackground && !disableContentCard) embedCardStyle.background = contentBackground;
+    const embedScrollStyle = isMessagesRoute
+      ? { width: "100%", height: "100%", minHeight: 0, position: "relative" }
+      : {
+          width: "100%",
+          height: "100%",
+          minHeight: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          overscrollBehavior: "contain",
+          position: "relative",
+        };
+    return (
+      <div className="app-workspace-embed">
+        <main className="app-page-shell" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div className="app-page-content" style={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+            <div
+              className={[
+                "app-page-card",
+                disableContentCard ? "app-page-card--bare" : "",
+                disableContentCardHover ? "app-page-card--no-hover" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              style={embedCardStyle}
+            >
+              <div style={embedScrollStyle}>
+                <div
+                  className="app-page-stack"
+                  style={isMessagesRoute ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}
+                >
+                  {showPageSkeleton ? <PageSkeleton /> : children}
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+        <TopbarAlerts />
+      </div>
+    );
+  }
+
+  // Width the workspace shell has to lay panes out in: the viewport minus the
+  // chrome's side padding, the sidebar rail and the rail-to-content gap.
+  const workspaceAreaWidth = isTablet
+    ? viewportWidth
+    : viewportWidth - 32 - 12 - (isSidebarOpen ? NAV_DRAWER_WIDTH : COLLAPSED_RAIL_WIDTH);
+  const workspacesEnabled =
+    viewportReady && !hideSidebar && !presentationShell && !publicRoute && Boolean(user);
+
   if (authEntranceActive && authEntranceReady) {
     authEntranceStartedRef.current = true;
   }
@@ -1398,6 +1621,7 @@ export default function Layout({
           shell
           {...lockChromeInteraction}
           backgroundToken="app-sidebar-rail"
+          {...{ [GLOBAL_NAV_ATTRIBUTE]: "global" }}
           className={authEntranceActive ? entranceStyles.sidebarEntrance : undefined}
           style={{
             width: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : `${COLLAPSED_RAIL_WIDTH}px`,
@@ -1436,6 +1660,15 @@ export default function Layout({
         </DevLayoutSection>
       )}
 
+      {/* Multi-workspace shell (src/features/workspaces). With one workspace it
+          renders display:contents wrappers only, so this column lays out exactly
+          as before; the column below is left at its original indentation. */}
+      <WorkspaceHost
+        enabled={workspacesEnabled}
+        userId={dbUserId || user?.id || null}
+        areaWidth={workspaceAreaWidth}
+        navigationItems={navigationItems}
+      >
       <DevLayoutSection
         sectionKey="app-layout-main-column"
         parentKey="app-layout-chrome"
@@ -1454,7 +1687,10 @@ export default function Layout({
           padding: hideSidebar
             ? "0"
             : isTablet
-              ? "var(--page-gutter-y-mobile) 10px" // Exact compact screen gutter requested for the 50/50 sidebar layout.
+              ? // Exact compact screen gutter requested for the 50/50 sidebar layout, grown to
+                // clear the notch / status bar: viewport-fit=cover + black-translucent
+                // (_document.js) draws the page under them, which hid Menu / Status in portrait.
+                "max(var(--page-gutter-y-mobile), env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) var(--page-gutter-y-mobile) max(10px, env(safe-area-inset-left))"
               : isMessagesRoute
                 ? "var(--page-gutter-y) var(--page-gutter-x) 16px"
               : undefined,
@@ -1530,6 +1766,7 @@ export default function Layout({
                 />
                 <div
                   id="compact-navigation-sidebar"
+                  {...{ [GLOBAL_NAV_ATTRIBUTE]: "global" }}
                   // --solo: no Status button, so Menu is the only control in the
                   // row and stretches full width. The close tab replaces Menu in
                   // place, so it has to stretch with it.
@@ -1730,97 +1967,18 @@ export default function Layout({
           </div>
         </DevLayoutSection>
       </DevLayoutSection>
+      </WorkspaceHost>
 
       {showNavToggleButton && (
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          onMouseEnter={() => setNavToggleHover(true)}
-          onMouseLeave={() => setNavToggleHover(false)}
-          onFocus={() => setNavToggleHover(true)}
-          onBlur={() => setNavToggleHover(false)}
-          // Edge-toggle, not a square dismiss button — class exempts it from the
-          // global `[aria-label*="Close "]` close-button sizing rule.
-          className="app-sidebar-edge-toggle"
-          style={{
-            position: "fixed",
-            top: "50%",
-            // Drawn double-width starting one nub to the left of the anchor; the
-            // clip below hides that left half so the flat back never shows.
-            left: `${navToggleAnchor - toggleNub}px`,
-            transform: "translateY(-50%)",
-            width: `${toggleNub * 2}px`,
-            height: `${toggleHeight}px`,
-            borderRadius: "0 var(--radius-pill) var(--radius-pill) 0",
-            clipPath: `inset(0 0 0 ${toggleNub}px)`, // reveal only the rounded outer half
-            // Full shorthand overrides the global --control-padding so the arrow
-            // centres in the visible nub; left pad = nub offsets the clipped half.
-            padding: `0 0 0 ${toggleNub}px`,
-            boxSizing: "border-box",
-            border: "none",
-            background: "var(--primary)",
-            color: "var(--onAccentText)",
-            fontSize: toggleFontSize,
-            fontWeight: 700,
-            boxShadow: "none",
-            cursor: "pointer",
-            zIndex: 3600,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center", // centre the arrow within the visible half-circle nub
-            // Glide the edge nub in lockstep with the rail width (same
-            // direction-aware motion) so it tracks the sidebar edge smoothly.
-            transition: `left ${sidebarMotion}`,
-          }}
-          aria-label={isSidebarOpen ? "Close navigation sidebar" : "Open navigation sidebar"}
-        >
-          {isSidebarOpen ? "‹" : "›"}
-        </button>
-      )}
-
-      {/* Tooltip anchored ABOVE the edge toggle. Rendered as a sibling (not a
-          child) because the button's clipPath would otherwise clip it. Centred
-          on the visible nub and pinned just above it; it glides with the nub via
-          the same direction-aware motion. */}
-      {showNavToggleButton && navToggleHover && (
-        <div
-          role="tooltip"
-          aria-hidden="true"
-          style={{
-            position: "fixed",
-            left: `${navToggleAnchor + toggleNub / 2}px`,
-            bottom: `calc(50% + ${toggleHeight / 2 + 10}px)`,
-            transform: "translateX(-50%)",
-            zIndex: 3601,
-            padding: "6px 10px",
-            borderRadius: "var(--control-radius-xs)",
-            background: "var(--primary-hover)",
-            color: "var(--onAccentText)",
-            fontSize: "12px",
-            fontWeight: 600,
-            lineHeight: 1.2,
-            whiteSpace: "nowrap",
-            pointerEvents: "none",
-            boxShadow: "none",
-            transition: `left ${sidebarMotion}`,
-          }}
-        >
-          {isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-          {/* Little caret pointing down at the nub. */}
-          <span
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: "50%",
-              transform: "translateX(-50%) rotate(45deg)",
-              marginTop: "-4px",
-              width: 8,
-              height: 8,
-              background: "var(--primary-hover)",
-            }}
-          />
-        </div>
+        <NavEdgeToggle
+          isOpen={isSidebarOpen}
+          onToggle={toggleSidebar}
+          anchor={navToggleAnchor}
+          nub={toggleNub}
+          height={toggleHeight}
+          fontSize={toggleFontSize}
+          motion={sidebarMotion}
+        />
       )}
 
       {/* Desktop floating status sidebar */}

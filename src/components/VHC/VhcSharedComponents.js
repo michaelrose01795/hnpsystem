@@ -1,20 +1,13 @@
 // Reusable components for VHC Details Panel
 import React from "react";
+import StatusMessage from "@/components/ui/StatusMessage";
 
-// Empty state message component (used 5+ times)
+// Empty state message component (used 5+ times).
+// Renders the global .app-status-message--info banner (staffglobal.css) through
+// the shared StatusMessage primitive, so padding / radius / tint come from the
+// design system instead of the per-module 18px + --theme block this inlined.
 export const EmptyStateMessage = ({ message }) => (
-  <div
-    style={{
-      padding: "18px",
-      border: "none",
-      borderRadius: "var(--radius-sm)",
-      background: "var(--theme)",
-      color: "var(--text-1)",
-      fontSize: "13px",
-    }}
-  >
-    {message}
-  </div>
+  <StatusMessage tone="info">{message}</StatusMessage>
 );
 
 // Severity badge component (used 10+ times). Renders a global .app-badge with
@@ -39,7 +32,11 @@ export const SeverityBadge = ({ severity, label, style = {}, className = "" }) =
   );
 };
 
-// VHC Item cell component (used 2+ times)
+// VHC Item cell component (used 2+ times).
+// Cell padding is NOT set here: the global `.app-data-table th/td` rule in
+// staffglobal.css already supplies `var(--space-3) var(--space-md)` (12px 16px)
+// plus the `--separating-line` row rule, so these cells must sit inside a table
+// carrying the `.app-data-table` class and inherit it.
 export const VhcItemCell = ({ vhcItem, locationLabel, showOnlyPartIndex = false, partIndex = 0 }) => {
   const LOCATION_LABELS = {
     front_left: "Front Left",
@@ -54,11 +51,11 @@ export const VhcItemCell = ({ vhcItem, locationLabel, showOnlyPartIndex = false,
   };
 
   if (showOnlyPartIndex && partIndex !== 0) {
-    return <td style={{ padding: "12px 16px" }}></td>;
+    return <td></td>;
   }
 
   return (
-    <td style={{ padding: "12px 16px" }}>
+    <td>
       <div>
         <div
           style={{
@@ -231,23 +228,24 @@ export const StockStatusBadge = ({ stockStatus }) => {
   );
 };
 
-// Part row component for tables
+// Part row component for tables. Same rule as VhcItemCell: padding comes from
+// the global `.app-data-table th/td` rule, not from inline styles here.
 export const PartRowCells = ({ part, showActions = false, onAction }) => {
   const partData = part.part || {};
   const price = part.unit_price ?? partData.unit_price ?? 0;
 
   return (
     <>
-      <td style={{ padding: "12px 16px", color: "var(--text-accent)", fontWeight: 600 }}>
+      <td style={{ color: "var(--text-accent)", fontWeight: 600 }}>
         {partData.name || "—"}
       </td>
-      <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>
+      <td style={{ color: "var(--text-1)" }}>
         {partData.part_number || "—"}
       </td>
-      <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--text-1)" }}>
+      <td style={{ textAlign: "center", color: "var(--text-1)" }}>
         {part.quantity_requested || 1}
       </td>
-      <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--text-1)", fontWeight: 600 }}>
+      <td style={{ textAlign: "right", color: "var(--text-1)", fontWeight: 600 }}>
         £{Number(price).toFixed(2)}
       </td>
     </>

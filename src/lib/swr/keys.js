@@ -23,6 +23,16 @@ export function buildJobCardKey(jobNumber, { archive = false } = {}) {
   return `/api/jobcards/${encodeURIComponent(jobNumber)}${query ? `?${query}` : ""}`;
 }
 
+/**
+ * SWR key (and API URL) for the job card settings popup's server-side fields.
+ * @param {string|number|null} jobNumber
+ * @returns {string|null}
+ */
+export function buildJobSettingsKey(jobNumber) {
+  if (!jobNumber) return null;
+  return `/api/job-cards/${encodeURIComponent(jobNumber)}/settings`;
+}
+
 /** SWR key for the bounded workload list behind /jobs. */
 export const JOBS_WORKLOAD_KEY = "/api/jobs/workload";
 

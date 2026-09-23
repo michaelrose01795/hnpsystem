@@ -4,8 +4,8 @@
 //
 // Page status / SEO / media writes persist via /api/website/*. Per-section
 // content writes are handled directly by PageContentPanel (which loads from
-// /api/website/sections/* on demand). The Visual editor tab embeds /website
-// itself in an iframe with click-to-edit overlays, and the Design & layout tab
+// /api/website/sections/* on demand). The Preview tab embeds /website
+// one section at a time, read-only, and the Design & layout tab
 // edits the site chrome (top bar, block running order, visual design) through
 // the website_nav / website_section_layout / website_design tables. The Shop
 // tab manages the e-commerce catalogue.
@@ -13,6 +13,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import Button from "@/components/ui/Button";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import StaffPageHeader from "@/components/ui/StaffPageHeader";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { WEBSITE_PAGES, MEDIA_ASSETS, SEO_ENTRIES, INITIAL_ACTIVITY } from "./websiteData";
@@ -39,13 +40,7 @@ import DesignPanel from "./panels/DesignPanel";
 
 const TABS = [
   { value: "overview", label: "Overview" },
-  { value: "preview", label: "Visual editor" },
-  { value: "content", label: "Pages & sections" },
-  { value: "design", label: "Design & layout" },
-  { value: "shop", label: "Shop" },
-  { value: "media", label: "Media" },
-  { value: "seo", label: "SEO" },
-  { value: "analytics", label: "Analytics" },
+  { value: "preview", label: "Preview" },
   { value: "activity", label: "Activity" },
 ];
 
@@ -64,8 +59,7 @@ export default function WebsiteManager() {
     (typeof user?.username === "string" && user.username.trim()) || "Staff User";
 
   // Initial tab honours ?tab=... so the sidebar / presentation can deep-link
-  // directly to a sub-section ("/website-manager?tab=shop" jumps
-  // straight to the Shop tab on first render).
+  // directly to a visible section (for example, ?tab=preview).
   const initialTabFromQuery =
     typeof router.query?.tab === "string" && VALID_TABS.includes(router.query.tab)
       ? router.query.tab
@@ -346,13 +340,12 @@ export default function WebsiteManager() {
           />
         </div>
 
-        {(loading || loadError) && (
-          <div
-            className={`website-manager__notice${loadError ? " website-manager__notice--warning" : ""}`}
-            role={loadError ? "alert" : "status"}
-          >
-            {loadError || "Loading live website data…"}
+        {loadError ? (
+          <div className="website-manager__notice website-manager__notice--warning" role="alert">
+            {loadError}
           </div>
+        ) : (
+          loading && <InlineLoading width={220} label="Loading live website data" />
         )}
 
         {activeTab === "overview" && (

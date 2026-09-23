@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/database/supabaseClient";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { logFailure } from "@/lib/utils/logFailure";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
+// Surface comes from the global `.popup-card` class; this is geometry only.
 const cardStyle = {
-  ...popupCardStyles,
   padding: "var(--page-card-padding)",
   width: "min(560px, 100%)",
 };
@@ -134,9 +133,9 @@ export default function DeliverySchedulerModal({
     <div
       role="dialog"
       aria-modal="true"
-      style={popupOverlayStyles}
+      className="popup-backdrop"
     >
-      <div style={cardStyle}>
+      <div className="popup-card" style={cardStyle}>
         <div
           style={{
             display: "flex",
@@ -219,7 +218,7 @@ export default function DeliverySchedulerModal({
                 />
                 <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>
                   Vehicle reg
-                  <input
+                  <input className="app-input"
                     type="text"
                     value={newVehicleReg}
                     onChange={(event) => setNewVehicleReg(event.target.value)}
@@ -235,7 +234,7 @@ export default function DeliverySchedulerModal({
                 </label>
                 <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>
                   Fuel type
-                  <input
+                  <input className="app-input"
                     type="text"
                     value={newFuelType}
                     onChange={(event) => setNewFuelType(event.target.value)}
@@ -254,7 +253,7 @@ export default function DeliverySchedulerModal({
           )}
           <div>
             <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>Address</label>
-            <textarea
+            <textarea className="app-input"
               value={address}
               onChange={(event) => setAddress(event.target.value)}
               rows={2}
@@ -271,7 +270,7 @@ export default function DeliverySchedulerModal({
           </div>
           <div>
             <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>Postcode</label>
-            <input
+            <input className="app-input"
               type="text"
               value={postcode}
               onChange={(event) => setPostcode(event.target.value)}
@@ -287,7 +286,7 @@ export default function DeliverySchedulerModal({
           </div>
           <div>
             <label style={{ fontWeight: 600, color: "var(--grey-accent-dark)" }}>Delivery notes</label>
-            <textarea
+            <textarea className="app-input"
               value={stopNotes}
               onChange={(event) => setStopNotes(event.target.value)}
               rows={2}

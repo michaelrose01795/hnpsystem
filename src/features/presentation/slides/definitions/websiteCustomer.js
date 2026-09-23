@@ -52,10 +52,17 @@ export const websiteProfileSlide = {
   steps: [
     {
       kind: "main",
-      anchor: "[data-presentation=\"website-profile-summary\"]",
+      anchor: "[data-presentation=\"website-profile-overview\"]",
       position: "center",
       title: "Signed-in customer portal",
-      body: "This is the real /website/profile page with the customer dashboard, vehicles, jobs, invoices, documents, messages and self-service actions.",
+      body: "This is the real /website/profile page. The Overview opens on anything needing attention, the vehicle and the live workshop visit; Vehicles, Workshop, Money, Messages, Services and Account sit behind the portal tabs.",
+    },
+    {
+      kind: "feature",
+      anchor: "[data-presentation=\"website-profile-portal-nav\"]",
+      position: "bottom-left",
+      title: "Seven customer areas",
+      body: "Choosing an area swaps the content below the tabs and is reflected in the URL, so a link can open the customer straight on their invoices or their workshop progress.",
     },
     {
       kind: "feature",

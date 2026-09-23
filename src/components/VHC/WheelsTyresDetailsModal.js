@@ -1,6 +1,7 @@
 // file location: src/components/VHC/WheelsTyresDetailsModal.js
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md 3.0)
 import IssueReportPopup, {
   IssueReportAddSection,
   IssueReportList,
@@ -221,13 +222,12 @@ const pillButton = ({ active = false } = {}) => ({
   transition: "background-color 0.18s ease, color 0.18s ease",
 });
 
+// Layout only — every consumer renders this inside a <LayerTheme>, which
+// supplies the background, radius, padding and shadow.
 const sectionCardStyle = {
   ...vhcModalContentStyles.baseCard,
   cursor: "default",
   gap: "16px",
-  border: "none",
-  backgroundColor: "var(--control-bg)",
-  borderRadius: "var(--section-card-radius)",
 };
 
 // Shape now comes from the shared `.app-badge`; this helper only
@@ -380,7 +380,7 @@ function TyreSpecFields({ tyre, onFieldChange }) {
         <div style={{ flex: "0 0 140px", minWidth: "140px", maxWidth: "140px" }}>
           <label style={labelStyle}>
             <span style={{ fontWeight: 700, color: palette.textPrimary }}>Size</span>
-            <input
+            <input className="app-input"
               ref={sizeRef}
               value={rawSize || tyre.size || ""}
               onChange={handleSizeInput}
@@ -397,7 +397,7 @@ function TyreSpecFields({ tyre, onFieldChange }) {
       <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flex: "0 1 auto" }}>
         <label style={labelStyle}>
           <span style={{ fontWeight: 700, color: palette.textPrimary }}>Load Index</span>
-          <input
+          <input className="app-input"
             ref={loadRef}
             value={tyre.load}
             onChange={handleLoadChange}
@@ -408,7 +408,7 @@ function TyreSpecFields({ tyre, onFieldChange }) {
         </label>
         <label style={labelStyle}>
           <span style={{ fontWeight: 700, color: palette.textPrimary }}>Speed Rating</span>
-          <input
+          <input className="app-input"
             ref={speedRef}
             value={tyre.speed}
             onChange={handleSpeedChange}
@@ -954,16 +954,16 @@ export default function WheelsTyresDetailsModal({
             >
               {activeWheel !== "Spare" ? (
                 <>
-                  <div style={sectionCardStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-tyre-details" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
+                  <LayerTheme style={sectionCardStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-tyre-details" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
                     <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tyre Details</span>
                     <TyreSpecFields tyre={currentTyre} onFieldChange={updateTyre} />
-                  </div>
+                  </LayerTheme>
 
-                  <div style={sectionCardStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-tread-depth" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
+                  <LayerTheme style={sectionCardStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-tread-depth" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
                     <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tread Depth (mm)</span>
                     <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                       {TREAD_SECTIONS.map((section) => (
-                        <input
+                        <input className="app-input"
                           key={section.key}
                           value={currentTyre.tread[section.key]}
                           onChange={(event) => updateTread(section.key, event.target.value)}
@@ -977,24 +977,24 @@ export default function WheelsTyresDetailsModal({
                         />
                       ))}
                     </div>
-                  </div>
+                  </LayerTheme>
                 </>
               ) : (
                 <>
                   {tyres.Spare.type === "spare" ? (
                     <>
-                      <div style={sectionCardStyle}>
+                      <LayerTheme style={sectionCardStyle}>
                         <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Details</span>
                         <TyreSpecFields tyre={tyres.Spare.details} onFieldChange={updateTyre} />
-                      </div>
+                      </LayerTheme>
 
-                      <div style={sectionCardStyle}>
+                      <LayerTheme style={sectionCardStyle}>
                         <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>
                           Spare Tread Depth (mm)
                         </span>
                         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                           {TREAD_SECTIONS.map((section) => (
-                            <input
+                            <input className="app-input"
                               key={`spare-${section.key}`}
                               value={tyres.Spare.details.tread?.[section.key] || ""}
                               onChange={(event) => updateTread(section.key, event.target.value)}
@@ -1008,12 +1008,12 @@ export default function WheelsTyresDetailsModal({
                             />
                           ))}
                         </div>
-                      </div>
+                      </LayerTheme>
                     </>
                   ) : null}
 
                   {tyres.Spare.type === "repair_kit" ? (
-                    <div style={sectionCardStyle}>
+                    <LayerTheme style={sectionCardStyle}>
                       <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Repair Kit Date</span>
                       <div style={{ display: "flex", gap: "12px" }}>
                         <DropdownField
@@ -1051,11 +1051,11 @@ export default function WheelsTyresDetailsModal({
                           ))}
                         </DropdownField>
                       </div>
-                    </div>
+                    </LayerTheme>
                   ) : null}
 
                   {tyres.Spare.type === "space_saver" ? (
-                    <div style={sectionCardStyle}>
+                    <LayerTheme style={sectionCardStyle}>
                       <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>
                         Space Saver Condition
                       </span>
@@ -1076,13 +1076,13 @@ export default function WheelsTyresDetailsModal({
                           </button>
                         ))}
                       </div>
-                    </div>
+                    </LayerTheme>
                   ) : null}
 
                   {tyres.Spare.type === "not_checked" ? (
-                    <div style={sectionCardStyle}>
+                    <LayerTheme style={sectionCardStyle}>
                       <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Notes</span>
-                      <textarea
+                      <textarea className="app-input"
                         value={tyres.Spare.note}
                         onChange={(event) =>
                           setTyres((prev) => ({
@@ -1097,20 +1097,20 @@ export default function WheelsTyresDetailsModal({
                           resize: "vertical",
                         }}
                       />
-                    </div>
+                    </LayerTheme>
                   ) : null}
 
                   {tyres.Spare.type === "boot_full" ? (
-                    <div style={sectionCardStyle}>
+                    <LayerTheme style={sectionCardStyle}>
                       <span style={{ fontSize: "13px", color: palette.textMuted }}>
                         Boot contents prevented inspection. No extra data required.
                       </span>
-                    </div>
+                    </LayerTheme>
                   ) : null}
                 </>
               )}
 
-              <div style={{ ...sectionCardStyle, flex: "1 1 auto", minHeight: 0 }} data-dev-section="1" data-dev-section-key="vhc-wheels-concerns" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
+              <LayerTheme style={{ ...sectionCardStyle, flex: "1 1 auto", minHeight: 0 }} data-dev-section="1" data-dev-section-key="vhc-wheels-concerns" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
                 <div
                   style={{
                     display: "flex",
@@ -1134,7 +1134,7 @@ export default function WheelsTyresDetailsModal({
                         setConcernEditIndex(null);
                       }}
                     >
-                      + Add Concern
+                      Add Concern
                     </Button>
                     <div className="app-badge" style={concernBadge(statusColors.Amber)}>{(currentTyre.concerns ?? []).length} total</div>
                   </div>
@@ -1190,7 +1190,7 @@ export default function WheelsTyresDetailsModal({
                     ))
                   )}
                 </div>
-              </div>
+              </LayerTheme>
             </div>
           </div>
         </div>

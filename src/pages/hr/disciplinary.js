@@ -1,14 +1,18 @@
 // file location: src/pages/hr/disciplinary.js
 import React from "react";
+import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { Button, InputField } from "@/components/ui";
+import { Button, InputField, LayerSurface, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import HrDisciplinaryIncidentsUi from "@/components/page-ui/hr/hr-disciplinary-ui"; // Extracted presentation layer.
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
 import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
+import EmptyState from "@/components/ui/EmptyState"; // canonical empty-state primitive
+import HrSummaryStrip from "@/components/HR/HrSummaryStrip"; // shared at-a-glance metric strip
+import { buildDisciplinarySummary } from "@/lib/hr/hrTabSummaries";
 
 export function getServerSideProps() {
   return redirectToHrManagerTab("disciplinary");
@@ -16,8 +20,31 @@ export function getServerSideProps() {
 
 function DisciplinaryContent() {
   const showPresentationMock = isPresentationMode();
-  const activeWarnings = showPresentationMock ? hrPresentationData.activeWarnings : [];
-  const incidentLog = showPresentationMock ? hrPresentationData.incidentLog : [];
+  // Presentation mode never touches Supabase, so the hook stays disabled there
+  // and the slide deck keeps its scripted figures.
+  const { data, isLoading, error } = useHrOperationsData(0, { enabled: !showPresentationMock });
+
+  const activeWarnings = showPresentationMock
+    ? hrPresentationData.activeWarnings
+    : data?.activeWarnings ?? [];
+  const incidentLog = showPresentationMock ? hrPresentationData.incidentLog : data?.incidentLog ?? [];
+
+  // Case load at a glance — final warnings first, because those are the ones
+  // with an escalation deadline attached.
+  const summary = buildDisciplinarySummary({ activeWarnings, incidentLog });
+
+  if (error) {
+    return (
+      <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+        <SectionCard layer="theme"
+          sectionKey="hr-disciplinary-error" parentKey="hr-manager-tab-disciplinary"
+          title="Unable to load disciplinary data"
+          subtitle="The HR datasets could not be fetched.">
+          <StatusMessage tone="danger">{error.message}</StatusMessage>
+        </SectionCard>
+      </div>);
+
+  }
 
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
@@ -27,25 +54,16 @@ function DisciplinaryContent() {
         </p>
       </header>
 
-      <DevLayoutSection
-        as="section"
-        sectionKey="hr-disciplinary-row-1"
-        parentKey="hr-manager-tab-disciplinary"
-        sectionType="section-shell"
-        shell
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--layout-card-gap)"
-        }}>
+      <HrSummaryStrip items={summary} parentKey="hr-manager-tab-disciplinary" />
+
+      <SectionCard layer="theme"
+        sectionKey="hr-disciplinary-active-warnings" parentKey="hr-manager-tab-disciplinary"
+        title="Active Warnings"
+        subtitle="Warnings that still require follow-up or monitoring.">
         
-        <SectionCard
-          sectionKey="hr-disciplinary-card-1" parentKey="hr-disciplinary-row-1"
-          title="Active Warnings"
-          subtitle="Warnings that still require follow-up or monitoring.">
-          
-          {showPresentationMock ? (
-            <div style={{ overflowX: "auto" }}>
+        {activeWarnings.length ? (
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
               <table className="app-data-table">
                 <thead>
                   <tr>
@@ -68,21 +86,25 @@ function DisciplinaryContent() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          ) : (
-            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-              TODO: Fetch active warnings from Supabase disciplinary table. Display employee name, department, warning level, reported date, status, and notes for each open case.
-            </p>
-          )}
-        </SectionCard>
+            </DataTableShell>
+          </LayerSurface>
+        ) : isLoading ? null : (
+          <EmptyState
+            icon="✅"
+            title="No active warnings"
+            description="Warnings raised against an employee appear here with their level, review date and case owner."
+          />
+        )}
+      </SectionCard>
 
-        <SectionCard
-          sectionKey="hr-disciplinary-card-2" parentKey="hr-disciplinary-row-1"
-          title="Incident Log"
-          subtitle="Recent case entries and their current outcome.">
-          
-          {showPresentationMock ? (
-            <div style={{ overflowX: "auto" }}>
+      <SectionCard layer="theme"
+        sectionKey="hr-disciplinary-incident-log" parentKey="hr-manager-tab-disciplinary"
+        title="Incident Log"
+        subtitle="Recent case entries and their current outcome.">
+        
+        {incidentLog.length ? (
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
               <table className="app-data-table">
                 <thead>
                   <tr>
@@ -103,17 +125,19 @@ function DisciplinaryContent() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          ) : (
-            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-              TODO: Fetch incident log from Supabase. Display incident type, job number, recorded by, outcome status, and export functionality.
-            </p>
-          )}
-        </SectionCard>
-      </DevLayoutSection>
+            </DataTableShell>
+          </LayerSurface>
+        ) : isLoading ? null : (
+          <EmptyState
+            icon="📋"
+            title="No incidents recorded"
+            description="Logged incidents show the type, the job they relate to, who reported them and the outcome."
+          />
+        )}
+      </SectionCard>
 
-      <SectionCard
-        sectionKey="hr-disciplinary-card-3" parentKey="hr-manager-tab-disciplinary"
+      <SectionCard layer="theme"
+        sectionKey="hr-disciplinary-new-incident" parentKey="hr-manager-tab-disciplinary"
         title="New Incident / Warning"
         subtitle="Record the details, attach documentation, and assign a case owner.">
         
@@ -156,16 +180,6 @@ function DisciplinaryContent() {
             </Button>
           </div>
         </form>
-        <p
-          style={{
-            fontSize: "var(--text-caption)",
-            color: "var(--text-1)",
-            fontStyle: "italic",
-            marginTop: "var(--space-5)"
-          }}>
-          
-          TODO: Wire form submission to Supabase incidents table. Save record should persist the incident and refresh the active warnings list.
-        </p>
       </SectionCard>
     </div>);
 

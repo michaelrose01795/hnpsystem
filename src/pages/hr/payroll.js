@@ -2,12 +2,15 @@
 import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { Button, LayerTheme, StatusMessage } from "@/components/ui"; // LayerTheme: canonical layer primitive (see CLAUDE.md §3.0)
+import { Button, LayerSurface, StatusMessage } from "@/components/ui"; // LayerSurface: third rung — nested inside a --theme SectionCard (CLAUDE.md §3.0a-2)
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
 import { redirectToHrManagerTab } from "@/lib/hr/hrManagerRoutes";
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
+import EmptyState from "@/components/ui/EmptyState"; // canonical empty-state primitive
+import HrSummaryStrip from "@/components/HR/HrSummaryStrip"; // shared at-a-glance metric strip
+import { buildPayrollSummary } from "@/lib/hr/hrTabSummaries";
 
 export function getServerSideProps() {
   return redirectToHrManagerTab("payroll");
@@ -30,7 +33,7 @@ function ListRowsSkeleton({ rows = 3 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       {Array.from({ length: rows }).map((_, i) =>
-      <LayerTheme
+      <LayerSurface
         key={i}
         radius="var(--radius-sm)"
         padding="var(--space-3)"
@@ -39,7 +42,7 @@ function ListRowsSkeleton({ rows = 3 }) {
           <SkeletonBlock width="58%" height="14px" />
           <SkeletonBlock width="70%" height="12px" />
           <SkeletonBlock width="48%" height="12px" />
-        </LayerTheme>
+        </LayerSurface>
       )}
     </div>);
 
@@ -53,11 +56,15 @@ function PayrollContent() {
   const payRateHistory = data?.payRateHistory ?? [];
   const showPresentationMock = isPresentationMode();
 
+  // Cost of the payroll and what is still waiting to be processed, so the run
+  // can be sanity-checked before anyone opens the tables below.
+  const summary = buildPayrollSummary({ employeeDirectory, overtimeSummaries, payRateHistory });
+
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <SectionCard
-          sectionKey="hr-payroll-card-1" parentKey="hr-manager-tab-payroll" title="Unable to load payroll data" subtitle="Mock API returned an error.">
+        <SectionCard layer="theme"
+          sectionKey="hr-payroll-error" parentKey="hr-manager-tab-payroll" title="Unable to load payroll data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
       </div>);
@@ -73,29 +80,20 @@ function PayrollContent() {
         </p>
       </header>
 
-      <DevLayoutSection
-        as="section"
-        sectionKey="hr-payroll-row-1"
-        parentKey="hr-manager-tab-payroll"
-        sectionType="section-shell"
-        shell
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--layout-card-gap)"
-        }}>
+      {isLoading ? null : <HrSummaryStrip items={summary} parentKey="hr-manager-tab-payroll" />}
+
+      <SectionCard layer="theme"
+        sectionKey="hr-payroll-compensation-overview" parentKey="hr-manager-tab-payroll"
+        title="Compensation Overview"
+        subtitle="Current salary/hourly rate by employee"
+        action={
+        <Button variant="primary" size="sm">
+            Export Payroll CSV
+          </Button>
+        }>
         
-        <SectionCard
-          sectionKey="hr-payroll-card-2" parentKey="hr-payroll-row-1"
-          title="Compensation Overview"
-          subtitle="Current salary/hourly rate by employee"
-          action={
-          <Button variant="primary" size="sm">
-              Export Payroll CSV
-            </Button>
-          }>
-          
-          <div style={{ maxHeight: "440px", overflowY: "auto" }}>
+        <LayerSurface padding="var(--space-3)" gap="0">
+          <DataTableShell>
             <table className="app-data-table">
               <thead>
                 <tr>
@@ -108,6 +106,13 @@ function PayrollContent() {
               <tbody>
                 {isLoading ?
                 <TableRowsSkeleton rows={6} cols={4} /> :
+
+                employeeDirectory.length === 0 ?
+                <tr>
+                  <td colSpan={4}>
+                    <EmptyState variant="bare" icon="👥" title="No employees on payroll" description="Employees appear here with their contract type and pay rate." />
+                  </td>
+                </tr> :
 
                 employeeDirectory.map((employee) =>
                 <tr key={employee.id}>
@@ -127,13 +132,15 @@ function PayrollContent() {
                 }
               </tbody>
             </table>
-          </div>
-        </SectionCard>
+          </DataTableShell>
+        </LayerSurface>
+      </SectionCard>
 
-        <SectionCard
-          sectionKey="hr-payroll-card-3" parentKey="hr-payroll-row-1" title="Pay Rise Requests" subtitle="Approval workflow: Employee → Manager → HR">
-          {showPresentationMock ? (
-            <div style={{ overflowX: "auto" }}>
+      <SectionCard layer="theme"
+        sectionKey="hr-payroll-pay-rise-requests" parentKey="hr-manager-tab-payroll" title="Pay Rise Requests" subtitle="Approval workflow: Employee → Manager → HR">
+        {showPresentationMock ? (
+          <LayerSurface padding="var(--space-3)" gap="0">
+            <DataTableShell>
               <table className="app-data-table">
                 <thead>
                   <tr>
@@ -154,38 +161,29 @@ function PayrollContent() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          ) : (
-            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-              TODO: Fetch pay rise requests from Supabase. Display employee name, current/requested rate, approver, status, and approve/reject actions.
-            </p>
-          )}
-        </SectionCard>
-      </DevLayoutSection>
+            </DataTableShell>
+          </LayerSurface>
+        ) : (
+          <EmptyState
+            icon="💷"
+            title="No pay rise requests"
+            description="Requests appear here once submitted, showing the current and requested rate for approval."
+          />
+        )}
+      </SectionCard>
 
-      <DevLayoutSection
-        as="section"
-        sectionKey="hr-payroll-row-2"
-        parentKey="hr-manager-tab-payroll"
-        sectionType="section-shell"
-        shell
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--layout-card-gap)"
-        }}>
+      <SectionCard layer="theme"
+        sectionKey="hr-payroll-pay-rate-history" parentKey="hr-manager-tab-payroll"
+        title="Pay Rate History"
+        subtitle="Audit trail of pay changes with effective dates"
+        action={
+        <Button variant="secondary" size="sm">
+            Add record
+          </Button>
+        }>
         
-        <SectionCard
-          sectionKey="hr-payroll-card-4" parentKey="hr-payroll-row-2"
-          title="Pay Rate History"
-          subtitle="Audit trail of pay changes with effective dates"
-          action={
-          <Button variant="secondary" size="sm">
-              Add record
-            </Button>
-          }>
-          
-          <div style={{ overflowX: "auto" }}>
+        <LayerSurface padding="var(--space-3)" gap="0">
+          <DataTableShell>
             <table className="app-data-table">
               <thead>
                 <tr>
@@ -200,6 +198,13 @@ function PayrollContent() {
                 {isLoading ?
                 <TableRowsSkeleton rows={5} cols={5} /> :
 
+                payRateHistory.length === 0 ?
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState variant="bare" icon="🧾" title="No pay changes recorded" description="Every rate change is logged here with its effective date and approver." />
+                  </td>
+                </tr> :
+
                 payRateHistory.map((entry) =>
                 <tr key={entry.id}>
                       <td style={{ fontWeight: 600 }}>{entry.employee}</td>
@@ -212,58 +217,58 @@ function PayrollContent() {
                 }
               </tbody>
             </table>
-          </div>
-        </SectionCard>
+          </DataTableShell>
+        </LayerSurface>
+      </SectionCard>
 
-        <SectionCard
-          sectionKey="hr-payroll-card-5" parentKey="hr-payroll-row-2"
-          title="Overtime & Bonus Tracking"
-          subtitle="Hours and earnings rolled up per period"
-          action={
-          <Button variant="primary" size="sm">
-              Generate Payroll Pack
-            </Button>
-          }>
-          
-          {isLoading ?
-          <ListRowsSkeleton rows={4} /> :
+      <SectionCard layer="theme"
+        sectionKey="hr-payroll-overtime-and-bonus" parentKey="hr-manager-tab-payroll"
+        title="Overtime & Bonus Tracking"
+        subtitle="Hours and earnings rolled up per period"
+        action={
+        <Button variant="primary" size="sm">
+            Generate Payroll Pack
+          </Button>
+        }>
+        
+        {isLoading ?
+        <ListRowsSkeleton rows={4} /> :
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              {overtimeSummaries.map((summary) =>
-            <LayerTheme
-              key={summary.id}
-              radius="var(--radius-sm)"
-              padding="var(--space-3)"
-              gap="var(--space-1)">
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {overtimeSummaries.map((summary) =>
+          <LayerSurface
+            key={summary.id}
+            radius="var(--radius-sm)"
+            padding="var(--space-3)"
+            gap="var(--space-1)">
 
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{summary.employee}</span>
-                    <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--text-1)" }}>
-                      {summary.status}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
-                    Period {new Date(summary.periodStart).toLocaleDateString()} -{" "}
-                    {new Date(summary.periodEnd).toLocaleDateString()}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{summary.employee}</span>
+                  <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--text-1)" }}>
+                    {summary.status}
                   </span>
-                  <div
-                style={{
-                  display: "flex",
-                  gap: "var(--space-4)",
-                  fontSize: "var(--text-body-sm)",
-                  color: "var(--text-1)"
-                }}>
+                </div>
+                <span style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
+                  Period {new Date(summary.periodStart).toLocaleDateString()} -{" "}
+                  {new Date(summary.periodEnd).toLocaleDateString()}
+                </span>
+                <div
+              style={{
+                display: "flex",
+                gap: "var(--space-4)",
+                fontSize: "var(--text-body-sm)",
+                color: "var(--text-1)"
+              }}>
 
-                    <span>{summary.overtimeHours} hrs</span>
-                    <span>Rate £{Number(summary.overtimeRate).toFixed(2)}</span>
-                    <span>Bonus £{Number(summary.bonus).toFixed(2)}</span>
-                  </div>
-                </LayerTheme>
-            )}
-            </div>
-          }
-        </SectionCard>
-      </DevLayoutSection>
+                  <span>{summary.overtimeHours} hrs</span>
+                  <span>Rate £{Number(summary.overtimeRate).toFixed(2)}</span>
+                  <span>Bonus £{Number(summary.bonus).toFixed(2)}</span>
+                </div>
+              </LayerSurface>
+          )}
+          </div>
+        }
+      </SectionCard>
     </div>);
 
 }

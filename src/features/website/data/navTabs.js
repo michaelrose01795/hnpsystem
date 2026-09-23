@@ -4,14 +4,13 @@
 // the tab is clicked.
 //
 // Reduced to the 9-item public nav requested for the redesign:
-// New, Used, Offers, Sell Your Car, Service & Parts, Motability,
+// Our Cars, Offers, Sell Your Car, Service & Parts, Motability,
 // About Us, Blog, Contact Us. Parts / Team / Reviews still appear in the
 // scroll story — they live under the Service & Parts and About Us
 // chapters respectively, just without their own primary nav entry.
 
 export const navTabs = [
-  { id: "new", label: "New", scrollTo: "cars", filter: "new" },
-  { id: "used", label: "Used", scrollTo: "cars", filter: "used" },
+  { id: "cars", label: "Our Cars", scrollTo: "cars", filter: "all" },
   { id: "offers", label: "Offers", scrollTo: "offers" },
   { id: "sell", label: "Sell Your Car", scrollTo: "sell" },
   { id: "service", label: "Service & Parts", scrollTo: "service" },

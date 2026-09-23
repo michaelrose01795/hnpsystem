@@ -212,7 +212,7 @@ export default function CustomerPreviewPageUi(props) {
           fontSize: "14px",
           flexShrink: 0
         }}>
-              ← Back
+              Back
             </button>
           </div>
         </header>

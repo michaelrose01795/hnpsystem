@@ -1,3 +1,5 @@
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical theme layer around data tables (CLAUDE.md §3.0)
+import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
 // file location: src/components/page-ui/hr/hr-ui.js
 
 export default function HrDashboardUi(props) {
@@ -43,30 +45,30 @@ export default function HrDashboardUi(props) {
       gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))"
     }}>
             <SectionCard title="Department Performance Snapshot" subtitle="Productivity, quality, and teamwork scoring (rolling 30 days)">
-              <div style={{
-          overflowX: "auto"
-        }}>
-                <table className="app-data-table">
-                  <thead>
-                    <tr>
-                      <th>Department</th>
-                      <th>Productivity</th>
-                      <th>Quality</th>
-                      <th>Teamwork</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {departmentPerformance.map(dept => <tr key={dept.id}>
-                        <td style={{
-                  fontWeight: 600
-                }}>{dept.department}</td>
-                        <td>{dept.productivity}%</td>
-                        <td>{dept.quality}%</td>
-                        <td>{dept.teamwork}%</td>
-                      </tr>)}
-                  </tbody>
-                </table>
-              </div>
+              <LayerTheme padding="var(--space-3)" gap="0">
+                <DataTableShell>
+                  <table className="app-data-table">
+                    <thead>
+                      <tr>
+                        <th>Department</th>
+                        <th>Productivity</th>
+                        <th>Quality</th>
+                        <th>Teamwork</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {departmentPerformance.map(dept => <tr key={dept.id}>
+                          <td style={{
+                    fontWeight: 600
+                  }}>{dept.department}</td>
+                          <td>{dept.productivity}%</td>
+                          <td>{dept.quality}%</td>
+                          <td>{dept.teamwork}%</td>
+                        </tr>)}
+                    </tbody>
+                  </table>
+                </DataTableShell>
+              </LayerTheme>
             </SectionCard>
 
             <SectionCard title="Training Renewals" subtitle="Upcoming expiries across mandatory certifications" action={<Link href="/hr/training" style={{
@@ -139,33 +141,33 @@ export default function HrDashboardUi(props) {
       }}>
                   Manage leave
                 </Link>}>
-              <div style={{
-          overflowX: "auto"
-        }}>
-                <table className="app-data-table">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Department</th>
-                      <th>Type</th>
-                      <th>Dates</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {upcomingAbsences.map(absence => <tr key={absence.id}>
-                        <td style={{
-                  fontWeight: 600
-                }}>{absence.employee}</td>
-                        <td>{absence.department}</td>
-                        <td>{absence.type}</td>
-                        <td>
-                          {new Date(absence.startDate).toLocaleDateString()} -{" "}
-                          {new Date(absence.endDate).toLocaleDateString()}
-                        </td>
-                      </tr>)}
-                  </tbody>
-                </table>
-              </div>
+              <LayerTheme padding="var(--space-3)" gap="0">
+                <DataTableShell>
+                  <table className="app-data-table">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th>Type</th>
+                        <th>Dates</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {upcomingAbsences.map(absence => <tr key={absence.id}>
+                          <td style={{
+                    fontWeight: 600
+                  }}>{absence.employee}</td>
+                          <td>{absence.department}</td>
+                          <td>{absence.type}</td>
+                          <td>
+                            {new Date(absence.startDate).toLocaleDateString()} -{" "}
+                            {new Date(absence.endDate).toLocaleDateString()}
+                          </td>
+                        </tr>)}
+                    </tbody>
+                  </table>
+                </DataTableShell>
+              </LayerTheme>
             </SectionCard>
 
             <SectionCard title="Active Warnings" subtitle="Summary of open disciplinary notices" action={<Link href="/hr/disciplinary" style={{

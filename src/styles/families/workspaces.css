@@ -1,0 +1,320 @@
+/* file location: src/styles/families/workspaces.css
+ *
+ * Canonical home for the Workspace family — the multi-workspace DMS shell.
+ *
+ * Component: src/features/workspaces/WorkspaceHost.js (+ ./components/*)
+ * Registry:  src/components/ui/variants.js (id: "workspace")
+ *
+ * The shell must leave single-screen behaviour untouched, so the two wrappers
+ * it always renders (.app-workspace-area, .app-workspace-slot) default to
+ * `display: contents` and only become boxes once a second workspace exists
+ * (.app-workspace-area.is-active).
+ *
+ * Borders: none. Panes are separated by the shell background and the divider
+ * handle is a filled pill, not a rule (CLAUDE.md §3.0a).
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Area + slots */
+html.staff-scope .app-workspace-area,
+html.staff-scope .app-workspace-slot {
+  display: contents;
+}
+
+html.staff-scope .app-workspace-area.is-active {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: stretch;
+  position: relative;
+}
+
+html.staff-scope .app-workspace-area.is-active .app-workspace-slot {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Extra workspaces hold the viewport while the primary page may grow with its
+   content (tablet / messages scroll models). */
+html.staff-scope .app-workspace-area.is-active .app-workspace-slot--frame {
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Collapsed into a tab: hidden, never unmounted, so its page keeps its state. */
+html.staff-scope .app-workspace-area.is-active .app-workspace-slot.is-hidden {
+  display: none;
+}
+
+html.staff-scope .app-workspace-area.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* Frames would swallow the pointer mid-drag. */
+html.staff-scope .app-workspace-area.is-resizing iframe {
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pane bar */
+/* One row: the title yields (ellipsis) first. The controls stay together as a
+   group and only drop to their own row when the pane is too narrow for both. */
+html.staff-scope .app-workspace-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--page-gutter-y) var(--page-gutter-x) 0;
+  min-width: 0;
+}
+
+html.staff-scope .app-workspace-bar__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+/* Collapsed workspaces: the tabs take their own full row, controls below. */
+html.staff-scope .app-workspace-bar--tabs {
+  flex-wrap: wrap;
+}
+
+html.staff-scope .app-workspace-bar--tabs .app-workspace-bar__identity {
+  flex-basis: 100%;
+}
+
+html.staff-scope .app-workspace-bar__focus-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--theme);
+  transition: var(--control-transition);
+}
+
+html.staff-scope .app-workspace-bar.is-focused .app-workspace-bar__focus-dot {
+  background: var(--primary);
+}
+
+html.staff-scope .app-workspace-bar__title {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+html.staff-scope .app-workspace-bar__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+html.staff-scope .app-workspace-bar__tabs {
+  min-width: 0;
+}
+
+html.staff-scope .app-workspace-bar__controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+html.staff-scope .app-workspace-bar__presets {
+  display: inline-flex;
+  gap: var(--space-xs);
+}
+
+/* Wrapper that sizes the (full-width by design) Page actions dropdown. */
+html.staff-scope .app-workspace-bar__actions {
+  width: 200px;
+  flex: 0 0 auto;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Frame */
+html.staff-scope .app-workspace-frame {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+html.staff-scope .app-workspace-frame__iframe {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+}
+
+html.staff-scope .app-workspace-frame__iframe.is-loading {
+  visibility: hidden;
+}
+
+html.staff-scope .app-workspace-frame__loading {
+  position: absolute;
+  inset: 0;
+  padding: var(--page-gutter-y) var(--page-gutter-x);
+  overflow: hidden;
+}
+
+html.staff-scope .app-workspace-frame--start {
+  padding: var(--page-gutter-y) var(--page-gutter-x);
+  overflow-y: auto;
+}
+
+html.staff-scope .app-workspace-start {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+html.staff-scope .app-workspace-start__links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Divider — 12px hit area, drawn as a filled pill */
+html.staff-scope .app-workspace-divider {
+  position: relative;
+  flex: 0 0 12px;
+  align-self: stretch;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+  border-radius: var(--radius-pill);
+}
+
+html.staff-scope .app-workspace-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 56px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-pill);
+  background: var(--theme);
+  transition: var(--control-transition);
+}
+
+html.staff-scope .app-workspace-divider:hover::before,
+html.staff-scope .app-workspace-divider.is-dragging::before,
+html.staff-scope .app-workspace-divider:focus-visible::before {
+  height: 112px;
+  background: var(--primary);
+}
+
+html.staff-scope .app-workspace-divider:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+/* -------------------------------------------------------------------------- */
+/* "Extra screen space detected" prompt — non-modal, bottom-right */
+html.staff-scope .app-workspace-prompt {
+  position: fixed;
+  right: var(--space-xl);
+  bottom: var(--space-xl);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: min(360px, calc(100vw - 32px));
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: var(--shadow-lg);
+}
+
+html.staff-scope .app-workspace-prompt__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .app-workspace-prompt__title {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: 700;
+}
+
+html.staff-scope .app-workspace-prompt__body {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  line-height: 1.45;
+}
+
+html.staff-scope .app-workspace-prompt__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Embedded mode — the chrome-less shell a workspace frame renders */
+html.staff-scope .app-workspace-embed {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  padding: var(--page-gutter-y) var(--page-gutter-x);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ========================================================================== */
+/* === Responsive — breakpoints: src/styles/breakpoints.js                  === */
+/* ========================================================================== */
+@media (max-width: 640px) {
+  html.staff-scope .app-workspace-bar {
+    padding: var(--page-gutter-y-mobile) var(--page-gutter-x-mobile) 0;
+  }
+
+  html.staff-scope .app-workspace-bar__controls {
+    flex-wrap: wrap;
+  }
+
+  html.staff-scope .app-workspace-frame--start,
+  html.staff-scope .app-workspace-frame__loading,
+  html.staff-scope .app-workspace-embed {
+    padding: var(--page-gutter-y-mobile) var(--page-gutter-x-mobile);
+  }
+
+  html.staff-scope .app-workspace-prompt {
+    right: var(--space-md);
+    bottom: var(--space-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .app-workspace-bar__focus-dot,
+  html.staff-scope .app-workspace-divider::before {
+    transition: none;
+  }
+}

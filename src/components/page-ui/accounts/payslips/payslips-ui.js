@@ -10,7 +10,9 @@ import {
   formatStatusLabel,
 } from "@/features/payslips/payslipUtils";
 import LayerTheme from "@/components/ui/LayerTheme";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 
 // Payslip status → staffglobal .app-badge tone modifier.
 const STATUS_BADGE_TONE = {
@@ -89,27 +91,42 @@ export default function PayslipsAdminPageUi(uiProps) {
                 onClear={() => handleFilterChange("search", "")}
                 style={{ flex: "1 1 240px" }}
               />
-              <DropdownField
-                name="userId"
-                value={filters.userId}
-                onChange={(event) => handleFilterChange("userId", event.target.value)}
-                options={userOptions}
-                style={{ flex: "0 0 220px" }}
-              />
-              <DropdownField
-                name="department"
-                value={filters.department}
-                onChange={(event) => handleFilterChange("department", event.target.value)}
-                options={departmentOptions}
-                style={{ flex: "0 0 200px" }}
-              />
-              <DropdownField
-                name="status"
-                value={filters.status}
-                onChange={(event) => handleFilterChange("status", event.target.value)}
-                options={STATUS_OPTIONS}
-                style={{ flex: "0 0 160px" }}
-              />
+              <FilterButton
+                activeCount={[filters.userId, filters.department, filters.status].filter(Boolean).length}
+                onClear={() => {
+                  handleFilterChange("userId", "");
+                  handleFilterChange("department", "");
+                  handleFilterChange("status", "");
+                }}
+              >
+                <FilterField label="User" htmlFor="payslips-filter-user">
+                  <DropdownField
+                    id="payslips-filter-user"
+                    name="userId"
+                    value={filters.userId}
+                    onChange={(event) => handleFilterChange("userId", event.target.value)}
+                    options={userOptions}
+                  />
+                </FilterField>
+                <FilterField label="Department" htmlFor="payslips-filter-department">
+                  <DropdownField
+                    id="payslips-filter-department"
+                    name="department"
+                    value={filters.department}
+                    onChange={(event) => handleFilterChange("department", event.target.value)}
+                    options={departmentOptions}
+                  />
+                </FilterField>
+                <FilterField label="Status" htmlFor="payslips-filter-status">
+                  <DropdownField
+                    id="payslips-filter-status"
+                    name="status"
+                    value={filters.status}
+                    onChange={(event) => handleFilterChange("status", event.target.value)}
+                    options={STATUS_OPTIONS}
+                  />
+                </FilterField>
+              </FilterButton>
               <div style={{ flex: "0 0 260px", minWidth: "220px" }}>
                 <MonthPickerField
                   aria-label="Paid month"
@@ -206,15 +223,9 @@ export default function PayslipsAdminPageUi(uiProps) {
                         </td>
                         <td style={{ textAlign: "right" }}>
                           <div style={{ display: "inline-flex", gap: "8px" }}>
-                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => setActivePayslip(slip)}>
-                              View
-                            </button>
-                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => setEditingPayslip(slip)}>
-                              Edit
-                            </button>
-                            <button type="button" className="app-table-action-btn app-table-action-btn--danger" onClick={() => handleDelete(slip)}>
-                              Delete
-                            </button>
+                            <SymbolButton symbol="view" label="View payslip" onClick={() => setActivePayslip(slip)} />
+                            <SymbolButton symbol="edit" label="Edit payslip" onClick={() => setEditingPayslip(slip)} />
+                            <SymbolButton symbol="delete" label="Delete payslip" onClick={() => handleDelete(slip)} />
                           </div>
                         </td>
                       </tr>

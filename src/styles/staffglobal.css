@@ -128,33 +128,37 @@ html.staff-scope textarea {
   }
 }
 
-html.staff-scope.modal-open,
-html.staff-scope:has(.popup-backdrop),
-html.staff-scope:has([aria-modal="true"]) {
+/* Modal scroll lock.
+   Driven ENTIRELY by the `.modal-open` class that _app.js puts on <html> and
+   <body> whenever `.popup-backdrop, [aria-modal="true"], [data-modal-portal="true"]`
+   is present anywhere in the document — i.e. the same set of modal patterns the
+   `:has()` selectors here used to match, so no modal loses its lock.
+
+   Those `:has()` arms were removed on purpose (2026-09). A `:has()` whose
+   subject is <html> or <body> forces the browser to treat every DOM mutation in
+   the app as a possible root-style change, so any interaction that adds or
+   removes nodes drags a document-wide style recalculation with it. Measured on
+   the sidebar collapse: ~60ms of long tasks and 6 dropped frames per toggle
+   with them, none at all without. Do not reintroduce a root-level `:has()` —
+   add the state to the class in _app.js instead. */
+html.staff-scope.modal-open {
   overflow: hidden;
 }
 
-html.staff-scope body.modal-open,
-html.staff-scope body:has(.popup-backdrop),
-html.staff-scope body:has([aria-modal="true"]) {
+html.staff-scope body.modal-open {
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-html.staff-scope body.modal-open #__next,
-html.staff-scope body:has(.popup-backdrop) #__next,
-html.staff-scope body:has([aria-modal="true"]) #__next {
+html.staff-scope body.modal-open #__next {
   pointer-events: none;
 }
 
-html.staff-scope body.modal-open [data-modal-portal="true"] {
-  pointer-events: auto;
-}
-
-html.staff-scope body:has(.popup-backdrop) .popup-backdrop,
-html.staff-scope body:has(.popup-backdrop) .popup-backdrop *,
-html.staff-scope body:has([aria-modal="true"]) [aria-modal="true"],
-html.staff-scope body:has([aria-modal="true"]) [aria-modal="true"] * {
+html.staff-scope body.modal-open [data-modal-portal="true"],
+html.staff-scope body.modal-open .popup-backdrop,
+html.staff-scope body.modal-open .popup-backdrop *,
+html.staff-scope body.modal-open [aria-modal="true"],
+html.staff-scope body.modal-open [aria-modal="true"] * {
   pointer-events: auto;
 }
 
@@ -231,6 +235,13 @@ html.staff-scope .app-summary-item {
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   background: var(--surface);
+}
+
+/* Summary tiles sitting on a --surface layer (e.g. inside a popup card) take
+   the --theme fill instead, so each tile reads as its own card rather than
+   disappearing into the surface behind it. Surface ladder, CLAUDE.md 3.0a-2. */
+html.staff-scope .app-summary-item--theme {
+  background: var(--theme);
 }
 
 html.staff-scope .app-summary-label {
@@ -371,7 +382,6 @@ html.staff-scope .job-cards-view-filter-control .dropdown-api {
 
 html.staff-scope .job-cards-view-searchbar.searchbar-api {
   min-width: 0;
-  max-width: none;
   min-height: var(--control-height-sm);
   padding: var(--space-xs) var(--space-sm);
 }
@@ -863,13 +873,14 @@ html.staff-scope .app-sidebar__section-title {
 
 /* Workspace module geometry.
    This class is intentionally scoped beneath .app-sidebar so the module
-   shape cannot affect buttons anywhere else. Modules remain 44px high:
-   rounded rows when expanded and rounded squares when collapsed. Page
+   shape cannot affect buttons anywhere else. Modules remain 44px high and
+   share the same square-ish corner radius whether the sidebar is expanded
+   or collapsed, so module rows read as rectangles rather than pills. Page
    links keep the canonical pill geometry and render as circles in the rail. */
 html.staff-scope .app-sidebar .app-sidebar__module-button.app-btn {
   height: var(--control-height);
   min-height: var(--control-height);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
 }
 
 html.staff-scope .app-sidebar.app-sidebar--collapsed .app-sidebar__module-button.app-btn {
@@ -1514,6 +1525,55 @@ html.staff-scope .app-settings-popup {
   min-height: 0;
 }
 
+/* Sectioned settings popup (e.g. Job Card Settings).
+   Opt in with app-settings-popup__layout inside app-settings-popup. The nav is
+   the shared tab strip (TabGroup → .tab-api) with app-settings-popup__nav;
+   the panel is the only scrolling region, so the compact header and the nav
+   stay put. Below 900px the nav is the ordinary wrapping tab row above the
+   panel; from 900px it stacks as a column beside it. */
+html.staff-scope .app-settings-popup__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--layout-card-gap);
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+html.staff-scope .app-settings-popup__nav {
+  align-self: start;
+}
+
+html.staff-scope .app-settings-popup__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 900px) {
+  html.staff-scope .app-settings-popup__layout {
+    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  html.staff-scope .tab-api.app-settings-popup__nav {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  html.staff-scope .app-settings-popup__nav > .tab-api__item {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
 /* Media editor popup convention (Edit photo / Edit video).
    Opt in with app-media-editor-popup alongside app-settings-popup. Owns the
    popup content chrome so the editors carry no one-off inline padding: the
@@ -1551,6 +1611,59 @@ html.staff-scope .app-popup-compact-header__actions {
     justify-content: flex-end;
   }
 }
+
+/* Popup close convention — THE LAW for every popup header.
+
+   The close action is the symbol circle in the TOP RIGHT of the header, and
+   every other header action sits to its left. Nothing in a popup declares this:
+   the close button is an ordinary <Button>Close</Button> (or any button whose
+   accessible name is Close), Button resolves the close symbol from that label,
+   and Button swaps the word for the mark. The rules below then hold it to the
+   44px circle and pin it to the corner. Change them and every popup follows.
+
+   Ordering is enforced here rather than left to markup order, so a popup that
+   authors Close first still renders it last. */
+html.staff-scope .app-popup-compact-header button {
+  order: 1;
+}
+
+html.staff-scope .app-popup-compact-header [data-symbol="close"] {
+  order: 2;
+  margin-left: auto;
+}
+
+/* The actions group is its own flex line, so the auto margin above would push
+   the whole group instead of the close button. Inside it, ordering alone puts
+   close last and the group is already right-aligned. */
+html.staff-scope .app-popup-compact-header__actions [data-symbol="close"] {
+  margin-left: 0;
+}
+
+
+/* Locked to the 44px circle whatever size the popup asked for — a close is a
+   close, and the symbol law says 44px exactly. */
+html.staff-scope .app-popup-compact-header [data-symbol="close"] {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  max-width: var(--control-height);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  max-height: var(--control-height);
+  padding: 0;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  gap: 0;
+}
+
+
+@media (max-width: 640px) {
+  /* The actions group wraps to its own full-width line on narrow screens, so
+     close keeps the top-right corner of that line. */
+  html.staff-scope .app-popup-compact-header > [data-symbol="close"] {
+    margin-left: auto;
+  }
+}
+
 
 /* Links */
 html.staff-scope a {
@@ -1915,8 +2028,14 @@ html.staff-scope .app-data-table tbody tr {
 
 /* Default in-row button height — every <button> inside an .app-data-table
    snaps to --table-action-btn-height (32px). Wins over .app-btn via the
-   higher specificity. To opt out, set an explicit height on the button. */
-html.staff-scope .app-data-table button {
+   higher specificity. To opt out, set an explicit height on the button.
+
+   .app-symbol-btn and .app-btn--has-symbol are excluded because they are
+   SQUARE, not pills: both size width and height together, so forcing only the
+   height here left them 44x32 ovals. Each sizes itself down to the same 32px
+   in a table — see the table variants in families/symbols.css and
+   families/buttons.css. */
+html.staff-scope .app-data-table button:not(.app-symbol-btn):not(.app-btn--has-symbol) {
   height: var(--table-action-btn-height) !important;
   min-height: var(--table-action-btn-height) !important;
 }
@@ -2031,11 +2150,20 @@ html.staff-scope .app-table-action-btn--primary:focus-visible {
 
 /* Canonical home: src/styles/families/badges.css
  * (rules queued to migrate during UI cleanup pass) */
+
+/* A badge takes the shape and footprint of a summary tile (.app-summary-item,
+   ~line 221): the --radius-sm (12px) corner and the tile's 8px/10px padding on
+   a box locked to the 44px control height. That divergence from the control
+   family is the point — buttons keep the 28px --control-radius pill-end, so a
+   status label can no longer be read as something clickable. Colour is
+   untouched and still comes from the .app-badge--* tone modifiers below. */
 html.staff-scope .app-badge {
   min-width: 0;
+  height: var(--control-height);
   min-height: var(--control-height);
-  padding: var(--control-padding);
-  border-radius: var(--control-radius);
+  max-height: var(--control-height);
+  padding: var(--space-sm) var(--space-2); /* = .app-summary-item's 8px 10px */
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2053,6 +2181,7 @@ html.staff-scope .app-badge {
 html.staff-scope .app-data-table .app-badge {
   height: var(--table-action-btn-height);
   min-height: var(--table-action-btn-height);
+  max-height: var(--table-action-btn-height);
   padding: 0 var(--space-3);
 }
 
@@ -2489,7 +2618,7 @@ html.staff-scope .redirect-dots span:nth-child(3) {
 /* ========================================================= */
 
 /* Prevent horizontal scroll on login page */
-html.staff-scope body:has(.login-page-wrapper) {
+html.staff-scope body.login-scope {
   overflow-x: hidden;
   overflow-y: hidden;
   width: 100vw;
@@ -2703,7 +2832,7 @@ html.staff-scope .login-dev-panel .login-card--dev > div {
 }
 
 @media (max-width: 1100px) {
-  html.staff-scope body:has(.login-page-wrapper) {
+  html.staff-scope body.login-scope {
     overflow-y: auto;
   }
 
@@ -3233,6 +3362,17 @@ html.staff-scope .searchbar-api:focus-within {
   height: var(--control-height) !important;
   padding: 0 !important;
   background: var(--theme) !important;
+}
+
+/* Search bar width cap. A search bar is sized to hold a short query, not to
+   span a toolbar: it is capped at the width of "Search.." followed by 25
+   spaces (33 characters), plus room for the clear button, and still shrinks
+   to its column below that. Only the standalone SearchBar — the multi-select
+   dropdown's control reuses .searchbar-api for its look and must keep
+   filling its field. The filters that used to sit beside a search bar now
+   live in the shared filter button (.app-filter, end of this file). */
+html.staff-scope .searchbar-api:not(.dropdown-api__control) {
+  max-width: calc(33ch + var(--control-height));
 }
 
 html.staff-scope .dropdown-api.is-open .dropdown-api__control,
@@ -4756,8 +4896,8 @@ html.staff-scope .tab-scroll-row.is-overflowing {
    so tabs share the button-family shape. */
 html.staff-scope button.tab-api__item,
 html.staff-scope a.tab-api__item {
-  height: 35px;
-  min-height: 35px !important;
+  height: var(--tab-api-height);
+  min-height: var(--tab-api-height) !important;
   padding: 0 var(--space-sm);
   /* Matches .app-btn's corner radius so tabs share the Primary button shape. */
   border-radius: var(--control-radius) !important;
@@ -4911,10 +5051,13 @@ html.staff-scope .hr-employees-subtitle {
   max-width: 720px;
 }
 
+/* The directory is a picker; the profile is the work surface, so the split is
+   weighted towards the right-hand panel. The list keeps a hard 320px floor so
+   its three columns never collapse. */
 html.staff-scope .hr-employees-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
-  gap: 24px;
+  grid-template-columns: minmax(340px, 0.95fr) minmax(0, 1.8fr);
+  gap: var(--space-5);
   align-items: start;
 }
 
@@ -4923,6 +5066,11 @@ html.staff-scope .hr-employees-directory-shell {
   flex-direction: column;
   min-width: 0;
   width: 100%;
+  /* Matches the profile panel opposite: the pane stays put and its table
+     scrolls, rather than the page scrolling both out of view together. */
+  position: sticky;
+  top: 0;
+  align-self: start;
 }
 
 html.staff-scope .hr-employees-directory-card {
@@ -5034,25 +5182,28 @@ html.staff-scope .hr-employees-table.app-table-shell {
   min-width: 0;
 }
 
+/* Single-line cells: directory rows sit at the shared --table-row-height
+   (44px), so cell content must never wrap onto a second line. */
 html.staff-scope .hr-employees-table th,
 html.staff-scope .hr-employees-table td {
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 html.staff-scope .hr-employees-table th:nth-child(1),
 html.staff-scope .hr-employees-table td:nth-child(1) {
-  width: 64%;
+  width: 40%;
 }
 
 html.staff-scope .hr-employees-table th:nth-child(2),
 html.staff-scope .hr-employees-table td:nth-child(2) {
-  width: 18%;
+  width: 30%;
 }
 
 html.staff-scope .hr-employees-table th:nth-child(3),
 html.staff-scope .hr-employees-table td:nth-child(3) {
-  width: 18%;
+  width: 30%;
 }
 
 html.staff-scope .hr-employees-list.app-table-shell-wrap,
@@ -5082,52 +5233,14 @@ html.staff-scope .hr-employees-empty-row {
   color: var(--text-1);
 }
 
+/* The name column is a normal table cell. It must NOT become a flex/grid
+   container: a <td> with an inner display type is taken out of the table's
+   column model and re-wrapped in an anonymous table cell, which shows up as a
+   dead strip between Name and Department that the row-hover rule cannot reach.
+   Inherit the shared single-line truncation from .hr-employees-table td. */
 html.staff-scope .hr-employees-person-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   min-width: 0;
-  width: 100%;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-avatar {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
-  font-size: 0.72rem;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-body {
-  gap: 2px;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-header {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2px;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-name {
-  font-size: 0.9rem;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-email {
-  font-size: 0.76rem;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-role,
-html.staff-scope .hr-employees-table .hr-employees-row-meta {
-  display: none;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-end {
-  align-items: flex-start;
-  gap: 0;
-}
-
-html.staff-scope .hr-employees-table .hr-employees-row-chevron {
-  display: none;
+  font-weight: 600;
 }
 
 html.staff-scope .hr-employees-row {
@@ -5248,56 +5361,471 @@ html.staff-scope .hr-employees-row-chevron {
   line-height: 1;
 }
 
+/* ── HR Employees: right-hand profile panel ────────────────────────────────
+   The panel is its own scroll container so the directory (which scrolls inside
+   its table shell) and the profile scroll independently, and so the employee
+   header can stay pinned with `position: sticky` while the sections below move.
+   `container-type: inline-size` lets the section cards go two-up on the panel's
+   own width rather than the viewport's — the panel is a column, not the page. */
 html.staff-scope .hr-employees-detail-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  min-width: 0;
   position: sticky;
   top: 0;
-  overflow: visible;
   align-self: start;
   padding: 0;
-  border-radius: 0;
   background: transparent;
-  border: none;
   box-shadow: none;
 }
 
-html.staff-scope .hr-employees-detail-panel .app-section-card,
-html.staff-scope .hr-employees-detail-panel [data-dev-section-type="content-card"] {
-  background: transparent;
-  border: none;
-  box-shadow: none;
+/* The staff shell scrolls an inner region, not the window: roughly 150px of
+   chrome (top bar, page-card padding, tab strip) sits above that region and
+   ~40px of page-card padding below it, plus this tab’s own stack gap. 300px is
+   the measured total. Keeping the pane inside it means the panel scrolls on its
+   own instead of dragging the whole shell down with it; a taller pane still
+   works (the shell scrolls) but costs the user two scrolls to reach Documents.
+   Released below 1100px, where the two panes stack and scroll with the shell. */
+html.staff-scope .hr-employee-profile-panel {
+  min-width: 0;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  container-type: inline-size;
+  container-name: hr-employee-profile;
 }
 
+html.staff-scope .hr-employee-profile-panel--empty {
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--section-card-padding);
+}
+
+html.staff-scope .hr-employee-empty-title {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-1);
+}
+
+html.staff-scope .hr-employee-empty-copy {
+  margin: 0;
+  max-width: 44ch;
+  font-size: var(--text-body-sm);
+  color: var(--text-1);
+  opacity: 0.75;
+}
+
+/* Sticky employee header. Flush to the top of the panel (the panel itself has
+   no padding) so nothing can scroll through the gap above it. */
 html.staff-scope .hr-employee-profile-header-card {
-  border-bottom: none;
-  padding: 0 0 20px 0 !important;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  flex: 0 0 auto;
 }
 
+html.staff-scope .hr-employee-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+html.staff-scope .hr-employee-profile-avatar {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: rgba(var(--primary-rgb), 0.16);
+  color: var(--accentText);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+html.staff-scope .hr-employee-profile-names {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+html.staff-scope .hr-employee-profile-name {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  color: var(--text-1);
+  overflow-wrap: break-word;
+}
+
+html.staff-scope .hr-employee-profile-meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--text-body-sm);
+  color: var(--text-1);
+}
+
+/* Job title reads as the primary of the pair; department is the qualifier. */
+html.staff-scope .hr-employee-profile-job-title {
+  font-weight: 600;
+}
+
+html.staff-scope .hr-employee-profile-department {
+  opacity: 0.75;
+}
+
+html.staff-scope .hr-employee-profile-meta-divider {
+  width: 3px;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--text-1);
+  opacity: 0.4;
+}
+
+html.staff-scope .hr-employee-profile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+html.staff-scope .hr-employee-profile-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html.staff-scope .hr-employee-chip {
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accent-base-rgb), 0.12);
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* One column by default; two once the panel itself is wide enough. Documents
+   spans the full width in both. */
 html.staff-scope .hr-employee-profile-sections {
-  gap: 14px !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  /* stretch (the default) rather than start: paired cards share a row height,
+     so a short card no longer leaves a ragged hole beside a tall one. */
+  align-items: stretch;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+@container hr-employee-profile (min-width: 38rem) {
+  html.staff-scope .hr-employee-profile-sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 html.staff-scope .hr-employee-card-block {
-  border-radius: 16px;
-  background: var(--surface) !important;
-  border: none !important;
-  padding: 16px !important;
+  min-width: 0;
+  height: 100%;
 }
 
-html.staff-scope .hr-employee-basic-salary-card {
-  background: var(--surface) !important;
-  border: none !important;
+html.staff-scope .hr-employee-card-block--full {
+  grid-column: 1 / -1;
+}
+
+html.staff-scope .hr-employee-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  min-height: var(--control-height);
+}
+
+html.staff-scope .hr-employee-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html.staff-scope .hr-employee-card-title {
+  margin: 0;
+  font-size: var(--text-h4);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  color: var(--text-1);
+}
+
+html.staff-scope .hr-employee-card-subtitle {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+/* Pay & Hours spans both columns, so the salary tile sits beside its supporting
+   figures instead of stacking above them and stretching the card. */
+html.staff-scope .hr-employee-pay-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+@container hr-employee-profile (min-width: 38rem) {
+  html.staff-scope .hr-employee-pay-layout {
+    grid-template-columns: minmax(180px, 0.6fr) minmax(0, 2fr);
+  }
+}
+
+html.staff-scope .hr-employee-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+  align-items: start;
 }
 
 html.staff-scope .hr-employee-key-value {
-  padding: 10px 0;
-  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
-html.staff-scope .hr-employee-key-value:last-child {
-  border-bottom: none;
+html.staff-scope .hr-employee-key-value--wide {
+  grid-column: 1 / -1;
+}
+
+html.staff-scope .hr-employee-key-value-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 24px;
+}
+
+html.staff-scope .hr-employee-label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+html.staff-scope .hr-employee-value {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-1);
+  min-width: 0;
+}
+
+html.staff-scope .hr-employee-value--muted {
+  font-weight: 500;
+  opacity: 0.6;
+}
+
+html.staff-scope .hr-employee-helper {
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+html.staff-scope .hr-employee-stat-value {
+  font-size: var(--text-h3);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  color: var(--text-1);
+}
+
+/* Contact rows: label + actions share the first line, the value gets a line of
+   its own. Long emails break only where a break is legible (before @ / .), and
+   addresses keep their comma-separated wrapping instead of splitting mid-word. */
+html.staff-scope .hr-employee-contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+html.staff-scope .hr-employee-contact-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+html.staff-scope .hr-employee-contact-value {
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-height: var(--leading-normal);
+}
+
+html.staff-scope .hr-employee-contact-value--multiline {
+  white-space: pre-line;
+}
+
+html.staff-scope .hr-employee-action-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+html.staff-scope .hr-employee-manager-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+html.staff-scope .hr-employee-manager-link,
+html.staff-scope .hr-employee-manager-static {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--theme);
+  color: var(--text-1);
+  min-height: 44px;
+  justify-content: center;
+}
+
+html.staff-scope button.hr-employee-manager-link {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+html.staff-scope button.hr-employee-manager-link:hover,
+html.staff-scope button.hr-employee-manager-link:focus-visible {
+  background: var(--theme-hover);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .hr-employee-manager-name {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+}
+
+html.staff-scope .hr-employee-manager-meta {
+  font-size: var(--text-caption);
+  opacity: 0.7;
+}
+
+html.staff-scope .hr-employee-empty-block {
+  border-radius: var(--radius-sm);
+  background: var(--theme);
+  padding: var(--space-4);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  text-align: center;
+}
+
+/* Documents table. Fixed layout with per-column widths keyed off data-doc-col
+   so the optional Category / Status / Expires columns can come and go without
+   renumbering nth-child rules. Only the document name wraps, and it wraps on
+   word boundaries. */
+/* Prefixed with .app-table-scroll so these beat the family defaults
+   (`table-layout: auto` and `overflow-wrap: anywhere`, which is what broke
+   document names mid-word) rather than relying on source order alone. */
+html.staff-scope .app-table-scroll .app-data-table.hr-employee-documents-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="name"] {
+  width: auto;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="category"] {
+  width: 16%;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="status"] {
+  width: 15%;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="uploaded"],
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="expires"] {
+  width: 13%;
+}
+
+html.staff-scope .app-table-scroll .hr-employee-documents-table [data-doc-col="actions"] {
+  width: 92px;
+  text-align: right;
+}
+
+/* Invoice parts table. An invoice renders one table per request section, so the
+   columns have to line up section-to-section — fixed layout with per-column
+   widths keyed off data-parts-col, the same approach as the documents table
+   above. Everything else (padding, header tint, row rules, sticky thead) comes
+   from the global table shell. */
+/* Prefixed with .app-table-scroll so these beat the family defaults
+   (`table-layout: auto`) rather than relying on source order alone. */
+html.staff-scope .app-table-scroll .app-data-table.invoice-parts-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="part"] {
+  width: 16%;
+}
+
+/* The only column that wraps — it takes whatever the numeric columns leave. */
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="description"] {
+  width: auto;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="retail"] {
+  width: 12%;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="qty"] {
+  width: 8%;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="price"] {
+  width: 11%;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="vat"] {
+  width: 10%;
+}
+
+html.staff-scope .app-table-scroll .invoice-parts-table [data-parts-col="rate"] {
+  width: 9%;
+}
+
+/* Directory list fills the same column height as the profile panel beside it,
+   so both panes scroll on their own instead of the page scrolling for them. */
+html.staff-scope .hr-employees-list .app-table-scroll {
+  /* Same shell offset as the profile panel (300px), plus the ~375px of search,
+     filters and summary tiles stacked above the table inside the card. */
+  max-height: calc(100vh - 675px);
+  min-height: 200px;
 }
 
 @media (max-width: 1100px) {
@@ -5305,7 +5833,23 @@ html.staff-scope .hr-employee-key-value:last-child {
     grid-template-columns: 1fr;
   }
 
-  html.staff-scope .hr-employees-detail-panel {
+  html.staff-scope .hr-employees-detail-panel,
+  html.staff-scope .hr-employees-directory-shell {
+    position: static;
+  }
+
+  html.staff-scope .hr-employees-list .app-table-scroll {
+    max-height: calc((var(--table-visible-rows) + 1) * var(--table-row-height));
+  }
+
+  /* Stacked layout: the panel scrolls with the page rather than trapping the
+     scroll in a short box, so the sticky header steps down to the page flow. */
+  html.staff-scope .hr-employee-profile-panel {
+    max-height: none;
+    overflow: visible;
+  }
+
+  html.staff-scope .hr-employee-profile-header-card {
     position: static;
   }
 }
@@ -6094,7 +6638,7 @@ html.staff-scope .loan-car-appointments-table-scroll .app-table-shell--with-head
 /* Real portrait phones keep login cards stacked even when browser UI changes
    make CSS width and device width disagree. */
 @media (max-device-width: 640px) and (orientation: portrait), (pointer: coarse) and (orientation: portrait) {
-  html.staff-scope body:has(.login-page-wrapper) {
+  html.staff-scope body.login-scope {
     overflow-y: auto;
   }
 
@@ -6737,6 +7281,22 @@ html.staff-scope .myjobs-date {
 }
 
 /* ============================================================= */
+/* Tracking segmented controls share the longest label's width. The role
+   selector keeps this sizing authoritative over the route-loaded map CSS. */
+html.staff-scope .tracking-viewswitch[role="group"] {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  width: max-content;
+  max-width: 100%;
+}
+
+html.staff-scope .tracking-viewswitch[role="group"] > .app-btn {
+  min-width: var(--control-height);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* Mobile portrait — grouped controls fill content width.        */
 /* Segmented selectors (Day / Week / Month), tab groups, filter  */
 /* bars, action rows, status selectors, button groups and        */
@@ -6887,6 +7447,14 @@ html.staff-scope .myjobs-date {
     padding: 0 !important;
     font-size: 11pt !important;
     color: #000 !important;
+  }
+
+  /* The .app-table-scroll row cap is a screen affordance — on paper the parts
+     table prints in full. `overflow: visible` is already forced above; this
+     drops the height cap so the rows do not run over the totals below them.
+     No !important needed: this outscores the family rule on specificity. */
+  html.staff-scope [data-invoice-print-area] .app-table-scroll {
+    max-height: none;
   }
 
   /* Print-friendly table styles */
@@ -8712,5 +9280,991 @@ html.staff-scope .app-delivery-month-picker .calendar-api__control {
 
   html.staff-scope .app-delivery-month-picker {
     flex: 1 1 100%;
+  }
+}
+
+/* ==========================================================================
+ * Touch target floor — responsive sweep, 2026-09
+ * Breakpoints: src/styles/breakpoints.js
+ * ==========================================================================
+ *
+ * CLAUDE.md §3.6 sets a 44x44px minimum touch target. Three shared controls
+ * sat under it and, being shared, accounted for the large majority of the
+ * violations found by e2e/responsive/phone-floor.spec.js:
+ *
+ *   .app-table-action-btn  32px   in-row "View" / "Edit" actions
+ *   .app-news-link         32px   newsfeed links (same token)
+ *   .tab-api__item         35px   the tab-api tab chips
+ *
+ * All three are driven by a token, so lifting the token lifts every instance
+ * without touching a single component — and without a new !important, which
+ * matters because staffglobal.css is at its recorded important-budget.
+ *
+ * Keyed on `pointer: coarse` rather than a width, deliberately. The constraint
+ * is a fingertip, not a viewport: a 1024px tablet is touch-operated and needs
+ * the same 44px target as a phone, but matches no max-width phone rule. Mouse
+ * users keep the denser 32/35px controls, so desktop density is unchanged.
+ */
+@media (pointer: coarse) {
+  html.staff-scope {
+    --table-action-btn-height: var(--control-height);
+    --tab-api-height: var(--control-height);
+  }
+}
+
+/* ========================================================================== */
+/* === Loan car tracker (/tracking → Loan Cars, job card Loan Car tab)      === */
+/* ========================================================================== */
+/* Rendered by src/components/LoanCars/*. Token-only and borderless: surfaces
+   separate on the ladder, the only line is the --separating-line row rule, and
+   state is carried by fill colour. The status fills reuse the badge pairs
+   (soft surface + -dark text, strong fill + --text-2) the colour check already
+   validates. Raw <button>s here use a `button.` prefix so they beat the global
+   `button:not(.app-btn)` reset on specificity, and each restates its own
+   :hover for the same reason. */
+
+html.staff-scope .loan-car-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  min-width: 0;
+}
+
+/* ---- toolbar ---------------------------------------------------------------- */
+html.staff-scope .loan-car-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--layout-card-gap);
+  min-width: 0;
+}
+
+html.staff-scope .loan-car-toolbar__filters,
+html.staff-scope .loan-car-toolbar__range,
+html.staff-scope .loan-car-toolbar__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .loan-car-toolbar__label {
+  min-width: 11ch;
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+html.staff-scope button.loan-car-filter {
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  gap: var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--primary-control-bg);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+}
+
+html.staff-scope button.loan-car-filter:hover {
+  background: var(--primary-control-bg-hover);
+}
+
+html.staff-scope button.loan-car-filter:focus-visible,
+html.staff-scope button.loan-car-block:focus-visible,
+html.staff-scope button.loan-car-calendar__slot:focus-visible,
+html.staff-scope button.loan-car-calendar__car-button:focus-visible,
+html.staff-scope button.loan-car-calendar__corner-button:focus-visible,
+html.staff-scope button.loan-car-lookup__result:focus-visible,
+html.staff-scope button.loan-car-fleet-list__row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .loan-car-filter__count {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 var(--space-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-label);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+html.staff-scope .loan-car-filter--available .loan-car-filter__count { background: var(--success-surface); color: var(--success-dark); }
+html.staff-scope .loan-car-filter--out .loan-car-filter__count { background: var(--accent-strong); color: var(--text-2); }
+html.staff-scope .loan-car-filter--due-today .loan-car-filter__count { background: var(--warning); color: var(--text-2); }
+html.staff-scope .loan-car-filter--overdue .loan-car-filter__count { background: var(--danger); color: var(--text-2); }
+
+html.staff-scope button.loan-car-filter.is-active,
+html.staff-scope button.loan-car-filter.is-active:hover {
+  background: var(--primary);
+  color: var(--onAccentText);
+}
+
+/* ---- calendar --------------------------------------------------------------- */
+html.staff-scope .loan-car-calendar {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(640px, calc(100dvh - 240px));
+  min-height: 320px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+  background: var(--theme);
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+html.staff-scope .loan-car-calendar.is-adjusting {
+  cursor: ns-resize;
+  user-select: none;
+}
+
+html.staff-scope .loan-car-calendar__table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface);
+}
+
+/* Sticky heading: an opaque --surface base under the translucent tint, so rows
+   scrolling underneath never show through. */
+html.staff-scope .loan-car-calendar__table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: var(--space-xs);
+  background-color: var(--surface);
+  background-image: linear-gradient(var(--secondary-pressed), var(--secondary-pressed));
+  vertical-align: middle;
+}
+
+html.staff-scope .loan-car-calendar__table thead th.loan-car-calendar__corner {
+  left: 0;
+  z-index: 4;
+}
+
+html.staff-scope button.loan-car-calendar__corner-button,
+html.staff-scope button.loan-car-calendar__car-button {
+  width: 100%;
+  min-height: 52px;
+  padding: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-1);
+  font-weight: 800;
+}
+
+html.staff-scope button.loan-car-calendar__corner-button:hover,
+html.staff-scope button.loan-car-calendar__car-button:hover {
+  background: var(--theme-hover);
+}
+
+html.staff-scope .loan-car-calendar__reg {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body);
+  letter-spacing: 0.02em;
+}
+
+/* Availability chip under each registration (and in the fleet list). */
+html.staff-scope .loan-car-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+html.staff-scope .loan-car-status--available { background: var(--success-surface); color: var(--success-dark); }
+html.staff-scope .loan-car-status--reserved { background: var(--warning-surface); color: var(--warning-dark); }
+html.staff-scope .loan-car-status--out { background: var(--accent-strong); color: var(--text-2); }
+html.staff-scope .loan-car-status--due-today { background: var(--warning); color: var(--text-2); }
+html.staff-scope .loan-car-status--overdue { background: var(--danger); color: var(--text-2); }
+html.staff-scope .loan-car-status--unavailable { background: rgba(var(--grey-accent-rgb), 0.18); color: var(--text-1); }
+
+/* Date column. */
+html.staff-scope .loan-car-calendar__date {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  height: var(--control-height);
+  padding: 0 var(--space-sm);
+  background-color: var(--surface);
+  border-bottom: var(--separating-line);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  color: var(--text-1);
+}
+
+html.staff-scope .loan-car-calendar__weekday {
+  display: inline-block;
+  min-width: 3.6ch;
+  margin-right: var(--space-xs);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  opacity: 0.72;
+}
+
+html.staff-scope .loan-car-calendar__daymonth {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+}
+
+html.staff-scope .loan-car-calendar__today-marker {
+  display: block;
+  width: fit-content;
+  margin-top: 2px;
+  padding: 1px var(--space-sm);
+  border-radius: var(--radius-pill);
+  background: var(--accent-strong);
+  color: var(--text-2);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+html.staff-scope .loan-car-calendar__row.is-weekend .loan-car-calendar__date,
+html.staff-scope .loan-car-calendar__row.is-weekend .loan-car-calendar__cell {
+  background-image: linear-gradient(rgba(var(--grey-accent-rgb), 0.06), rgba(var(--grey-accent-rgb), 0.06));
+}
+
+html.staff-scope .loan-car-calendar__row.is-past .loan-car-calendar__daymonth {
+  opacity: 0.6;
+}
+
+/* Today: a theme tint across the whole row plus the TODAY marker. */
+html.staff-scope .loan-car-calendar__row.is-today .loan-car-calendar__date,
+html.staff-scope .loan-car-calendar__row.is-today .loan-car-calendar__cell {
+  background-image: linear-gradient(var(--theme), var(--theme));
+}
+
+html.staff-scope .loan-car-calendar__row.is-today .loan-car-calendar__daymonth {
+  color: var(--accentText);
+}
+
+/* Cells. */
+html.staff-scope .loan-car-calendar__cell {
+  position: relative;
+  height: var(--control-height);
+  padding: 0 2px;
+  border-bottom: var(--separating-line);
+  vertical-align: top;
+}
+
+html.staff-scope button.loan-car-calendar__slot {
+  width: 100%;
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: transparent;
+  font-size: var(--text-h4);
+  font-weight: 700;
+}
+
+html.staff-scope button.loan-car-calendar__slot:hover,
+html.staff-scope button.loan-car-calendar__slot:focus-visible {
+  background: var(--theme-hover);
+  color: var(--accentText);
+}
+
+html.staff-scope .loan-car-calendar__stack {
+  height: 100%;
+  min-height: var(--control-height);
+  display: flex;
+  flex-direction: column;
+}
+
+html.staff-scope .loan-car-calendar__stack--multi {
+  gap: 2px;
+  padding: 2px 0;
+}
+
+/* ---- booking / unavailable blocks ------------------------------------------- */
+/* A multi-day booking is one run of blocks down the column: square where it
+   continues, rounded where it starts and ends. The cell's row rule is covered
+   so the run reads as a single piece. */
+html.staff-scope button.loan-car-block {
+  position: relative;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  margin-bottom: -1px;
+  padding: 3px var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  border-radius: 0;
+  text-align: left;
+  overflow: hidden;
+  z-index: 1;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+html.staff-scope button.loan-car-block.is-start { border-top-left-radius: var(--radius-xs); border-top-right-radius: var(--radius-xs); margin-top: 2px; }
+html.staff-scope button.loan-car-block.is-end { border-bottom-left-radius: var(--radius-xs); border-bottom-right-radius: var(--radius-xs); margin-bottom: 2px; }
+html.staff-scope .loan-car-calendar__stack--multi button.loan-car-block { margin: 0; border-radius: var(--radius-xs); }
+
+html.staff-scope .loan-car-block__title,
+html.staff-scope .loan-car-block__meta {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.staff-scope .loan-car-block__title { font-weight: 800; }
+html.staff-scope .loan-car-block__meta { font-weight: 600; opacity: 0.88; font-variant-numeric: tabular-nums; }
+
+html.staff-scope button.loan-car-block--reserved,
+html.staff-scope button.loan-car-block--reserved:hover { background: var(--warning-surface); color: var(--warning-dark); }
+html.staff-scope button.loan-car-block--out,
+html.staff-scope button.loan-car-block--out:hover { background: var(--accent-strong); color: var(--text-2); }
+html.staff-scope button.loan-car-block--due-today,
+html.staff-scope button.loan-car-block--due-today:hover { background: var(--warning); color: var(--text-2); }
+html.staff-scope button.loan-car-block--overdue,
+html.staff-scope button.loan-car-block--overdue:hover { background: var(--danger); color: var(--text-2); }
+html.staff-scope button.loan-car-block--returned,
+html.staff-scope button.loan-car-block--returned:hover { background: rgba(var(--grey-accent-rgb), 0.18); color: var(--text-1); }
+html.staff-scope button.loan-car-block--unavailable,
+html.staff-scope button.loan-car-block--unavailable:hover {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(var(--grey-accent-rgb), 0.24) 0 6px,
+    rgba(var(--grey-accent-rgb), 0.1) 6px 12px
+  );
+  color: var(--text-1);
+}
+
+/* Days an overdue car has run past its planned return. */
+html.staff-scope button.loan-car-block.is-overrun {
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(0, 0, 0, 0.14) 6px 12px);
+}
+
+html.staff-scope button.loan-car-block:hover {
+  filter: brightness(0.96);
+}
+
+/* Continuing beyond the visible range is shown by the square open edge and
+   the "↑ from" / "↓ to" label printed inside the block. */
+
+html.staff-scope button.loan-car-block.is-dimmed { opacity: 0.32; }
+html.staff-scope button.loan-car-block.is-highlighted { box-shadow: inset 0 0 0 2px var(--primary-selected); }
+html.staff-scope button.loan-car-block.is-dragging { box-shadow: var(--focus-ring); z-index: 2; }
+
+/* Drag handles for duration adjustment (adjust capability only): an invisible
+   hit strip on the block's top / bottom edge with a grip on hover. */
+html.staff-scope .loan-car-block__handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10px;
+  cursor: ns-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+html.staff-scope .loan-car-block__handle--start { top: 0; }
+html.staff-scope .loan-car-block__handle--end { bottom: 0; }
+
+html.staff-scope .loan-car-block__handle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 24px;
+  height: 3px;
+  margin-left: -12px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+html.staff-scope .loan-car-block__handle--start::after { top: 2px; }
+html.staff-scope .loan-car-block__handle--end::after { bottom: 2px; }
+html.staff-scope button.loan-car-block:hover .loan-car-block__handle::after,
+html.staff-scope button.loan-car-block.is-dragging .loan-car-block__handle::after { opacity: 0.6; }
+
+/* ---- drawers ---------------------------------------------------------------- */
+html.staff-scope .loan-car-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  min-width: 0;
+}
+
+html.staff-scope .loan-car-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: var(--layout-card-gap);
+  align-items: end;
+}
+
+html.staff-scope .loan-car-form-grid--pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+html.staff-scope .loan-car-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .loan-car-lookup-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-items: end;
+}
+
+html.staff-scope .loan-car-textarea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+html.staff-scope .loan-car-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--control-height);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+html.staff-scope .loan-car-field--wide {
+  grid-column: 1 / -1;
+}
+
+html.staff-scope .app-record-field__value:has(.loan-car-copy) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+html.staff-scope .loan-car-link {
+  color: var(--accentText);
+  font-weight: 700;
+}
+
+/* DMS lookup results (Quick add / New loan booking). */
+html.staff-scope .loan-car-lookup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+html.staff-scope button.loan-car-lookup__result {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-sm) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-1);
+  text-align: left;
+}
+
+html.staff-scope button.loan-car-lookup__result:hover {
+  background: var(--primary-control-bg-hover);
+}
+
+html.staff-scope .loan-car-lookup__primary { font-weight: 700; font-size: var(--text-body-sm); }
+html.staff-scope .loan-car-lookup__secondary { font-weight: 500; font-size: var(--text-caption); opacity: 0.8; }
+
+/* Overlap warning with the free alternatives. */
+html.staff-scope .loan-car-conflict {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--danger-surface);
+  color: var(--danger-dark);
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .loan-car-conflict__title { font-weight: 800; }
+
+/* Activity trail / readings / unavailable periods. */
+html.staff-scope .loan-car-activity {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+html.staff-scope .loan-car-activity__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm) 0;
+  border-bottom: var(--separating-line);
+  color: var(--text-1);
+}
+
+html.staff-scope .loan-car-activity__item:last-child { border-bottom: none; }
+
+html.staff-scope .loan-car-activity__item--action {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .loan-car-activity__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .loan-car-activity__meta {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  opacity: 0.72;
+}
+
+/* Manage fleet list. */
+html.staff-scope .loan-car-fleet-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+html.staff-scope button.loan-car-fleet-list__row {
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-sm) var(--space-3);
+  justify-content: space-between;
+  gap: var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-1);
+  text-align: left;
+}
+
+html.staff-scope button.loan-car-fleet-list__row:hover {
+  background: var(--primary-control-bg-hover);
+}
+
+html.staff-scope .loan-car-fleet-list__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html.staff-scope .loan-car-fleet-list__reg { font-size: var(--text-body); font-weight: 800; }
+html.staff-scope .loan-car-fleet-list__meta { font-size: var(--text-caption); font-weight: 500; opacity: 0.8; overflow-wrap: anywhere; }
+
+/* Tracking popup (src/features/tracking/TrackingPopup.js).
+   What every item in the /tracking Loan Cars, Equipment/Tools and Oil/Stock
+   tabs opens into. It rides on the settings popup convention above
+   (.app-settings-popup-card / .app-settings-popup / .app-popup-compact-header);
+   these rules only size the card and lay out the meta line, the scrolling body
+   and the footer. The card keeps the popup's own --surface, so content inside
+   continues the ladder on --theme. */
+html.staff-scope .popup-card.tracking-popup-card {
+  width: min(100%, 720px);
+  overflow: hidden;
+}
+
+html.staff-scope .tracking-popup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  padding: var(--section-card-padding);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+html.staff-scope .tracking-popup__meta {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  line-height: 1.45;
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .tracking-popup__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+html.staff-scope .tracking-popup__footer {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  flex: 0 0 auto;
+}
+
+@media (max-width: 767px) {
+  html.staff-scope .loan-car-toolbar,
+  html.staff-scope .loan-car-toolbar__range {
+    align-items: stretch;
+  }
+
+  html.staff-scope .loan-car-toolbar__filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  html.staff-scope .loan-car-calendar {
+    max-height: calc(100dvh - 200px);
+  }
+
+  html.staff-scope .loan-car-form-grid--pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ========================================================================== */
+/* === Filter button + floating filter card                               === */
+/* ========================================================================== */
+/*
+ * Component: src/components/ui/filterAPI/FilterButton.js
+ *
+ * A 44px circle with the filter mark that opens a floating filter card, the
+ * way the calendar picker opens its grid. Everything visual about the button
+ * and the card lives here; a page supplies only the content (dropdowns,
+ * search bars, toggles) inside <FilterField> rows.
+ *
+ * The card is portalled to <body> and fixed-positioned by the component, so
+ * it sits above every page card, sticky bar and modal (--z-popover). Menus
+ * opened from inside it (portalled dropdowns) use --z-dropdown, which is
+ * higher again, so they still land on top of the card.
+ *
+ * Ladder: the card is a floating --surface with the dropdown-menu shadow, the
+ * same treatment as the calendar/dropdown menus. Being in <body> it sits on no
+ * theme layer, so the controls inside keep their default accent fill, which
+ * is what separates them from a --surface.
+ */
+
+/* The count badge overhangs the circle's top-right corner. Any scroll or
+   clipping ancestor (the desktop page scroller is overflow:auto, so is every
+   modal body) cuts off whatever pokes out past its edge, so the wrapper
+   reserves the overhang inside its own box and the badge can never leave it.
+   The reserve is always on, so the toolbar does not shift when a filter is
+   applied; top and bottom match so the circle stays centred in its row. */
+html.staff-scope .app-filter {
+  --app-filter-badge-overhang: 6px; /* 4px offset + 2px surface halo on .app-filter__count */
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  padding-block: var(--app-filter-badge-overhang);
+  padding-inline-end: var(--app-filter-badge-overhang);
+}
+
+/* The trigger — locked to the control floor in both axes so no flex parent
+   can stretch it out of round. Qualified with `button` so it outranks the
+   global `button:not(.app-btn)` primary fill. */
+html.staff-scope button.app-filter__trigger {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  width: var(--control-height);
+  min-width: var(--control-height);
+  max-width: var(--control-height);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  max-height: var(--control-height);
+  flex: 0 0 auto;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+  line-height: 0;
+  font-size: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+html.staff-scope button.app-filter__trigger:hover:not(:disabled) {
+  background: var(--secondary-hover);
+}
+
+/* Open, or pressed: the pressed tint holds while the card is showing, so the
+   button reads as the thing the card belongs to. */
+html.staff-scope button.app-filter__trigger[aria-expanded="true"],
+html.staff-scope button.app-filter__trigger:active:not(:disabled) {
+  background: var(--secondary-pressed);
+}
+
+html.staff-scope button.app-filter__trigger:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+html.staff-scope button.app-filter__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope button.app-filter__trigger:disabled {
+  background: var(--control-disabled-bg);
+  color: var(--control-disabled-text);
+  cursor: not-allowed;
+}
+
+html.staff-scope .app-filter__glyph {
+  grid-area: 1 / 1;
+  display: block;
+  width: var(--symbol-glyph-size);
+  height: var(--symbol-glyph-size);
+  stroke-width: var(--symbol-stroke-width);
+  max-width: none;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+/* Active-filter count, pinned to the top-right of the circle. The surface
+   halo is a box-shadow (not a border) that cuts it cleanly out of the circle. */
+html.staff-scope .app-filter__count {
+  position: absolute;
+  z-index: 1; /* paints above the glyph and any later sibling in the row */
+  top: -4px;
+  right: -4px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--onAccentText);
+  box-shadow: 0 0 0 2px var(--surface);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* The floating card. It unfolds out of the button: the component sets
+   transform-origin to the button's position, and data-state drives an open
+   and a close animation (the component keeps the card mounted until the
+   close one ends). */
+html.staff-scope .app-filter__panel {
+  position: fixed;
+  z-index: var(--z-popover);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: var(--section-card-padding);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--dropdown-menu-shadow);
+  color: var(--text-1);
+  outline: none;
+  will-change: opacity, transform;
+}
+
+/* First frame, before the component has measured and placed it: keep it out
+   of sight so it never flashes at the top-left of the screen. The open
+   animation is attached only once it is placed, so it plays in full from the
+   right spot rather than part-way through. */
+html.staff-scope .app-filter__panel[data-positioned="false"] {
+  visibility: hidden;
+}
+
+html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] {
+  animation: app-filter-panel-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html.staff-scope .app-filter__panel[data-state="closing"] {
+  animation: app-filter-panel-out 0.14s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+/* Opening upwards, the card rises instead of dropping. */
+html.staff-scope .app-filter__panel[data-placement="above"] {
+  --app-filter-panel-shift: 6px;
+}
+
+@keyframes app-filter-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--app-filter-panel-shift, -6px)) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes app-filter-panel-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--app-filter-panel-shift, -6px)) scale(0.97);
+  }
+}
+
+/* The fields follow the card in a beat behind it, so the content settles
+   rather than arriving in one block. */
+html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] .app-filter__body {
+  animation: app-filter-body-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
+}
+
+@keyframes app-filter-body-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header: title on the left; Clear all and Show results on the right. */
+html.staff-scope .app-filter__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .app-filter__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-h4);
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+html.staff-scope .app-filter__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 0 0 auto;
+}
+
+html.staff-scope .app-filter__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+html.staff-scope .app-filter__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+/* Controls inside a field fill the card's width. */
+html.staff-scope .app-filter__field > :not(.app-filter__label) {
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .app-filter__label {
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+/* Phone: the title keeps the first line; the two actions drop to their own
+   full-width line beneath and share it evenly. */
+@media (max-width: 480px) {
+  html.staff-scope .app-filter__header {
+    flex-wrap: wrap;
+  }
+
+  html.staff-scope .app-filter__actions {
+    flex: 1 1 100%;
+  }
+
+  html.staff-scope .app-filter__actions > * {
+    flex: 1 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope button.app-filter__trigger {
+    transition: none;
+  }
+
+  html.staff-scope button.app-filter__trigger:active:not(:disabled) {
+    transform: none;
+  }
+
+  html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"],
+  html.staff-scope .app-filter__panel[data-state="closing"],
+  html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] .app-filter__body {
+    animation: none;
   }
 }

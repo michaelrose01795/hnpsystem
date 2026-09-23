@@ -37,16 +37,6 @@ const getFinalInvoiceNumberDisplay = (invoice = {}, isProforma = false) => {
   return "Hidden until invoice is created";
 };
 
-// Small label/value tile (nested LayerTheme keeps surface alternation correct).
-const SummaryTile = ({ label, children, tone }) => (
-  <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="6px">
-    <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-1)" }}>
-      {label}
-    </span>
-    <strong style={{ fontSize: "1.05rem", color: tone || "var(--text-1)" }}>{children}</strong>
-  </LayerTheme>
-);
-
 const CompactStatTile = ({ label, children }) => (
   <div
     style={{
@@ -143,6 +133,7 @@ const RequestSection = ({ row, isProforma, onOpenEditor }) => {
       </div>
 
       {hasLineItems ? (
+        <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 0 }}>
         <div style={{ width: "100%", overflowX: "auto" }}>
           <table className="app-data-table app-data-table--rounded" style={{ minWidth: "560px" }}>
             <thead>
@@ -183,17 +174,24 @@ const RequestSection = ({ row, isProforma, onOpenEditor }) => {
             </tbody>
           </table>
         </div>
+        </LayerTheme>
       ) : (
         <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.9rem" }}>No line items recorded for this request.</p>
       )}
 
-      {/* Per-request totals — parts + labour shown individually for this section. */}
+      {/* Per-request totals — parts, labour, net and VAT all on one line. */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", justifyContent: "flex-end", alignItems: "baseline" }}>
         <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>
           Parts Total: <strong style={{ color: "var(--text-1)" }}>{formatCurrency(partsNet)}</strong>
         </span>
         <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>
           Labour Total: <strong style={{ color: "var(--text-1)" }}>{formatCurrency(labourNet)}</strong>
+        </span>
+        <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>
+          Subtotal (ex VAT): <strong style={{ color: "var(--text-1)" }}>{formatCurrency(totalsNet)}</strong>
+        </span>
+        <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>
+          VAT Total (20%): <strong style={{ color: "var(--text-1)" }}>{formatCurrency(totalsVat)}</strong>
         </span>
         <span style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
           Request Total (inc VAT): <strong style={{ color: "var(--accentText)" }}>{formatCurrency(totalsGross)}</strong>
@@ -215,6 +213,7 @@ export default function InvoiceWorkspace({
   onPaymentCompleted = null,
   onReleaseRequested = null,
   onSaveNotes = null,
+  showNotes = true, // hidden where notes are edited elsewhere (parts order notes popup)
 }) {
   const detailData = data ?? {};
   const { invoice = {} } = detailData;
@@ -352,22 +351,15 @@ export default function InvoiceWorkspace({
 
       {isProforma && modal}
 
-      {/* ── Notes + totals ───────────────────────────────────────── */}
+      {/* ── Invoice notes ────────────────────────────────────────── */}
+      {showNotes && (
       <LayerSurface radius="var(--radius-sm)" gap="var(--space-4)">
         <div style={{ display: "grid", gap: "var(--space-2)" }}>
+          <div className="app-page-header">
           <label htmlFor="invoice-notes" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}>
             Invoice Notes
           </label>
-          <textarea
-            id="invoice-notes"
-            className="app-input"
-            rows={3}
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder="Add notes to appear on this invoice…"
-            style={{ resize: "vertical", minHeight: "72px" }}
-          />
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", justifyContent: "flex-end" }}>
+          <div className="app-page-header__actions">
             {notesStatus && (
               <span style={{ fontSize: "0.82rem", color: notesStatus === "Saved" ? "var(--success-dark)" : "var(--danger-dark)" }}>
                 {notesStatus}
@@ -383,16 +375,19 @@ export default function InvoiceWorkspace({
               {notesSaving ? "Saving…" : "Save Notes"}
             </Button>
           </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--space-3)" }}>
-          <SummaryTile label="Subtotal (ex VAT)">{formatCurrency(totals.service_total)}</SummaryTile>
-          <SummaryTile label="VAT Total (20%)">{formatCurrency(totals.vat_total)}</SummaryTile>
-          <SummaryTile label="Invoice Total (inc VAT)" tone="var(--accentText)">
-            {formatCurrency(totals.invoice_total)}
-          </SummaryTile>
+          </div>
+          <textarea
+            id="invoice-notes"
+            className="app-input"
+            rows={3}
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            placeholder="Add notes to appear on this invoice…"
+            style={{ resize: "vertical", minHeight: "72px" }}
+          />
         </div>
       </LayerSurface>
+      )}
 
       {/* ── Make Payment popup (existing flow) ───────────────────── */}
       {!isProforma && !invoicePaid && (

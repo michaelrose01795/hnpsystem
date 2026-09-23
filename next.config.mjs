@@ -110,11 +110,6 @@ const nextConfig = { // Exported Next.js configuration object
   
   async redirects() { // Define redirects to retire outdated routes
     return [ // Return list of redirect rules
-      { // Redirect legacy job card appointments page
-        source: "/job-cards/appointments", // Legacy route path
-        destination: "/appointments", // New consolidated appointments calendar
-        permanent: true, // Use permanent redirect for SEO and caching benefits
-      }, // Close redirect rule
       // URL-shortening sweep (2026-06-11): deep job-card routes moved to short
       // top-level paths. Old paths 308-redirect to the new canonical locations so
       // existing bookmarks and any un-migrated links keep working.
@@ -132,13 +127,24 @@ const nextConfig = { // Exported Next.js configuration object
       { source: "/parts/deliveries/:deliveryId", destination: "/deliveries/:deliveryId", permanent: true }, // Delivery detail
       { source: "/parts/delivery-planner", destination: "/delivery-planner", permanent: true }, // Delivery route planner
       { source: "/parts/create-order", destination: "/new-order", permanent: true }, // Create parts order
-      { source: "/parts/create-order/:orderNumber", destination: "/new-order/:orderNumber", permanent: true }, // Edit parts order
+      { source: "/parts/create-order/:orderNumber", destination: "/order/:orderNumber", permanent: true }, // Parts order detail
       { source: "/parts/manager", destination: "/parts-manager", permanent: true }, // Parts manager console
       { source: "/workshop/consumables-tracker", destination: "/consumables-tracker", permanent: true }, // Workshop consumables
       { source: "/tech/consumables-request", destination: "/consumables-request", permanent: true }, // Technician consumables request
       // Round 3: one-off-parent leaf pages flattened to top level.
       { source: "/staff/website-manager", destination: "/website-manager", permanent: true }, // Staff website CMS
       { source: "/account/security", destination: "/security", permanent: true }, // Own account security
+      // Round 4: the parts order detail moved under the order register it belongs to.
+      { source: "/new-order/:orderNumber", destination: "/order/:orderNumber", permanent: true }, // Parts order detail
+      // UK-English sweep (2026-09-08): the access-denied screen is now /unauthorised.
+      { source: "/unauthorized", destination: "/unauthorised", permanent: true }, // Access-denied screen
+      // /website dev layout overlay trigger. Typing /website-dev in the address
+      // bar lands on the site with ?website-dev=1, which DevLayoutOverlayContext
+      // consumes (switches the overlay on for dev users) and strips from the URL.
+      // A redirect, not a page: redirects run before the edge proxy and the
+      // client PageAccessGuard, which would otherwise bounce an unlisted route.
+      { source: "/website-dev", destination: "/website?website-dev=1", permanent: false }, // Website dev overlay (site home)
+      { source: "/website-dev/:path*", destination: "/website/:path*?website-dev=1", permanent: false }, // Website dev overlay (any page)
     ]; // Close redirects array
   }, // Close redirects function
   

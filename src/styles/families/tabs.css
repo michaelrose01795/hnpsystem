@@ -99,3 +99,47 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline-offset: 2px;
   box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.32) !important;
 }
+
+/* ========================================================================== */
+/* === Responsive sweep, 2026-09 — breakpoints: src/styles/breakpoints.js  === */
+/* ========================================================================== */
+/*
+ * The --inner, --pill and --segmented variants are 32-34px tall. That is under
+ * the 44px touch floor (CLAUDE.md §3.6) and they are frequently the primary
+ * navigation on a page, so on a phone they were the hardest thing in the app
+ * to hit accurately.
+ *
+ * Keyed on `pointer: coarse` rather than on width, deliberately: a 1024px
+ * tablet is touch-operated but matches no max-width phone rule, and its tabs
+ * need the same 44px target as a phone's. Width is the wrong question here.
+ */
+@media (pointer: coarse) {
+  html.staff-scope .app-tab--inner,
+  html.staff-scope .app-tab--pill,
+  html.staff-scope .app-tab--segmented {
+    min-height: var(--control-height);
+  }
+}
+
+@media (max-width: 640px) {
+  /* .app-tab sets white-space: nowrap so a label never breaks mid-phrase. On a
+     phone that is what pushes a 5-tab row past the viewport, so the row is
+     allowed to wrap onto a second line instead — the container already sets
+     flex-wrap: wrap, but a tab that cannot shrink still overflows it. */
+  html.staff-scope .app-tab {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Tighter horizontal padding so more tabs fit per line, without touching the
+     vertical padding that sets the touch target. */
+  html.staff-scope .app-tab--page {
+    padding-inline: 12px;
+  }
+
+  html.staff-scope .app-tab--inner,
+  html.staff-scope .app-tab--pill,
+  html.staff-scope .app-tab--segmented {
+    padding-inline: 12px;
+  }
+}

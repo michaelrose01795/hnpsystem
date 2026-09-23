@@ -6,34 +6,18 @@
 // with a light grey ring. Clicking a segment sets that level; hovering shows
 // the fraction + percentage via tooltip.
 import { useState } from "react";
+import {
+  FUEL_LEVEL_COUNT,
+  FUEL_LEVEL_LABELS,
+  clampFuelLevel,
+  fuelLevelDisplayLabel,
+  fuelLevelLabel,
+  fuelLevelPercent,
+} from "@/features/loanCars/loanCarModel";
 
-export const FUEL_LEVEL_COUNT = 8;
-
-// Index = level (0..8). The label IS the corrected fraction name.
-export const FUEL_LEVEL_LABELS = [
-  "Empty", // 0   – 0%
-  "1/8", //   1   – 12.5%
-  "1/4", //   2   – 25%
-  "3/8", //   3   – 37.5%
-  "1/2", //   4   – 50%
-  "5/8", //   5   – 62.5%
-  "3/4", //   6   – 75%
-  "7/8", //   7   – 87.5%
-  "Full", //  8   – 100%
-];
-
-export const clampFuelLevel = (value) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 0;
-  return Math.min(FUEL_LEVEL_COUNT, Math.max(0, Math.round(parsed)));
-};
-
-export const fuelLevelLabel = (value) => FUEL_LEVEL_LABELS[clampFuelLevel(value)];
-
-// Whole-number percent for the tooltip (0, 13, 25, 38, 50, 63, 75, 88, 100).
-export const fuelLevelPercent = (level) => Math.round((clampFuelLevel(level) / FUEL_LEVEL_COUNT) * 100);
-
-export const fuelLevelDisplayLabel = (level) => `${fuelLevelLabel(level)} · ${fuelLevelPercent(level)}%`;
+// The fuel vocabulary lives in the loan car model so the API routes can use it
+// without importing a component. Re-exported for existing imports.
+export { FUEL_LEVEL_COUNT, FUEL_LEVEL_LABELS, clampFuelLevel, fuelLevelDisplayLabel, fuelLevelLabel, fuelLevelPercent };
 
 const containerStyle = {
   display: "flex",

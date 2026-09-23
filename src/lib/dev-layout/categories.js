@@ -308,14 +308,78 @@ export function normalizeCategoryFilters(raw) {
   }, {});
 }
 
+// ----- Overlay surfaces -----------------------------------------------------
+//
+// The overlay runs on two surfaces that share ONE category list (so filters,
+// hide attributes and colours stay identical) but detect elements differently:
+//
+//   staff   — staff routes; structure comes from data-dev-section-key
+//             registrations plus the staff family classes above.
+//   website — /website routes (custglobal.css). Nothing there registers section
+//             keys, so detection is purely structural: the semantic landmarks
+//             and customer card classes below, plus a style heuristic in
+//             DevLayoutOverlay.js that picks up any element that LOOKS like a
+//             card. New /website pages, sections and cards therefore appear in
+//             the overlay with no per-page wiring.
+//
+// Website selectors are ADDED to each category's staff selectors (the staff
+// classes simply never match under website-scope).
+export const DEV_OVERLAY_SURFACE_STAFF = "staff";
+export const DEV_OVERLAY_SURFACE_WEBSITE = "website";
+
+const WEBSITE_FALLBACK_SELECTORS = {
+  "page-shell": ["main", ".website-dev-shell"],
+  section: [
+    "section",
+    "article",
+    "footer",
+    "form",
+    ".ws-nav",
+    ".ws-card",
+    ".ws-panel",
+    ".ws-sell-panel",
+    ".ws-stock-panel",
+    ".ws-val-panel",
+    ".ws-contact-block",
+    ".ws-order-summary",
+    ".ws-catalog-summary",
+    ".ws-article-card",
+    ".ws-product",
+    ".website-banner",
+    ".website-dev-section",
+    ".website-dev-frame",
+  ],
+  toolbar: ["[class*='ws-'][class*='toolbar']", "[class*='ws-'][class*='filters']:not(button)"],
+  table: [".website-dev-table"],
+  button: ["a.app-btn", "[class*='ws-btn']"],
+  select: [".website-native-select"],
+  badge: [".ws-badge", ".ws-chip", "[class*='ws-tag']"],
+  "nav-item": [".ws-nav-links a", ".ws-breadcrumb a"],
+  modal: [".ws-cart-drawer", ".ws-article-card[role='dialog']"],
+};
+
+const buildFallbackGroups = (surface) =>
+  DEV_OVERLAY_CATEGORIES.map((cat) => {
+    const selectors = [
+      ...(cat.fallbackSelectors || []),
+      ...(surface === DEV_OVERLAY_SURFACE_WEBSITE ? WEBSITE_FALLBACK_SELECTORS[cat.id] || [] : []),
+    ];
+    return {
+      categoryId: cat.id,
+      selector: selectors.join(","),
+      type: cat.fallbackType || cat.sectionTypes[0] || "section-shell",
+      minWidth: cat.minWidth,
+      minHeight: cat.minHeight,
+    };
+  }).filter((group) => group.selector.length > 0);
+
 // Structured in the form used by DevLayoutOverlay.js scan:
 //   { selector: "a,b,c", type: "content-card", categoryId: "section", ... }
-export const DEV_OVERLAY_FALLBACK_GROUPS = DEV_OVERLAY_CATEGORIES
-  .filter((cat) => (cat.fallbackSelectors || []).length > 0)
-  .map((cat) => ({
-    categoryId: cat.id,
-    selector: cat.fallbackSelectors.join(","),
-    type: cat.fallbackType || cat.sectionTypes[0] || "section-shell",
-    minWidth: cat.minWidth,
-    minHeight: cat.minHeight,
-  }));
+export const DEV_OVERLAY_FALLBACK_GROUPS = buildFallbackGroups(DEV_OVERLAY_SURFACE_STAFF);
+export const DEV_OVERLAY_WEBSITE_FALLBACK_GROUPS = buildFallbackGroups(DEV_OVERLAY_SURFACE_WEBSITE);
+
+export function getDevOverlayFallbackGroups(surface) {
+  return surface === DEV_OVERLAY_SURFACE_WEBSITE
+    ? DEV_OVERLAY_WEBSITE_FALLBACK_GROUPS
+    : DEV_OVERLAY_FALLBACK_GROUPS;
+}

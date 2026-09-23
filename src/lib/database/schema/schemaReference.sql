@@ -198,7 +198,13 @@ CREATE TABLE public.customers (
   contact_preference text DEFAULT 'email'::text,
   updated_at timestamp with time zone DEFAULT now(),
   name text,
-  slug_key text DEFAULT regexp_replace(lower((COALESCE(firstname, ''::text) || COALESCE(lastname, ''::text))), '[^a-z0-9]'::text, ''::text, 'g'::text),
+  -- NOTE: this is a GENERATED column in the live database, not a plain DEFAULT.
+  -- It recomputes itself from firstname + lastname on every write and CANNOT be
+  -- written to: including it in an INSERT or UPDATE — even with the value it
+  -- already holds — fails the whole statement with
+  --   "cannot insert a non-DEFAULT value into column slug_key".
+  -- Never send it; let Postgres derive it.
+  slug_key text GENERATED ALWAYS AS (regexp_replace(lower((COALESCE(firstname, ''::text) || COALESCE(lastname, ''::text))), '[^a-z0-9]'::text, ''::text, 'g'::text)) STORED,
   preferences ARRAY NOT NULL DEFAULT '{}'::text[],
   notes text,
   work_address text,
@@ -278,6 +284,10 @@ CREATE TABLE public.jobs (
   redirect_reason text,
   queue_position integer,
   next_update_due timestamp with time zone,
+  priority text NOT NULL DEFAULT 'normal'::text CHECK (priority = ANY (ARRAY['normal'::text, 'priority'::text, 'urgent'::text, 'vehicle_waiting'::text, 'comeback'::text])),
+  service_advisor_id integer,
+  next_update_owner_id integer,
+  next_update_reminder_enabled boolean NOT NULL DEFAULT false,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_booked_by_fkey FOREIGN KEY (booked_by) REFERENCES public.users(user_id),
   CONSTRAINT jobs_checked_in_by_fkey FOREIGN KEY (checked_in_by) REFERENCES public.users(user_id),
@@ -290,7 +300,9 @@ CREATE TABLE public.jobs (
   CONSTRAINT jobs_warranty_vhc_master_job_id_fkey FOREIGN KEY (warranty_vhc_master_job_id) REFERENCES public.jobs(id),
   CONSTRAINT jobs_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.accounts(account_id),
   CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id),
-  CONSTRAINT jobs_redirected_from_mobile_by_fkey FOREIGN KEY (redirected_from_mobile_by) REFERENCES public.users(user_id)
+  CONSTRAINT jobs_redirected_from_mobile_by_fkey FOREIGN KEY (redirected_from_mobile_by) REFERENCES public.users(user_id),
+  CONSTRAINT jobs_service_advisor_id_fkey FOREIGN KEY (service_advisor_id) REFERENCES public.users(user_id),
+  CONSTRAINT jobs_next_update_owner_id_fkey FOREIGN KEY (next_update_owner_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.job_notes (
   note_id integer NOT NULL DEFAULT nextval('job_notes_note_id_seq'::regclass),
@@ -412,7 +424,18 @@ CREATE TABLE public.message_threads (
   created_by integer,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  -- (conversation hub) columns below arrive with
+  -- supabase/migrations/20260924120000_messages_conversation_hub.sql.
+  -- conversation_type is NULL on legacy rows; the app derives it.
+  conversation_type text CHECK (conversation_type IS NULL OR conversation_type = ANY (ARRAY['staff'::text, 'customer'::text, 'department'::text, 'job'::text, 'announcement'::text, 'system'::text])),
+  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'pending'::text, 'resolved'::text, 'closed'::text])),
+  priority text NOT NULL DEFAULT 'normal'::text CHECK (priority = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'urgent'::text])),
+  department text,
+  job_number text,
+  assigned_to integer,
+  linked_records jsonb NOT NULL DEFAULT '[]'::jsonb, -- [{ recordType, recordId, label, href }]
   CONSTRAINT message_threads_pkey PRIMARY KEY (thread_id),
+  CONSTRAINT message_threads_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id),
   CONSTRAINT message_threads_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.message_thread_members (
@@ -422,6 +445,7 @@ CREATE TABLE public.message_thread_members (
   role text NOT NULL DEFAULT 'member'::text,
   joined_at timestamp with time zone NOT NULL DEFAULT now(),
   last_read_at timestamp with time zone,
+  notification_level text NOT NULL DEFAULT 'all'::text CHECK (notification_level = ANY (ARRAY['all'::text, 'mentions'::text, 'none'::text])), -- (conversation hub)
   CONSTRAINT message_thread_members_pkey PRIMARY KEY (member_id),
   CONSTRAINT message_thread_members_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES public.message_threads(thread_id),
   CONSTRAINT message_thread_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
@@ -1276,6 +1300,7 @@ CREATE TABLE public.parts_order_cards (
   invoice_total numeric DEFAULT 0,
   invoice_status text NOT NULL DEFAULT 'draft'::text CHECK (invoice_status = ANY (ARRAY['draft'::text, 'issued'::text, 'paid'::text, 'cancelled'::text])),
   invoice_notes text,
+  customer_notes text,
   created_by uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
@@ -1327,7 +1352,7 @@ CREATE TABLE public.news_updates (
   view_count integer NOT NULL DEFAULT 0,
   deleted_at timestamp with time zone,
   CONSTRAINT news_updates_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
-  CONSTRAINT news_updates_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES public.users(user_id)
+  CONSTRAINT news_updates_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.news_post_reads (
   post_id uuid NOT NULL,
@@ -1508,8 +1533,161 @@ CREATE TABLE public.tracking_equipment_tools (
   interval_days integer,
   interval_months integer,
   interval_label text,
+  asset_code text NOT NULL DEFAULT ('EQ-'::text || lpad((nextval('tracking_equipment_asset_code_seq'::regclass))::text, 4, '0'::text)),
+  category text NOT NULL DEFAULT 'workshop-tools'::text,
+  department text,
+  location text,
+  location_detail text,
+  operational_status text NOT NULL DEFAULT 'in_service'::text CHECK (operational_status = ANY (ARRAY['in_service'::text, 'out_of_service'::text, 'under_repair'::text, 'awaiting_inspection'::text, 'retired'::text])),
+  manufacturer text,
+  model text,
+  serial_number text,
+  notes text,
+  checklist_id uuid,
+  due_soon_days integer CHECK (due_soon_days IS NULL OR due_soon_days >= 0 AND due_soon_days <= 365),
+  last_checked_by integer,
+  last_check_result text,
+  last_check_condition text,
+  service_interval_months integer,
+  last_service_at timestamp with time zone,
+  next_service_due timestamp with time zone,
+  service_provider text,
+  requires_calibration boolean NOT NULL DEFAULT false,
+  calibration_interval_months integer,
+  last_calibrated_at timestamp with time zone,
+  calibration_due timestamp with time zone,
+  calibration_company text,
+  calibration_certificate_ref text,
+  purchase_date date,
+  purchase_price numeric(12,2),
+  supplier text,
+  purchase_reference text,
+  warranty_expiry date,
+  warranty_provider text,
+  status_reason text,
+  status_changed_at timestamp with time zone,
+  retired_at timestamp with time zone,
+  retired_by integer,
+  updated_by integer,
   CONSTRAINT tracking_equipment_tools_pkey PRIMARY KEY (id),
-  CONSTRAINT tracking_equipment_tools_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+  CONSTRAINT tracking_equipment_tools_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_equipment_tools_last_checked_by_fkey FOREIGN KEY (last_checked_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_equipment_tools_retired_by_fkey FOREIGN KEY (retired_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_equipment_tools_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_equipment_tools_checklist_id_fkey FOREIGN KEY (checklist_id) REFERENCES public.tracking_equipment_checklists(id)
+);
+-- Unique: upper(asset_code). Server-only (RLS on, no anon/authenticated grants).
+CREATE TABLE public.tracking_equipment_checklists (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  category text,
+  description text,
+  items jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(items) = 'array'::text),
+  is_active boolean NOT NULL DEFAULT true,
+  created_by integer,
+  updated_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_equipment_checklists_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_equipment_checklists_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_equipment_checklists_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tracking_equipment_checks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  equipment_id uuid NOT NULL,
+  check_type text NOT NULL DEFAULT 'routine'::text CHECK (check_type = ANY (ARRAY['routine'::text, 'inspection'::text, 'service'::text, 'calibration'::text])),
+  result text NOT NULL CHECK (result = ANY (ARRAY['pass'::text, 'advisory'::text, 'fail'::text])),
+  condition text CHECK (condition IS NULL OR (condition = ANY (ARRAY['good'::text, 'fair'::text, 'poor'::text, 'unsafe'::text]))),
+  checklist_id uuid,
+  checklist_name text,
+  checklist_results jsonb NOT NULL DEFAULT '[]'::jsonb,
+  notes text,
+  provider text,
+  certificate_ref text,
+  cost numeric(12,2),
+  next_due_at timestamp with time zone,
+  bulk_batch_id uuid,
+  performed_by integer,
+  performed_by_name text,
+  performed_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_equipment_checks_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_equipment_checks_equipment_id_fkey FOREIGN KEY (equipment_id) REFERENCES public.tracking_equipment_tools(id),
+  CONSTRAINT tracking_equipment_checks_checklist_id_fkey FOREIGN KEY (checklist_id) REFERENCES public.tracking_equipment_checklists(id),
+  CONSTRAINT tracking_equipment_checks_performed_by_fkey FOREIGN KEY (performed_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tracking_equipment_faults (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  equipment_id uuid NOT NULL,
+  description text NOT NULL,
+  severity text NOT NULL DEFAULT 'medium'::text CHECK (severity = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text, 'critical'::text])),
+  usability text NOT NULL DEFAULT 'restricted'::text CHECK (usability = ANY (ARRAY['usable'::text, 'restricted'::text, 'unsafe'::text])),
+  repair_required boolean NOT NULL DEFAULT true,
+  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'in_repair'::text, 'resolved'::text])),
+  source_check_id uuid,
+  reported_by integer,
+  reported_by_name text,
+  reported_at timestamp with time zone NOT NULL DEFAULT now(),
+  repair_started_at timestamp with time zone,
+  resolved_by integer,
+  resolved_by_name text,
+  resolved_at timestamp with time zone,
+  resolution_notes text,
+  repair_cost numeric(12,2),
+  repaired_by text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_equipment_faults_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_equipment_faults_equipment_id_fkey FOREIGN KEY (equipment_id) REFERENCES public.tracking_equipment_tools(id),
+  CONSTRAINT tracking_equipment_faults_source_check_id_fkey FOREIGN KEY (source_check_id) REFERENCES public.tracking_equipment_checks(id),
+  CONSTRAINT tracking_equipment_faults_reported_by_fkey FOREIGN KEY (reported_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_equipment_faults_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tracking_equipment_documents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  equipment_id uuid NOT NULL,
+  check_id uuid,
+  fault_id uuid,
+  doc_type text NOT NULL DEFAULT 'other'::text CHECK (doc_type = ANY (ARRAY['photo'::text, 'inspection_certificate'::text, 'calibration_certificate'::text, 'loler_report'::text, 'manual'::text, 'repair_invoice'::text, 'service_report'::text, 'warranty'::text, 'other'::text])),
+  title text,
+  file_name text NOT NULL,
+  mime_type text,
+  size_bytes integer,
+  storage_path text NOT NULL,
+  expires_at date,
+  uploaded_by integer,
+  uploaded_by_name text,
+  uploaded_at timestamp with time zone NOT NULL DEFAULT now(),
+  removed_at timestamp with time zone,
+  removed_by integer,
+  CONSTRAINT tracking_equipment_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_equipment_documents_equipment_id_fkey FOREIGN KEY (equipment_id) REFERENCES public.tracking_equipment_tools(id),
+  CONSTRAINT tracking_equipment_documents_check_id_fkey FOREIGN KEY (check_id) REFERENCES public.tracking_equipment_checks(id),
+  CONSTRAINT tracking_equipment_documents_fault_id_fkey FOREIGN KEY (fault_id) REFERENCES public.tracking_equipment_faults(id),
+  CONSTRAINT tracking_equipment_documents_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_equipment_documents_removed_by_fkey FOREIGN KEY (removed_by) REFERENCES public.users(user_id)
+);
+-- Files live in the private "equipment-documents" storage bucket (signed URLs only).
+CREATE TABLE public.tracking_equipment_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  equipment_id uuid NOT NULL,
+  event_type text NOT NULL,
+  summary text NOT NULL,
+  detail jsonb NOT NULL DEFAULT '{}'::jsonb,
+  actor_user_id integer,
+  actor_name text,
+  occurred_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_equipment_events_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_equipment_events_equipment_id_fkey FOREIGN KEY (equipment_id) REFERENCES public.tracking_equipment_tools(id),
+  CONSTRAINT tracking_equipment_events_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tracking_equipment_reminders (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  reminder_key text NOT NULL UNIQUE,
+  reminder_type text NOT NULL,
+  equipment_id uuid,
+  sent_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_equipment_reminders_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_equipment_reminders_equipment_id_fkey FOREIGN KEY (equipment_id) REFERENCES public.tracking_equipment_tools(id)
 );
 CREATE TABLE public.tracking_oil_stock (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -1525,9 +1703,131 @@ CREATE TABLE public.tracking_oil_stock (
   interval_days integer,
   interval_months integer,
   interval_label text,
+  stock_code text,
+  barcode text,
+  category_id uuid,
+  location_id uuid,
+  oil_grade text,
+  measurement_mode text NOT NULL DEFAULT 'count'::text CHECK (measurement_mode = ANY (ARRAY['count'::text, 'level'::text, 'tank'::text])),
+  unit text NOT NULL DEFAULT 'units'::text CHECK (unit = ANY (ARRAY['litres'::text, 'millilitres'::text, 'units'::text, 'boxes'::text, 'packs'::text, 'rolls'::text, 'kilograms'::text, 'percent'::text, 'custom'::text])),
+  custom_unit_label text,
+  current_quantity numeric,
+  level_band text CHECK (level_band IS NULL OR (level_band = ANY (ARRAY['full'::text, 'three_quarters'::text, 'half'::text, 'quarter'::text, 'low'::text, 'empty'::text]))),
+  min_level numeric,
+  critical_level numeric,
+  target_level numeric,
+  reorder_quantity numeric,
+  max_capacity numeric,
+  preferred_supplier text,
+  supplier_product_code text,
+  lead_time_days integer,
+  unit_cost numeric,
+  dipstick_reading numeric,
+  dipstick_unit text,
+  calibration jsonb NOT NULL DEFAULT '[]'::jsonb,
+  last_filled_at timestamp with time zone,
+  notes text,
+  alert_state text,
+  check_alerted_at timestamp with time zone,
+  archived_at timestamp with time zone,
+  archived_by integer,
+  updated_by integer,
   CONSTRAINT tracking_oil_stock_pkey PRIMARY KEY (id),
   CONSTRAINT tracking_oil_stock_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id),
-  CONSTRAINT tracking_oil_stock_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+  CONSTRAINT tracking_oil_stock_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_oil_stock_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.tracking_stock_categories(id),
+  CONSTRAINT tracking_oil_stock_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.tracking_stock_locations(id),
+  CONSTRAINT tracking_oil_stock_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_oil_stock_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tracking_stock_categories (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  key text NOT NULL UNIQUE,
+  name text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_stock_categories_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.tracking_stock_locations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  key text NOT NULL UNIQUE,
+  name text NOT NULL,
+  department text,
+  sort_order integer NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_stock_locations_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.tracking_stock_orders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  item_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'order_required'::text CHECK (status = ANY (ARRAY['order_required'::text, 'ordered'::text, 'awaiting_delivery'::text, 'partially_received'::text, 'received'::text, 'cancelled'::text])),
+  supplier text,
+  supplier_product_code text,
+  quantity_ordered numeric NOT NULL DEFAULT 0,
+  quantity_received numeric NOT NULL DEFAULT 0,
+  unit_cost numeric,
+  expected_delivery date,
+  reference text,
+  notes text,
+  ordered_at timestamp with time zone,
+  received_at timestamp with time zone,
+  delay_alerted_at timestamp with time zone,
+  created_by integer,
+  updated_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_stock_orders_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_stock_orders_item_id_fkey FOREIGN KEY (item_id) REFERENCES public.tracking_oil_stock(id),
+  CONSTRAINT tracking_stock_orders_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_stock_orders_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tracking_stock_stocktakes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  scope_type text NOT NULL DEFAULT 'all'::text CHECK (scope_type = ANY (ARRAY['all'::text, 'location'::text, 'category'::text])),
+  scope_id uuid,
+  scope_label text,
+  status text NOT NULL DEFAULT 'in_progress'::text CHECK (status = ANY (ARRAY['in_progress'::text, 'completed'::text, 'abandoned'::text])),
+  item_count integer NOT NULL DEFAULT 0,
+  counted_count integer NOT NULL DEFAULT 0,
+  variance_count integer NOT NULL DEFAULT 0,
+  variance_value numeric,
+  notes text,
+  started_by integer,
+  started_at timestamp with time zone NOT NULL DEFAULT now(),
+  completed_at timestamp with time zone,
+  CONSTRAINT tracking_stock_stocktakes_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_stock_stocktakes_started_by_fkey FOREIGN KEY (started_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tracking_stock_movements (
+  id bigint GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+  item_id uuid NOT NULL,
+  movement_type text NOT NULL CHECK (movement_type = ANY (ARRAY['check'::text, 'stock_in'::text, 'stock_out'::text, 'adjustment'::text, 'receipt'::text, 'stocktake'::text, 'order_raised'::text, 'order_updated'::text, 'order_cancelled'::text, 'created'::text, 'edited'::text, 'archived'::text, 'restored'::text])),
+  quantity_before numeric,
+  quantity_after numeric,
+  quantity_delta numeric,
+  level_band text,
+  dipstick_reading numeric,
+  unit_cost numeric,
+  reason text,
+  job_number text,
+  notes text,
+  order_id uuid,
+  stocktake_id uuid,
+  location_id uuid,
+  actor_user_id integer,
+  actor_name text,
+  detail jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_stock_movements_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_stock_movements_item_id_fkey FOREIGN KEY (item_id) REFERENCES public.tracking_oil_stock(id),
+  CONSTRAINT tracking_stock_movements_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.tracking_stock_orders(id),
+  CONSTRAINT tracking_stock_movements_stocktake_id_fkey FOREIGN KEY (stocktake_id) REFERENCES public.tracking_stock_stocktakes(id),
+  CONSTRAINT tracking_stock_movements_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.tracking_stock_locations(id),
+  CONSTRAINT tracking_stock_movements_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.customer_activity_events (
   event_id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -1867,4 +2167,151 @@ CREATE TABLE public.user_personal_widgets (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT user_personal_widgets_pkey PRIMARY KEY (id),
   CONSTRAINT user_personal_widgets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+-- Website help chat. Created by supabase/migrations/20260914120000_website_help_chat.sql
+-- (run it in Supabase before using the chat). Server-only: RLS on, no public grants.
+CREATE TABLE public.website_help_chats (
+  chat_id bigint NOT NULL DEFAULT nextval('website_help_chats_chat_id_seq'::regclass),
+  visitor_key text NOT NULL,
+  customer_id uuid,
+  status text NOT NULL DEFAULT 'bot'::text CHECK (status = ANY (ARRAY['bot'::text, 'queued'::text, 'active'::text, 'closed'::text])),
+  title text NOT NULL DEFAULT 'New chat'::text,
+  page_path text,
+  contact_name text,
+  contact_email text,
+  thread_id integer,
+  customer_user_id integer,
+  assigned_user_id integer,
+  queued_at timestamp with time zone,
+  joined_at timestamp with time zone,
+  closed_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT website_help_chats_pkey PRIMARY KEY (chat_id),
+  CONSTRAINT website_help_chats_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT website_help_chats_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES public.message_threads(thread_id),
+  CONSTRAINT website_help_chats_customer_user_id_fkey FOREIGN KEY (customer_user_id) REFERENCES public.users(user_id),
+  CONSTRAINT website_help_chats_assigned_user_id_fkey FOREIGN KEY (assigned_user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.website_help_chat_messages (
+  message_id bigint NOT NULL DEFAULT nextval('website_help_chat_messages_message_id_seq'::regclass),
+  chat_id bigint NOT NULL,
+  author text NOT NULL CHECK (author = ANY (ARRAY['customer'::text, 'assistant'::text, 'system'::text])),
+  content text NOT NULL,
+  links jsonb NOT NULL DEFAULT '[]'::jsonb,
+  suggestions jsonb NOT NULL DEFAULT '[]'::jsonb,
+  offer_handoff boolean NOT NULL DEFAULT false,
+  page_path text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT website_help_chat_messages_pkey PRIMARY KEY (message_id),
+  CONSTRAINT website_help_chat_messages_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.website_help_chats(chat_id)
+);
+-- Loan car tracker. Base columns predate the migrations folder; the columns and
+-- tables marked (tracker) arrive with supabase/migrations/20260922120000_loan_car_tracker.sql.
+-- Served only through /api/tracking/loan-cars/* (src/lib/database/loanCars.js).
+CREATE TABLE public.tracking_loan_cars (
+  loan_car_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  reg text NOT NULL,
+  name text,
+  status text NOT NULL DEFAULT 'active'::text, -- 'active' | 'inactive' (the active flag)
+  sort_order integer NOT NULL DEFAULT 0,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  make_model text,
+  mileage integer,
+  fuel_level integer NOT NULL DEFAULT 0, -- 0-8, eighths
+  last_vehicle_update_at timestamp with time zone,
+  colour text,
+  transmission text CHECK (transmission IS NULL OR transmission = ANY (ARRAY['manual'::text, 'automatic'::text])), -- (tracker)
+  fuel_type text CHECK (fuel_type IS NULL OR fuel_type = ANY (ARRAY['petrol'::text, 'diesel'::text, 'hybrid'::text, 'plug_in_hybrid'::text, 'electric'::text, 'other'::text])), -- (tracker)
+  mot_due date, -- (tracker)
+  service_due date, -- (tracker)
+  service_due_mileage integer, -- (tracker)
+  CONSTRAINT tracking_loan_cars_pkey PRIMARY KEY (loan_car_id)
+);
+CREATE TABLE public.tracking_loan_car_bookings (
+  booking_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  loan_car_id uuid NOT NULL,
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  job_id integer,
+  job_number text,
+  customer_name text,
+  customer_email text,
+  customer_phone text,
+  customer_address text,
+  customer_postcode text,
+  vehicle_reg text, -- the CUSTOMER vehicle
+  vehicle_make_model text,
+  mileage integer, -- the CUSTOMER vehicle's mileage
+  insurance_provider text,
+  insurance_policy_number text,
+  licence_number text,
+  date_of_birth date,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  start_time time without time zone, -- (tracker)
+  end_time time without time zone, -- (tracker)
+  status text NOT NULL DEFAULT 'reserved'::text CHECK (status = ANY (ARRAY['reserved'::text, 'out'::text, 'returned'::text])), -- (tracker)
+  external_reference text, -- (tracker) booking number in the main external loan car system
+  customer_id uuid, -- (tracker)
+  created_by integer, -- (tracker)
+  updated_by integer, -- (tracker)
+  loan_mileage_out integer, -- (tracker)
+  loan_fuel_out integer, -- (tracker) 0-8
+  handed_over_at timestamp with time zone, -- (tracker)
+  returned_date date, -- (tracker) local date as entered
+  returned_time time without time zone, -- (tracker) local time as entered
+  loan_mileage_in integer, -- (tracker)
+  loan_fuel_in integer, -- (tracker) 0-8
+  has_damage boolean NOT NULL DEFAULT false, -- (tracker)
+  return_notes text, -- (tracker)
+  CONSTRAINT tracking_loan_car_bookings_pkey PRIMARY KEY (booking_id),
+  CONSTRAINT tracking_loan_car_bookings_loan_car_id_fkey FOREIGN KEY (loan_car_id) REFERENCES public.tracking_loan_cars(loan_car_id),
+  CONSTRAINT tracking_loan_car_bookings_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT tracking_loan_car_bookings_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT tracking_loan_car_bookings_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT tracking_loan_car_bookings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tracking_loan_car_fuel_history (
+  history_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  loan_car_id uuid NOT NULL,
+  reg text NOT NULL,
+  fuel_level integer NOT NULL,
+  mileage integer,
+  recorded_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_loan_car_fuel_history_pkey PRIMARY KEY (history_id),
+  CONSTRAINT tracking_loan_car_fuel_history_loan_car_id_fkey FOREIGN KEY (loan_car_id) REFERENCES public.tracking_loan_cars(loan_car_id)
+);
+-- (tracker)
+CREATE TABLE public.tracking_loan_car_unavailability (
+  period_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  loan_car_id uuid NOT NULL,
+  start_date date NOT NULL,
+  end_date date NOT NULL CHECK (end_date >= start_date),
+  reason text NOT NULL DEFAULT 'other'::text CHECK (reason = ANY (ARRAY['service'::text, 'mot'::text, 'repair'::text, 'damage'::text, 'other'::text])),
+  notes text,
+  created_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_loan_car_unavailability_pkey PRIMARY KEY (period_id),
+  CONSTRAINT tracking_loan_car_unavailability_loan_car_id_fkey FOREIGN KEY (loan_car_id) REFERENCES public.tracking_loan_cars(loan_car_id) ON DELETE CASCADE,
+  CONSTRAINT tracking_loan_car_unavailability_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+);
+-- (tracker) booking_id deliberately has no FK so a deleted booking keeps its trail.
+CREATE TABLE public.tracking_loan_car_events (
+  id bigint GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+  booking_id uuid,
+  loan_car_id uuid,
+  event_type text NOT NULL,
+  summary text NOT NULL,
+  actor_user_id integer,
+  actor_name text,
+  detail jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_loan_car_events_pkey PRIMARY KEY (id),
+  CONSTRAINT tracking_loan_car_events_loan_car_id_fkey FOREIGN KEY (loan_car_id) REFERENCES public.tracking_loan_cars(loan_car_id) ON DELETE SET NULL,
+  CONSTRAINT tracking_loan_car_events_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.users(user_id) ON DELETE SET NULL
 );

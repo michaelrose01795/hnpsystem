@@ -67,6 +67,21 @@ value.startsWith("/") &&
 !value.startsWith("//") &&
 !value.startsWith("/api/");
 
+// Last gate before router.replace: the destination can only ever be a path on
+// this origin. Parsing through URL catches what a prefix check misses
+// ("/\evil.com", "/.//evil.com", "javascript:"), and the rebuilt value always
+// starts with exactly one "/", so it can never become a protocol-relative URL.
+const toSameOriginPath = (route) => {
+  if (typeof window === "undefined" || typeof route !== "string") return "/";
+  try {
+    const url = new URL(route, window.location.origin);
+    if (url.origin !== window.location.origin) return "/";
+    return `/${url.pathname.replace(/^\/+/, "")}${url.search}${url.hash}`;
+  } catch {
+    return "/";
+  }
+};
+
 const normalizeLoginLookup = (value) =>
 String(value || "").
 toLowerCase().
@@ -167,7 +182,7 @@ const LoginCard = ({
   
     <LayerSurface
     radius="var(--radius-xl)"
-    padding="2.25rem"
+    padding="var(--space-xl)"
     style={{
       boxShadow: "var(--shadow-xl)",
       width: "100%",
@@ -178,7 +193,7 @@ const LoginCard = ({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "6px",
+        gap: "var(--space-1)",
         textAlign: "center"
       }}>
       
@@ -567,7 +582,7 @@ export default function LoginPage() {
       // broadcast a session update, so NextAuth's useSession picks up the new
       // user without a hard reload (same path as the email/password login).
       trace("login", "devLogin: router.replace", target);
-      const navigated = await router.replace(target);
+      const navigated = await router.replace(toSameOriginPath(target));
       setRedirectInProgress(false);
       if (!navigated) {
         clearAuthenticatedLayoutEntrance();
@@ -595,7 +610,7 @@ export default function LoginPage() {
       warmAuthenticatedShell(userId),
     ]);
     trace("login", "devLogin (fallback): router.replace", target);
-    const navigated = await router.replace(target);
+    const navigated = await router.replace(toSameOriginPath(target));
     setRedirectInProgress(false);
     if (!navigated) {
       clearAuthenticatedLayoutEntrance();
@@ -643,7 +658,7 @@ export default function LoginPage() {
           warmAuthenticatedShell(refreshedSession?.user?.id),
         ]);
         trace("login", "dbLogin: router.replace", resolvedTarget);
-        const navigated = await router.replace(resolvedTarget);
+        const navigated = await router.replace(toSameOriginPath(resolvedTarget));
         setRedirectInProgress(false);
         if (!navigated) {
           clearAuthenticatedLayoutEntrance();
@@ -773,7 +788,7 @@ export default function LoginPage() {
       isCustomer ? Promise.resolve(null) : warmAuthenticatedShell(activeUser.id),
     ]).finally(() => {
       trace("login", "auto-redirect: router.replace now", target);
-      router.replace(target).then((navigated) => {
+      router.replace(toSameOriginPath(target)).then((navigated) => {
         setRedirectInProgress(false);
         if (navigated) return;
         clearAuthenticatedLayoutEntrance();

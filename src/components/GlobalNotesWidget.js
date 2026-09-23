@@ -1278,8 +1278,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
                   aria-label="Add tab"
                   title="Add tab"
                 >
-                  <span className={styles.tabAddGlyph} aria-hidden="true">+</span>
-                </button>
+                  </button>
               )}
             </div>
           </header>

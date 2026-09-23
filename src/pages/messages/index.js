@@ -1,755 +1,60 @@
 // file location: src/pages/messages/index.js
+//
+// /messages — the staff conversation hub.
+//
+// This file owns state, data and behaviour; presentation lives in
+// src/components/page-ui/messages/ (messages-ui.js composes the list,
+// conversation and details panels). The vocabulary — conversation types,
+// statuses, priorities, slash commands — is src/lib/messages/conversationModel.js.
 
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState } from
-"react";
-import { useRouter } from "next/router"; // Next.js router for reading query params
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { hasAllAccessRole } from "@/lib/auth/roles";
 import { hasCustomerBookingRequestAccess } from "@/lib/auth/serviceActionRoles";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { supabase } from "@/lib/database/supabaseClient";
-import { appShellTheme } from "@/styles/appTheme";
 import useMessagesApi from "@/hooks/api/useMessagesApi";
-import { useTheme } from "@/styles/themeProvider";
-import ModalPortal from "@/components/popups/ModalPortal";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import Button from "@/components/ui/Button";
-import InputField from "@/components/ui/InputField";
-import StatusMessage from "@/components/ui/StatusMessage";
-import { SearchBar } from "@/components/ui/searchBarAPI";
-import { SkeletonBlock, SkeletonKeyframes, InlineLoading } from "@/components/ui/LoadingSkeleton";
-
-// Structured inline skeletons used inside the messages page. Kept local because
-// thread, message, and colleague rows have distinct final shapes — the skeleton
-// matches each one so the loading frame already mirrors the final layout.
-import MessagesPageUi from "@/components/page-ui/messages/messages-ui"; // Extracted presentation layer.
+import { useMediaQuery, BREAKPOINTS } from "@/hooks/useIsMobile";
+import MessagesPageUi from "@/components/page-ui/messages/messages-ui";
+import { readableText } from "@/lib/messages/messageTokens";
 import { logFailure } from "@/lib/utils/logFailure";
-import {
-  REACTION_TARGET_MESSAGE,
-  subscribeToReactions,
-} from "@/lib/database/reactions";
+import { REACTION_TARGET_MESSAGE, subscribeToReactions } from "@/lib/database/reactions";
 import { fetchReactions, saveReaction } from "@/lib/api/reactions";
-function ThreadRowsSkeleton({ count = 4 }) {return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      <SkeletonKeyframes />
-      {Array.from({ length: count }).map((_, i) =>
-      <div
-        key={i}
-        style={{
-          display: "flex",
-          gap: "10px",
-          alignItems: "center",
-          padding: "10px",
-          borderRadius: "var(--radius-md)"
-        }}>
-
-          <SkeletonBlock width="36px" height="36px" borderRadius="999px" />
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-            <SkeletonBlock width="50%" height="12px" />
-            <SkeletonBlock width="80%" height="10px" />
-          </div>
-        </div>
-      )}
-    </div>);
-
-}
-
-function MessageBubblesSkeleton({ count = 3 }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <SkeletonKeyframes />
-      {Array.from({ length: count }).map((_, i) =>
-      <div
-        key={i}
-        style={{
-          alignSelf: i % 2 === 0 ? "flex-start" : "flex-end",
-          width: i % 2 === 0 ? "62%" : "54%",
-          display: "flex",
-          flexDirection: "column",
-          gap: "6px",
-          padding: "12px",
-          borderRadius: "14px",
-          background: "var(--surface)"
-        }}>
-
-          <SkeletonBlock width="70%" height="10px" />
-          <SkeletonBlock width="100%" height="12px" />
-          <SkeletonBlock width="40%" height="10px" />
-        </div>
-      )}
-    </div>);
-
-}
-
-function ColleagueRowsSkeleton({ count = 5 }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <SkeletonKeyframes />
-      {Array.from({ length: count }).map((_, i) =>
-      <div key={i} style={{ display: "flex", gap: "10px", alignItems: "center", padding: "6px 0" }}>
-          <SkeletonBlock width="32px" height="32px" borderRadius="999px" />
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-            <SkeletonBlock width="60%" height="10px" />
-            <SkeletonBlock width="40%" height="8px" />
-          </div>
-        </div>
-      )}
-    </div>);
-
-}
-
-const palette = appShellTheme.palette;
-const radii = appShellTheme.radii;
-const shadows = appShellTheme.shadows;
-
-const cardStyle = {
-  background: "var(--section-card-bg)",
-  borderRadius: "var(--radius-lg)",
-  padding: "var(--section-card-padding)",
-  display: "flex",
-  flexDirection: "column",
-  gap: "14px"
-};
+import { buildAttachmentUrl } from "@/lib/api/messages";
+import {
+  ATTACHMENT_MAX_PER_MESSAGE,
+  formatClock,
+  formatListTimestamp,
+  getAvailableSlashCommands,
+  getPriority,
+  getStatus,
+  parseDraft,
+} from "@/lib/messages/conversationModel";
 
 const UNREAD_MARKER_STORAGE_KEY = "messagesUnreadMarkerDismissals";
 const PINNED_THREADS_STORAGE_KEY = "messagesPinnedThreadIds";
+const DETAILS_OPEN_STORAGE_KEY = "messagesDetailsOpen";
+const MAX_PINNED_THREADS = 3;
+const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
+const PRESENCE_POLL_MS = 60 * 1000;
 
-const SectionTitle = ({ title, subtitle, action }) => {
-  const hasHeading = Boolean(title || subtitle);
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: hasHeading ? "space-between" : "center",
-        alignItems: "center",
-        gap: "12px"
-      }}>
-
-      {hasHeading &&
-      <div>
-          <h3
-          style={{
-            margin: 0,
-            fontSize: "var(--text-h4)",
-            color: palette.accent
-          }}>
-
-            {title}
-          </h3>
-          {subtitle &&
-        <p style={{ margin: "4px 0 0", color: palette.textMuted, fontSize: "var(--text-body-sm)" }}>
-              {subtitle}
-            </p>
-        }
-        </div>
-      }
-      {action}
-    </div>);
-
-};
-
-const ComposeToggleButton = ({ active, children, onClick }) =>
-<Button
-  type="button"
-  variant={active ? "primary" : "secondary"}
-  onClick={onClick}>
-
-    {children}
-  </Button>;
-
-
-const Chip = ({ label, onRemove, disabled = false, color = palette.accent }) =>
-<span
-  style={{
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "var(--space-1)",
-    padding: "var(--space-1) var(--space-3)",
-    borderRadius: radii.pill,
-    backgroundColor: palette.accentSurface,
-    color,
-    fontSize: "var(--text-body-sm)",
-    fontWeight: 600
-  }}>
-
-    {label}
-    {onRemove &&
-  <Button
-    type="button"
-    variant="ghost"
-    size="xs"
-    pill
-    onClick={disabled ? undefined : onRemove}
-    disabled={disabled}
-    aria-label="Remove">
-
-        ×
-      </Button>
+const readStorage = (key) => {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
   }
-  </span>;
-
-
-const AvatarBadge = ({ name }) => {
-  const initial = (name || "?").trim().charAt(0)?.toUpperCase() || "?";
-
-  return (
-    <div
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: "var(--radius-full)",
-        backgroundColor: palette.accentSurface,
-        color: palette.accent,
-        fontWeight: 700,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "none"
-      }}>
-
-      {initial}
-    </div>);
-
 };
-
-const formatJobBadgeNumber = (value) => {
-  const cleaned = String(value || "").trim();
-  if (!cleaned) return "JOB";
-  if (/^\d+$/.test(cleaned)) {
-    return `JOB ${cleaned.padStart(5, "0")}`;
+const writeStorage = (key, value) => {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Private windows / blocked storage: the setting just is not remembered.
   }
-  return `JOB ${cleaned.toUpperCase()}`;
 };
-
-const renderMessageContent = (content, userRoles = []) => {
-  if (!content) return null;
-
-  // Enhanced regex to catch all slash commands
-  const regex = /\/(?:(job|vhc|part|invoice|account|order|user|cust)([a-zA-Z0-9]+)|(\d+)|(customer|vehicle|parts|tracking|valet|hr|clocking|archive|myjobs|appointments))/gi;
-
-  const parts = [];
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(content)) !== null) {
-    // Add text before the match
-    if (match.index > lastIndex) {
-      parts.push(content.substring(lastIndex, match.index));
-    }
-
-    const fullMatch = match[0];
-    const prefix = match[1]; // job, vhc, part, etc.
-    const value = match[2]; // The value after prefix
-    const numberOnly = match[3]; // Just a number
-    const standalone = match[4]; // customer, vehicle, parts, etc.
-
-    let href = null;
-    let title = fullMatch;
-    let jobBadgeLabel = null;
-
-    // Determine the link based on the command
-    if (numberOnly) {
-      // /12345 - job number shorthand
-      href = getJobLink(numberOnly, userRoles);
-      title = `Job #${numberOnly}`;
-      jobBadgeLabel = formatJobBadgeNumber(numberOnly);
-    } else if (prefix === 'job' && value) {
-      href = getJobLink(value, userRoles);
-      title = `Job #${value}`;
-      jobBadgeLabel = formatJobBadgeNumber(value);
-    } else if (prefix === 'vhc' && value) {
-      href = `/job-cards/${value}?tab=vhc`;
-      title = `VHC for Job #${value}`;
-    } else if (prefix === 'part' && value) {
-      title = `Part #${value}`;
-    } else if (prefix === 'invoice' && value) {
-      href = `/accounts/invoices/${value}`;
-      title = `Invoice #${value}`;
-    } else if (prefix === 'account' && value) {
-      href = `/accounts/view/${value}`;
-      title = `Account ${value}`;
-    } else if (prefix === 'order' && value) {
-      href = `/new-order/${value}`;
-      title = `Parts Order ${value}`;
-    } else if (prefix === 'user' && value) {
-      title = `User: ${value}`;
-    } else if (prefix === 'cust' && value) {
-      title = `Customer: ${value}`;
-    } else if (standalone === 'parts') {
-      href = '/parts';
-      title = 'Parts Management';
-    } else if (standalone === 'tracking') {
-      href = '/tracking';
-      title = 'Vehicle Tracking';
-    } else if (standalone === 'valet') {
-      href = '/valet';
-      title = 'Valet Dashboard';
-    } else if (standalone === 'hr') {
-      href = '/hr/manager';
-      title = 'HR Dashboard';
-    } else if (standalone === 'clocking') {
-      href = '/clocking';
-      title = 'Time Clocking';
-    } else if (standalone === 'archive') {
-      href = '/archive';
-      title = 'Job Archive';
-    } else if (standalone === 'myjobs') {
-      href = '/tech';
-      title = 'My Jobs';
-    } else if (standalone === 'appointments') {
-      href = '/job-cards/appointments';
-      title = 'Appointments';
-    }
-
-    // Render as link if href exists, otherwise just highlight
-    if (href) {
-      parts.push(
-        <a
-          key={match.index}
-          href={href}
-          style={{
-            color: jobBadgeLabel ? palette.accent : "inherit",
-            textDecoration: "none",
-            fontWeight: jobBadgeLabel ? 700 : 600,
-            display: jobBadgeLabel ? "inline-flex" : "inline",
-            alignItems: "center",
-            borderRadius: jobBadgeLabel ? radii.pill : 0,
-            padding: jobBadgeLabel ? "2px 10px" : 0,
-            margin: jobBadgeLabel ? "0 3px" : 0,
-            backgroundColor: jobBadgeLabel ? "rgba(var(--accent-purple-rgb), 0.12)" : "transparent",
-            fontSize: jobBadgeLabel ? "0.76rem" : "inherit",
-            letterSpacing: jobBadgeLabel ? "0.04em" : "normal",
-            textTransform: jobBadgeLabel ? "uppercase" : "none"
-          }}
-          title={title}
-          onClick={(e) => {
-            e.stopPropagation();
-          }}>
-
-          {jobBadgeLabel || fullMatch}
-        </a>
-      );
-    } else {
-      parts.push(
-        <span
-          key={match.index}
-          style={{
-            fontWeight: 600,
-            textDecoration: standalone || prefix && value ? "underline" : "none"
-          }}
-          title={title}>
-
-          {fullMatch}
-        </span>
-      );
-    }
-
-    lastIndex = regex.lastIndex;
-  }
-
-  // Add remaining text
-  if (lastIndex < content.length) {
-    parts.push(content.substring(lastIndex));
-  }
-
-  return parts.length > 0 ? parts : content;
-};
-
-const REACTION_EMOJIS = ["👍", "👎", "❤️", "🔥", "😂", "😮"];
-
-const MessageBubble = ({
-  message,
-  isMine,
-  nameColor = palette.accent,
-  userRoles = [],
-  currentUserId = null,
-  onApproveLeaveRequest,
-  onDeclineLeaveRequest,
-  decisionBusy = false,
-  isFirstInGroup = true,
-  isLastInGroup = true,
-  reactions = [],
-  onReact,
-  onReply
-}) => {
-  const senderName = message.sender?.name || "Unknown";
-  const [actionsOpen, setActionsOpen] = useState(false);
-  const actionContainerRef = useRef(null);
-  const leaveRequestMeta = message?.metadata?.leaveRequest || null;
-  const replyToMeta = message?.metadata?.replyTo || null;
-  const leaveStatus = String(leaveRequestMeta?.status || "").trim();
-  const leaveStatusKey = leaveStatus.toLowerCase();
-  const canDecideLeaveRequest =
-  Boolean(leaveRequestMeta?.absenceId) &&
-  Array.isArray(leaveRequestMeta?.managerIds) &&
-  leaveRequestMeta.managerIds.includes(currentUserId) &&
-  leaveStatusKey === "pending";
-
-  const radiusValue = isMine ?
-  `${isFirstInGroup ? "18px" : "18px"} ${isFirstInGroup ? "18px" : "4px"} ${isLastInGroup ? "6px" : "4px"} 18px` :
-  `${isFirstInGroup ? "18px" : "4px"} 18px 18px ${isLastInGroup ? "6px" : "4px"}`;
-
-  const bubbleStyles = {
-    padding: "10px 14px",
-    borderRadius: radiusValue,
-    backgroundColor: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--surface)",
-    color: palette.textPrimary,
-    maxWidth: "100%",
-    boxShadow: "var(--shadow-md)",
-    lineHeight: 1.45,
-    cursor: "pointer",
-    position: "relative"
-  };
-
-  const aggregatedReactions = reactions.reduce((acc, r) => {
-    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-    return acc;
-  }, {});
-
-  // A user holds at most one reaction per message, so this is the emoji or
-  // nothing. Drives aria-pressed on both the picker and the count chips.
-  const myReactionEmoji =
-  reactions.find((r) => String(r.userId) === String(currentUserId))?.emoji || null;
-
-  useEffect(() => {
-    if (!actionsOpen) return undefined;
-    const handlePagePointerDown = (event) => {
-      if (actionContainerRef.current?.contains(event.target)) return;
-      setActionsOpen(false);
-    };
-    document.addEventListener("pointerdown", handlePagePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePagePointerDown);
-  }, [actionsOpen]);
-
-  return (
-    <div
-      data-dev-section="1"
-      data-dev-section-key={`messages-bubble-${message.id}`}
-      data-dev-section-type="content-card"
-      data-dev-section-parent="messages-thread-feed"
-      data-dev-background-token={isMine ? "messages-bubble-mine" : "messages-bubble-peer"}
-      style={{
-        display: "flex",
-        justifyContent: isMine ? "flex-end" : "flex-start",
-        width: "100%",
-        marginTop: isFirstInGroup ? "6px" : "2px"
-      }}>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: isMine ? "row-reverse" : "row",
-          alignItems: "flex-end",
-          maxWidth: "75%"
-        }}>
-
-        <div
-          ref={actionContainerRef}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "4px",
-            alignItems: isMine ? "flex-end" : "flex-start",
-            position: "relative"
-          }}>
-
-          {replyToMeta &&
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: isMine ? "flex-end" : "flex-start",
-              marginBottom: "-6px",
-              opacity: 0.75
-            }}>
-
-              <div
-              style={{
-                fontSize: "0.68rem",
-                fontWeight: 600,
-                color: palette.textMuted,
-                padding: "0 10px 2px"
-              }}>
-
-                Replying to {replyToMeta.senderName || "message"}
-              </div>
-              <div
-              style={{
-                padding: "8px 12px",
-                borderRadius: "14px",
-                backgroundColor: "var(--search-surface)",
-                color: palette.textMuted,
-                fontSize: "0.78rem",
-                maxWidth: "420px",
-                transform: "scale(0.95)",
-                transformOrigin: isMine ? "right bottom" : "left bottom"
-              }}>
-
-                {String(replyToMeta.contentSnippet || "").slice(0, 160)}
-              </div>
-            </div>
-          }
-          <div
-            style={bubbleStyles}
-            onClick={() => setActionsOpen((v) => !v)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter" && event.key !== " ") return;
-              event.preventDefault();
-              setActionsOpen((v) => !v);
-            }}>
-
-            {renderMessageContent(message.content, userRoles)}
-            {leaveRequestMeta ?
-            <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                  <span
-                  style={{
-                    padding: "4px 8px",
-                    borderRadius: radii.pill,
-                    backgroundColor:
-                    leaveStatusKey === "approved" ?
-                    "var(--success-surface)" :
-                    leaveStatusKey === "declined" ?
-                    "var(--danger-surface)" :
-                    "var(--theme)",
-                    color:
-                    leaveStatusKey === "approved" ?
-                    "var(--success)" :
-                    leaveStatusKey === "declined" ?
-                    "var(--danger)" :
-                    "var(--info-dark)",
-                    fontSize: "0.72rem",
-                    fontWeight: 700
-                  }}>
-
-                    {leaveStatus || "Pending"}
-                  </span>
-                  <span style={{ fontSize: "0.76rem", color: palette.textMuted }}>
-                    {leaveRequestMeta.leaveType || "Leave"} · {leaveRequestMeta.startDate || ""}
-                    {leaveRequestMeta.endDate && leaveRequestMeta.endDate !== leaveRequestMeta.startDate ?
-                  ` to ${leaveRequestMeta.endDate}` :
-                  ""}
-                  </span>
-                </div>
-                {leaveRequestMeta.requestNotes ?
-              <div style={{ fontSize: "0.8rem", color: palette.textMuted }}>
-                    {leaveRequestMeta.requestNotes}
-                  </div> :
-              null}
-                {leaveRequestMeta.declineReason ?
-              <div style={{ fontSize: "0.8rem", color: "var(--danger)", fontWeight: 600 }}>
-                    Decline reason: {leaveRequestMeta.declineReason}
-                  </div> :
-              null}
-                {canDecideLeaveRequest ?
-              <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-                    <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  pill
-                  disabled={decisionBusy}
-                  onClick={() => onApproveLeaveRequest?.(message)}>
-
-                      Approve
-                    </Button>
-                    <Button
-                  type="button"
-                  variant="danger"
-                  size="sm"
-                  pill
-                  disabled={decisionBusy}
-                  onClick={() => onDeclineLeaveRequest?.(message)}>
-
-                      Decline
-                    </Button>
-                  </div> :
-              null}
-              </div> :
-            null}
-          </div>
-          {actionsOpen &&
-          <div
-            className="app-reaction-bar is-open"
-            style={{
-              marginTop: "8px"
-            }}>
-
-              {REACTION_EMOJIS.map((emoji) =>
-            <button
-              key={emoji}
-              type="button"
-              className="app-btn app-btn--secondary app-reaction-emoji"
-              aria-pressed={myReactionEmoji === emoji}
-              onClick={(e) => {
-                e.stopPropagation();
-                onReact?.(emoji);
-                setActionsOpen(false);
-              }}
-              aria-label={`React with ${emoji}`}>
-
-                  {emoji}
-                </button>
-            )}
-              <button
-              type="button"
-              className="app-btn app-btn--secondary app-reaction-action"
-              onClick={(e) => {
-                e.stopPropagation();
-                onReply?.();
-                setActionsOpen(false);
-              }}>
-
-                Reply
-              </button>
-            </div>
-          }
-          {Object.keys(aggregatedReactions).length > 0 &&
-          <div
-            style={{
-              display: "flex",
-              gap: "4px",
-              flexWrap: "wrap",
-              marginTop: "-6px",
-              padding: "0 6px"
-            }}>
-
-              {Object.entries(aggregatedReactions).map(([emoji, count]) =>
-            <Button
-              key={emoji}
-              type="button"
-              variant="secondary"
-              size="xs"
-              pill
-              aria-pressed={myReactionEmoji === emoji}
-              onClick={(e) => {
-                e.stopPropagation();
-                onReact?.(emoji);
-              }}>
-
-                  <span>{emoji}</span>
-                  {count > 1 &&
-              <span style={{ color: palette.textMuted, marginLeft: "var(--space-xs)" }}>
-                      {count}
-                    </span>
-              }
-                </Button>
-            )}
-            </div>
-          }
-        </div>
-      </div>
-    </div>);
-
-};
-
-const parseSlashCommandMetadata = async (text = "", thread = null) => {
-  if (!text) return null;
-  const metadata = {};
-  const tokens = text.match(/\/[^\s]+/g) || [];
-
-  // First pass: collect all commands
-  let hasJobNumber = false;
-  let hasVehicleCommand = false;
-  let hasCustomerCommand = false;
-
-  for (const raw of tokens) {
-    const token = raw.replace("/", "").trim();
-    if (!token) continue;
-
-    // /job[number] or /[number]
-    const jobMatch = token.match(/^(?:job)?(\d+)$/i);
-    if (jobMatch && !metadata.jobNumber) {
-      metadata.jobNumber = jobMatch[1];
-      hasJobNumber = true;
-      continue;
-    }
-
-    // /cust[name] - extract customer name
-    const custMatch = token.match(/^cust(.+)$/i);
-    if (custMatch && !metadata.customerName) {
-      metadata.customerName = custMatch[1];
-      continue;
-    }
-
-    // /addcust[name or email] - connect a customer to chat
-    const addCustMatch = token.match(/^addcust(?:\[(.+)\]|(.+))$/i);
-    if (addCustMatch && !metadata.addCustomerQuery) {
-      const query = (addCustMatch[1] ?? addCustMatch[2] ?? "").trim();
-      if (query) {
-        metadata.addCustomerQuery = query;
-        continue;
-      }
-    }
-
-    // /customer - reference to customer in thread
-    if (token.toLowerCase() === "customer") {
-      hasCustomerCommand = true;
-      if (!metadata.customerId) {
-        const customerMember = (thread?.members || []).find((member) =>
-        member.profile?.role?.toLowerCase().includes("customer")
-        );
-        if (customerMember) {
-          metadata.customerId = customerMember.userId;
-        }
-      }
-    }
-
-    // /vehicle - reference to vehicle
-    if (token.toLowerCase() === "vehicle") {
-      hasVehicleCommand = true;
-      if (!metadata.vehicleId) {
-        const vehicleReference = thread?.lastMessage?.metadata?.vehicleId;
-        if (vehicleReference) {
-          metadata.vehicleId = vehicleReference;
-        }
-      }
-    }
-  }
-
-  // Second pass: if job number is present and vehicle/customer commands are used,
-  // fetch the job data to link vehicle and customer
-  if (hasJobNumber && (hasVehicleCommand || hasCustomerCommand)) {
-    try {
-      const response = await fetch(`/api/jobcards/${metadata.jobNumber}`);
-      if (response.ok) {
-        const jobData = await response.json();
-
-        // Link vehicle if /vehicle command was used and not already set
-        if (hasVehicleCommand && !metadata.vehicleId && jobData.vehicleId) {
-          metadata.vehicleId = jobData.vehicleId;
-        }
-
-        // Link customer if /customer command was used and not already set
-        if (hasCustomerCommand && !metadata.customerId && jobData.customerId) {
-          metadata.customerId = jobData.customerId;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to fetch job data for metadata:', error);
-      // Continue without the job data
-    }
-  }
-
-  return Object.keys(metadata).length ? metadata : null;
-};
-
-const ADD_CUSTOMER_TOKEN_REGEX = /\/addcust[^\s]+/gi;
-
-const stripAddCustomerCommands = (text = "") =>
-String(text || "").
-replace(ADD_CUSTOMER_TOKEN_REGEX, "").
-replace(/\s{2,}/g, " ").
-trim();
 
 const formatNotificationTimestamp = (value) => {
   if (!value) return "Unknown time";
@@ -758,260 +63,50 @@ const formatNotificationTimestamp = (value) => {
     month: "short",
     year: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
-  });
-};
-
-// Helper function to get user-specific link for job based on role
-const getJobLink = (jobNumber, userRoles = []) => {
-  const normalizedRoles = userRoles.map((r) => r.toLowerCase());
-
-  // Technicians use myjobs path
-  if (normalizedRoles.includes('technician')) {
-    return `/tech/${jobNumber}`;
-  }
-
-  // Everyone else uses standard job-cards path
-  return `/job-cards/${jobNumber}?tab=messages`;
-};
-
-// Filter commands based on user roles
-const getAvailableCommands = (userRoles = []) => {
-  const normalizedRoles = userRoles.map((r) => r.toLowerCase());
-
-  const allCommands = [
-  // Job Commands
-  {
-    command: "/job[number]",
-    description: "Link to a job card (e.g., /job12345)",
-    autocomplete: "/job",
-    pattern: "job",
-    hasInput: true,
-    roles: ['all'], // Everyone can reference jobs
-    getLink: (num) => getJobLink(num, userRoles)
-  },
-  {
-    command: "/[number]",
-    description: "Quick link to a job (e.g., /12345)",
-    autocomplete: "/",
-    pattern: "",
-    hasInput: true,
-    roles: ['all'],
-    getLink: (num) => getJobLink(num, userRoles)
-  },
-
-  // Customer Commands
-  {
-    command: "/cust[name]",
-    description: "Reference a customer (e.g., /custjohnsmith)",
-    autocomplete: "/cust",
-    pattern: "cust",
-    hasInput: true,
-    roles: ['all']
-  },
-  {
-    command: "/customer",
-    description: "Reference the customer (auto-links if /job used)",
-    autocomplete: "/customer",
-    pattern: "customer",
-    hasInput: false,
-    roles: ['all']
-  },
-  {
-    command: "/addcust[name or email]",
-    description: "Invite a customer and create a shared chat (e.g., /addcust[jane@domain.com])",
-    autocomplete: "/addcust",
-    pattern: "addcust",
-    hasInput: true,
-    roles: ['service advisor', 'service manager', 'after sales manager', 'workshop manager', 'admin']
-  },
-
-  // Vehicle Commands
-  {
-    command: "/vehicle",
-    description: "Reference the vehicle (auto-links if /job used)",
-    autocomplete: "/vehicle",
-    pattern: "vehicle",
-    hasInput: false,
-    roles: ['all']
-  },
-  {
-    command: "/vhc[jobnumber]",
-    description: "Link to Vehicle Health Check (e.g., /vhc12345)",
-    autocomplete: "/vhc",
-    pattern: "vhc",
-    hasInput: true,
-    roles: ['technician', 'service advisor', 'service manager', 'workshop manager', 'admin'],
-    getLink: (num) => `/job-cards/${num}?tab=vhc`
-  },
-
-  // Parts Commands
-  {
-    command: "/part[partnumber]",
-    description: "Reference a part (e.g., /partBP123)",
-    autocomplete: "/part",
-    pattern: "part",
-    hasInput: true,
-    roles: ['parts', 'parts manager', 'technician', 'service advisor', 'workshop manager', 'admin']
-  },
-  {
-    command: "/parts",
-    description: "Link to Parts Management",
-    autocomplete: "/parts",
-    pattern: "parts",
-    hasInput: false,
-    roles: ['parts', 'parts manager', 'admin'],
-    getLink: () => '/parts'
-  },
-  {
-    command: "/order[ordernumber]",
-    description: "Link to parts order (e.g., /orderPO123)",
-    autocomplete: "/order",
-    pattern: "order",
-    hasInput: true,
-    roles: ['parts', 'parts manager', 'admin'],
-    getLink: (num) => `/new-order/${num}`
-  },
-
-  // Account Commands
-  {
-    command: "/invoice[number]",
-    description: "Link to invoice (e.g., /invoiceINV123)",
-    autocomplete: "/invoice",
-    pattern: "invoice",
-    hasInput: true,
-    roles: ['accounts', 'service manager', 'workshop manager', 'admin'],
-    getLink: (num) => `/accounts/invoices/${num}`
-  },
-  {
-    command: "/account[id]",
-    description: "Link to customer account (e.g., /accountACC123)",
-    autocomplete: "/account",
-    pattern: "account",
-    hasInput: true,
-    roles: ['accounts', 'service manager', 'workshop manager', 'admin'],
-    getLink: (id) => `/accounts/view/${id}`
-  },
-
-  // Tracking & Status
-  {
-    command: "/tracking",
-    description: "Link to Vehicle Tracking",
-    autocomplete: "/tracking",
-    pattern: "tracking",
-    hasInput: false,
-    roles: ['service advisor', 'service manager', 'workshop manager', 'valet', 'admin'],
-    getLink: () => '/tracking'
-  },
-  {
-    command: "/valet",
-    description: "Link to Valet Dashboard",
-    autocomplete: "/valet",
-    pattern: "valet",
-    hasInput: false,
-    roles: ['valet', 'service manager', 'workshop manager', 'admin'],
-    getLink: () => '/valet'
-  },
-
-  // HR Commands
-  {
-    command: "/hr",
-    description: "Link to HR Dashboard",
-    autocomplete: "/hr",
-    pattern: "hr",
-    hasInput: false,
-    roles: ['hr manager', 'admin manager', 'admin'],
-    getLink: () => '/hr/manager'
-  },
-  {
-    command: "/user[name]",
-    description: "Reference a staff member (e.g., /userjohnsmith)",
-    autocomplete: "/user",
-    pattern: "user",
-    hasInput: true,
-    roles: ['all']
-  },
-
-  // Time & Clocking
-  {
-    command: "/clocking",
-    description: "Link to Time Clocking",
-    autocomplete: "/clocking",
-    pattern: "clocking",
-    hasInput: false,
-    roles: ['workshop manager', 'service manager', 'admin'],
-    getLink: () => '/clocking'
-  },
-
-  // Useful Shortcuts
-  {
-    command: "/archive",
-    description: "Link to Job Archive",
-    autocomplete: "/archive",
-    pattern: "archive",
-    hasInput: false,
-    roles: ['service advisor', 'service manager', 'workshop manager', 'admin'],
-    getLink: () => '/archive'
-  },
-  {
-    command: "/myjobs",
-    description: "Link to My Jobs",
-    autocomplete: "/myjobs",
-    pattern: "myjobs",
-    hasInput: false,
-    roles: ['technician'],
-    getLink: () => '/tech'
-  },
-  {
-    command: "/appointments",
-    description: "Link to Appointments",
-    autocomplete: "/appointments",
-    pattern: "appointments",
-    hasInput: false,
-    roles: ['service advisor', 'service manager', 'admin'],
-    getLink: () => '/job-cards/appointments'
-  }];
-
-
-  // Filter commands based on user roles
-  if (hasAllAccessRole(normalizedRoles)) return allCommands; // All Access demo login
-  return allCommands.filter((cmd) => {
-    if (cmd.roles.includes('all')) return true;
-    return cmd.roles.some((role) => normalizedRoles.includes(role));
+    minute: "2-digit",
   });
 };
 
 const sortDirectoryEntries = (entries = []) =>
-[...entries].sort((a, b) =>
-(a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
-);
+  [...entries].sort((a, b) =>
+    (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
+  );
+
+const memberIsCustomer = (member) =>
+  String(member?.role || member?.profile?.role || "").toLowerCase().includes("customer");
+
+const ADD_CUSTOMER_TOKEN_REGEX = /\/addcust[^\s]+/gi;
 
 function MessagesPage() {
-  const router = useRouter(); // Access query params from job card navigation
+  const router = useRouter();
   const { dbUserId, user } = useUser();
-  const { isDark } = useTheme();
+  const userRoles = useMemo(() => user?.roles || [], [user?.roles]);
 
+  // ---------------------------------------------------------------------------
+  // State
+  // ---------------------------------------------------------------------------
   const [threads, setThreads] = useState([]);
   const [activeThreadId, setActiveThreadId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageDraft, setMessageDraft] = useState("");
   const [replyTo, setReplyTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [messageReactions, setMessageReactions] = useState({});
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [conversationError, setConversationError] = useState("");
+  const [composeWarning, setComposeWarning] = useState("");
+  const [actionBusyId, setActionBusyId] = useState(null);
 
   const [directory, setDirectory] = useState([]);
   const [directorySearch, setDirectorySearch] = useState("");
   const [directoryLoading, setDirectoryLoading] = useState(false);
+
   const [systemNotifications, setSystemNotifications] = useState([]);
   const [bookingNotifications, setBookingNotifications] = useState([]);
-  // Customer portal booking requests are handled by the Service role only.
-  const canSeeCustomerRequests = hasCustomerBookingRequestAccess(user?.roles);
-  const handleCreateJobFromRequest = (note) => {
-    if (!note?.event_id || !canSeeCustomerRequests) return;
-    router.push(`/new-job?fromEvent=${encodeURIComponent(note.event_id)}`);
-  };
   const [systemLoading, setSystemLoading] = useState(false);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [systemError, setSystemError] = useState("");
@@ -1027,96 +122,78 @@ function MessagesPage() {
   const [threadUnreadMarkerEl, setThreadUnreadMarkerEl] = useState(null);
   const [systemUnreadMarkerEl, setSystemUnreadMarkerEl] = useState(null);
 
+  // New conversation popup
+  const [newChatModalOpen, setNewChatModalOpen] = useState(false);
   const [composeMode, setComposeMode] = useState("direct");
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [groupName, setGroupName] = useState("");
+  const [newDepartment, setNewDepartment] = useState("");
+  const [includeDepartment, setIncludeDepartment] = useState(true);
+  const [newJobNumber, setNewJobNumber] = useState("");
   const [composeError, setComposeError] = useState("");
-  const [newChatModalOpen, setNewChatModalOpen] = useState(false);
+  const [creatingThread, setCreatingThread] = useState(false);
+
+  // List
   const [threadSearchTerm, setThreadSearchTerm] = useState("");
-  const [messageFilter, setMessageFilter] = useState("all"); // all | unread | customer | team | system
-  const [customerDetail, setCustomerDetail] = useState(null); // header summary for customer chats
+  const [messageFilter, setMessageFilter] = useState("all"); // all | unread | mentions
+  const [typeFilter, setTypeFilter] = useState("all");
   const [pinnedThreadIds, setPinnedThreadIds] = useState([]);
   const [threadSelectionMode, setThreadSelectionMode] = useState(false);
   const [selectedThreadIds, setSelectedThreadIds] = useState([]);
+  const [threadDeleteBusy, setThreadDeleteBusy] = useState(false);
+  const [threadDeleteError, setThreadDeleteError] = useState("");
+
+  // Conversation header / search / details
+  const [customerDetail, setCustomerDetail] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsTab, setDetailsTab] = useState("details");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchIndex, setSearchIndex] = useState(0);
+  const [jumpHighlightId, setJumpHighlightId] = useState(null);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [settingsError, setSettingsError] = useState("");
+  const [workingStaff, setWorkingStaff] = useState([]);
+
+  // Group management (leaders)
   const [groupEditModalOpen, setGroupEditModalOpen] = useState(false);
   const [groupEditTitle, setGroupEditTitle] = useState("");
   const [groupEditBusy, setGroupEditBusy] = useState(false);
   const [groupEditError, setGroupEditError] = useState("");
-  const [threadDeleteBusy, setThreadDeleteBusy] = useState(false);
-  const [threadDeleteError, setThreadDeleteError] = useState("");
-
   const [groupSearchTerm, setGroupSearchTerm] = useState("");
   const [groupSearchResults, setGroupSearchResults] = useState([]);
   const [groupSearchLoading, setGroupSearchLoading] = useState(false);
   const [groupManageError, setGroupManageError] = useState("");
   const [groupManageBusy, setGroupManageBusy] = useState(false);
-  const [conversationError, setConversationError] = useState("");
+
   const [commandHelpOpen, setCommandHelpOpen] = useState(false);
-  const [groupMembersModalOpen, setGroupMembersModalOpen] = useState(false);
-  const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
-  const [commandSuggestions, setCommandSuggestions] = useState([]);
+
+  // Leave requests posted into a thread
   const [leaveDecisionBusy, setLeaveDecisionBusy] = useState(false);
   const [leaveDecisionError, setLeaveDecisionError] = useState("");
   const [leaveDeclineModal, setLeaveDeclineModal] = useState({ open: false, message: null });
   const [leaveDeclineReason, setLeaveDeclineReason] = useState("");
 
-  const [isMobileView, setIsMobileView] = useState(false); // portrait phone single-panel toggle
+  // One panel at a time below the tablet breakpoint (matches messages.css).
+  const isMobileView = useMediaQuery(`(max-width: ${BREAKPOINTS.TABLET - 1}px)`);
   const [mobilePanelView, setMobilePanelView] = useState("threads");
 
-  // Detect portrait phone viewport for iPhone-style message navigation
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 480px) and (orientation: portrait)");
-    setIsMobileView(mediaQuery.matches);
-    const handler = (event) => setIsMobileView(event.matches);
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
-
-  const mobileHistoryPushedRef = useRef(false); // tracks whether we pushed a history entry
-  const ensureMobileConversationHistory = useCallback(() => {
-    if (!isMobileView || mobileHistoryPushedRef.current) return;
-    window.history.pushState({ mobileChat: true }, "");
-    mobileHistoryPushedRef.current = true;
-  }, [isMobileView]);
-
-  // Helper: go back to thread list on mobile (calledFromPopState flag prevents history.back loop)
-  const handleMobileBack = useCallback((calledFromPopState = false) => {
-    setMobilePanelView("threads");
-    setActiveThreadId(null); // deselect thread to show list
-    setActiveSystemView(false); // exit system view too
-    setActiveBookingsView(false);
-    setMessages([]); // clear messages panel
-    if (mobileHistoryPushedRef.current && !calledFromPopState) {
-      mobileHistoryPushedRef.current = false; // reset flag before popping
-      window.history.back(); // pop the chat history entry we pushed
-    } else {
-      mobileHistoryPushedRef.current = false; // reset flag
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isMobileView) return;
-    mobileHistoryPushedRef.current = false;
-    setMobilePanelView("threads");
-  }, [isMobileView]);
-
-  // Listen for browser back button (popstate) to return to thread list on mobile
-  useEffect(() => {
-    if (!isMobileView) return; // only on mobile
-    const onPopState = () => {
-      if (mobileHistoryPushedRef.current || activeThreadId || activeSystemView || activeBookingsView) {
-        handleMobileBack(true); // pass true so we don't call history.back again
-      }
-    };
-    window.addEventListener("popstate", onPopState); // listen for back button
-    return () => window.removeEventListener("popstate", onPopState); // cleanup
-  }, [activeBookingsView, activeSystemView, activeThreadId, isMobileView, handleMobileBack]);
+  const canSeeCustomerRequests = hasCustomerBookingRequestAccess(user?.roles);
+  const handleCreateJobFromRequest = (note) => {
+    if (!note?.event_id || !canSeeCustomerRequests) return;
+    router.push(`/new-job?fromEvent=${encodeURIComponent(note.event_id)}`);
+  };
 
   const scrollerRef = useRef(null);
+  const composerInputRef = useRef(null);
+  const messageNodesRef = useRef(new Map());
+  const lastScrollKeyRef = useRef("");
   const unreadMarkerTimersRef = useRef(new Map());
   const activeUnreadMarkerKeyRef = useRef(null);
-  const deepLinkProcessedRef = useRef(false); // Track whether job card deep-link has been handled
-  const collabDeepLinkRef = useRef(false); // Track whether a topbar collaboration deep-link (?to=/group) is handled
+  const deepLinkProcessedRef = useRef(false);
+  const collabDeepLinkRef = useRef(false);
+  const mobileHistoryPushedRef = useRef(false);
+
   const {
     listThreads,
     listThreadMessages,
@@ -1127,149 +204,133 @@ function MessagesPage() {
     removeMembers,
     updateThread,
     deleteThread: deleteThreadApi,
-    connectCustomer: connectCustomerApi
+    connectCustomer: connectCustomerApi,
+    messageAction,
+    resolveRecords,
+    uploadAttachment,
   } = useMessagesApi();
 
+  // ---------------------------------------------------------------------------
+  // Derived thread data
+  // ---------------------------------------------------------------------------
   const activeThread = useMemo(
     () => threads.find((thread) => thread.id === activeThreadId) || null,
     [threads, activeThreadId]
   );
-
   const isGroupChat = Boolean(activeThread && activeThread.type === "group");
 
-  // Get available commands based on user roles
-  const availableCommands = useMemo(() => {
-    return getAvailableCommands(user?.roles || []);
-  }, [user?.roles]);
+  const availableCommands = useMemo(
+    () => getAvailableSlashCommands(userRoles, { allAccess: hasAllAccessRole(userRoles.map((r) => String(r).toLowerCase())) }),
+    [userRoles]
+  );
 
   const hasThreadStarted = useCallback((thread) => {
     const content = thread?.lastMessage?.content;
-    return Boolean(
-      typeof content === "string" && content.trim() || thread?.lastMessage?.id
-    );
+    return Boolean((typeof content === "string" && content.trim()) || thread?.lastMessage?.id);
   }, []);
 
+  // A conversation appears once it has a message (as before). Department,
+  // job and announcement channels are standing rooms, so they appear as soon
+  // as you are in them.
   const visibleThreads = useMemo(
     () =>
-    threads.filter(
-      (thread) => hasThreadStarted(thread) || thread.id === activeThreadId
-    ),
+      threads.filter(
+        (thread) =>
+          hasThreadStarted(thread) ||
+          thread.id === activeThreadId ||
+          ["department", "job", "announcement"].includes(thread.conversationType)
+      ),
     [threads, hasThreadStarted, activeThreadId]
   );
 
-  const threadIsCustomer = useCallback((thread) => {
-    return (thread?.members || []).some((member) => {
-      const role = String(member?.role || member?.profile?.role || "").toLowerCase();
-      return role.includes("customer");
-    });
-  }, []);
+  const hasListFilters = Boolean(threadSearchTerm.trim()) || messageFilter !== "all" || typeFilter !== "all";
 
   const filteredThreads = useMemo(() => {
     const term = threadSearchTerm.trim().toLowerCase();
     let result = visibleThreads;
-
-    // Left-bar category pills narrow the list. "system" is handled separately
-    // (it opens the read-only system view in the conversation panel) so it
-    // does not filter the thread list here.
-    if (messageFilter === "unread") {
-      result = result.filter((thread) => thread.hasUnread);
-    } else if (messageFilter === "customer") {
-      result = result.filter((thread) => threadIsCustomer(thread));
-    } else if (messageFilter === "team") {
-      result = result.filter(
-        (thread) => thread.type === "group" && !threadIsCustomer(thread)
-      );
-    }
-
+    if (messageFilter === "unread") result = result.filter((thread) => thread.hasUnread);
+    if (messageFilter === "mentions") result = result.filter((thread) => thread.unreadMentionCount > 0);
+    if (typeFilter !== "all") result = result.filter((thread) => thread.conversationType === typeFilter);
     if (!term) return result;
     return result.filter((thread) => {
-      const title = (thread.title || "").toLowerCase();
-      const lastMessage = (thread.lastMessage?.content || "").toLowerCase();
-      const memberNames = (thread.members || [])
-        .map((member) => (member.profile?.name || "").toLowerCase())
-        .join(" ");
-      return (
-        title.includes(term) ||
-        lastMessage.includes(term) ||
-        memberNames.includes(term)
-      );
+      const haystack = [
+        thread.title,
+        thread.lastMessage?.content,
+        thread.jobNumber,
+        thread.department,
+        ...(thread.members || []).map((member) => member.profile?.name),
+        ...(thread.linkedRecords || []).map((link) => link.label),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
     });
-  }, [threadSearchTerm, visibleThreads, messageFilter, threadIsCustomer]);
+  }, [threadSearchTerm, visibleThreads, messageFilter, typeFilter]);
 
   const pinnedThreads = useMemo(
     () =>
-    pinnedThreadIds.
-    map((threadId) => visibleThreads.find((thread) => thread.id === threadId)).
-    filter(Boolean),
+      pinnedThreadIds
+        .map((threadId) => visibleThreads.find((thread) => thread.id === threadId))
+        .filter(Boolean),
     [pinnedThreadIds, visibleThreads]
   );
 
-  const unpinnedFilteredThreads = useMemo(
-    () => filteredThreads.filter((thread) => !pinnedThreadIds.includes(thread.id)),
-    [filteredThreads, pinnedThreadIds]
+  const listThreadsShown = useMemo(
+    () => (hasListFilters ? filteredThreads : filteredThreads.filter((thread) => !pinnedThreadIds.includes(thread.id))),
+    [filteredThreads, hasListFilters, pinnedThreadIds]
   );
-
-  const userNameColor = "var(--accent-purple)";
-  const systemTitleColor = userNameColor;
-  const unreadBackgroundColor = "rgba(var(--accent-purple-rgb), 0.14)";
 
   const isGroupLeader = useMemo(() => {
     if (!activeThread || activeThread.type !== "group" || !dbUserId) return false;
-    return activeThread.members.some(
-      (member) => member.userId === dbUserId && member.role === "leader"
-    );
+    return activeThread.members.some((member) => member.userId === dbUserId && member.role === "leader");
   }, [activeThread, dbUserId]);
 
+  const activeHasCustomer = Boolean(activeThread?.members?.some(memberIsCustomer));
   const canEditGroup = isGroupChat && isGroupLeader;
+  const canManageMembers = canEditGroup && !activeHasCustomer;
 
   const groupLeaderCount = useMemo(() => {
     if (!isGroupChat || !activeThread) return 0;
     return (activeThread.members || []).filter((member) => member.role === "leader").length;
   }, [activeThread, isGroupChat]);
 
-  const directoryHasSearch = Boolean(directorySearch.trim());
-
+  // ---------------------------------------------------------------------------
+  // System / bookings feeds
+  // ---------------------------------------------------------------------------
   const orderedSystemNotifications = useMemo(
     () =>
-    [...(systemNotifications || [])].sort(
-      (a, b) => new Date(a?.created_at || 0).getTime() - new Date(b?.created_at || 0).getTime()
-    ),
+      [...(systemNotifications || [])].sort(
+        (a, b) => new Date(a?.created_at || 0).getTime() - new Date(b?.created_at || 0).getTime()
+      ),
     [systemNotifications]
   );
   const orderedBookingNotifications = useMemo(
     () =>
-    [...(bookingNotifications || [])].sort(
-      (a, b) => new Date(a?.created_at || 0).getTime() - new Date(b?.created_at || 0).getTime()
-    ),
+      [...(bookingNotifications || [])].sort(
+        (a, b) => new Date(a?.created_at || 0).getTime() - new Date(b?.created_at || 0).getTime()
+      ),
     [bookingNotifications]
   );
-  const latestSystemNotification =
-  orderedSystemNotifications?.[orderedSystemNotifications.length - 1];
-  const latestSystemTimestamp = latestSystemNotification?.created_at || null;
-  const latestSystemTime = latestSystemTimestamp ? new Date(latestSystemTimestamp).getTime() : 0;
-  const lastSystemTime = lastSystemViewedAt ? new Date(lastSystemViewedAt).getTime() : 0;
+  const latestSystem = orderedSystemNotifications[orderedSystemNotifications.length - 1] || null;
+  const latestBooking = orderedBookingNotifications[orderedBookingNotifications.length - 1] || null;
+  const latestSystemTime = latestSystem?.created_at ? new Date(latestSystem.created_at).getTime() : 0;
+  const latestBookingTime = latestBooking?.created_at ? new Date(latestBooking.created_at).getTime() : 0;
   const hasSystemUnread =
-  Boolean(systemNotifications.length) && latestSystemTime > lastSystemTime;
-  const latestBookingNotification =
-  orderedBookingNotifications?.[orderedBookingNotifications.length - 1];
-  const latestBookingTimestamp = latestBookingNotification?.created_at || null;
-  const latestBookingTime = latestBookingTimestamp ? new Date(latestBookingTimestamp).getTime() : 0;
-  const lastBookingsTime = lastBookingsViewedAt ? new Date(lastBookingsViewedAt).getTime() : 0;
+    Boolean(systemNotifications.length) &&
+    latestSystemTime > (lastSystemViewedAt ? new Date(lastSystemViewedAt).getTime() : 0);
   const hasBookingsUnread =
-  Boolean(bookingNotifications.length) && latestBookingTime > lastBookingsTime;
-  const activePseudoNotifications = activeBookingsView ?
-  orderedBookingNotifications :
-  orderedSystemNotifications;
-  const activePseudoUnreadCutoff = activeBookingsView ?
-  bookingsUnreadCutoff :
-  systemUnreadCutoff;
-  const activePseudoTimestamp = activeBookingsView ?
-  latestBookingTimestamp :
-  latestSystemTimestamp;
-  const systemTimestampLabel = activePseudoTimestamp ?
-  formatNotificationTimestamp(activePseudoTimestamp) :
-  "No updates yet";
+    Boolean(bookingNotifications.length) &&
+    latestBookingTime > (lastBookingsViewedAt ? new Date(lastBookingsViewedAt).getTime() : 0);
+
+  const activePseudoNotifications = activeBookingsView ? orderedBookingNotifications : orderedSystemNotifications;
+  const activePseudoUnreadCutoff = activeBookingsView ? bookingsUnreadCutoff : systemUnreadCutoff;
+  const activePseudoTimestamp = activeBookingsView ? latestBooking?.created_at : latestSystem?.created_at;
   const isSystemThreadActive = activeSystemView || activeBookingsView;
+
+  // ---------------------------------------------------------------------------
+  // Unread markers (unchanged behaviour: shown once, dismissed 30s after seen)
+  // ---------------------------------------------------------------------------
   const activeThreadUnreadMarkerIndex = useMemo(() => {
     if (!messages.length) return -1;
     if (activeThreadUnreadCutoff === false) return -1;
@@ -1277,17 +338,16 @@ function MessagesPage() {
     const cutoffTime = new Date(activeThreadUnreadCutoff).getTime();
     if (Number.isNaN(cutoffTime)) return -1;
     return messages.findIndex(
-      (message) => new Date(message?.createdAt || 0).getTime() > cutoffTime
+      (message) =>
+        new Date(message?.createdAt || 0).getTime() > cutoffTime && message.senderId !== dbUserId
     );
-  }, [messages, activeThreadUnreadCutoff]);
+  }, [messages, activeThreadUnreadCutoff, dbUserId]);
   const systemUnreadMarkerIndex = useMemo(() => {
     if (!activePseudoNotifications.length) return -1;
     if (!activePseudoUnreadCutoff) return 0;
     const cutoffTime = new Date(activePseudoUnreadCutoff).getTime();
     if (Number.isNaN(cutoffTime)) return -1;
-    return activePseudoNotifications.findIndex(
-      (note) => new Date(note?.created_at || 0).getTime() > cutoffTime
-    );
+    return activePseudoNotifications.findIndex((note) => new Date(note?.created_at || 0).getTime() > cutoffTime);
   }, [activePseudoNotifications, activePseudoUnreadCutoff]);
   const activeThreadUnreadMarkerKey = useMemo(() => {
     if (!activeThread || activeThreadUnreadMarkerIndex < 0) return null;
@@ -1302,21 +362,21 @@ function MessagesPage() {
   const showThreadUnreadMarker = Boolean(
     activeThreadUnreadMarkerKey && !dismissedUnreadMarkers[activeThreadUnreadMarkerKey]
   );
-  const showSystemUnreadMarker = Boolean(
-    systemUnreadMarkerKey && !dismissedUnreadMarkers[systemUnreadMarkerKey]
-  );
-  const currentUnreadMarkerKey = isSystemThreadActive ?
-  showSystemUnreadMarker ? systemUnreadMarkerKey : null :
-  showThreadUnreadMarker ? activeThreadUnreadMarkerKey : null;
+  const showSystemUnreadMarker = Boolean(systemUnreadMarkerKey && !dismissedUnreadMarkers[systemUnreadMarkerKey]);
+  const currentUnreadMarkerKey = isSystemThreadActive
+    ? showSystemUnreadMarker
+      ? systemUnreadMarkerKey
+      : null
+    : showThreadUnreadMarker
+      ? activeThreadUnreadMarkerKey
+      : null;
 
   const dismissUnreadMarker = useCallback((markerKey) => {
     if (!markerKey) return;
     setDismissedUnreadMarkers((prev) => {
       if (prev[markerKey]) return prev;
       const next = { ...prev, [markerKey]: true };
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(UNREAD_MARKER_STORAGE_KEY, JSON.stringify(next));
-      }
+      writeStorage(UNREAD_MARKER_STORAGE_KEY, JSON.stringify(next));
       return next;
     });
     const timerId = unreadMarkerTimersRef.current.get(markerKey);
@@ -1326,81 +386,115 @@ function MessagesPage() {
     }
   }, []);
 
+  // ---------------------------------------------------------------------------
+  // Local preferences
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(readStorage(UNREAD_MARKER_STORAGE_KEY) || "null");
+      if (saved && typeof saved === "object") setDismissedUnreadMarkers(saved);
+    } catch {
+      // Malformed storage: start fresh.
+    }
+    try {
+      const saved = JSON.parse(readStorage(PINNED_THREADS_STORAGE_KEY) || "null");
+      if (Array.isArray(saved)) {
+        // Ids were strings in older builds and numbers from the API; keep both
+        // comparable by normalising to numbers.
+        setPinnedThreadIds(saved.map(Number).filter(Number.isFinite).slice(0, MAX_PINNED_THREADS));
+      }
+    } catch {
+      // Malformed storage: no pins.
+    }
+    const savedDetails = readStorage(DETAILS_OPEN_STORAGE_KEY);
+    if (savedDetails !== null) setDetailsOpen(savedDetails === "1");
+    else setDetailsOpen(window.matchMedia("(min-width: 1600px)").matches);
+  }, []);
+
+  const toggleDetails = useCallback((force) => {
+    setDetailsOpen((prev) => {
+      const next = typeof force === "boolean" ? force : !prev;
+      writeStorage(DETAILS_OPEN_STORAGE_KEY, next ? "1" : "0");
+      return next;
+    });
+  }, []);
+
   const handleTogglePinnedThread = useCallback((threadId) => {
     if (!threadId) return;
     setPinnedThreadIds((prev) => {
       const exists = prev.includes(threadId);
-      if (!exists && prev.length >= 3) return prev;
+      if (!exists && prev.length >= MAX_PINNED_THREADS) return prev;
       const next = exists ? prev.filter((id) => id !== threadId) : [...prev, threadId];
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(PINNED_THREADS_STORAGE_KEY, JSON.stringify(next));
-      }
+      writeStorage(PINNED_THREADS_STORAGE_KEY, JSON.stringify(next));
       return next;
     });
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const saved = window.localStorage.getItem(UNREAD_MARKER_STORAGE_KEY);
-      if (!saved) return;
-      const parsed = JSON.parse(saved);
-      if (parsed && typeof parsed === "object") {
-        setDismissedUnreadMarkers(parsed);
-      }
-    } catch {
-
-      // Ignore malformed storage data and start fresh.
-    }}, []);
-
-  const mergeThread = useCallback((nextThread) => {
-    if (!nextThread) return;
-    setThreads((prev) => {
-      const idx = prev.findIndex((thread) => thread.id === nextThread.id);
-      if (idx === -1) {
-        return [nextThread, ...prev].sort(
-          (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-        );
-      }
-      const copy = [...prev];
-      copy[idx] = nextThread;
-      return copy.sort(
-        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-      );
-    });
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const saved = window.localStorage.getItem(PINNED_THREADS_STORAGE_KEY);
-      if (!saved) return;
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        setPinnedThreadIds(parsed.filter((id) => typeof id === "string").slice(0, 3));
-      }
-    } catch {
-
-      // Ignore malformed storage data and start with only the system pin.
-    }}, []);
 
   useEffect(() => {
     if (!threads.length) return;
     setPinnedThreadIds((prev) => {
-      const next = prev.filter((threadId) =>
-      visibleThreads.some((thread) => thread.id === threadId)
-      );
+      const next = prev.filter((threadId) => visibleThreads.some((thread) => thread.id === threadId));
       if (next.length === prev.length) return prev;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(PINNED_THREADS_STORAGE_KEY, JSON.stringify(next));
-      }
+      writeStorage(PINNED_THREADS_STORAGE_KEY, JSON.stringify(next));
       return next;
     });
   }, [threads.length, visibleThreads]);
 
+  // ---------------------------------------------------------------------------
+  // Mobile back navigation (browser back returns to the list)
+  // ---------------------------------------------------------------------------
+  const ensureMobileConversationHistory = useCallback(() => {
+    if (!isMobileView || mobileHistoryPushedRef.current) return;
+    window.history.pushState({ mobileChat: true }, "");
+    mobileHistoryPushedRef.current = true;
+  }, [isMobileView]);
+
+  const handleMobileBack = useCallback((calledFromPopState = false) => {
+    setMobilePanelView("threads");
+    setActiveThreadId(null);
+    setActiveSystemView(false);
+    setActiveBookingsView(false);
+    setMessages([]);
+    if (mobileHistoryPushedRef.current && !calledFromPopState) {
+      mobileHistoryPushedRef.current = false;
+      window.history.back();
+    } else {
+      mobileHistoryPushedRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isMobileView) return;
+    mobileHistoryPushedRef.current = false;
+    setMobilePanelView("threads");
+  }, [isMobileView]);
+
+  useEffect(() => {
+    if (!isMobileView) return undefined;
+    const onPopState = () => {
+      if (mobileHistoryPushedRef.current || activeThreadId || activeSystemView || activeBookingsView) {
+        handleMobileBack(true);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [activeBookingsView, activeSystemView, activeThreadId, isMobileView, handleMobileBack]);
+
+  // ---------------------------------------------------------------------------
+  // Loading
+  // ---------------------------------------------------------------------------
+  const mergeThread = useCallback((nextThread) => {
+    if (!nextThread?.id) return;
+    setThreads((prev) => {
+      const idx = prev.findIndex((thread) => thread.id === nextThread.id);
+      const copy = idx === -1 ? [nextThread, ...prev] : prev.map((t) => (t.id === nextThread.id ? nextThread : t));
+      return copy.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    });
+  }, []);
+
   const fetchThreads = useCallback(async () => {
     if (!dbUserId) return;
-    setLoadingThreads(true);
+    setLoadingThreads((prev) => prev || !threads.length);
     try {
       const payload = await listThreads({ userId: dbUserId });
       setThreads(payload?.data || payload?.threads || []);
@@ -1409,22 +503,18 @@ function MessagesPage() {
     } finally {
       setLoadingThreads(false);
     }
+    // threads.length is only read to decide whether to show the skeleton.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbUserId, listThreads]);
 
   const fetchDirectory = useCallback(
-    async (searchTerm = "") => {
+    async (searchTermValue = "") => {
       if (!dbUserId) return;
-      const trimmedTerm = searchTerm.trim();
-      if (!trimmedTerm) {
-        return;
-      }
+      const trimmed = searchTermValue.trim();
+      if (!trimmed) return;
       setDirectoryLoading(true);
       try {
-        const payload = await listDirectoryUsers({
-          q: trimmedTerm,
-          exclude: dbUserId,
-          limit: 100
-        });
+        const payload = await listDirectoryUsers({ q: trimmed, exclude: dbUserId, limit: 100 });
         setDirectory(sortDirectoryEntries(payload?.data || payload?.users || []));
       } catch (error) {
         logFailure("❌ Failed to load directory:", error);
@@ -1435,56 +525,58 @@ function MessagesPage() {
     [dbUserId, listDirectoryUsers]
   );
 
+  // `silent` refreshes the open transcript in place (after sending, on a
+  // realtime update) without the skeleton or resetting the unread marker.
   const openThread = useCallback(
-    async (threadId, threadSnapshot = null) => {
+    async (threadId, threadSnapshot = null, { silent = false } = {}) => {
       if (!threadId || !dbUserId) return;
-      ensureMobileConversationHistory();
-      if (isMobileView) {
-        setMobilePanelView("conversation");
-      }
-      const referenceThread =
-      threadSnapshot || threads.find((thread) => thread.id === threadId) || null;
-      const currentMember = (referenceThread?.members || []).find(
-        (member) => member.userId === dbUserId
-      );
-      setActiveThreadUnreadCutoff(
-        referenceThread?.hasUnread ? currentMember?.lastReadAt || null : false
-      );
-      setActiveSystemView(false);
-      setActiveBookingsView(false);
-      setActiveThreadId(threadId);
-      setLoadingMessages(true);
-      setConversationError("");
-      try {
-        const payload = await listThreadMessages(threadId, {
-          userId: dbUserId
-        });
-        setMessages(payload?.data || payload?.messages || []);
+      if (!silent) {
+        ensureMobileConversationHistory();
+        if (isMobileView) setMobilePanelView("conversation");
+        const referenceThread = threadSnapshot || threads.find((thread) => thread.id === threadId) || null;
+        const currentMember = (referenceThread?.members || []).find((member) => member.userId === dbUserId);
+        setActiveThreadUnreadCutoff(referenceThread?.hasNewMessages || referenceThread?.hasUnread ? currentMember?.lastReadAt || null : false);
+        setActiveSystemView(false);
+        setActiveBookingsView(false);
+        if (threadId !== activeThreadId) {
+          setReplyTo(null);
+          setEditingMessage(null);
+          setPendingAttachments([]);
+          setSearchOpen(false);
+          setSearchTerm("");
+          setComposeWarning("");
+        }
+        setActiveThreadId(threadId);
+        setLoadingMessages(true);
         setConversationError("");
+      }
+      try {
+        const payload = await listThreadMessages(threadId, { userId: dbUserId });
+        setMessages(payload?.data || payload?.messages || []);
+        if (!silent) setConversationError("");
         // In the presentation deck the thread list is fixed demo data — keep
-        // the unread badges showing even after a thread is opened so the
-        // read/unread states stay on screen for the whole walkthrough.
+        // the unread badges showing even after a thread is opened.
         if (!isPresentationMode()) {
           setThreads((prev) =>
-          prev.map((thread) =>
-          thread.id === threadId ? { ...thread, hasUnread: false } : thread
-          )
+            prev.map((thread) =>
+              thread.id === threadId
+                ? { ...thread, hasUnread: false, hasNewMessages: false, unreadCount: 0, unreadMentionCount: 0 }
+                : thread
+            )
           );
         }
       } catch (error) {
         logFailure("❌ Failed to load conversation:", error);
         setConversationError(error.message || "Unable to load conversation.");
       } finally {
-        setLoadingMessages(false);
+        if (!silent) setLoadingMessages(false);
       }
     },
-    [dbUserId, ensureMobileConversationHistory, isMobileView, listThreadMessages, setThreads, threads]
+    [activeThreadId, dbUserId, ensureMobileConversationHistory, isMobileView, listThreadMessages, threads]
   );
 
-  // Presentation/demo transcripts can ship pre-seeded reactions on a message's
-  // metadata (`metadata.reactions: [{ userId, emoji }]`). Real conversations
-  // never set this key, so outside the presentation deck this effect is a
-  // no-op — it only hydrates the local reaction state from that demo metadata.
+  // Presentation/demo transcripts can ship pre-seeded reactions on message
+  // metadata. Real conversations never set this key.
   useEffect(() => {
     if (!messages.length) return;
     setMessageReactions((prev) => {
@@ -1493,10 +585,7 @@ function MessagesPage() {
       messages.forEach((message) => {
         const seeded = message?.metadata?.reactions;
         if (Array.isArray(seeded) && seeded.length && !next[message.id]) {
-          next[message.id] = seeded.map((reaction) => ({
-            userId: reaction.userId,
-            emoji: reaction.emoji,
-          }));
+          next[message.id] = seeded.map((reaction) => ({ userId: reaction.userId, emoji: reaction.emoji }));
           changed = true;
         }
       });
@@ -1504,8 +593,7 @@ function MessagesPage() {
     });
   }, [messages]);
 
-  // Reactions live in public.content_reactions, not on the message row, so
-  // they are read separately for whichever transcript is on screen.
+  // Reactions live in public.content_reactions.
   const refreshMessageReactions = useCallback(async (messageIds) => {
     const ids = (messageIds || []).filter(Boolean).map((id) => String(id));
     if (!ids.length) return;
@@ -1514,8 +602,6 @@ function MessagesPage() {
       const loaded = response?.data || {};
       setMessageReactions((prev) => {
         const next = { ...prev };
-        // Only the ids just asked about are replaced — reactions for other
-        // threads already in state are left alone.
         ids.forEach((id) => {
           next[id] = loaded[id] || [];
         });
@@ -1526,51 +612,31 @@ function MessagesPage() {
     }
   }, []);
 
-  const visibleMessageIdKey = useMemo(
-    () => messages.map((message) => String(message.id)).join(","),
-    [messages]
-  );
+  const visibleMessageIdKey = useMemo(() => messages.map((message) => String(message.id)).join(","), [messages]);
 
   useEffect(() => {
     const ids = visibleMessageIdKey ? visibleMessageIdKey.split(",") : [];
     if (!ids.length) return undefined;
     void refreshMessageReactions(ids);
-    // Anyone else reacting writes to content_reactions, which lands here.
     return subscribeToReactions(REACTION_TARGET_MESSAGE, () => {
       void refreshMessageReactions(ids);
     });
   }, [visibleMessageIdKey, refreshMessageReactions]);
 
-  // One reaction per user per message. Choosing the emoji already set clears
-  // it; choosing a different one moves the reaction across rather than adding
-  // a second. The server applies the same rule, so tabs cannot diverge.
+  // One reaction per user per message; picking the same emoji clears it.
   const handleReactToMessage = useCallback(
     async (messageId, emoji) => {
       if (!dbUserId || !messageId) return;
       const targetId = String(messageId);
-
       setMessageReactions((prev) => {
         const current = prev[targetId] || [];
-        const mine = current.find(
-          (entry) => String(entry.userId) === String(dbUserId)
-        );
-        const withoutMine = current.filter(
-          (entry) => String(entry.userId) !== String(dbUserId)
-        );
-        const next =
-          mine && mine.emoji === emoji
-            ? withoutMine
-            : [...withoutMine, { userId: dbUserId, emoji }];
+        const mine = current.find((entry) => String(entry.userId) === String(dbUserId));
+        const withoutMine = current.filter((entry) => String(entry.userId) !== String(dbUserId));
+        const next = mine && mine.emoji === emoji ? withoutMine : [...withoutMine, { userId: dbUserId, emoji }];
         return { ...prev, [targetId]: next };
       });
-
       try {
-        await saveReaction({
-          targetType: REACTION_TARGET_MESSAGE,
-          targetId,
-          userId: dbUserId,
-          emoji,
-        });
+        await saveReaction({ targetType: REACTION_TARGET_MESSAGE, targetId, userId: dbUserId, emoji });
       } catch (err) {
         logFailure("Failed to save message reaction:", err);
       } finally {
@@ -1582,9 +648,7 @@ function MessagesPage() {
 
   const openSystemNotificationsThread = useCallback(() => {
     ensureMobileConversationHistory();
-    if (isMobileView) {
-      setMobilePanelView("conversation");
-    }
+    if (isMobileView) setMobilePanelView("conversation");
     setSystemUnreadCutoff(lastSystemViewedAt || null);
     setActiveSystemView(true);
     setActiveBookingsView(false);
@@ -1597,9 +661,7 @@ function MessagesPage() {
 
   const openBookingsThread = useCallback(() => {
     ensureMobileConversationHistory();
-    if (isMobileView) {
-      setMobilePanelView("conversation");
-    }
+    if (isMobileView) setMobilePanelView("conversation");
     setBookingsUnreadCutoff(lastBookingsViewedAt || null);
     setActiveBookingsView(true);
     setActiveSystemView(false);
@@ -1610,55 +672,19 @@ function MessagesPage() {
     setLastBookingsViewedAt(new Date().toISOString());
   }, [ensureMobileConversationHistory, isMobileView, lastBookingsViewedAt]);
 
-  // Left-bar filter pills. "system" opens the read-only system view in the
-  // conversation panel (as the System pin does); the rest just narrow the list.
-  const handleSelectMessageFilter = useCallback(
-    (nextFilter) => {
-      setMessageFilter(nextFilter);
-      if (nextFilter === "system") {
-        openSystemNotificationsThread();
-        return;
-      }
-      // Leaving the system/bookings feed via a chat-list filter → drop back into
-      // the most recent conversation in the newly filtered list.
-      if (activeSystemView || activeBookingsView) {
-        const candidates = visibleThreads.filter((thread) => {
-          if (nextFilter === "unread") return thread.hasUnread;
-          if (nextFilter === "customer") return threadIsCustomer(thread);
-          if (nextFilter === "team") return thread.type === "group" && !threadIsCustomer(thread);
-          return true;
-        });
-        const mostRecent = candidates[0] || visibleThreads[0] || null;
-        if (mostRecent) {
-          openThread(mostRecent.id, mostRecent);
-        }
-      }
-    },
-    [
-      activeSystemView,
-      activeBookingsView,
-      visibleThreads,
-      threadIsCustomer,
-      openSystemNotificationsThread,
-      openThread,
-    ]
+  // Customer summary for the details panel of a customer conversation.
+  const activeCustomerEmail = useMemo(
+    () => (activeThread?.members || []).find(memberIsCustomer)?.profile?.email || null,
+    [activeThread]
   );
-
-  // When a customer conversation is open, load the header summary
-  // (name, phone, vehicle, most recent job number) for that customer.
   useEffect(() => {
-    const customerMember = (activeThread?.members || []).find((member) => {
-      const role = String(member?.role || member?.profile?.role || "").toLowerCase();
-      return role.includes("customer");
-    });
-    const email = customerMember?.profile?.email;
-    if (!activeThread || !email) {
+    if (!activeCustomerEmail) {
       setCustomerDetail(null);
       return undefined;
     }
     let cancelled = false;
     setCustomerDetail(null);
-    fetch(`/api/messages/customer-detail?email=${encodeURIComponent(email)}`, {
+    fetch(`/api/messages/customer-detail?email=${encodeURIComponent(activeCustomerEmail)}`, {
       credentials: "same-origin",
     })
       .then((res) => (res.ok ? res.json() : null))
@@ -1671,13 +697,57 @@ function MessagesPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeThread]);
+  }, [activeCustomerEmail]);
 
+  // Live "who is on a job" signal for presence (same source as the top bar).
+  useEffect(() => {
+    if (!dbUserId || isPresentationMode()) return undefined;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/status/team-presence", { credentials: "include" });
+        const data = res.ok ? await res.json() : null;
+        if (!cancelled && Array.isArray(data?.working)) setWorkingStaff(data.working);
+      } catch {
+        // Presence falls back to "last seen" only.
+      }
+    };
+    load();
+    const timer = window.setInterval(load, PRESENCE_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [dbUserId]);
+
+  const presenceFor = useCallback(
+    (member) => {
+      if (!member) return null;
+      if (memberIsCustomer(member)) {
+        return {
+          tone: "external",
+          text: member.lastReadAt ? `Customer · read ${formatListTimestamp(member.lastReadAt)}` : "Customer · not opened yet",
+        };
+      }
+      const working = workingStaff.find((entry) => String(entry.userId) === String(member.userId));
+      if (working?.jobNumber) return { tone: "busy", text: `On job ${working.jobNumber}` };
+      if (member.lastReadAt && Date.now() - new Date(member.lastReadAt).getTime() < ACTIVE_WINDOW_MS) {
+        return { tone: "active", text: "Active now" };
+      }
+      return member.lastReadAt
+        ? { tone: null, text: `Last seen ${formatListTimestamp(member.lastReadAt)}${formatListTimestamp(member.lastReadAt).includes(":") ? "" : ` ${formatClock(member.lastReadAt)}`}` }
+        : { tone: null, text: "Not seen yet" };
+    },
+    [workingStaff]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Leave requests
+  // ---------------------------------------------------------------------------
   const submitLeaveDecision = useCallback(
     async (message, decision, reason = "") => {
       const absenceId = message?.metadata?.leaveRequest?.absenceId;
       if (!absenceId || !activeThreadId) return;
-
       setLeaveDecisionBusy(true);
       setLeaveDecisionError("");
       try {
@@ -1685,25 +755,17 @@ function MessagesPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({
-            decision,
-            reason,
-            threadId: activeThreadId,
-            messageId: message.id
-          })
+          body: JSON.stringify({ decision, reason, threadId: activeThreadId, messageId: message.id }),
         });
-
         const payload = await response.json().catch(() => null);
         if (!response.ok || !payload?.success) {
           throw new Error(payload?.message || "Unable to process leave request.");
         }
-
         if (leaveDeclineModal.open) {
           setLeaveDeclineModal({ open: false, message: null });
           setLeaveDeclineReason("");
         }
-
-        await openThread(activeThreadId, activeThread);
+        await openThread(activeThreadId, activeThread, { silent: true });
         await fetchThreads();
       } catch (error) {
         logFailure("Failed to process leave request decision:", error);
@@ -1716,19 +778,6 @@ function MessagesPage() {
     [activeThread, activeThreadId, fetchThreads, leaveDeclineModal.open, openThread]
   );
 
-  const handleApproveLeaveRequest = useCallback(
-    async (message) => {
-      await submitLeaveDecision(message, "approve");
-    },
-    [submitLeaveDecision]
-  );
-
-  const handleOpenDeclineLeaveRequest = useCallback((message) => {
-    setLeaveDecisionError("");
-    setLeaveDeclineReason("");
-    setLeaveDeclineModal({ open: true, message });
-  }, []);
-
   const handleConfirmDeclineLeaveRequest = useCallback(async () => {
     if (!leaveDeclineReason.trim() || !leaveDeclineModal.message) {
       setLeaveDecisionError("Enter a reason before declining this leave request.");
@@ -1737,29 +786,19 @@ function MessagesPage() {
     await submitLeaveDecision(leaveDeclineModal.message, "decline", leaveDeclineReason.trim());
   }, [leaveDeclineModal.message, leaveDeclineReason, submitLeaveDecision]);
 
+  // ---------------------------------------------------------------------------
+  // Creating conversations
+  // ---------------------------------------------------------------------------
   const connectCustomerToConversation = useCallback(
     async ({ threadId, customerQuery }) => {
-      if (!threadId || !dbUserId) {
-        throw new Error("Select a conversation before inviting a customer.");
-      }
-      if (!customerQuery) {
-        throw new Error("Customer name or email is required.");
-      }
-      const payload = await connectCustomerApi({
-        threadId,
-        actorId: dbUserId,
-        customerQuery
-      });
+      if (!threadId || !dbUserId) throw new Error("Select a conversation before inviting a customer.");
+      if (!customerQuery) throw new Error("Customer name or email is required.");
+      const payload = await connectCustomerApi({ threadId, actorId: dbUserId, customerQuery });
       const nextThread = payload?.thread || payload?.data;
-      if (!nextThread?.id) {
-        throw new Error("Customer conversation could not be created.");
-      }
+      if (!nextThread?.id) throw new Error("Customer conversation could not be created.");
       mergeThread(nextThread);
       await fetchThreads();
-      return {
-        thread: nextThread,
-        customer: payload?.customer || null
-      };
+      return { thread: nextThread, customer: payload?.customer || null };
     },
     [connectCustomerApi, dbUserId, fetchThreads, mergeThread]
   );
@@ -1769,16 +808,12 @@ function MessagesPage() {
       if (!dbUserId || !targetUserId) return false;
       setComposeError("");
       try {
-        const payload = await createThreadApi({
-          type: "direct",
-          createdBy: dbUserId,
-          targetUserId
-        });
+        const payload = await createThreadApi({ type: "direct", createdBy: dbUserId, targetUserId });
         const thread = payload?.data || payload?.thread;
         if (!thread) throw new Error("Thread could not be created.");
         mergeThread(thread);
         await fetchThreads();
-        await openThread(thread.id);
+        await openThread(thread.id, thread);
         return true;
       } catch (error) {
         logFailure("❌ Failed to start direct chat:", error);
@@ -1789,796 +824,440 @@ function MessagesPage() {
     [createThreadApi, dbUserId, fetchThreads, mergeThread, openThread]
   );
 
-  const handleCreateGroup = useCallback(async () => {
-    if (!dbUserId) return false;
-    if (selectedRecipients.length === 0) {
-      setComposeError("Select at least one colleague for the group.");
-      return false;
-    }
+  const resetNewConversation = useCallback(() => {
+    setComposeError("");
+    setSelectedRecipients([]);
+    setGroupName("");
+    setDirectorySearch("");
+    setNewDepartment("");
+    setIncludeDepartment(true);
+    setNewJobNumber("");
+    setComposeMode("direct");
+  }, []);
 
+  const handleOpenNewChatModal = useCallback(() => {
+    resetNewConversation();
+    setNewChatModalOpen(true);
+  }, [resetNewConversation]);
+
+  const closeNewChatModal = useCallback(() => {
+    setNewChatModalOpen(false);
+    resetNewConversation();
+  }, [resetNewConversation]);
+
+  const handleStartChat = useCallback(async () => {
+    if (!dbUserId) return;
+    setCreatingThread(true);
     setComposeError("");
     try {
+      if (composeMode === "direct") {
+        const selection = selectedRecipients[0];
+        if (!selection) {
+          setComposeError("Select someone to chat with.");
+          return;
+        }
+        if (await startDirectThread(selection.id)) closeNewChatModal();
+        return;
+      }
+      if (composeMode === "group" && !selectedRecipients.length) {
+        setComposeError("Select at least one colleague for the group.");
+        return;
+      }
       const payload = await createThreadApi({
         type: "group",
         createdBy: dbUserId,
         title: groupName,
-        memberIds: selectedRecipients.map((user) => user.id)
+        memberIds: selectedRecipients.map((entry) => entry.id),
+        conversationType: composeMode === "group" ? "staff" : composeMode,
+        department: newDepartment,
+        jobNumber: newJobNumber,
+        includeDepartment,
       });
       const thread = payload?.data || payload?.thread;
-      if (!thread) throw new Error("Group thread was not created.");
-      setSelectedRecipients([]);
-      setGroupName("");
-      setComposeMode("direct");
+      if (!thread) throw new Error("The conversation was not created.");
       mergeThread(thread);
       await fetchThreads();
-      await openThread(thread.id);
-      return true;
+      await openThread(thread.id, thread);
+      closeNewChatModal();
     } catch (error) {
-      logFailure("❌ Failed to create group:", error);
-      setComposeError(error.message || "Unable to create group");
-      return false;
+      logFailure("❌ Failed to create conversation:", error);
+      setComposeError(error.message || "Unable to create the conversation.");
+    } finally {
+      setCreatingThread(false);
     }
   }, [
-  createThreadApi,
-  dbUserId,
-  fetchThreads,
-  groupName,
-  mergeThread,
-  openThread,
-  selectedRecipients]
-  );
+    closeNewChatModal,
+    composeMode,
+    createThreadApi,
+    dbUserId,
+    fetchThreads,
+    groupName,
+    includeDepartment,
+    mergeThread,
+    newDepartment,
+    newJobNumber,
+    openThread,
+    selectedRecipients,
+    startDirectThread,
+  ]);
 
-  const handleOpenNewChatModal = useCallback(() => {
-    setComposeError("");
-    setSelectedRecipients([]);
-    setGroupName("");
-    setDirectorySearch("");
-    setComposeMode("direct");
-    setNewChatModalOpen(true);
-  }, []);
+  const canInitiateChat =
+    composeMode === "direct"
+      ? selectedRecipients.length === 1
+      : composeMode === "group"
+        ? selectedRecipients.length > 0
+        : composeMode === "department"
+          ? Boolean(newDepartment)
+          : composeMode === "job"
+            ? Boolean(newJobNumber.trim())
+            : Boolean(groupName.trim()) && (selectedRecipients.length > 0 || (newDepartment && includeDepartment));
 
-  const closeNewChatModal = useCallback(() => {
-    setNewChatModalOpen(false);
-    setComposeError("");
-    setSelectedRecipients([]);
-    setDirectorySearch("");
-    setGroupName("");
-    setComposeMode("direct");
-  }, []);
-
-  const handleStartChat = useCallback(async () => {
+  const handleDirectoryUser = (userEntry) => {
     if (composeMode === "direct") {
-      const selection = selectedRecipients[0];
-      if (!selection) {
-        setComposeError("Select someone to chat with.");
-        return;
-      }
-      const success = await startDirectThread(selection.id);
-      if (success) {
-        closeNewChatModal();
-      }
+      setSelectedRecipients((prev) => (prev[0]?.id === userEntry.id ? [] : [userEntry]));
       return;
     }
-    const success = await handleCreateGroup();
-    if (success) {
-      closeNewChatModal();
-    }
-  }, [
-  closeNewChatModal,
-  composeMode,
-  handleCreateGroup,
-  selectedRecipients,
-  startDirectThread]
-  );
+    setSelectedRecipients((prev) =>
+      prev.some((entry) => entry.id === userEntry.id)
+        ? prev.filter((entry) => entry.id !== userEntry.id)
+        : [...prev, userEntry]
+    );
+  };
 
-  const handleMessageDraftChange = useCallback((event) => {
-    const value = event.target.value;
-    setMessageDraft(value);
+  // ---------------------------------------------------------------------------
+  // Drafting & sending
+  // ---------------------------------------------------------------------------
+  const focusComposer = useCallback(() => {
+    window.requestAnimationFrame(() => composerInputRef.current?.focus());
+  }, []);
 
-    // Detect slash command at cursor position
-    const cursorPos = event.target.selectionStart;
-    const textBeforeCursor = value.substring(0, cursorPos);
-    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
-
-    if (lastSlashIndex !== -1) {
-      const textAfterSlash = textBeforeCursor.substring(lastSlashIndex + 1);
-      // Only show suggestions if there's no space after the slash
-      if (!textAfterSlash.includes(' ')) {
-        const searchTerm = textAfterSlash.toLowerCase();
-        const filtered = availableCommands.filter((cmd) =>
-        cmd.pattern.toLowerCase().startsWith(searchTerm) ||
-        cmd.command.toLowerCase().includes(searchTerm) ||
-        searchTerm === '' && cmd.pattern === '' // Show /[number] when typing just /
-        );
-        setCommandSuggestions(filtered);
-        setShowCommandSuggestions(filtered.length > 0);
-      } else {
-        setShowCommandSuggestions(false);
+  const handleAddFiles = useCallback(
+    async (files) => {
+      if (!activeThreadId || !files.length) return;
+      const room = ATTACHMENT_MAX_PER_MESSAGE - pendingAttachments.length;
+      if (room <= 0) {
+        setComposeWarning(`A message can carry up to ${ATTACHMENT_MAX_PER_MESSAGE} files.`);
+        return;
       }
-    } else {
-      setShowCommandSuggestions(false);
-    }
-  }, [availableCommands]);
-
-  const handleSelectCommand = useCallback((command) => {
-    const cursorPos = document.activeElement?.selectionStart || messageDraft.length;
-    const textBeforeCursor = messageDraft.substring(0, cursorPos);
-    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
-
-    if (lastSlashIndex !== -1) {
-      const textAfter = messageDraft.substring(cursorPos);
-      const newText = messageDraft.substring(0, lastSlashIndex) + command.autocomplete + textAfter;
-      setMessageDraft(newText);
-
-      // Set cursor position after the autocompleted text
-      // Need to do this in the next tick to ensure the textarea is updated
-      setTimeout(() => {
-        const textarea = document.getElementById('message-textarea');
-        if (textarea) {
-          const newCursorPos = lastSlashIndex + command.autocomplete.length;
-          textarea.focus();
-          textarea.setSelectionRange(newCursorPos, newCursorPos);
-        }
-      }, 0);
-    }
-    setShowCommandSuggestions(false);
-  }, [messageDraft]);
-
-  const handleInsertCommandFromHelp = useCallback((command) => {
-    // Insert command at the end of current message draft
-    const newText = messageDraft ? messageDraft + ' ' + command.autocomplete : command.autocomplete;
-    setMessageDraft(newText);
-
-    // Close help modal
-    setCommandHelpOpen(false);
-
-    // Focus textarea and set cursor at end
-    setTimeout(() => {
-      const textarea = document.getElementById('message-textarea');
-      if (textarea) {
-        textarea.focus();
-        const cursorPos = newText.length;
-        textarea.setSelectionRange(cursorPos, cursorPos);
-      }
-    }, 100);
-  }, [messageDraft]);
-
-  const handleSendMessage = useCallback(
-    async (event) => {
-      event?.preventDefault();
-      if (!messageDraft.trim() || !activeThreadId || !dbUserId) return;
-      setShowCommandSuggestions(false);
-      setSending(true);
-      setConversationError("");
+      setUploading(true);
+      setComposeWarning(files.length > room ? `Only the first ${room} file(s) were added.` : "");
       try {
-        const parsedMetadata =
-        (await parseSlashCommandMetadata(messageDraft, activeThread)) || null;
-        const addCustomerQuery = parsedMetadata?.addCustomerQuery;
-        if (parsedMetadata && "addCustomerQuery" in parsedMetadata) {
-          delete parsedMetadata.addCustomerQuery;
+        for (const file of files.slice(0, room)) {
+          const descriptor = await uploadAttachment(activeThreadId, file, { actorId: dbUserId });
+          setPendingAttachments((prev) => [
+            ...prev,
+            {
+              id: descriptor.path,
+              fileName: descriptor.fileName,
+              mimeType: descriptor.mimeType,
+              sizeBytes: descriptor.sizeBytes,
+              isImage: descriptor.isImage,
+              downloadUrl: buildAttachmentUrl(activeThreadId, descriptor.path),
+              descriptor,
+            },
+          ]);
         }
-
-        let targetThreadId = activeThreadId;
-        let cleanedContent = messageDraft;
-
-        if (addCustomerQuery) {
-          const { thread: nextThread, customer } =
-          await connectCustomerToConversation({
-            threadId: activeThreadId,
-            customerQuery: addCustomerQuery
-          });
-          targetThreadId = nextThread.id;
-          cleanedContent = stripAddCustomerCommands(messageDraft);
-          if (!cleanedContent) {
-            const label =
-            customer?.name || customer?.email || addCustomerQuery;
-            cleanedContent = label ?
-            `Customer ${label} was added to this chat.` :
-            "Customer invited to this chat.";
-          }
-        }
-
-        const finalContent = cleanedContent.trim();
-        if (!finalContent) {
-          throw new Error("Message is empty after processing commands.");
-        }
-
-        const replyMetadata = replyTo ?
-        {
-          replyTo: {
-            id: replyTo.id,
-            senderName: replyTo.sender?.name || "Unknown",
-            contentSnippet: String(replyTo.content || "").slice(0, 200)
-          }
-        } :
-        null;
-        const mergedMetadata = {
-          ...(parsedMetadata || {}),
-          ...(replyMetadata || {})
-        };
-        const payload = await sendThreadMessage(targetThreadId, {
-          senderId: dbUserId,
-          content: finalContent,
-          metadata: Object.keys(mergedMetadata).length ? mergedMetadata : null
-        });
-        const newMessage = payload?.data || payload?.message;
-        if (!newMessage) throw new Error("Message payload missing.");
-        setMessageDraft("");
-        setReplyTo(null);
-        if (targetThreadId === activeThreadId) {
-          setMessages((prev) => [...prev, newMessage]);
-        } else {
-          setMessages([newMessage]);
-        }
-        await fetchThreads();
-        await openThread(targetThreadId);
       } catch (error) {
-        logFailure("❌ Failed to send message:", error);
-        setConversationError(error.message || "Unable to send message.");
+        logFailure("❌ Failed to upload attachment:", error);
+        setConversationError(error.message || "Unable to upload the file.");
       } finally {
-        setSending(false);
+        setUploading(false);
       }
     },
-    [
+    [activeThreadId, dbUserId, pendingAttachments.length, uploadAttachment]
+  );
+
+  const saveEdit = useCallback(async () => {
+    if (!editingMessage || !activeThreadId) return;
+    const content = messageDraft.trim();
+    if (!content) return;
+    setSending(true);
+    try {
+      const payload = await messageAction(activeThreadId, {
+        actorId: dbUserId,
+        messageId: editingMessage.id,
+        action: "edit",
+        content,
+      });
+      const updated = payload?.data;
+      if (updated) setMessages((prev) => prev.map((message) => (message.id === updated.id ? updated : message)));
+      setEditingMessage(null);
+      setMessageDraft("");
+    } catch (error) {
+      setConversationError(error.message || "Unable to edit the message.");
+    } finally {
+      setSending(false);
+    }
+  }, [activeThreadId, dbUserId, editingMessage, messageAction, messageDraft]);
+
+  const handleSendMessage = useCallback(async () => {
+    if (editingMessage) {
+      await saveEdit();
+      return;
+    }
+    if ((!messageDraft.trim() && !pendingAttachments.length) || !activeThread || !dbUserId) return;
+
+    const parsed = parseDraft(messageDraft, { members: activeThread.members || [] });
+    if (parsed.errors.length) {
+      setConversationError(parsed.errors.join(" "));
+      return;
+    }
+
+    setSending(true);
+    setConversationError("");
+    setComposeWarning("");
+    const warnings = [];
+    try {
+      let targetThreadId = activeThreadId;
+      let content = parsed.content.replace(ADD_CUSTOMER_TOKEN_REGEX, "").trim();
+
+      if (parsed.addCustomer) {
+        const { thread: nextThread, customer } = await connectCustomerToConversation({
+          threadId: activeThreadId,
+          customerQuery: parsed.addCustomer,
+        });
+        targetThreadId = nextThread.id;
+        if (!content) {
+          const label = customer?.name || customer?.email || parsed.addCustomer;
+          content = `Customer ${label} was added to this chat.`;
+        }
+      }
+
+      // Resolve referenced records so only real ones are linked.
+      let links = [];
+      if (parsed.references.length) {
+        try {
+          const resolved = await resolveRecords(parsed.references);
+          links = resolved?.data?.links || [];
+          const unresolved = resolved?.data?.unresolved || [];
+          if (unresolved.length) {
+            warnings.push(`Not found, so not linked: ${unresolved.map((entry) => entry.label).join(", ")}.`);
+          }
+        } catch {
+          warnings.push("Linked records could not be checked just now; the message was still sent.");
+        }
+      }
+
+      const threadUpdates = {};
+      if (links.length) threadUpdates.addLinks = links;
+      if (parsed.status) threadUpdates.status = parsed.status;
+      if (parsed.priority) threadUpdates.priority = parsed.priority;
+      if (parsed.assign) threadUpdates.assignedTo = parsed.assign.userId;
+
+      const baseMetadata = {};
+      if (replyTo) {
+        baseMetadata.replyTo = {
+          id: replyTo.id,
+          senderName: replyTo.sender?.name || "Unknown",
+          contentSnippet: String(replyTo.content || "").slice(0, 200),
+        };
+      }
+      if (pendingAttachments.length) baseMetadata.attachments = pendingAttachments.map((file) => file.descriptor);
+      if (links.length) baseMetadata.links = links;
+      const jobLink = links.find((link) => link.recordType === "job_card");
+      if (jobLink) baseMetadata.jobNumber = jobLink.recordId; // read by job-card message views
+
+      const events = [];
+      if (parsed.status) events.push(`Status set to ${getStatus(parsed.status).label}`);
+      if (parsed.priority) events.push(`Priority set to ${getPriority(parsed.priority).label}`);
+      if (parsed.assign) events.push(`Owner set to ${parsed.assign.name}`);
+
+      const sends = [];
+      if (content || baseMetadata.attachments) sends.push({ content, metadata: baseMetadata });
+      if (parsed.task) {
+        sends.push({
+          content: parsed.task.text,
+          metadata: { ...(sends.length ? {} : baseMetadata), task: { text: parsed.task.text, status: "open", createdBy: dbUserId } },
+        });
+      }
+      if (parsed.reminder) {
+        sends.push({
+          content: parsed.reminder.text,
+          metadata: { ...(sends.length ? {} : baseMetadata), reminder: { ...parsed.reminder, status: "open", createdBy: dbUserId } },
+        });
+      }
+      if (events.length) sends.push({ content: events.join(" · "), metadata: { event: true } });
+      if (!sends.length) throw new Error("Message is empty after processing commands.");
+
+      let latestThread = null;
+      const sent = [];
+      for (let index = 0; index < sends.length; index += 1) {
+        const payload = await sendThreadMessage(targetThreadId, {
+          senderId: dbUserId,
+          content: sends[index].content,
+          metadata: Object.keys(sends[index].metadata).length ? sends[index].metadata : null,
+          threadUpdates: index === 0 && Object.keys(threadUpdates).length ? threadUpdates : undefined,
+        });
+        const newMessage = payload?.data || payload?.message;
+        if (newMessage) sent.push(newMessage);
+        if (payload?.thread) latestThread = payload.thread;
+        if (payload?.warning) warnings.push(payload.warning);
+      }
+
+      setMessageDraft("");
+      setReplyTo(null);
+      setPendingAttachments([]);
+      if (latestThread) mergeThread(latestThread);
+      if (targetThreadId === activeThreadId) {
+        setMessages((prev) => [...prev, ...sent]);
+      }
+      if (warnings.length) setComposeWarning(warnings.join(" "));
+      await fetchThreads();
+      await openThread(targetThreadId, null, { silent: targetThreadId === activeThreadId });
+    } catch (error) {
+      logFailure("❌ Failed to send message:", error);
+      setConversationError(error.message || "Unable to send message.");
+    } finally {
+      setSending(false);
+    }
+  }, [
     activeThread,
     activeThreadId,
     connectCustomerToConversation,
     dbUserId,
+    editingMessage,
     fetchThreads,
+    mergeThread,
     messageDraft,
     openThread,
+    pendingAttachments,
     replyTo,
-    sendThreadMessage]
-
-  );
-
-  useEffect(() => {
-    if (!dbUserId) return;
-    fetchThreads();
-  }, [dbUserId, fetchThreads]);
-
-  // Deep-link from job card: find customer thread and pre-fill /job command
-  useEffect(() => {
-    if (deepLinkProcessedRef.current) return; // Only run once
-    if (!router.isReady || !threads.length || loadingThreads) return; // Wait for threads to load
-    const { jobNumber, customerEmail, customerName } = router.query; // Read job card params
-    if (!jobNumber) return; // No deep-link params present
-
-    deepLinkProcessedRef.current = true; // Mark as processed
-
-    // Find a thread that has a member matching the customer email or name
-    const normalise = (value = "") => (value || "").toLowerCase().trim();
-    const customerThread = threads.find((thread) => {
-      const members = thread.members || [];
-      return members.some((member) => {
-        const profile = member.profile || {};
-        const role = normalise(member.role);
-        const isCustomerRole = role.includes("customer");
-        if (!isCustomerRole) return false; // Only match customer members
-        if (customerEmail && normalise(profile.email) === normalise(customerEmail)) return true;
-        if (customerName && normalise(profile.name) === normalise(customerName)) return true;
-        return false;
-      });
-    });
-
-    if (customerThread && !isMobileView) {
-      openThread(customerThread.id, customerThread); // Open the matching thread
-      setMessageDraft(`/job${jobNumber} `); // Pre-fill draft with job reference
-    } else {
-      // No existing customer thread found — pre-fill draft for when user starts a new conversation
-      setMessageDraft(`/job${jobNumber} `);
-    }
-
-    // Clean query params from URL without navigation
-    router.replace("/messages", undefined, { shallow: true });
-  }, [isMobileView, router.isReady, router.query, threads, loadingThreads, openThread]);
-
-  // Collaboration deep-link from the top-bar Team workspace (Phase 4.4):
-  //   /messages?to=<userId>                           → open/start a 1:1 DM
-  //   /messages?compose=group&members=<id,id>&title=  → create/open a group chat
-  // Reuses the existing startDirectThread / createThread primitives — no new
-  // messaging backend. Runs once; needs only the signed-in user (not threads).
-  useEffect(() => {
-    if (collabDeepLinkRef.current) return;
-    if (!router.isReady || !dbUserId) return;
-    const { to, compose, members, title } = router.query;
-    if (!to && compose !== "group") return;
-    collabDeepLinkRef.current = true;
-
-    (async () => {
-      try {
-        if (to) {
-          await startDirectThread(String(to));
-        } else if (compose === "group" && members) {
-          const memberIds = String(members)
-            .split(",")
-            .map((id) => id.trim())
-            .filter(Boolean);
-          if (memberIds.length) {
-            const payload = await createThreadApi({
-              type: "group",
-              createdBy: dbUserId,
-              title: title ? String(title) : "",
-              memberIds,
-            });
-            const thread = payload?.data || payload?.thread;
-            if (thread) {
-              mergeThread(thread);
-              await fetchThreads();
-              await openThread(thread.id);
-            }
-          }
-        }
-      } catch (error) {
-        logFailure("❌ Collaboration deep-link failed:", error);
-      } finally {
-        router.replace("/messages", undefined, { shallow: true });
-      }
-    })();
-  }, [
-    router.isReady,
-    router.query,
-    dbUserId,
-    startDirectThread,
-    createThreadApi,
-    mergeThread,
-    fetchThreads,
-    openThread,
-    router,
+    resolveRecords,
+    saveEdit,
+    sendThreadMessage,
   ]);
 
-  useEffect(() => {
-    if (!dbUserId) return;
-    const trimmed = directorySearch.trim();
-    if (!trimmed) {
-      return;
-    }
-    const handle = setTimeout(() => {
-      fetchDirectory(trimmed);
-    }, 350);
-    return () => clearTimeout(handle);
-  }, [dbUserId, directorySearch, fetchDirectory]);
+  const handleInsertCommandFromHelp = useCallback(
+    (command) => {
+      setMessageDraft((prev) => (prev && !/\s$/.test(prev) ? `${prev} ${command.insert}` : `${prev}${command.insert}`));
+      setCommandHelpOpen(false);
+      focusComposer();
+    },
+    [focusComposer]
+  );
 
-  useEffect(() => {
-    if (!dbUserId || !newChatModalOpen) return;
-    if (directorySearch.trim()) return;
-    let cancelled = false;
-    setDirectoryLoading(true);
-    const loadDefault = async () => {
+  // ---------------------------------------------------------------------------
+  // Message actions
+  // ---------------------------------------------------------------------------
+  const handleMessageAction = useCallback(
+    async (message, action) => {
+      if (!message || !activeThreadId) return;
+      if (action === "reply-start") {
+        setEditingMessage(null);
+        setReplyTo(message);
+        focusComposer();
+        return;
+      }
+      if (action === "edit-start") {
+        setReplyTo(null);
+        setEditingMessage(message);
+        setMessageDraft(message.content || "");
+        focusComposer();
+        return;
+      }
+      if (action === "delete" && !window.confirm("Delete this message for everyone?")) return;
+
+      setActionBusyId(message.id);
       try {
-        const payload = await listDirectoryUsers({
-          limit: 100,
-          exclude: dbUserId
-        });
-        if (!cancelled) {
-          setDirectory(sortDirectoryEntries(payload?.data || payload?.users || []));
-        }
+        const payload = await messageAction(activeThreadId, { actorId: dbUserId, messageId: message.id, action });
+        const updated = payload?.data;
+        if (updated) setMessages((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
       } catch (error) {
-        if (!cancelled) {
-          logFailure("❌ Failed to load default directory:", error);
-          setDirectory([]);
-        }
+        setConversationError(error.message || "That action could not be completed.");
       } finally {
-        if (!cancelled) {
-          setDirectoryLoading(false);
-        }
+        setActionBusyId(null);
       }
-    };
-    loadDefault();
-    return () => {
-      cancelled = true;
-    };
-  }, [dbUserId, listDirectoryUsers, newChatModalOpen, directorySearch]);
+    },
+    [activeThreadId, dbUserId, focusComposer, messageAction]
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    const loadSystemNotifications = async () => {
-      setSystemLoading(true);
-      setSystemError("");
-      try {
-        const notesResult = await supabase.
-        from("notifications").
-        select("notification_id, message, created_at, target_role").
-        or("target_role.ilike.%customer%,target_role.is.null").
-        order("created_at", { ascending: false }).
-        limit(5);
-        if (notesResult.error) throw notesResult.error;
-        const baseNotes = (notesResult.data || []).map((row) => ({
-          ...row,
-          kind: "notification",
-        }));
-        if (!cancelled) {
-          setSystemNotifications(baseNotes);
-        }
-      } catch (fetchError) {
-        if (!cancelled) {
-          setSystemError(fetchError?.message || "Unable to load system notifications.");
-          setSystemNotifications([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setSystemLoading(false);
-        }
-      }
-    };
-
-    loadSystemNotifications();
-    const channel = supabase.
-    channel("admin-system-notifications").
-    on(
-      "postgres_changes",
-      { schema: "public", table: "notifications", event: "INSERT" },
-      (payload) => {
-        const entry = payload?.new;
-        if (!entry) return;
-        const targetRole = (entry.target_role || "").toLowerCase();
-        if (targetRole && !targetRole.includes("customer")) return;
-        setSystemNotifications((prev) => {
-          const next = [{ ...entry, kind: "notification" }, ...prev];
-          return next.slice(0, 5);
-        });
-      }
-    ).
-    subscribe();
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
+  const registerMessageNode = useCallback((id, node) => {
+    if (node) messageNodesRef.current.set(id, node);
+    else messageNodesRef.current.delete(id);
   }, []);
 
+  const jumpToMessage = useCallback((messageId) => {
+    const node = messageNodesRef.current.get(messageId);
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+    setJumpHighlightId(messageId);
+    window.setTimeout(() => setJumpHighlightId((current) => (current === messageId ? null : current)), 2500);
+    if (isMobileView || !window.matchMedia("(min-width: 1600px)").matches) toggleDetails(false);
+  }, [isMobileView, toggleDetails]);
+
+  // ---------------------------------------------------------------------------
+  // In-conversation search
+  // ---------------------------------------------------------------------------
+  const searchMatches = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!searchOpen || !term) return [];
+    return messages
+      .filter((message) => !message.metadata?.deleted)
+      .filter((message) =>
+        `${readableText(message.content, userRoles)} ${message.sender?.name || ""}`.toLowerCase().includes(term)
+      )
+      .map((message) => message.id);
+  }, [messages, searchOpen, searchTerm, userRoles]);
+
   useEffect(() => {
-    let cancelled = false;
-    const loadBookingNotifications = async () => {
-      setBookingsLoading(true);
-      setBookingsError("");
+    setSearchIndex(searchMatches.length ? searchMatches.length - 1 : 0);
+  }, [searchMatches.length, searchTerm]);
+
+  const currentSearchId = searchMatches[searchIndex] || null;
+  useEffect(() => {
+    if (!currentSearchId) return;
+    messageNodesRef.current.get(currentSearchId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [currentSearchId]);
+
+  // ---------------------------------------------------------------------------
+  // Conversation settings
+  // ---------------------------------------------------------------------------
+  const handleUpdateSettings = useCallback(
+    async (patch) => {
+      if (!activeThreadId || !dbUserId) return;
+      setSettingsBusy(true);
+      setSettingsError("");
       try {
-        const requestsResult = canSeeCustomerRequests
-          ? await fetch("/api/messages/customer-requests", { credentials: "same-origin" })
-            .then((res) => (res.ok ? res.json() : { items: [] }))
-            .catch(() => ({ items: [] }))
-          : { items: [] };
-        const requestNotes = (requestsResult?.items || []).map((req) => ({
-          notification_id: `event-${req.event_id}`,
-          kind: "customer_request",
-          event_id: req.event_id,
-          activity_type: req.activity_type,
-          type_label: req.type_label,
-          customer_name: req.customer_name,
-          vehicle_label: req.vehicle_label,
-          vehicle_reg: req.vehicle_reg,
-          description: req.description,
-          preferred_date: req.preferred_date,
-          message: `${req.type_label} ${req.customer_name}${
-            req.vehicle_label ? ` · ${req.vehicle_label}` : ""
-          }`,
-          created_at: req.occurred_at,
-          target_role: "customer",
-        }));
-        if (!cancelled) {
-          setBookingNotifications(requestNotes);
+        const payload = await updateThread(activeThreadId, { actorId: dbUserId, ...patch });
+        const thread = payload?.data || payload?.thread;
+        if (thread) mergeThread(thread);
+
+        // Workflow changes are posted into the conversation so everyone sees
+        // who changed what.
+        const events = [];
+        if (patch.status) events.push(`Status set to ${getStatus(patch.status).label}`);
+        if (patch.priority) events.push(`Priority set to ${getPriority(patch.priority).label}`);
+        if (patch.assignedTo !== undefined) {
+          const owner = (activeThread?.members || []).find((member) => member.userId === patch.assignedTo);
+          events.push(owner ? `Owner set to ${owner.profile?.name}` : "Owner cleared");
         }
-      } catch (fetchError) {
-        if (!cancelled) {
-          setBookingsError(fetchError?.message || "Unable to load bookings.");
-          setBookingNotifications([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setBookingsLoading(false);
-        }
-      }
-    };
-
-    loadBookingNotifications();
-    const channel = supabase.
-    channel("admin-booking-requests").
-    on(
-      "postgres_changes",
-      { schema: "public", table: "customer_activity_events", event: "INSERT" },
-      (payload) => {
-        const entry = payload?.new;
-        if (!entry) return;
-        if (entry.activity_type !== "booking_request") return;
-        loadBookingNotifications();
-      }
-    ).
-    subscribe();
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
-  }, [canSeeCustomerRequests]);
-
-  useEffect(() => {
-    if (!dbUserId || typeof window === "undefined") return undefined;
-
-    const threadIds = threads.map((thread) => thread.id).filter(Boolean);
-    const channel = supabase.channel(`messages-refresh-${dbUserId}`);
-
-    if (threadIds.length) {
-      const refreshFromMessageChange = (payload) => {
-        const row = payload?.new;
-        if (!row) return;
-        fetchThreads();
-        if (activeThread && activeThread.id === row.thread_id && row.sender_id !== dbUserId) {
-          openThread(activeThread.id, { ...activeThread, hasUnread: false });
-        }
-      };
-
-      channel.on(
-        "postgres_changes",
-        {
-          schema: "public",
-          table: "messages",
-          event: "INSERT",
-          filter: `thread_id=in.(${threadIds.join(",")})`
-        },
-        refreshFromMessageChange
-      );
-      channel.on(
-        "postgres_changes",
-        {
-          schema: "public",
-          table: "messages",
-          event: "UPDATE",
-          filter: `thread_id=in.(${threadIds.join(",")})`
-        },
-        refreshFromMessageChange
-      );
-    }
-
-    channel.on(
-      "postgres_changes",
-      {
-        schema: "public",
-        table: "message_thread_members",
-        event: "UPDATE",
-        filter: `user_id=eq.${dbUserId}`
-      },
-      () => {
-        fetchThreads();
-      }
-    );
-
-    channel.subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [activeThread, dbUserId, fetchThreads, openThread, threads]);
-
-  useEffect(() => {
-    if (!visibleThreads.length) {
-      setActiveThreadId(null);
-      setMessages([]);
-      return;
-    }
-    if (isMobileView) {
-      return;
-    }
-    if (isSystemThreadActive) {
-      return;
-    }
-    if (!activeThreadId) {
-      openThread(visibleThreads[0].id, visibleThreads[0]);
-    }
-  }, [visibleThreads, activeThreadId, isSystemThreadActive, isMobileView, openThread]);
-
-  useEffect(() => {
-    if (scrollerRef.current) {
-      scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  useEffect(() => {
-    if (!isMobileView || mobilePanelView !== "conversation") return;
-    const frame = window.requestAnimationFrame(() => {
-      if (!scrollerRef.current) return;
-      scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [activeThreadId, isSystemThreadActive, isMobileView, messages.length, mobilePanelView]);
-
-  useEffect(() => {
-    const previousKey = activeUnreadMarkerKeyRef.current;
-    if (previousKey && previousKey !== currentUnreadMarkerKey) {
-      dismissUnreadMarker(previousKey);
-    }
-    activeUnreadMarkerKeyRef.current = currentUnreadMarkerKey;
-  }, [currentUnreadMarkerKey, dismissUnreadMarker]);
-
-  useEffect(() => {
-    if (!showThreadUnreadMarker || !activeThreadUnreadMarkerKey || !threadUnreadMarkerEl) return;
-    if (dismissedUnreadMarkers[activeThreadUnreadMarkerKey]) return;
-    let observer = null;
-    observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
-        if (unreadMarkerTimersRef.current.has(activeThreadUnreadMarkerKey)) return;
-        const timeoutId = window.setTimeout(() => {
-          dismissUnreadMarker(activeThreadUnreadMarkerKey);
-        }, 30000);
-        unreadMarkerTimersRef.current.set(activeThreadUnreadMarkerKey, timeoutId);
-      },
-      { threshold: 0.25 }
-    );
-    observer.observe(threadUnreadMarkerEl);
-    return () => {
-      if (observer) observer.disconnect();
-    };
-  }, [
-  showThreadUnreadMarker,
-  activeThreadUnreadMarkerKey,
-  threadUnreadMarkerEl,
-  dismissUnreadMarker,
-  dismissedUnreadMarkers]
-  );
-
-  useEffect(() => {
-    if (!showSystemUnreadMarker || !systemUnreadMarkerKey || !systemUnreadMarkerEl) return;
-    if (dismissedUnreadMarkers[systemUnreadMarkerKey]) return;
-    let observer = null;
-    observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
-        if (unreadMarkerTimersRef.current.has(systemUnreadMarkerKey)) return;
-        const timeoutId = window.setTimeout(() => {
-          dismissUnreadMarker(systemUnreadMarkerKey);
-        }, 30000);
-        unreadMarkerTimersRef.current.set(systemUnreadMarkerKey, timeoutId);
-      },
-      { threshold: 0.25 }
-    );
-    observer.observe(systemUnreadMarkerEl);
-    return () => {
-      if (observer) observer.disconnect();
-    };
-  }, [
-  showSystemUnreadMarker,
-  systemUnreadMarkerKey,
-  systemUnreadMarkerEl,
-  dismissUnreadMarker,
-  dismissedUnreadMarkers]
-  );
-
-  useEffect(
-    () => () => {
-      const activeKey = activeUnreadMarkerKeyRef.current;
-      if (activeKey) dismissUnreadMarker(activeKey);
-      unreadMarkerTimersRef.current.forEach((timerId) => {
-        window.clearTimeout(timerId);
-      });
-      unreadMarkerTimersRef.current.clear();
-    },
-    [dismissUnreadMarker]
-  );
-
-  // Dismiss the unread marker when the user switches away (tab hidden / page reload)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        const activeKey = activeUnreadMarkerKeyRef.current;
-        if (activeKey) dismissUnreadMarker(activeKey);
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [dismissUnreadMarker]);
-
-  useEffect(() => {
-    setGroupSearchTerm("");
-    setGroupSearchResults([]);
-    setGroupManageError("");
-  }, [activeThreadId]);
-
-  useEffect(() => {
-    if (!activeThread || activeThread.type !== "group") {
-      setGroupEditTitle("");
-      setGroupEditModalOpen(false);
-      setGroupEditError("");
-      setGroupEditBusy(false);
-      return;
-    }
-    setGroupEditTitle(activeThread.title || "");
-  }, [activeThread]);
-
-  useEffect(() => {
-    if (!threadSelectionMode) {
-      setSelectedThreadIds([]);
-      return;
-    }
-    setSelectedThreadIds((prev) =>
-    prev.filter((threadId) => threads.some((thread) => thread.id === threadId))
-    );
-  }, [threadSelectionMode, threads]);
-
-  useEffect(() => {
-    if (
-    !isGroupLeader ||
-    !activeThread ||
-    activeThread.type !== "group" ||
-    !groupSearchTerm.trim() ||
-    groupSearchTerm.trim().length < 2)
-    {
-      setGroupSearchResults([]);
-      setGroupSearchLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setGroupSearchLoading(true);
-    const excludeIds = [
-    ...new Set([
-    ...(activeThread?.members || []).map((member) => member.userId),
-    dbUserId]
-    )].
-    join(",");
-
-    const runSearch = async () => {
-      try {
-        const payload = await listDirectoryUsers({
-          q: groupSearchTerm,
-          exclude: excludeIds
-        });
-        if (!cancelled) {
-          setGroupSearchResults(payload?.data || payload?.users || []);
+        if (events.length) {
+          const sent = await sendThreadMessage(activeThreadId, {
+            senderId: dbUserId,
+            content: events.join(" · "),
+            metadata: { event: true },
+          });
+          if (sent?.data) setMessages((prev) => [...prev, sent.data]);
         }
       } catch (error) {
-        if (!cancelled) {
-          logFailure("❌ Group search failed:", error);
-          setGroupSearchResults([]);
-        }
+        setSettingsError(error.message || "The setting could not be saved.");
       } finally {
-        if (!cancelled) {
-          setGroupSearchLoading(false);
-        }
+        setSettingsBusy(false);
       }
-    };
+    },
+    [activeThread, activeThreadId, dbUserId, mergeThread, sendThreadMessage, updateThread]
+  );
 
-    runSearch();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeThread, dbUserId, groupSearchTerm, isGroupLeader, listDirectoryUsers]);
-
-  const handleDirectoryUser = (userEntry) => {
-    if (composeMode === "direct") {
-      setSelectedRecipients((prev) => {
-        if (prev[0]?.id === userEntry.id) {
-          return [];
-        }
-        return [userEntry];
-      });
-      return;
-    }
-
-    setSelectedRecipients((prev) => {
-      const exists = prev.some((user) => user.id === userEntry.id);
-      if (exists) {
-        return prev.filter((user) => user.id !== userEntry.id);
-      }
-      return [...prev, userEntry];
-    });
-  };
-
-  const isRecipientSelected = (userEntry) =>
-  selectedRecipients.some((user) => user.id === userEntry.id);
-
+  // ---------------------------------------------------------------------------
+  // Group management
+  // ---------------------------------------------------------------------------
   const handleAddMemberToGroup = useCallback(
     async (userId) => {
       if (!activeThreadId || !dbUserId || !userId) return;
       setGroupManageBusy(true);
       setGroupManageError("");
       try {
-        const payload = await addMembers(activeThreadId, {
-          actorId: dbUserId,
-          userIds: [userId]
-        });
+        const payload = await addMembers(activeThreadId, { actorId: dbUserId, userIds: [userId] });
         if (payload?.data) {
           mergeThread(payload.data);
           setGroupSearchTerm("");
@@ -2600,13 +1279,8 @@ function MessagesPage() {
       setGroupManageBusy(true);
       setGroupManageError("");
       try {
-        const payload = await removeMembers(activeThreadId, {
-          actorId: dbUserId,
-          userIds: [userId]
-        });
-        if (payload?.data) {
-          mergeThread(payload.data);
-        }
+        const payload = await removeMembers(activeThreadId, { actorId: dbUserId, userIds: [userId] });
+        if (payload?.data) mergeThread(payload.data);
       } catch (error) {
         logFailure("❌ Failed to remove member:", error);
         setGroupManageError(error.message || "Unable to remove member.");
@@ -2622,10 +1296,7 @@ function MessagesPage() {
     setGroupEditBusy(true);
     setGroupEditError("");
     try {
-      const payload = await updateThread(activeThreadId, {
-        actorId: dbUserId,
-        title: groupEditTitle
-      });
+      const payload = await updateThread(activeThreadId, { actorId: dbUserId, title: groupEditTitle });
       const thread = payload?.data || payload?.thread;
       if (thread) {
         mergeThread(thread);
@@ -2640,1646 +1311,764 @@ function MessagesPage() {
     }
   }, [activeThreadId, dbUserId, fetchThreads, groupEditTitle, mergeThread, updateThread]);
 
-  const openGroupEditModal = useCallback(() => {
-    setGroupEditError("");
-    setGroupEditBusy(false);
-    setGroupEditTitle(activeThread?.title || "");
-    setGroupEditModalOpen(true);
-  }, [activeThread]);
-
-  const closeGroupEditModal = useCallback(() => {
-    setGroupEditModalOpen(false);
-    setGroupEditError("");
-    setGroupEditBusy(false);
-    setGroupEditTitle(activeThread?.title || "");
-  }, [activeThread]);
-
-  const handleThreadCheckboxChange = useCallback((threadId) => {
-    setSelectedThreadIds((prev) => {
-      if (prev.includes(threadId)) {
-        return prev.filter((id) => id !== threadId);
+  const deleteThreads = useCallback(
+    async (ids) => {
+      if (!ids.length || !dbUserId) return;
+      setThreadDeleteBusy(true);
+      setThreadDeleteError("");
+      try {
+        await Promise.all(ids.map((threadId) => deleteThreadApi(threadId, { actorId: dbUserId })));
+        setThreads((prev) => prev.filter((thread) => !ids.includes(thread.id)));
+        if (ids.includes(activeThreadId)) {
+          setActiveThreadId(null);
+          setMessages([]);
+        }
+        setSelectedThreadIds([]);
+        setThreadSelectionMode(false);
+        fetchThreads();
+      } catch (error) {
+        logFailure("❌ Failed to delete threads:", error);
+        setThreadDeleteError(error.message || "Unable to remove the selected conversations.");
+      } finally {
+        setThreadDeleteBusy(false);
       }
-      return [...prev, threadId];
-    });
+    },
+    [activeThreadId, dbUserId, deleteThreadApi, fetchThreads]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Effects: initial load, deep links, directory, feeds, realtime
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!dbUserId) return;
+    fetchThreads();
+  }, [dbUserId, fetchThreads]);
+
+  // Deep-link from a job card: open the customer's thread and pre-fill /job.
+  useEffect(() => {
+    if (deepLinkProcessedRef.current) return;
+    if (!router.isReady || !threads.length || loadingThreads) return;
+    const { jobNumber, customerEmail, customerName } = router.query;
+    if (!jobNumber) return;
+    deepLinkProcessedRef.current = true;
+
+    const normalise = (value = "") => (value || "").toLowerCase().trim();
+    const customerThread = threads.find((thread) =>
+      (thread.members || []).some((member) => {
+        if (!normalise(member.role).includes("customer")) return false;
+        const profile = member.profile || {};
+        if (customerEmail && normalise(profile.email) === normalise(customerEmail)) return true;
+        if (customerName && normalise(profile.name) === normalise(customerName)) return true;
+        return false;
+      })
+    );
+    if (customerThread && !isMobileView) openThread(customerThread.id, customerThread);
+    setMessageDraft(`/job ${jobNumber} `);
+    router.replace("/messages", undefined, { shallow: true });
+  }, [isMobileView, router, threads, loadingThreads, openThread]);
+
+  // Collaboration deep-link from the top-bar Team workspace:
+  //   /messages?to=<userId>                           → open/start a 1:1 DM
+  //   /messages?compose=group&members=<id,id>&title=  → create/open a group chat
+  useEffect(() => {
+    if (collabDeepLinkRef.current) return;
+    if (!router.isReady || !dbUserId) return;
+    const { to, compose, members, title } = router.query;
+    if (!to && compose !== "group") return;
+    collabDeepLinkRef.current = true;
+    (async () => {
+      try {
+        if (to) {
+          await startDirectThread(String(to));
+        } else if (compose === "group" && members) {
+          const memberIds = String(members).split(",").map((id) => id.trim()).filter(Boolean);
+          if (memberIds.length) {
+            const payload = await createThreadApi({
+              type: "group",
+              createdBy: dbUserId,
+              title: title ? String(title) : "",
+              memberIds,
+            });
+            const thread = payload?.data || payload?.thread;
+            if (thread) {
+              mergeThread(thread);
+              await fetchThreads();
+              await openThread(thread.id, thread);
+            }
+          }
+        }
+      } catch (error) {
+        logFailure("❌ Collaboration deep-link failed:", error);
+      } finally {
+        router.replace("/messages", undefined, { shallow: true });
+      }
+    })();
+  }, [router, dbUserId, startDirectThread, createThreadApi, mergeThread, fetchThreads, openThread]);
+
+  useEffect(() => {
+    if (!dbUserId) return undefined;
+    const trimmed = directorySearch.trim();
+    if (!trimmed) return undefined;
+    const handle = setTimeout(() => fetchDirectory(trimmed), 350);
+    return () => clearTimeout(handle);
+  }, [dbUserId, directorySearch, fetchDirectory]);
+
+  useEffect(() => {
+    if (!dbUserId || !newChatModalOpen || directorySearch.trim()) return undefined;
+    let cancelled = false;
+    setDirectoryLoading(true);
+    (async () => {
+      try {
+        const payload = await listDirectoryUsers({ limit: 100, exclude: dbUserId });
+        if (!cancelled) setDirectory(sortDirectoryEntries(payload?.data || payload?.users || []));
+      } catch (error) {
+        if (!cancelled) {
+          logFailure("❌ Failed to load default directory:", error);
+          setDirectory([]);
+        }
+      } finally {
+        if (!cancelled) setDirectoryLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [dbUserId, listDirectoryUsers, newChatModalOpen, directorySearch]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadSystemNotifications = async () => {
+      setSystemLoading(true);
+      setSystemError("");
+      try {
+        const notesResult = await supabase
+          .from("notifications")
+          .select("notification_id, message, created_at, target_role")
+          .or("target_role.ilike.%customer%,target_role.is.null")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (notesResult.error) throw notesResult.error;
+        if (!cancelled) setSystemNotifications((notesResult.data || []).map((row) => ({ ...row, kind: "notification" })));
+      } catch (fetchError) {
+        if (!cancelled) {
+          setSystemError(fetchError?.message || "Unable to load system notifications.");
+          setSystemNotifications([]);
+        }
+      } finally {
+        if (!cancelled) setSystemLoading(false);
+      }
+    };
+    loadSystemNotifications();
+    const channel = supabase
+      .channel("admin-system-notifications")
+      .on("postgres_changes", { schema: "public", table: "notifications", event: "INSERT" }, (payload) => {
+        const entry = payload?.new;
+        if (!entry) return;
+        const targetRole = (entry.target_role || "").toLowerCase();
+        if (targetRole && !targetRole.includes("customer")) return;
+        setSystemNotifications((prev) => [{ ...entry, kind: "notification" }, ...prev].slice(0, 5));
+      })
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  const handleDeleteSelectedThreads = useCallback(async () => {
-    if (!selectedThreadIds.length || !dbUserId) return;
-    setThreadDeleteBusy(true);
-    setThreadDeleteError("");
-    try {
-      await Promise.all(
-        selectedThreadIds.map((threadId) =>
-        deleteThreadApi(threadId, { actorId: dbUserId })
-        )
-      );
-      setThreads((prev) => prev.filter((thread) => !selectedThreadIds.includes(thread.id)));
-      if (selectedThreadIds.includes(activeThreadId)) {
+  useEffect(() => {
+    let cancelled = false;
+    const loadBookingNotifications = async () => {
+      setBookingsLoading(true);
+      setBookingsError("");
+      try {
+        const requestsResult = canSeeCustomerRequests
+          ? await fetch("/api/messages/customer-requests", { credentials: "same-origin" })
+              .then((res) => (res.ok ? res.json() : { items: [] }))
+              .catch(() => ({ items: [] }))
+          : { items: [] };
+        const requestNotes = (requestsResult?.items || []).map((req) => ({
+          notification_id: `event-${req.event_id}`,
+          kind: "customer_request",
+          event_id: req.event_id,
+          activity_type: req.activity_type,
+          type_label: req.type_label,
+          customer_name: req.customer_name,
+          vehicle_label: req.vehicle_label,
+          vehicle_reg: req.vehicle_reg,
+          description: req.description,
+          preferred_date: req.preferred_date,
+          message: `${req.type_label} ${req.customer_name}${req.vehicle_label ? ` · ${req.vehicle_label}` : ""}`,
+          created_at: req.occurred_at,
+          target_role: "customer",
+        }));
+        if (!cancelled) setBookingNotifications(requestNotes);
+      } catch (fetchError) {
+        if (!cancelled) {
+          setBookingsError(fetchError?.message || "Unable to load bookings.");
+          setBookingNotifications([]);
+        }
+      } finally {
+        if (!cancelled) setBookingsLoading(false);
+      }
+    };
+    loadBookingNotifications();
+    const channel = supabase
+      .channel("admin-booking-requests")
+      .on("postgres_changes", { schema: "public", table: "customer_activity_events", event: "INSERT" }, (payload) => {
+        if (payload?.new?.activity_type !== "booking_request") return;
+        loadBookingNotifications();
+      })
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [canSeeCustomerRequests]);
+
+  // Realtime: any change to a thread I am in refreshes the list, and the open
+  // transcript refreshes in place.
+  const threadIdKey = useMemo(() => threads.map((thread) => thread.id).filter(Boolean).join(","), [threads]);
+  const activeThreadRef = useRef(null);
+  activeThreadRef.current = activeThread;
+  const openThreadRef = useRef(openThread);
+  openThreadRef.current = openThread;
+
+  useEffect(() => {
+    if (!dbUserId || typeof window === "undefined") return undefined;
+    const channel = supabase.channel(`messages-refresh-${dbUserId}`);
+    if (threadIdKey) {
+      const refreshFromMessageChange = (payload) => {
+        const row = payload?.new;
+        if (!row) return;
+        fetchThreads();
+        const current = activeThreadRef.current;
+        if (current && current.id === row.thread_id && row.sender_id !== dbUserId) {
+          openThreadRef.current(current.id, current, { silent: true });
+        }
+      };
+      ["INSERT", "UPDATE"].forEach((event) => {
+        channel.on(
+          "postgres_changes",
+          { schema: "public", table: "messages", event, filter: `thread_id=in.(${threadIdKey})` },
+          refreshFromMessageChange
+        );
+      });
+    }
+    channel.on(
+      "postgres_changes",
+      { schema: "public", table: "message_thread_members", event: "UPDATE", filter: `user_id=eq.${dbUserId}` },
+      () => fetchThreads()
+    );
+    channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [dbUserId, fetchThreads, threadIdKey]);
+
+  // Desktop opens the most recent conversation when nothing is selected.
+  useEffect(() => {
+    if (!visibleThreads.length) {
+      if (activeThreadId && !threads.some((thread) => thread.id === activeThreadId)) {
         setActiveThreadId(null);
         setMessages([]);
       }
-      setSelectedThreadIds([]);
-      setThreadSelectionMode(false);
-      fetchThreads();
-    } catch (error) {
-      logFailure("❌ Failed to delete threads:", error);
-      setThreadDeleteError(error.message || "Unable to delete selected threads.");
-    } finally {
-      setThreadDeleteBusy(false);
+      return;
     }
-  }, [
-  activeThreadId,
-  dbUserId,
-  deleteThreadApi,
-  fetchThreads,
-  selectedThreadIds,
-  setThreads,
-  setMessages,
-  setThreadSelectionMode]
+    if (isMobileView || isSystemThreadActive) return;
+    if (!activeThreadId) openThread(visibleThreads[0].id, visibleThreads[0]);
+  }, [visibleThreads, activeThreadId, isSystemThreadActive, isMobileView, openThread, threads]);
+
+  // Stick to the bottom when a conversation opens or a message arrives — but
+  // not when a message is edited, pinned or reacted to in place.
+  useEffect(() => {
+    const key = `${activeThreadId}:${messages.length}:${messages[messages.length - 1]?.id || ""}`;
+    if (key === lastScrollKeyRef.current) return;
+    lastScrollKeyRef.current = key;
+    const frame = window.requestAnimationFrame(() => {
+      if (scrollerRef.current) scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeThreadId, messages, mobilePanelView]);
+
+  useEffect(() => {
+    const previousKey = activeUnreadMarkerKeyRef.current;
+    if (previousKey && previousKey !== currentUnreadMarkerKey) dismissUnreadMarker(previousKey);
+    activeUnreadMarkerKeyRef.current = currentUnreadMarkerKey;
+  }, [currentUnreadMarkerKey, dismissUnreadMarker]);
+
+  const observeMarker = useCallback(
+    (show, key, element) => {
+      if (!show || !key || !element || dismissedUnreadMarkers[key]) return undefined;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries[0]?.isIntersecting) return;
+          if (unreadMarkerTimersRef.current.has(key)) return;
+          const timeoutId = window.setTimeout(() => dismissUnreadMarker(key), 30000);
+          unreadMarkerTimersRef.current.set(key, timeoutId);
+        },
+        { threshold: 0.25 }
+      );
+      observer.observe(element);
+      return () => observer.disconnect();
+    },
+    [dismissUnreadMarker, dismissedUnreadMarkers]
   );
 
-  const handleCloseSelectionMode = useCallback(() => {
-    setThreadSelectionMode(false);
-    setSelectedThreadIds([]);
-    setThreadDeleteError("");
-  }, []);
-
-  const canSend = Boolean(
-    messageDraft.trim() && activeThread && !loadingMessages && !sending
+  useEffect(
+    () => observeMarker(showThreadUnreadMarker, activeThreadUnreadMarkerKey, threadUnreadMarkerEl),
+    [observeMarker, showThreadUnreadMarker, activeThreadUnreadMarkerKey, threadUnreadMarkerEl]
+  );
+  useEffect(
+    () => observeMarker(showSystemUnreadMarker, systemUnreadMarkerKey, systemUnreadMarkerEl),
+    [observeMarker, showSystemUnreadMarker, systemUnreadMarkerKey, systemUnreadMarkerEl]
   );
 
-  const canInitiateChat =
-  composeMode === "direct" ?
-  selectedRecipients.length === 1 :
-  selectedRecipients.length > 0;
+  useEffect(
+    () => () => {
+      const activeKey = activeUnreadMarkerKeyRef.current;
+      if (activeKey) dismissUnreadMarker(activeKey);
+      unreadMarkerTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+      unreadMarkerTimersRef.current.clear();
+    },
+    [dismissUnreadMarker]
+  );
 
-  const activePseudoLoading = activeBookingsView ? bookingsLoading : systemLoading;
-  const activePseudoError = activeBookingsView ? bookingsError : systemError;
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "hidden") return;
+      const activeKey = activeUnreadMarkerKeyRef.current;
+      if (activeKey) dismissUnreadMarker(activeKey);
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [dismissUnreadMarker]);
 
+  useEffect(() => {
+    setGroupSearchTerm("");
+    setGroupSearchResults([]);
+    setGroupManageError("");
+    setSettingsError("");
+  }, [activeThreadId]);
+
+  useEffect(() => {
+    if (!threadSelectionMode) {
+      setSelectedThreadIds([]);
+      return;
+    }
+    setSelectedThreadIds((prev) => prev.filter((threadId) => threads.some((thread) => thread.id === threadId)));
+  }, [threadSelectionMode, threads]);
+
+  useEffect(() => {
+    const term = groupSearchTerm.trim();
+    if (!canManageMembers || !activeThread || term.length < 2) {
+      setGroupSearchResults([]);
+      setGroupSearchLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setGroupSearchLoading(true);
+    const excludeIds = [...new Set([...(activeThread.members || []).map((member) => member.userId), dbUserId])].join(",");
+    (async () => {
+      try {
+        const payload = await listDirectoryUsers({ q: term, exclude: excludeIds });
+        if (!cancelled) setGroupSearchResults(payload?.data || payload?.users || []);
+      } catch (error) {
+        if (!cancelled) {
+          logFailure("❌ Group search failed:", error);
+          setGroupSearchResults([]);
+        }
+      } finally {
+        if (!cancelled) setGroupSearchLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeThread, canManageMembers, dbUserId, groupSearchTerm, listDirectoryUsers]);
+
+  // ---------------------------------------------------------------------------
+  // View model
+  // ---------------------------------------------------------------------------
   if (!user) {
     return <MessagesPageUi view="section1" />;
-
-
-
-
   }
 
-  return <MessagesPageUi view="section2" activeBookingsView={activeBookingsView} activeSystemView={activeSystemView} activeThread={activeThread} activeThreadId={activeThreadId} activeThreadUnreadMarkerIndex={activeThreadUnreadMarkerIndex} availableCommands={availableCommands} Button={Button} canEditGroup={canEditGroup} canInitiateChat={canInitiateChat} canSeeCustomerRequests={canSeeCustomerRequests} canSend={canSend} cardStyle={cardStyle} Chip={Chip} closeGroupEditModal={closeGroupEditModal} closeNewChatModal={closeNewChatModal} ColleagueRowsSkeleton={ColleagueRowsSkeleton} commandHelpOpen={commandHelpOpen} commandSuggestions={commandSuggestions} composeError={composeError} composeMode={composeMode} ComposeToggleButton={ComposeToggleButton} conversationError={conversationError} customerDetail={customerDetail} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} directory={directory} directoryLoading={directoryLoading} directorySearch={directorySearch} filteredThreads={unpinnedFilteredThreads} formatNotificationTimestamp={formatNotificationTimestamp} groupEditBusy={groupEditBusy} groupEditError={groupEditError} groupEditModalOpen={groupEditModalOpen} groupEditTitle={groupEditTitle} groupLeaderCount={groupLeaderCount} groupManageBusy={groupManageBusy} groupManageError={groupManageError} groupMembersModalOpen={groupMembersModalOpen} groupName={groupName} groupSearchLoading={groupSearchLoading} groupSearchResults={groupSearchResults} groupSearchTerm={groupSearchTerm} handleAddMemberToGroup={handleAddMemberToGroup} handleApproveLeaveRequest={handleApproveLeaveRequest} handleCloseSelectionMode={handleCloseSelectionMode} handleConfirmDeclineLeaveRequest={handleConfirmDeclineLeaveRequest} handleDeleteSelectedThreads={handleDeleteSelectedThreads} handleDirectoryUser={handleDirectoryUser} handleInsertCommandFromHelp={handleInsertCommandFromHelp} handleMessageDraftChange={handleMessageDraftChange} handleMobileBack={handleMobileBack} handleOpenDeclineLeaveRequest={handleOpenDeclineLeaveRequest} handleOpenNewChatModal={handleOpenNewChatModal} handleRemoveMemberFromGroup={handleRemoveMemberFromGroup} handleSaveGroupDetails={handleSaveGroupDetails} handleSelectCommand={handleSelectCommand} handleSendMessage={handleSendMessage} handleStartChat={handleStartChat} handleThreadCheckboxChange={handleThreadCheckboxChange} handleTogglePinnedThread={handleTogglePinnedThread} hasBookingsUnread={hasBookingsUnread} hasSystemUnread={hasSystemUnread} InlineLoading={InlineLoading} InputField={InputField} isGroupChat={isGroupChat} isGroupLeader={isGroupLeader} isMobileView={isMobileView} isRecipientSelected={isRecipientSelected} leaveDecisionBusy={leaveDecisionBusy} leaveDecisionError={leaveDecisionError} leaveDeclineModal={leaveDeclineModal} leaveDeclineReason={leaveDeclineReason} loadingMessages={loadingMessages} loadingThreads={loadingThreads} MessageBubble={MessageBubble} MessageBubblesSkeleton={MessageBubblesSkeleton} messageDraft={messageDraft} messageReactions={messageReactions} messages={messages} messageFilter={messageFilter} handleSelectMessageFilter={handleSelectMessageFilter} mobilePanelView={mobilePanelView} ModalPortal={ModalPortal} newChatModalOpen={newChatModalOpen} openBookingsThread={openBookingsThread} openGroupEditModal={openGroupEditModal} openSystemNotificationsThread={openSystemNotificationsThread} openThread={openThread} orderedSystemNotifications={activePseudoNotifications} handleCreateJobFromRequest={handleCreateJobFromRequest} palette={palette} pinnedThreads={pinnedThreads} radii={radii} replyTo={replyTo} scrollerRef={scrollerRef} SearchBar={SearchBar} SectionTitle={SectionTitle} selectedRecipients={selectedRecipients} selectedThreadIds={selectedThreadIds} sending={sending} setCommandHelpOpen={setCommandHelpOpen} setComposeError={setComposeError} setComposeMode={setComposeMode} setDirectorySearch={setDirectorySearch} setGroupEditTitle={setGroupEditTitle} setGroupMembersModalOpen={setGroupMembersModalOpen} setGroupName={setGroupName} setGroupSearchTerm={setGroupSearchTerm} setLeaveDecisionError={setLeaveDecisionError} setLeaveDeclineModal={setLeaveDeclineModal} setLeaveDeclineReason={setLeaveDeclineReason} handleReactToMessage={handleReactToMessage} setReplyTo={setReplyTo} setSelectedRecipients={setSelectedRecipients} setSelectedThreadIds={setSelectedThreadIds} setSystemUnreadMarkerEl={setSystemUnreadMarkerEl} setThreadSearchTerm={setThreadSearchTerm} setThreadSelectionMode={setThreadSelectionMode} setThreadUnreadMarkerEl={setThreadUnreadMarkerEl} shadows={shadows} showCommandSuggestions={showCommandSuggestions} showSystemUnreadMarker={showSystemUnreadMarker} showThreadUnreadMarker={showThreadUnreadMarker} StatusMessage={StatusMessage} systemError={activePseudoError} systemLoading={activePseudoLoading} systemTimestampLabel={systemTimestampLabel} systemTitleColor={systemTitleColor} systemUnreadMarkerIndex={systemUnreadMarkerIndex} threadDeleteBusy={threadDeleteBusy} threadDeleteError={threadDeleteError} ThreadRowsSkeleton={ThreadRowsSkeleton} threadSearchTerm={threadSearchTerm} threadSelectionMode={threadSelectionMode} unreadBackgroundColor={unreadBackgroundColor} user={user} userNameColor={userNameColor} visibleThreads={visibleThreads} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  const mode = activeSystemView ? "system" : activeBookingsView ? "bookings" : activeThread ? "thread" : "empty";
+
+  const otherMembers = (activeThread?.members || []).filter((member) => member.userId !== dbUserId);
+  const directPartner = activeThread?.type === "direct" ? otherMembers[0] || null : null;
+  const customerMembers = otherMembers.filter(memberIsCustomer);
+  const isAnnouncement = activeThread?.conversationType === "announcement";
+  const readOnlyNotice =
+    isAnnouncement && !isGroupLeader
+      ? "Announcement channel: only channel leaders can post here. You can still react to posts."
+      : "";
+
+  const headerPresence = (() => {
+    if (!activeThread) return null;
+    if (directPartner) return presenceFor(directPartner);
+    const active = otherMembers.filter((member) => presenceFor(member)?.tone === "active").length;
+    return {
+      tone: active ? "active" : null,
+      text: `${activeThread.members.length} member${activeThread.members.length === 1 ? "" : "s"}${active ? ` · ${active} active now` : ""}`,
+    };
+  })();
+
+  const headerSubtitle = activeThread
+    ? [
+        activeThread.jobNumber && activeThread.conversationType !== "job" ? `Job ${activeThread.jobNumber}` : null,
+        activeThread.department && activeThread.conversationType === "department" ? null : activeThread.department,
+        activeThread.assigneeName ? `Owner: ${activeThread.assigneeName}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+
+  const activeIsPinned = Boolean(activeThread && pinnedThreadIds.includes(activeThread.id));
+  const headerMenuItems = activeThread
+    ? [
+        {
+          label: searchOpen ? "Close search" : "Search this conversation",
+          onClick: () => {
+            setSearchOpen((prev) => !prev);
+            setSearchTerm("");
+          },
+        },
+        {
+          label: activeIsPinned
+            ? "Unpin conversation"
+            : pinnedThreadIds.length >= MAX_PINNED_THREADS
+              ? "Pin conversation (3 pinned already)"
+              : "Pin conversation",
+          disabled: !activeIsPinned && pinnedThreadIds.length >= MAX_PINNED_THREADS,
+          onClick: () => handleTogglePinnedThread(activeThread.id),
+        },
+        { label: "Slash command help", onClick: () => setCommandHelpOpen(true) },
+        ...(canEditGroup
+          ? [
+              {
+                label: "Rename conversation",
+                onClick: () => {
+                  setGroupEditTitle(activeThread.title || "");
+                  setGroupEditError("");
+                  setGroupEditModalOpen(true);
+                },
+              },
+            ]
+          : []),
+        ...(activeThread.hubReady
+          ? [
+              {
+                label: activeThread.notificationLevel === "none" ? "Unmute conversation" : "Mute conversation",
+                onClick: () =>
+                  handleUpdateSettings({ notificationLevel: activeThread.notificationLevel === "none" ? "all" : "none" }),
+              },
+            ]
+          : []),
+        {
+          label: "Notification settings",
+          onClick: () => {
+            setDetailsTab("details");
+            toggleDetails(true);
+          },
+        },
+        {
+          label: "Remove conversation",
+          danger: true,
+          onClick: () => {
+            if (window.confirm(`Remove "${activeThread.title}"? This deletes it for everyone in it.`)) {
+              deleteThreads([activeThread.id]);
+            }
+          },
+        },
+      ]
+    : [];
+
+
+  const lastMineIndex = (() => {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      if (messages[index].senderId === dbUserId && !messages[index].metadata?.event) return index;
+    }
+    return -1;
+  })();
+  const lastMine = lastMineIndex >= 0 ? messages[lastMineIndex] : null;
+  const receiptFor = (message) => {
+    if (!lastMine || message.id !== lastMine.id || !otherMembers.length) return null;
+    const sentAt = new Date(message.createdAt).getTime();
+    const readers = otherMembers.filter(
+      (member) => member.lastReadAt && new Date(member.lastReadAt).getTime() >= sentAt
+    );
+    if (directPartner) {
+      return readers.length ? `Seen ${formatListTimestamp(readers[0].lastReadAt)}` : "Sent";
+    }
+    if (!readers.length) return "Sent";
+    return readers.length === otherMembers.length
+      ? "Seen by everyone"
+      : `Seen by ${readers.length} of ${otherMembers.length}`;
+  };
+
+  const canSend = Boolean(
+    (messageDraft.trim() || pendingAttachments.length) && activeThread && !loadingMessages && !sending && !uploading
+  );
+
+  const mentionMembers = otherMembers.filter((member) => !memberIsCustomer(member));
+
+  return (
+    <MessagesPageUi
+      view="section2"
+      isMobileView={isMobileView}
+      mobilePanelView={mobilePanelView}
+      onMobileBack={() => handleMobileBack(false)}
+      mode={mode}
+      listProps={{
+        threads: listThreadsShown,
+        pinnedThreads,
+        activeThreadId,
+        activeSystemView,
+        activeBookingsView,
+        canSeeBookings: canSeeCustomerRequests,
+        systemUnread: hasSystemUnread,
+        bookingsUnread: hasBookingsUnread,
+        systemPreview: String(latestSystem?.message || "").replace(/^[\s\p{Extended_Pictographic}️]+/u, "").trim(),
+        bookingsPreview: latestBooking?.message || "",
+        loading: loadingThreads,
+        dbUserId,
+        searchTerm: threadSearchTerm,
+        onSearchChange: setThreadSearchTerm,
+        filter: messageFilter,
+        onFilterChange: setMessageFilter,
+        typeFilter,
+        onTypeFilterChange: setTypeFilter,
+        onOpenThread: openThread,
+        onOpenSystem: openSystemNotificationsThread,
+        onOpenBookings: openBookingsThread,
+        onTogglePin: handleTogglePinnedThread,
+        onNewConversation: handleOpenNewChatModal,
+        selectionMode: threadSelectionMode,
+        selectedIds: selectedThreadIds,
+        onToggleSelect: (threadId) =>
+          setSelectedThreadIds((prev) =>
+            prev.includes(threadId) ? prev.filter((id) => id !== threadId) : [...prev, threadId]
+          ),
+        onStartSelection: () => {
+          setThreadSelectionMode(true);
+          setSelectedThreadIds([]);
+        },
+        onCloseSelection: () => {
+          setThreadSelectionMode(false);
+          setSelectedThreadIds([]);
+          setThreadDeleteError("");
+        },
+        onDeleteSelected: () => {
+          if (window.confirm(`Remove ${selectedThreadIds.length} conversation(s) for everyone in them?`)) {
+            deleteThreads(selectedThreadIds);
+          }
+        },
+        deleteBusy: threadDeleteBusy,
+        deleteError: threadDeleteError,
+        onWebsiteHelpJoined: async (threadId) => {
+          await fetchThreads();
+          await openThread(threadId);
+        },
+        totalUnread: threads.filter((thread) => thread.hasUnread).length,
+      }}
+      systemFeed={{
+        isBookings: activeBookingsView,
+        loading: activeBookingsView ? bookingsLoading : systemLoading,
+        error: activeBookingsView ? bookingsError : systemError,
+        notes: activePseudoNotifications,
+        timestampLabel: activePseudoTimestamp ? formatNotificationTimestamp(activePseudoTimestamp) : "no updates yet",
+        showUnread: showSystemUnreadMarker,
+        unreadIndex: systemUnreadMarkerIndex,
+        setUnreadEl: setSystemUnreadMarkerEl,
+        formatTimestamp: formatNotificationTimestamp,
+        onCreateJob: handleCreateJobFromRequest,
+      }}
+      headerProps={{
+        thread: activeThread,
+        title: directPartner?.profile?.name || activeThread?.title || "",
+        subtitle: headerSubtitle,
+        presence: headerPresence,
+        isMobile: isMobileView,
+        onBack: () => handleMobileBack(false),
+        detailsOpen,
+        onToggleDetails: () => toggleDetails(),
+        menuItems: headerMenuItems,
+      }}
+      search={{
+        open: searchOpen,
+        term: searchTerm,
+        onChange: setSearchTerm,
+        matchCount: searchMatches.length,
+        matchIndex: searchIndex,
+        onPrev: () => setSearchIndex((index) => (index - 1 + searchMatches.length) % searchMatches.length),
+        onNext: () => setSearchIndex((index) => (index + 1) % searchMatches.length),
+        onClose: () => {
+          setSearchOpen(false);
+          setSearchTerm("");
+        },
+      }}
+      feed={{
+        threadId: activeThreadId,
+        messages,
+        loading: loadingMessages,
+        scrollerRef,
+        dbUserId,
+        roles: userRoles,
+        reactions: messageReactions,
+        onReact: handleReactToMessage,
+        onReply: (message) => handleMessageAction(message, "reply-start"),
+        onAction: handleMessageAction,
+        onJumpTo: jumpToMessage,
+        actionBusyId,
+        receiptFor,
+        highlightId: currentSearchId || jumpHighlightId,
+        readOnly: false,
+        memberFor: (userId) => (activeThread?.members || []).find((member) => member.userId === userId) || null,
+        showUnread: showThreadUnreadMarker,
+        unreadIndex: activeThreadUnreadMarkerIndex,
+        setUnreadEl: setThreadUnreadMarkerEl,
+        registerRef: registerMessageNode,
+        leave: {
+          busy: leaveDecisionBusy,
+          onApprove: (message) => submitLeaveDecision(message, "approve"),
+          onDecline: (message) => {
+            setLeaveDecisionError("");
+            setLeaveDeclineReason("");
+            setLeaveDeclineModal({ open: true, message });
+          },
+        },
+      }}
+      composerProps={{
+        draft: messageDraft,
+        onDraftChange: setMessageDraft,
+        onSubmit: handleSendMessage,
+        sending,
+        canSend,
+        replyTo,
+        onCancelReply: () => setReplyTo(null),
+        editing: editingMessage,
+        onCancelEdit: () => {
+          setEditingMessage(null);
+          setMessageDraft("");
+        },
+        pendingAttachments,
+        uploading,
+        onAddFiles: handleAddFiles,
+        onRemoveAttachment: (attachment) =>
+          setPendingAttachments((prev) => prev.filter((entry) => entry.id !== attachment.id)),
+        externalAudience: customerMembers.length
+          ? customerMembers.map((member) => member.profile?.name || "The customer").join(", ")
+          : null,
+        commands: availableCommands,
+        members: mentionMembers,
+        warning: composeWarning,
+        onOpenHelp: () => setCommandHelpOpen(true),
+        placeholder: customerMembers.length
+          ? "Write to the customer…"
+          : isAnnouncement
+            ? "Post an announcement…"
+            : "Write a message…",
+        inputRef: composerInputRef,
+      }}
+      readOnlyNotice={readOnlyNotice}
+      conversationError={conversationError}
+      details={{
+        open: detailsOpen,
+        props: {
+          thread: activeThread,
+          tab: detailsTab,
+          onTabChange: setDetailsTab,
+          onClose: () => toggleDetails(false),
+          messages,
+          dbUserId,
+          presenceFor,
+          customerDetail,
+          onUpdateSettings: handleUpdateSettings,
+          settingsBusy,
+          settingsError,
+          canManageMembers,
+          groupLeaderCount,
+          groupSearchTerm,
+          onGroupSearchChange: setGroupSearchTerm,
+          groupSearchResults,
+          groupSearchLoading,
+          onAddMember: handleAddMemberToGroup,
+          onRemoveMember: handleRemoveMemberFromGroup,
+          groupManageBusy,
+          groupManageError,
+          onJumpToMessage: jumpToMessage,
+          onMessageAction: handleMessageAction,
+          actionBusy: Boolean(actionBusyId),
+        },
+      }}
+      newConversation={{
+        open: newChatModalOpen,
+        mode: composeMode,
+        onModeChange: (nextMode) => {
+          setComposeMode(nextMode);
+          setComposeError("");
+          if (nextMode === "direct") setSelectedRecipients((prev) => (prev.length ? [prev[0]] : []));
+        },
+        directory,
+        directoryLoading,
+        directorySearch,
+        onDirectorySearch: setDirectorySearch,
+        isSelected: (entry) => selectedRecipients.some((picked) => picked.id === entry.id),
+        onToggle: handleDirectoryUser,
+        selected: selectedRecipients,
+        onRemoveSelected: (entry) => setSelectedRecipients((prev) => prev.filter((picked) => picked.id !== entry.id)),
+        name: groupName,
+        onNameChange: setGroupName,
+        department: newDepartment,
+        onDepartmentChange: setNewDepartment,
+        includeDepartment,
+        onIncludeDepartmentChange: setIncludeDepartment,
+        jobNumber: newJobNumber,
+        onJobNumberChange: setNewJobNumber,
+        error: composeError,
+        busy: creatingThread,
+        canStart: canInitiateChat && !creatingThread,
+        onStart: handleStartChat,
+        onClose: closeNewChatModal,
+      }}
+      help={{
+        open: commandHelpOpen,
+        commands: availableCommands,
+        onInsert: handleInsertCommandFromHelp,
+        onClose: () => setCommandHelpOpen(false),
+      }}
+      rename={{
+        open: groupEditModalOpen && isGroupChat,
+        title: groupEditTitle,
+        onTitleChange: setGroupEditTitle,
+        busy: groupEditBusy,
+        error: groupEditError,
+        onSave: handleSaveGroupDetails,
+        onClose: () => {
+          setGroupEditModalOpen(false);
+          setGroupEditError("");
+        },
+      }}
+      leaveDecline={{
+        open: leaveDeclineModal.open,
+        reason: leaveDeclineReason,
+        onReasonChange: (value) => {
+          setLeaveDeclineReason(value);
+          setLeaveDecisionError("");
+        },
+        busy: leaveDecisionBusy,
+        error: leaveDecisionError,
+        onConfirm: handleConfirmDeclineLeaveRequest,
+        onClose: () => {
+          if (leaveDecisionBusy) return;
+          setLeaveDeclineModal({ open: false, message: null });
+          setLeaveDeclineReason("");
+          setLeaveDecisionError("");
+        },
+      }}
+    />
+  );
 }
 
 export default MessagesPage;

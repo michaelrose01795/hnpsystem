@@ -112,6 +112,12 @@
      updates every table in the repo that uses .app-data-table. */
   --table-row-height: 44px;
   --table-action-btn-height: 32px;
+  /* Tab-API chip height. Was hardcoded as a bare 35px (with !important) in
+     staffglobal.css, which made it impossible to lift to the 44px touch floor
+     on a phone without adding another !important. Tokenised for the same
+     reason --table-action-btn-height is: so a media query can rebind it.
+     Rebound to --control-height under pointer: coarse in staffglobal.css. */
+  --tab-api-height: 35px;
   --text-1: var(--surfaceText);
   --text-1-rgb: 15, 15, 15;
   --text-2: var(--onAccentText);
@@ -182,6 +188,9 @@
   --dangerMain: var(--danger-base);
   --danger-base: #c62b2b;
   --danger-base-hover: #a82121;
+  /* Typing assistant underlines (src/styles/families/typing-assist.css). */
+  --mark-spelling: var(--danger-base);
+  --mark-grammar: #2563eb;
   --danger-strong: #b91c1c;
   --danger-surface: #fee2e2;
   --danger-surface-hover: rgba(var(--danger-rgb), 0.24);
@@ -644,6 +653,8 @@
   --dangerMain: #f87171;
   --danger-base: #f87171;
   --danger-base-hover: #fca5a5;
+  --mark-spelling: var(--danger-base);
+  --mark-grammar: #60a5fa;
   --danger-strong: #ef4444;
   --danger-surface: rgba(var(--danger-rgb), 0.24);
   --danger-surface-hover: rgba(var(--danger-rgb), 0.34);

@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const REQUEST_TYPE_LABELS = {
   access: "Access (copy of all my data)",
@@ -108,6 +109,45 @@ function ProfileSummary({ profile }) {
         Need to correct anything? Use <strong>Rectification</strong> below to file a request, or
         contact your manager.
       </p>
+    </div>
+  );
+}
+
+// Placeholder mirroring ProfileSummary's label / value rows while data loads.
+function ProfileSummarySkeleton() {
+  return (
+    <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading profile data" style={{ display: "grid", gap: 8 }}>
+      <SkeletonKeyframes />
+      {["55%", "40%", "70%", "45%", "35%", "60%"].map((width, index) => (
+        <div
+          key={index}
+          style={{ display: "grid", gridTemplateColumns: "minmax(140px, 1fr) minmax(0, 2fr)", gap: 12, alignItems: "center", minHeight: 36 }}
+        >
+          <SkeletonBlock width="60%" height="12px" />
+          <SkeletonBlock width={width} height="14px" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Placeholder mirroring ConsentManager's purpose rows (label + status line, action button).
+function ConsentManagerSkeleton() {
+  return (
+    <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading consents" style={{ display: "grid", gap: "var(--space-3)" }}>
+      <SkeletonKeyframes />
+      {["45%", "55%", "38%"].map((width, index) => (
+        <div
+          key={index}
+          style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 12, minHeight: 44 }}
+        >
+          <div style={{ display: "grid", gap: 6 }}>
+            <SkeletonBlock width={width} height="14px" />
+            <SkeletonBlock width="30%" height="12px" />
+          </div>
+          <SkeletonBlock width="88px" height="36px" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -308,7 +348,7 @@ function RequestsList({ requests }) {
       data-dev-shell="0"
     >
       <table
-        style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}
+        className="app-data-table"
         data-dev-section="1"
         data-dev-section-key="profile-privacy-requests-table"
         data-dev-section-type="data-table"
@@ -411,7 +451,7 @@ export function PrivacyPanel() {
           {data ? (
             <ProfileSummary profile={data.profile} />
           ) : (
-            <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>Loading...</p>
+            <ProfileSummarySkeleton />
           )}
         </PrivacySection>
 
@@ -434,7 +474,7 @@ export function PrivacyPanel() {
           {data ? (
             <ConsentManager initial={data.consents} onUpdated={() => setTick((n) => n + 1)} />
           ) : (
-            <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>Loading...</p>
+            <ConsentManagerSkeleton />
           )}
         </PrivacySection>
 

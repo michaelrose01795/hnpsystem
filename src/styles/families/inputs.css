@@ -91,3 +91,45 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   outline-offset: 2px;
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.32) !important;
 }
+
+/* ========================================================================== */
+/* === Responsive sweep, 2026-09 — breakpoints: src/styles/breakpoints.js  === */
+/* ========================================================================== */
+/*
+ * iOS Safari ZOOMS THE WHOLE PAGE whenever a text-entry control smaller than
+ * 16px receives focus, and it does not zoom back out. --control-font-size is
+ * 0.92rem (~14.7px), so every text field, textarea and select in the app
+ * triggered it: tap a field, the page jumps to ~109% and the layout is now
+ * wider than the viewport, so the user has to pinch back before they can see
+ * what they typed. This was the single biggest phone-usability defect here.
+ *
+ * max() rather than a flat 16px so any control deliberately sized LARGER than
+ * the base keeps its size; only the sub-16px case is lifted.
+ *
+ * Scoped to text-entry controls only. Buttons and tabs never trigger the zoom,
+ * so lifting their font too would change type density across the whole app for
+ * no benefit.
+ *
+ * The element+class selectors are load-bearing: the base .app-input rule lives
+ * in staffglobal.css, which is imported AFTER the families, so a bare
+ * `.app-input` here would tie on specificity and lose on source order.
+ */
+@media (max-width: 640px) {
+  html.staff-scope input.app-input,
+  html.staff-scope textarea.app-input,
+  html.staff-scope select.app-input,
+  html.staff-scope .app-input[contenteditable="true"],
+  html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+  html.staff-scope textarea,
+  html.staff-scope select {
+    font-size: max(16px, var(--control-font-size));
+  }
+
+  /* A fixed-width field cannot fit at the 375px floor. Text inputs become
+     full-width and are allowed to shrink; the control keeps its 44px height,
+     so nothing here reduces the touch target. */
+  html.staff-scope .app-input {
+    max-width: 100%;
+    min-width: 0;
+  }
+}

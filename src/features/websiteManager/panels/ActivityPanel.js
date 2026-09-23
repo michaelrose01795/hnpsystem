@@ -5,6 +5,7 @@ import React, { useMemo, useState } from "react";
 import Section from "@/components/Section";
 import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { formatDateTime } from "../helpers";
 
 export default function ActivityPanel({ activity }) {
@@ -44,13 +45,17 @@ export default function ActivityPanel({ activity }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <DropdownField
-          className="website-manager__toolbar-filter"
-          value={pageFilter}
-          onChange={(e) => setPageFilter(e.target.value)}
-          aria-label="Filter by page"
-          options={[{ value: "all", label: "All pages" }, ...pageOptions]}
-        />
+        <FilterButton activeCount={pageFilter !== "all" ? 1 : 0} onClear={() => setPageFilter("all")}>
+          <FilterField label="Page" htmlFor="website-activity-filter-page">
+            <DropdownField
+              id="website-activity-filter-page"
+              value={pageFilter}
+              onChange={(e) => setPageFilter(e.target.value)}
+              aria-label="Filter by page"
+              options={[{ value: "all", label: "All pages" }, ...pageOptions]}
+            />
+          </FilterField>
+        </FilterButton>
       </div>
 
       {filtered.length === 0 ? (

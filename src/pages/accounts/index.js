@@ -12,13 +12,37 @@ import { exportToCsv } from "@/utils/exportUtils";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import AccountsListPageUi from "@/components/page-ui/accounts/accounts-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+
+// Placeholder mirroring the reference rows (title + meta line, date, action pills)
+// shown while linked invoice / goods-in references load.
+const LinkedReferencesSkeleton = () =>
+<div role="status" aria-live="polite" aria-busy="true" aria-label="Loading links" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <SkeletonKeyframes />
+    {["62%", "48%", "56%"].map((width, index) =>
+  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
+          <div style={{ display: "grid", gap: "6px", flex: 1, minWidth: 0 }}>
+            <SkeletonBlock width="120px" height="16px" />
+            <SkeletonBlock width={width} height="12px" />
+          </div>
+          <SkeletonBlock width="64px" height="12px" />
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <SkeletonBlock width="88px" height="28px" borderRadius="999px" />
+          <SkeletonBlock width="104px" height="28px" borderRadius="999px" />
+        </div>
+      </div>
+  )}
+  </div>;
 
 const ALLOWED_ROLES = [
 "ADMIN",
@@ -190,6 +214,17 @@ export default function AccountsListPage() {
     setFilters(defaultFilters);
   };
 
+  // The filter button's card holds the status and account-type dropdowns. A
+  // restricted user's account type is pinned by permissions, so it neither
+  // counts as an active filter nor gets cleared.
+  const isAccountTypeLocked = Boolean(permissions.restrictedAccountTypes?.length);
+  const activeFilterCount = (filters.status ? 1 : 0) + (!isAccountTypeLocked && filters.accountType ? 1 : 0);
+
+  const handleClearDropdownFilters = () => {
+    handleFilterChange("status", "");
+    if (!isAccountTypeLocked) handleFilterChange("accountType", "");
+  };
+
   const financeLinks = [
   {
     title: "Invoices",
@@ -236,22 +271,28 @@ export default function AccountsListPage() {
             flex: "1 1 240px"
           }} />
 
-      <DropdownField
-          name="status"
-          value={filters.status}
-          onChange={(event) => handleFilterChange("status", event.target.value)}
-          placeholder="All statuses"
-          options={[{ label: "All Statuses", value: "", placeholder: true }, ...ACCOUNT_STATUSES.map((status) => ({ label: status, value: status }))]}
-          style={{ flex: "0 0 200px" }} />
+      <FilterButton activeCount={activeFilterCount} onClear={handleClearDropdownFilters}>
+        <FilterField label="Status" htmlFor="accounts-filter-status">
+          <DropdownField
+              id="accounts-filter-status"
+              name="status"
+              value={filters.status}
+              onChange={(event) => handleFilterChange("status", event.target.value)}
+              placeholder="All statuses"
+              options={[{ label: "All Statuses", value: "", placeholder: true }, ...ACCOUNT_STATUSES.map((status) => ({ label: status, value: status }))]} />
+        </FilterField>
 
-      <DropdownField
-          name="accountType"
-          value={filters.accountType}
-          onChange={(event) => handleFilterChange("accountType", event.target.value)}
-          placeholder="All account types"
-          options={[{ label: "All Account Types", value: "", placeholder: true }, ...ACCOUNT_TYPES.map((type) => ({ label: type, value: type }))]}
-          disabled={Boolean(permissions.restrictedAccountTypes?.length)}
-          style={{ flex: "0 0 220px" }} />
+        <FilterField label="Account Type" htmlFor="accounts-filter-account-type">
+          <DropdownField
+              id="accounts-filter-account-type"
+              name="accountType"
+              value={filters.accountType}
+              onChange={(event) => handleFilterChange("accountType", event.target.value)}
+              placeholder="All account types"
+              options={[{ label: "All Account Types", value: "", placeholder: true }, ...ACCOUNT_TYPES.map((type) => ({ label: type, value: type }))]}
+              disabled={isAccountTypeLocked} />
+        </FilterField>
+      </FilterButton>
 
       <div style={{ flex: "0 0 180px" }}>
         <CalendarField name="dateFrom" placeholder="From date" value={filters.dateFrom} onChange={(event) => handleFilterChange("dateFrom", event.target.value)} />
@@ -261,7 +302,7 @@ export default function AccountsListPage() {
       </div>
       <input className="app-input" type="number" name="minBalance" value={filters.minBalance} placeholder="Min balance" onChange={(event) => handleFilterChange("minBalance", event.target.value)} style={{ flex: "0 0 124px" }} />
       <input className="app-input" type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max balance" onChange={(event) => handleFilterChange("maxBalance", event.target.value)} style={{ flex: "0 0 124px" }} />
-      <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters} style={{ color: "var(--primary)" }}>
+      <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters}>
         Clear filters
       </Button>
       </ToolbarRow>
@@ -287,16 +328,19 @@ export default function AccountsListPage() {
               <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.76rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                 {link.title}
               </p>
-              <strong style={{ display: "block", marginTop: "8px", color: "var(--text-1)", fontSize: "1.05rem" }}>
-                {link.value}
-              </strong>
+              {/* The mark sits on the value's row: the reference IS what you
+                  are opening, so the action belongs beside it rather than as
+                  a separate full-width button underneath. */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginTop: "8px" }}>
+                <strong style={{ color: "var(--text-1)", fontSize: "1.05rem", minWidth: 0 }}>
+                  {link.value}
+                </strong>
+                <Button type="button" variant="secondary" symbol="open" aria-label={link.actionLabel} onClick={link.onClick}>{link.actionLabel}</Button>
+              </div>
             </div>
-            <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5, minHeight: "3em" }}>
+            <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5 }}>
               {link.description}
             </p>
-            <Button type="button" variant="secondary" size="sm" onClick={link.onClick}>
-              {link.actionLabel}
-            </Button>
           </LayerSurface>
         )}
       </div>
@@ -306,11 +350,11 @@ export default function AccountsListPage() {
         <LayerSurface as="article" sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Invoice References</h3>
-            <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/accounts/invoices")}>
+            <Button type="button" variant="secondary" size="xs" onClick={() => router.push("/accounts/invoices")}>
               All invoices
             </Button>
           </div>
-          {linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading links…</p>}
+          {linkedLoading && linkedInvoices.length === 0 && <LinkedReferencesSkeleton />}
           {!linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>No invoice references available.</p>}
           {linkedInvoices.map((invoice) =>
           <div key={invoice.id || invoice.invoice_id} style={{ borderTop: "var(--separating-line)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -330,12 +374,12 @@ export default function AccountsListPage() {
                   </Button>
               }
                 {invoice.order_number &&
-              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/new-order/${encodeURIComponent(invoice.order_number)}`)}>
+              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/order/${encodeURIComponent(invoice.order_number)}`)}>
                     Order {invoice.order_number}
                   </Button>
               }
                 {invoice.invoice_id &&
-              <Button type="button" variant="ghost" size="xs" onClick={() => router.push(`/accounts/invoices/${encodeURIComponent(invoice.invoice_id)}`)}>
+              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/accounts/invoices/${encodeURIComponent(invoice.invoice_id)}`)}>
                     Invoice details
                   </Button>
               }
@@ -346,11 +390,11 @@ export default function AccountsListPage() {
         <LayerSurface as="article" sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Goods In References</h3>
-            <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/goods-in")}>
+            <Button type="button" variant="secondary" size="xs" onClick={() => router.push("/goods-in")}>
               Goods in
             </Button>
           </div>
-          {linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading links…</p>}
+          {linkedLoading && linkedGoodsIn.length === 0 && <LinkedReferencesSkeleton />}
           {!linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>No goods-in references available.</p>}
           {linkedGoodsIn.map((record) =>
           <div key={record.id || record.goods_in_number} style={{ borderTop: "var(--separating-line)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -369,7 +413,7 @@ export default function AccountsListPage() {
                     {record.goods_in_number}
                   </Button>
               }
-                <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/goods-in")}>
+                <Button type="button" variant="secondary" size="xs" onClick={() => router.push("/goods-in")}>
                   Goods in workspace
                 </Button>
               </div>

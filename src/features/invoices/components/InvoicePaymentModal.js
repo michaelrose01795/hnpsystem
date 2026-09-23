@@ -482,8 +482,10 @@ export default function InvoicePaymentModal({
                   </div>
                 )}
 
+                {/* Global warning banner from staffglobal.css — replaces the
+                    per-module .releasePromptBox block. */}
                 {showReleasePrompt && (
-                  <div className={styles.releasePromptBox}>
+                  <div className="app-status-message app-status-message--warning">
                     <h4 style={{ margin: "0 0 8px" }}>Release vehicle now?</h4>
                     <p style={{ margin: "0 0 12px", opacity: 0.9 }}>
                       Payment has been completed. Confirm whether the vehicle or job can now be released.

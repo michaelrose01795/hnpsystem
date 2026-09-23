@@ -22,7 +22,7 @@ import {
   groupVhcMedia,
   prioritiseRowsWithMedia,
 } from "@/lib/vhc/buildVhcMediaLibrary";
-import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { InlineLoading, SkeletonBlock, SkeletonKeyframes, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -5591,7 +5591,7 @@ export default function VhcDetailsPanel({
                             fontSize: "12px",
                           }}
                         >
-                          + Add customer description
+                          Add customer description
                         </button>
                       )}
                       {deferredIssueNotes.length > 0 ? (
@@ -5943,7 +5943,9 @@ export default function VhcDetailsPanel({
                             }}
                           >
                             {labourSuggestionsLoading ? (
-                              <div>Loading suggestions…</div>
+                              <div aria-busy="true">
+                                <InlineLoading width={120} label="Loading suggestions" />
+                              </div>
                             ) : labourSuggestions.length === 0 ? (
                               <div>Suggested labour time</div>
                             ) : (
@@ -8956,7 +8958,7 @@ export default function VhcDetailsPanel({
                           ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                               <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                <table className="app-data-table app-data-table--compact">
                                   <thead>
                                     <tr style={{ background: "var(--theme)", color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "10px" }}>
                                       <th style={{ textAlign: "left", padding: "10px 12px" }}>Part</th>
@@ -9057,7 +9059,7 @@ export default function VhcDetailsPanel({
         }}
       >
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+          <table className="app-data-table">
             <thead>
               <tr
                 style={{
@@ -9669,7 +9671,7 @@ export default function VhcDetailsPanel({
                     onClick={() => handleRowAddMediaClick(concern)}
                     busy={uploading}
                   >
-                    + Add media
+                    Add media
                   </Button>
                   <Button
                     type="button"
@@ -9677,7 +9679,7 @@ export default function VhcDetailsPanel({
                     size="xs"
                     onClick={() => setMoveMediaPickerConcernId((current) => (current === key ? null : key))}
                   >
-                    {pickerOpen ? "Close" : "⇄ Move media"}
+                    {pickerOpen ? "Close" : "Move media"}
                   </Button>
                 </div>
 
@@ -9966,7 +9968,7 @@ export default function VhcDetailsPanel({
                 size="sm"
                 onClick={() => router.push("/jobs")}
               >
-                ← Back
+                Back
               </Button>
             <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
               {/* Button to redirect to car and key tracking page with job details pre-filled */}
@@ -9983,7 +9985,7 @@ export default function VhcDetailsPanel({
                     colour: job?.vehicle?.colour || "",
                     openPopup: "true"
                   });
-                  router.push(`/tracking?${params.toString()}`);
+                  router.push(`/tracking/Key-Parking?${params.toString()}`);
                 }}
                 disabled={!job?.job_number}
               >
@@ -9999,7 +10001,7 @@ export default function VhcDetailsPanel({
                 }}
                 disabled={!job?.job_number}
               >
-                View job card →
+                View job card
               </Button>
             </div>
           </div>
@@ -11429,13 +11431,26 @@ export default function VhcDetailsPanel({
                   ))}
                 </div>
               )}
-              {partsSearchSuggestionsLoading && <small role="status">Loading suggestions…</small>}
+              {partsSearchSuggestionsLoading && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  aria-busy="true"
+                  aria-label="Loading suggestions"
+                  style={{ display: "flex", flexWrap: "wrap", gap: "var(--control-gap)", alignItems: "center" }}
+                >
+                  <SkeletonKeyframes />
+                  {["96px", "72px", "110px"].map((width) => (
+                    <SkeletonBlock key={width} width={width} height="28px" borderRadius="var(--radius-pill)" />
+                  ))}
+                </div>
+              )}
               {partsLearningSavedAt && Date.now() - partsLearningSavedAt < 2500 && (
                 <div className="app-status-message app-status-message--success" role="status">
                   Search preference saved.
                 </div>
               )}
-              {addPartsLoading && <small role="status">Searching…</small>}
+              {addPartsLoading && <InlineLoading width={120} label="Searching" />}
               {addPartsError && !addPartsLoading && (
                 <div className="app-status-message app-status-message--danger" role="alert">
                   {addPartsError}
@@ -11563,7 +11578,19 @@ export default function VhcDetailsPanel({
             >
               <h3 style={{ margin: 0 }}>Search results</h3>
               {addPartsResults.length === 0 ? (
-                <p style={{ margin: 0 }}>{addPartsLoading ? "Loading results…" : "No parts to show yet."}</p>
+                addPartsLoading ? (
+                  <div style={{ maxHeight: "200px", overflow: "auto" }} aria-busy="true">
+                    <TableSkeleton
+                      columns={["Part", "Number", "Location", "Stock", "Action"]}
+                      rows={4}
+                      label="Loading results"
+                      className="app-data-table--compact app-data-table--rounded"
+                      style={{ minWidth: "560px" }}
+                    />
+                  </div>
+                ) : (
+                  <p style={{ margin: 0 }}>No parts to show yet.</p>
+                )
               ) : (
                 <div style={{ maxHeight: "200px", overflow: "auto" }}>
                   <table className="app-data-table app-data-table--compact app-data-table--rounded" style={{ minWidth: "560px" }}>

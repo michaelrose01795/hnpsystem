@@ -10,6 +10,7 @@ import ClockingPageUi from "@/components/page-ui/clocking/clocking-ui";
 import PopupModal from "@/components/popups/popupStyleApi";
 import { ContentWidth, PageShell } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
@@ -636,8 +637,20 @@ function ClockingOverviewTab() {
         {capacityError ? <div className="app-status-message app-status-message--warning" role="status">Capacity summary unavailable: {capacityError}</div> : null}
         <div className="clocking-board__toolbar">
           <div className="clocking-board__filters">
-            <DropdownField ariaLabel="Filter technician status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} options={STATUS_FILTER_OPTIONS} />
-            <DropdownField ariaLabel="Sort technicians" value={sortBy} onChange={(event) => setSortBy(event.target.value)} options={SORT_OPTIONS} />
+            <FilterButton
+              activeCount={(statusFilter !== "all" ? 1 : 0) + (sortBy !== "workshop" ? 1 : 0)}
+              onClear={() => {
+                setStatusFilter("all");
+                setSortBy("workshop");
+              }}
+            >
+              <FilterField label="Status" htmlFor="clocking-filter-status">
+                <DropdownField id="clocking-filter-status" ariaLabel="Filter technician status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} options={STATUS_FILTER_OPTIONS} />
+              </FilterField>
+              <FilterField label="Sort" htmlFor="clocking-filter-sort">
+                <DropdownField id="clocking-filter-sort" ariaLabel="Sort technicians" value={sortBy} onChange={(event) => setSortBy(event.target.value)} options={SORT_OPTIONS} />
+              </FilterField>
+            </FilterButton>
             {canManageCapacity ? <Button type="button" variant="primary" size="sm" onClick={() => setCapacitySettingsOpen(true)}>Capacity settings</Button> : null}
           </div>
           <div className="clocking-board__live-state" aria-live="polite">

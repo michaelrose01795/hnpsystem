@@ -84,7 +84,6 @@ const BASELINE_ALLOWLIST = new Set([
   "src/components/Workshop/JobClockingCard.js",
   "src/features/invoices/components/ProformaOverrideModal.js",
   "src/features/presentation/usePdfExport.js",
-  "src/features/tracking/map/TrackingMap.js",
   "src/features/websiteManager/panels/LivePreviewPanel.js",
   "src/features/websiteManager/panels/MediaPanel.js",
   "src/features/websiteManager/panels/PageContentPanel.js",

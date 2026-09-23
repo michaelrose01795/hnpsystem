@@ -1,0 +1,1221 @@
+/* file location: src/styles/families/messages.css
+ *
+ * Canonical home for the Messages / Conversation hub family.
+ *
+ * Variants: workspace layout (list | conversation | details), conversation
+ *           row, conversation header, message bubble (peer | mine | external |
+ *           event | deleted), separators, action cards (task, reminder),
+ *           composer + its popovers, details panel sections.
+ * Components: src/components/page-ui/messages/*
+ * Registered in: src/components/ui/variants.js (id "messages")
+ * Showcase:   /messages
+ *
+ * Design rules this file obeys (CLAUDE.md §3.0a / §3.0a-2):
+ *   - No borders, no side-bars. A selected row is a filled accent row; a
+ *     state is a tint plus words, never a coloured edge.
+ *   - The three panels sit on a page card (--surface) and are the next rung
+ *     down (--theme, via <LayerTheme>); rows, bubbles and cards inside a panel
+ *     flip back to --surface.
+ *   - No avatars or initials anywhere. People are identified by name.
+ *   - Internal vs customer: anything a customer can read carries the warning
+ *     tint (--warning-surface / --warning-text) and says so in words.
+ */
+
+/* ========================================================================== */
+/* Workspace layout                                                           */
+/* ========================================================================== */
+
+/* The shell is a size container: the columns respond to the width the
+   messages area actually has (sidebar open or closed), not the window. */
+html.staff-scope .app-msg {
+  container-type: inline-size;
+  container-name: messages;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html.staff-scope .app-msg__grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: var(--page-stack-gap);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+html.staff-scope .app-msg--details-open .app-msg__grid {
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr) minmax(280px, 340px);
+}
+
+/* A grid slot. The panel inside is a <LayerTheme> that fills it; the slot is
+   what the layout shows and hides, because the layer sets display inline. */
+html.staff-scope .app-msg__slot {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+html.staff-scope .app-msg__panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  /* The conversation panel is a <section>, which a global rule gives a
+     bottom margin; every panel fills its grid row exactly instead. */
+  margin: 0;
+}
+
+/* Every scrolling column keeps its children at their natural height — a
+   flex child would otherwise shrink to fit and its lines would overlap. */
+html.staff-scope .app-msg-list__scroll > *,
+html.staff-scope .app-msg-feed > *,
+html.staff-scope .app-msg-details__scroll > *,
+html.staff-scope .app-msg-picker > *,
+html.staff-scope .app-msg-popover > * {
+  flex-shrink: 0;
+}
+
+/* Not room for three readable columns: the details panel takes the list's
+   place instead of sliding over the conversation, so nothing overlaps. */
+@container messages (max-width: 1099px) {
+  html.staff-scope .app-msg--details-open .app-msg__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  }
+
+  html.staff-scope .app-msg--details-open .app-msg__slot--list {
+    display: none;
+  }
+}
+
+/* One column: details, when open, replaces the conversation. */
+@container messages (max-width: 719px) {
+  html.staff-scope .app-msg__grid,
+  html.staff-scope .app-msg--details-open .app-msg__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  html.staff-scope .app-msg--details-open .app-msg__slot--conversation {
+    display: none;
+  }
+}
+
+
+/* ========================================================================== */
+/* Shared bits                                                                */
+/* ========================================================================== */
+
+/* Caption-sized label: a conversation type, a status, a record type. Text,
+   not a badge — a badge is a 44px tile and would swamp a list row. */
+html.staff-scope .app-msg-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-1);
+  opacity: 0.72;
+}
+
+html.staff-scope .app-msg-tag--external,
+html.staff-scope .app-msg-tag--warning {
+  color: var(--warning-text);
+  opacity: 1;
+}
+
+html.staff-scope .app-msg-tag--danger {
+  color: var(--danger-text);
+  opacity: 1;
+}
+
+html.staff-scope .app-msg-tag--accent {
+  color: var(--accentText);
+  opacity: 1;
+}
+
+html.staff-scope .app-msg-tag--success {
+  color: var(--success-text);
+  opacity: 1;
+}
+
+html.staff-scope .app-msg-muted {
+  color: var(--text-1);
+  opacity: 0.68;
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .app-msg-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Presence: a small dot + words. The dot is never the only signal. */
+html.staff-scope .app-msg-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-body-sm);
+  color: var(--text-1);
+  min-width: 0;
+}
+
+html.staff-scope .app-msg-presence::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--grey-accent);
+}
+
+html.staff-scope .app-msg-presence--active::before {
+  background: var(--success-base);
+}
+
+html.staff-scope .app-msg-presence--busy::before {
+  background: var(--warning-base);
+}
+
+html.staff-scope .app-msg-presence--external::before {
+  background: var(--warning-base);
+}
+
+/* ========================================================================== */
+/* Conversation list                                                          */
+/* ========================================================================== */
+
+/* Search, filter, remove and new on one row. The search takes whatever the
+   three 44px circles leave. */
+html.staff-scope .app-msg-list__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex: none;
+  min-width: 0;
+}
+
+html.staff-scope .app-msg-list__search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html.staff-scope .app-msg-list__toolbar > :not(.app-msg-list__search) {
+  flex: none;
+}
+
+html.staff-scope .app-msg-list__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+html.staff-scope .app-msg-list__group {
+  margin: var(--space-sm) 0 var(--space-xs);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  opacity: 0.6;
+}
+
+html.staff-scope .app-msg-list__group:first-child {
+  margin-top: 0;
+}
+
+html.staff-scope .app-msg-list__selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/* One conversation: a single 44px line — name, optional tag, time, unread
+   count. The latest message is the row's tooltip, not a second line. */
+html.staff-scope .app-msg-row,
+html.staff-scope .app-msg-pin {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-1);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.16s ease;
+}
+
+html.staff-scope .app-msg-row:hover,
+html.staff-scope .app-msg-pin:hover {
+  background: var(--secondary);
+}
+
+html.staff-scope .app-msg-row:focus-visible,
+html.staff-scope .app-msg-pin:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .app-msg-row.is-active,
+html.staff-scope .app-msg-pin.is-active {
+  background: var(--primary);
+  color: var(--text-2);
+}
+
+html.staff-scope .app-msg-row.is-active .app-msg-tag,
+html.staff-scope .app-msg-row.is-active .app-msg-row__time {
+  color: var(--text-2);
+  opacity: 0.9;
+}
+
+html.staff-scope .app-msg-row__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+
+html.staff-scope .app-msg-row--unread .app-msg-row__title {
+  font-weight: 800;
+}
+
+html.staff-scope .app-msg-row__time {
+  flex: none;
+  font-size: var(--text-caption);
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+html.staff-scope .app-msg-row--unread .app-msg-row__time {
+  color: var(--accentText);
+  font-weight: 700;
+  opacity: 1;
+}
+
+html.staff-scope .app-msg-row .app-msg-tag {
+  flex: none;
+}
+
+html.staff-scope .app-msg-row__count {
+  flex: none;
+}
+
+/* Pinned conversations: up to three on one row, sharing it equally —
+   one takes the full width, two split 50/50, three split in thirds. */
+html.staff-scope .app-msg-pins {
+  display: grid;
+  grid-template-columns: repeat(var(--msg-pin-count, 1), minmax(0, 1fr));
+  gap: var(--space-xs);
+  flex: none;
+}
+
+html.staff-scope .app-msg-pins[data-count="2"] {
+  --msg-pin-count: 2;
+}
+
+html.staff-scope .app-msg-pins[data-count="3"] {
+  --msg-pin-count: 3;
+}
+
+html.staff-scope .app-msg-pin {
+  min-width: 0;
+}
+
+/* ========================================================================== */
+/* Conversation panel                                                         */
+/* ========================================================================== */
+
+html.staff-scope .app-msg-convo {
+  position: relative;
+}
+
+/* Name, type and presence on ONE row beside the actions: the name keeps its
+   natural width and ellipses first when space runs out, the meta after it. */
+html.staff-scope .app-msg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex: none;
+  flex-wrap: nowrap;
+  min-height: var(--control-height);
+}
+
+html.staff-scope .app-msg-header__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+html.staff-scope .app-msg-header__text {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+html.staff-scope .app-msg-header__title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-h3);
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-msg-header__meta {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-msg-header__meta > * {
+  flex: none;
+}
+
+html.staff-scope .app-msg-header__actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  flex: none;
+}
+
+html.staff-scope .app-msg-header__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* The in-conversation search row. */
+html.staff-scope .app-msg-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: none;
+  flex-wrap: wrap;
+}
+
+html.staff-scope .app-msg-search__field {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* ========================================================================== */
+/* Transcript                                                                 */
+/* ========================================================================== */
+
+html.staff-scope .app-msg-feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-sm) var(--space-xs);
+}
+
+html.staff-scope .app-msg-separator {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-3) 0 var(--space-sm);
+}
+
+html.staff-scope .app-msg-separator__label {
+  padding: var(--space-xs) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+html.staff-scope .app-msg-separator--unread .app-msg-separator__label {
+  background: var(--primary);
+  color: var(--text-2);
+}
+
+/* A status / priority / owner change: a centred line, not a bubble. */
+html.staff-scope .app-msg-event {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-xs) 0;
+  font-size: var(--text-body-sm);
+  text-align: center;
+  color: var(--text-1);
+  opacity: 0.75;
+}
+
+html.staff-scope .app-msg-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  max-width: min(78%, 720px);
+  scroll-margin: var(--space-xl);
+}
+
+html.staff-scope .app-msg-item--mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+html.staff-scope .app-msg-item--first {
+  margin-top: var(--space-sm);
+}
+
+html.staff-scope .app-msg-item__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: 0 var(--space-xs);
+  font-size: var(--text-caption);
+  color: var(--text-1);
+}
+
+html.staff-scope .app-msg-item__sender {
+  font-weight: 700;
+  color: var(--accentText);
+}
+
+html.staff-scope .app-msg-item__role {
+  opacity: 0.65;
+}
+
+html.staff-scope .app-msg-item__row {
+  position: relative;
+  display: flex;
+  max-width: 100%;
+}
+
+html.staff-scope .app-msg-item--mine .app-msg-item__row {
+  justify-content: flex-end;
+}
+
+html.staff-scope .app-msg-bubble {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--space-sm) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-1);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+html.staff-scope .app-msg-bubble--mine {
+  background: var(--primary);
+  color: var(--text-2);
+}
+
+/* Written by the customer — the external voice in the conversation. */
+html.staff-scope .app-msg-bubble--external {
+  background: var(--warning-surface);
+  color: var(--text-1);
+}
+
+html.staff-scope .app-msg-bubble--deleted {
+  background: transparent;
+  color: var(--text-1);
+  font-style: italic;
+  opacity: 0.65;
+}
+
+html.staff-scope .app-msg-item.is-highlighted .app-msg-bubble {
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .app-msg-bubble__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  font-size: var(--text-caption);
+  opacity: 0.78;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-msg-bubble__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+/* Quoted message a reply answers. */
+html.staff-scope .app-msg-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--theme);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  cursor: pointer;
+  white-space: normal;
+}
+
+html.staff-scope .app-msg-bubble--mine .app-msg-quote {
+  background: var(--surface);
+}
+
+html.staff-scope .app-msg-quote__author {
+  font-weight: 700;
+  font-size: var(--text-caption);
+  color: var(--accentText);
+}
+
+html.staff-scope .app-msg-quote__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Inline record reference (/job 123) and @mention inside a bubble. */
+html.staff-scope .app-msg-ref {
+  display: inline;
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-xs);
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-msg-ref:hover,
+html.staff-scope .app-msg-ref:focus-visible {
+  background: var(--secondary-hover);
+}
+
+html.staff-scope .app-msg-bubble--mine .app-msg-ref,
+html.staff-scope .app-msg-bubble--mine .app-msg-mention {
+  background: var(--surface);
+  color: var(--accentText);
+}
+
+html.staff-scope .app-msg-mention {
+  display: inline;
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-xs);
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-msg-mention--me,
+html.staff-scope .app-msg-bubble--mine .app-msg-mention--me {
+  background: var(--warning-surface);
+  color: var(--warning-text);
+  font-weight: 700;
+}
+
+html.staff-scope .app-msg-url {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Message actions. Clicking a message opens this toolbar ABOVE it — aligned
+   to the message's left edge for a received message and its right edge for
+   one you sent. It is portalled to <body> with fixed coordinates (set by
+   MessageItem.js) so no scrolling transcript or neighbouring card can clip
+   it, and it sits above every card on the page.
+
+   Sizing: the toolbar is a 44px strip (the control floor) holding 32px
+   circles — --space-1 (6px) + 32px + 6px. React, reply, pin and more are
+   all 32px; the reactions that slide out of the react button match. */
+html.staff-scope .app-msg-toolbar {
+  position: fixed;
+  z-index: var(--z-popover);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--control-height);
+  max-width: calc(100vw - 16px);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: var(--shadow-lg);
+}
+
+/* The react control sits flat inside the strip: no second 44px band, no
+   second fill, and its button stays a 32px circle before it opens as well
+   as after. */
+html.staff-scope .app-msg-toolbar .app-reaction-bar,
+html.staff-scope .app-msg-toolbar .app-reaction-bar.is-open {
+  height: var(--table-action-btn-height);
+  max-height: var(--table-action-btn-height);
+  padding: 0;
+  background: transparent;
+}
+
+html.staff-scope .app-msg-toolbar .app-reaction-bar:not(.is-open) .app-reaction-trigger {
+  width: var(--table-action-btn-height);
+  min-width: var(--table-action-btn-height);
+  height: var(--table-action-btn-height);
+  min-height: var(--table-action-btn-height);
+  max-height: var(--table-action-btn-height);
+}
+
+/* The global touch-target rule (button:not(.app-btn) → 44px min-height) would
+   stretch the 32px symbol circles into 32×44 pills. Inside the 44px strip the
+   strip is the touch target, so the circle keeps its 32px, exactly as it does
+   inside .app-data-table. */
+html.staff-scope .app-msg-toolbar .app-symbol-btn {
+  min-height: var(--table-action-btn-height);
+}
+
+/* The react button takes the same solid accent fill as the reply, pin and
+   more circles beside it (the family's Secondary tint would make it the odd
+   one out). Re-bound through the button family's own --btn-* variables. */
+html.staff-scope .app-msg-toolbar .app-reaction-trigger {
+  --btn-bg: var(--primary);
+  --btn-color: var(--onAccentText);
+}
+
+html.staff-scope .app-msg-toolbar .app-reaction-trigger:hover,
+html.staff-scope .app-msg-toolbar .app-reaction-trigger:focus-visible {
+  --btn-bg: var(--primary-hover);
+}
+
+html.staff-scope .app-msg-toolbar .app-reaction-trigger:active {
+  --btn-bg: var(--primary-pressed);
+}
+
+html.staff-scope .app-msg-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding: 0 var(--space-xs);
+}
+
+html.staff-scope .app-msg-receipt {
+  padding: 0 var(--space-xs);
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+/* "More" menu (message and conversation header). Floated over the page by
+   FloatingLayer.js, so it sits above every card and is never clipped. Every
+   row is a full-width 44px button. */
+html.staff-scope .app-msg-menu {
+  z-index: var(--z-popover);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 220px;
+  max-width: calc(100vw - 16px);
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+html.staff-scope .app-msg-menu > .app-btn {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+html.staff-scope .app-msg-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* ========================================================================== */
+/* Action cards: task, reminder                                               */
+/* ========================================================================== */
+
+html.staff-scope .app-msg-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: min(260px, 100%);
+  padding: var(--space-sm) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--theme);
+  color: var(--text-1);
+  white-space: normal;
+}
+
+html.staff-scope .app-msg-bubble--mine .app-msg-card {
+  background: var(--surface);
+}
+
+html.staff-scope .app-msg-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .app-msg-card__text {
+  margin: 0;
+  font-weight: 600;
+}
+
+html.staff-scope .app-msg-card--done .app-msg-card__text {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+html.staff-scope .app-msg-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/* ========================================================================== */
+/* Composer                                                                   */
+/* ========================================================================== */
+
+html.staff-scope .app-msg-composer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: none;
+}
+
+html.staff-scope .app-msg-composer__notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: var(--control-height);
+  padding: var(--space-xs) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .app-msg-composer__notice--external {
+  background: var(--warning-surface);
+  color: var(--warning-text);
+  font-weight: 600;
+}
+
+html.staff-scope .app-msg-composer__notice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html.staff-scope .app-msg-composer__notice-text > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-msg-composer__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .app-msg-composer__tools {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+  flex: none;
+}
+
+html.staff-scope .app-msg-composer__field {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html.staff-scope .app-msg-composer__input {
+  display: block;
+  width: 100%;
+  height: var(--control-height);
+  min-height: var(--control-height);
+  max-height: 180px;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.4;
+}
+
+/* The placeholder stays on the one line the empty box has. */
+html.staff-scope .app-msg-composer__input::placeholder {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Phones keep attach and send beside the text box so the row still fits at
+   44px targets; slash commands and emoji remain available by typing. */
+@media (max-width: 767px) {
+  html.staff-scope .app-msg-composer__tools .app-msg-composer__optional {
+    display: none;
+  }
+}
+
+
+/* Slash-command, @mention and emoji popovers above the composer. */
+html.staff-scope .app-msg-popover {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + var(--space-xs));
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: var(--space-xs);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+html.staff-scope .app-msg-popover__group {
+  padding: var(--space-xs) var(--space-sm) 2px;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  opacity: 0.6;
+}
+
+html.staff-scope .app-msg-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-1);
+  cursor: pointer;
+}
+
+html.staff-scope .app-msg-option:hover,
+html.staff-scope .app-msg-option.is-active {
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+}
+
+html.staff-scope .app-msg-option__name {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-msg-option__description {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body-sm);
+  opacity: 0.75;
+  text-align: right;
+}
+
+html.staff-scope .app-msg-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: var(--space-xs);
+}
+
+/* ========================================================================== */
+/* System / bookings feed                                                     */
+/* ========================================================================== */
+
+html.staff-scope .app-msg-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--control-height);
+  padding: var(--space-sm) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-1);
+}
+
+html.staff-scope .app-msg-notice__body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-xs) var(--space-3);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html.staff-scope .app-msg-notice__title {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .app-msg-notice__text {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+@media (max-width: 767px) {
+  html.staff-scope .app-msg-notice {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ========================================================================== */
+/* Details panel                                                              */
+/* ========================================================================== */
+
+html.staff-scope .app-msg-details__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex: none;
+}
+
+html.staff-scope .app-msg-details__title {
+  margin: 0;
+  font-size: var(--text-h4);
+  color: var(--text-1);
+}
+
+html.staff-scope .app-msg-details__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+html.staff-scope .app-msg-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* A <section> is a --surface card (staffglobal's global section rule), so the
+   rows inside one take the next rung, --theme. */
+html.staff-scope .app-msg-section .app-msg-entry,
+html.staff-scope .app-msg-section .app-news-link,
+html.staff-scope .app-msg-picker .app-msg-entry {
+  background: var(--theme);
+}
+
+html.staff-scope .app-msg-section .app-msg-entry--clickable:hover,
+html.staff-scope .app-msg-section .app-news-link:hover {
+  background: var(--secondary);
+}
+
+/* A pending file in the composer: the row, then its 44px remove circle. */
+html.staff-scope .app-msg-composer .app-news-attachment-row {
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* Record links and file rows are tap targets too: 44px on this page. */
+html.staff-scope .app-msg .app-news-link,
+html.staff-scope .app-msg .app-news-attachment {
+  min-height: var(--control-height);
+}
+
+html.staff-scope .app-msg-section__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  opacity: 0.7;
+}
+
+html.staff-scope .app-msg-facts {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(0, 1fr);
+  gap: var(--space-xs) var(--space-3);
+  margin: 0;
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .app-msg-facts dt {
+  opacity: 0.65;
+}
+
+html.staff-scope .app-msg-facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+/* A person, a pinned message, a task: one row in a details list. */
+html.staff-scope .app-msg-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: var(--control-height);
+  padding: var(--space-xs) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-1);
+}
+
+html.staff-scope .app-msg-entry--clickable {
+  cursor: pointer;
+}
+
+html.staff-scope .app-msg-entry--clickable:hover {
+  background: var(--secondary);
+}
+
+html.staff-scope .app-msg-entry--clickable:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .app-msg-entry.is-selected,
+html.staff-scope .app-msg-entry.is-selected:hover {
+  background: var(--primary);
+  color: var(--text-2);
+}
+
+/* The people picker in the "New conversation" popup. */
+html.staff-scope .app-msg-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-height: 180px;
+  max-height: min(40vh, 360px);
+  overflow-y: auto;
+}
+
+html.staff-scope .app-msg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+html.staff-scope .app-msg-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  min-width: 0;
+}
+
+html.staff-scope .app-msg-entry__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html.staff-scope .app-msg-entry__primary {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.staff-scope .app-msg-entry__secondary {
+  font-size: var(--text-caption);
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+html.staff-scope .app-msg-entry__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex: none;
+}
+
+html.staff-scope .app-msg-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* ========================================================================== */
+/* Trace mode                                                                 */
+/* ========================================================================== */
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+  :where(.app-msg-row, .app-msg-bubble, .app-msg-entry) {
+  outline: 2px dashed var(--accent-purple);
+  outline-offset: 1px;
+}

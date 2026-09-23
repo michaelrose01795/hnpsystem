@@ -27,7 +27,10 @@
 // Output is content-hashed in the filename so the assets stay immutably
 // cacheable and a change to the source can never be served stale.
 //
-// Runs from predev / prebuild.
+// Runs from predev / prebuild. `--watch` keeps it running and re-emits whenever a
+// source stylesheet changes — without it, edits to custglobal.css made while
+// `next dev` is running never reach the browser (the page links the hashed file
+// emitted at startup). tools/scripts/dev-with-route-css.js runs it beside dev.
 
 const fs = require("fs");
 const path = require("path");
@@ -41,6 +44,8 @@ const MANIFEST = path.join(ROOT, "src", "config", "routeScopedCss.generated.json
 const SHEETS = {
   website: "src/styles/custglobal.css",
   trackingMap: "src/features/tracking/map/trackingMap.css",
+  trackingStock: "src/features/stockControl/stockControl.css",
+  trackingEquipment: "src/features/tracking/equipment/equipmentTracker.css",
 };
 
 let transform = null;
@@ -101,3 +106,23 @@ const run = () => {
 };
 
 run();
+
+if (process.argv.includes("--watch")) {
+  // Debounced: editors often write a file in several steps.
+  let timer = null;
+  const rerun = (file) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      try {
+        console.log(`[route-css] ${file} changed — re-emitting`);
+        run();
+      } catch (error) {
+        console.error("[route-css] re-emit failed:", error.message);
+      }
+    }, 150);
+  };
+  for (const relativeSource of Object.values(SHEETS)) {
+    fs.watch(path.join(ROOT, relativeSource), () => rerun(relativeSource));
+  }
+  console.log("[route-css] watching", Object.values(SHEETS).join(", "));
+}

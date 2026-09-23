@@ -6,6 +6,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
+import SymbolButton from "@/components/ui/SymbolButton";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/ui/LoadingSkeleton";
 import NewsAvatar from "./NewsAvatar";
@@ -115,27 +116,29 @@ function CommentRow({
         {!comment.isDeleted && !editing && (
           <div className="app-news-comment__actions">
             {depth === 0 && (
-              <Button type="button" variant="ghost" size="xs" onClick={() => onReply?.(comment)}>
-                Reply
-              </Button>
+              <SymbolButton
+                symbol="reply"
+                label="Reply to this comment"
+                onClick={() => onReply?.(comment)}
+              />
             )}
             {isMine && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="xs"
+              <SymbolButton
+                symbol="edit"
+                label="Edit your comment"
                 onClick={() => {
                   setDraft(comment.body);
                   setEditing(true);
                 }}
-              >
-                Edit
-              </Button>
+              />
             )}
             {(isMine || canModerate) && (
-              <Button type="button" variant="ghost" size="xs" busy={busy} onClick={remove}>
-                Delete
-              </Button>
+              <SymbolButton
+                symbol="delete"
+                label="Delete this comment"
+                disabled={busy}
+                onClick={remove}
+              />
             )}
           </div>
         )}

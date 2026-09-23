@@ -2,6 +2,10 @@
 import { getDatabaseClient } from "@/lib/database/client"; // import supabase service client
 import { apiRequest } from "@/lib/api/client";
 import { getAutoMovementRule } from "@/lib/tracking/autoMovement"; // shared rule table (client + server)
+import {
+  getVehicleLocationId,
+  validateVehicleLocationWrite,
+} from "@/lib/tracking/vehicleLocations"; // canonical vehicle-location vocabulary
 import { logFailure } from "@/lib/utils/logFailure";
 
 const supabase = getDatabaseClient(); // create singleton client
@@ -173,7 +177,7 @@ const buildVehicleNotes = ({ notes }) => {
 // location updates and every other actionType are untouched.
 const AUTO_MOVEMENT_DEDUPE_WINDOW_MS = 30000;
 
-const hasMatchingRecentEvent = async ({ jobId, status, action }) => {
+const hasMatchingRecentEvent = async ({ jobId, status, action, includeKey = true }) => {
   if (!jobId) return false;
   const since = new Date(Date.now() - AUTO_MOVEMENT_DEDUPE_WINDOW_MS).toISOString();
   try {
@@ -194,9 +198,12 @@ const hasMatchingRecentEvent = async ({ jobId, status, action }) => {
         .limit(1),
     ]);
     if (vehicleResult.error || keyResult.error) return false;
+    const vehicleLogged = (vehicleResult.data || []).length > 0;
+    // A vehicle-only movement has no key half to wait for.
+    if (!includeKey) return vehicleLogged;
     // Both halves must already exist, otherwise a half-written burst would never
     // be completed.
-    return (vehicleResult.data || []).length > 0 && (keyResult.data || []).length > 0;
+    return vehicleLogged && (keyResult.data || []).length > 0;
   } catch {
     return false;
   }
@@ -216,7 +223,19 @@ export const logNextActionEvents = async ({
   // Set by the automatic status-change path only. Every other caller keeps the
   // previous unconditional insert.
   deduplicate = false,
+  // False only for a vehicle-only automatic rule. Every other caller keeps the
+  // previous behaviour of writing a key row alongside the vehicle row.
+  writeKey = true,
 }) => {
+  // Vehicle location is a closed vocabulary: every new row carries a canonical
+  // label (src/lib/tracking/vehicleLocations.js). Legacy spellings that clearly
+  // mean a section are canonicalised; anything else is refused rather than
+  // written as free text. Historical rows are never touched.
+  const vehicleCheck = validateVehicleLocationWrite(vehicleLocation);
+  if (!vehicleCheck.ok) {
+    return { success: false, error: vehicleCheck.error };
+  }
+
   const keyPayload = {
     job_id: jobId || null,
     vehicle_id: vehicleId || null,
@@ -229,7 +248,7 @@ export const logNextActionEvents = async ({
     job_id: jobId || null,
     vehicle_id: vehicleId || null,
     status: vehicleStatus || statusLabelForAction(actionType),
-    location: vehicleLocation || null,
+    location: vehicleCheck.value || null,
     notes: buildVehicleNotes({ notes }),
     created_by: performedBy || null,
   };
@@ -239,6 +258,7 @@ export const logNextActionEvents = async ({
       jobId,
       status: vehiclePayload.status,
       action: keyPayload.action,
+      includeKey: writeKey,
     });
     if (alreadyLogged) {
       // Another viewer's browser already wrote this movement. Report success so
@@ -248,7 +268,9 @@ export const logNextActionEvents = async ({
   }
 
   const [{ data: keyEvent, error: keyError }, { data: vehicleEvent, error: vehicleError }] = await Promise.all([
-    supabase.from("key_tracking_events").insert(keyPayload).select().single(),
+    writeKey
+      ? supabase.from("key_tracking_events").insert(keyPayload).select().single()
+      : Promise.resolve({ data: null, error: null }),
     supabase.from("vehicle_tracking_events").insert(vehiclePayload).select().single(),
   ]);
 
@@ -322,6 +344,23 @@ export const recordAutomaticMovementForStatus = async ({
       row = data || {};
     }
 
+    // A vehicle-only rule (no key half) is idempotent: when the car is already
+    // recorded in the target section there is nothing to move, so re-saving the
+    // same status never stacks duplicate movements or overrides a newer manual
+    // move back to the same place. Rules that also move the keys keep their
+    // previous behaviour exactly.
+    if (rule.vehicleSection && !rule.keyLocation) {
+      const { data: latestVehicleEvent, error: latestError } = await fetchLatestEvent(
+        "vehicle_tracking_events",
+        "job_id",
+        jobId,
+        "event_id, location, occurred_at"
+      );
+      if (!latestError && latestVehicleEvent && getVehicleLocationId(latestVehicleEvent.location) === rule.vehicleSection) {
+        return { success: true, data: { skipped: true, reason: "already-in-section" } };
+      }
+    }
+
     return await logNextActionEvents({
       actionType: "job_status_change",
       jobId,
@@ -334,6 +373,7 @@ export const recordAutomaticMovementForStatus = async ({
       notes: `Auto-sync from status "${status}"`,
       performedBy: toUserIdOrNull(performedBy),
       deduplicate: true,
+      writeKey: Boolean(rule.keyLocation),
     });
   } catch (error) {
     logFailure("Auto movement error", error);
@@ -732,6 +772,13 @@ export const updateTrackingLocations = async ({
     return { success: false, error: { message: "Missing jobId or vehicleId for tracking update" } };
   }
 
+  // Validate BEFORE anything is written, so a rejected vehicle location never
+  // leaves a half-recorded key movement behind.
+  const vehicleCheck = validateVehicleLocationWrite(vehicleLocation);
+  if (!vehicleCheck.ok) {
+    return { success: false, error: vehicleCheck.error };
+  }
+
   let keyResult = { data: null, error: null };
   let vehicleResult = { data: null, error: null };
 
@@ -776,7 +823,7 @@ export const updateTrackingLocations = async ({
         job_id: targetJobId,
         vehicle_id: targetVehicleId,
         status: nextVehicleStatus,
-        location: vehicleLocation || null,
+        location: vehicleCheck.value || null,
         notes: buildVehicleNotes({ notes }),
         created_by: performedBy || null,
         occurred_at: timestamp,

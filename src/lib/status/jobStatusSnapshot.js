@@ -958,6 +958,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       timestamp: entry.timestamp,
       userId: entry.userId,
       userName: entry.userName,
+      reason: entry.reason || null,
     }));
 
   const requestsSummary = buildRequestsSummary(requestsRes?.data || []);

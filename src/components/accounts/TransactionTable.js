@@ -6,8 +6,10 @@ import PropTypes from "prop-types";
 import { TRANSACTION_TYPES, PAYMENT_METHODS } from "@/config/accounts";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import ToolbarRow from "@/components/ui/ToolbarRow";
+import { SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import Button from "@/components/ui/Button";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
@@ -64,21 +66,29 @@ export default function TransactionTable({ transactions, loading, filters, onFil
             onClear={() => onFilterChange({ ...filters, search: "" })}
             style={{ flex: "1 1 240px" }} />
 
-          <DropdownField
-            name="type"
-            value={filters.type}
-            onChange={handleFilterChange}
-            placeholder="All types"
-            options={[{ label: "All Types", value: "", placeholder: true }, ...TRANSACTION_TYPES.map((option) => ({ label: option, value: option }))]}
-            style={{ flex: "0 0 180px" }} />
+          <FilterButton
+            activeCount={(filters.type ? 1 : 0) + (filters.payment_method ? 1 : 0)}
+            onClear={() => onFilterChange({ ...filters, type: "", payment_method: "" })}>
+            <FilterField label="Type" htmlFor="accounts-transactions-filter-type">
+              <DropdownField
+                id="accounts-transactions-filter-type"
+                name="type"
+                value={filters.type}
+                onChange={handleFilterChange}
+                placeholder="All types"
+                options={[{ label: "All Types", value: "", placeholder: true }, ...TRANSACTION_TYPES.map((option) => ({ label: option, value: option }))]} />
+            </FilterField>
 
-          <DropdownField
-            name="payment_method"
-            value={filters.payment_method}
-            onChange={handleFilterChange}
-            placeholder="All methods"
-            options={[{ label: "All Methods", value: "", placeholder: true }, ...PAYMENT_METHODS.map((method) => ({ label: method, value: method }))]}
-            style={{ flex: "0 0 180px" }} />
+            <FilterField label="Payment Method" htmlFor="accounts-transactions-filter-method">
+              <DropdownField
+                id="accounts-transactions-filter-method"
+                name="payment_method"
+                value={filters.payment_method}
+                onChange={handleFilterChange}
+                placeholder="All methods"
+                options={[{ label: "All Methods", value: "", placeholder: true }, ...PAYMENT_METHODS.map((method) => ({ label: method, value: method }))]} />
+            </FilterField>
+          </FilterButton>
 
           <div style={{ flex: "0 0 160px" }}>
             <CalendarField name="from" placeholder="From date" value={filters.from} onChange={handleFilterChange} size="sm" />
@@ -94,8 +104,8 @@ export default function TransactionTable({ transactions, loading, filters, onFil
       </header>
       }
       <div style={{ overflowX: "auto", overflowY: filteredTransactions.length > 10 ? "auto" : "visible", maxHeight: filteredTransactions.length > 10 ? "640px" : "none" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-1)" }}>
+        <table className="app-data-table">
+          <thead>
             <tr>
               <th style={{ textAlign: "left", padding: "12px" }}>Date</th>
               <th style={{ textAlign: "left", padding: "12px" }}>Transaction ID</th>
@@ -106,11 +116,9 @@ export default function TransactionTable({ transactions, loading, filters, onFil
               <th style={{ textAlign: "left", padding: "12px" }}>Created By</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody aria-busy={loading ? "true" : undefined} aria-label={loading ? "Loading transactions" : undefined}>
             {loading &&
-            <tr>
-                <td colSpan={7} style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>Loading transactions…</td>
-              </tr>
+            Array.from({ length: 6 }, (_, index) => <SkeletonTableRow key={`transaction-skeleton-${index}`} cols={7} />)
             }
             {!loading && filteredTransactions.length === 0 &&
             <tr>

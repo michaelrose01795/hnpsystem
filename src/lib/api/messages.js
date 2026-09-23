@@ -77,3 +77,38 @@ export const saveMessageTemplate = (payload) =>
     method: "POST",
     body: payload,
   });
+
+// Conversation hub ---------------------------------------------------------
+
+export const applyMessageAction = (threadId, payload) =>
+  apiRequest(`/api/messages/threads/${encodeURIComponent(threadId)}/actions`, {
+    method: "POST",
+    body: payload,
+  });
+
+export const resolveMessageRecords = (references = []) =>
+  apiRequest("/api/messages/records/resolve", {
+    method: "POST",
+    body: { references },
+  });
+
+export const buildAttachmentUrl = (threadId, path, { download = false } = {}) =>
+  `/api/messages/threads/${encodeURIComponent(threadId)}/attachments?path=${encodeURIComponent(
+    path
+  )}${download ? "&download=1" : ""}`;
+
+// Multipart, so this goes through fetch rather than the JSON apiRequest helper.
+export const uploadMessageAttachment = async (threadId, file, { actorId } = {}) => {
+  const form = new FormData();
+  form.append("file", file);
+  if (actorId) form.append("actorId", String(actorId));
+  const response = await fetch(
+    `/api/messages/threads/${encodeURIComponent(threadId)}/attachments`,
+    { method: "POST", body: form, credentials: "include" }
+  );
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload?.success) {
+    throw new Error(payload?.message || `Could not upload ${file?.name || "the file"}.`);
+  }
+  return payload.data;
+};

@@ -15,20 +15,10 @@ const buttonStyle = {
   cursor: "pointer",
 };
 
-const modalOverlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(15,23,42,0.55)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: "var(--z-modal)",
-};
-
+// Popup chrome comes from the global .popup-backdrop / .popup-card classes in
+// staffglobal.css - this carries geometry only.
 const modalStyle = {
-  background: "var(--surface)",
   padding: "20px",
-  borderRadius: "var(--radius-lg, 12px)",
   width: "min(480px, 92vw)",
   display: "flex",
   flexDirection: "column",
@@ -73,7 +63,7 @@ export default function RedirectToWorkshopButton({ jobNumber, onRedirected }) {
         Send to Workshop
       </button>
       {open && (
-        <div style={modalOverlayStyle} role="dialog" aria-modal="true">
+        <div className="popup-backdrop" role="dialog" aria-modal="true">
           <div style={modalStyle}>
             <h3 style={{ margin: 0 }}>Redirect {jobNumber} to workshop</h3>
             <p style={{ margin: 0, color: "var(--text-1)" }}>

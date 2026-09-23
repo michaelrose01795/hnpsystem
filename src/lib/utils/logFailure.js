@@ -158,8 +158,10 @@ export function logFailure(label, detail, ...rest) {
     repeats > 0 ? `${cleaned}: ${message} (x${repeats + 1})` : `${cleaned}: ${message}`;
 
   const payload = { ...(extras || {}), ...context };
-  if (Object.keys(payload).length) console.error(headline, payload);
-  else console.error(headline);
+  // The headline carries caller-supplied text, so it goes through %s rather
+  // than as the format string - a stray %o in a message cannot eat the payload.
+  if (Object.keys(payload).length) console.error("%s", headline, payload);
+  else console.error("%s", headline);
 
   return { label: cleaned, message, extras, stack, printed: true };
 }

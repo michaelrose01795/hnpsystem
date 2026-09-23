@@ -55,8 +55,8 @@ export default function NewsLinkedPosts({ recordType, recordId, title = "Mention
               {post.title}
             </Link>
             <PriorityChip priority={post.priority} />
-            {post.requiresAck && <NewsChip tone="app-news-chip--urgent">Needs sign-off</NewsChip>}
-            <NewsChip tone="app-news-chip--muted">
+            {post.requiresAck && <NewsChip tone="app-badge--danger">Needs sign-off</NewsChip>}
+            <NewsChip tone="app-badge--neutral">
               {formatPostDate(post.publishedAt).short}
             </NewsChip>
           </div>

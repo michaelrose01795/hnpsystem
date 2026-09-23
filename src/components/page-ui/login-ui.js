@@ -1,5 +1,6 @@
 // file location: src/components/page-ui/login-ui.js
 import LayerSurface from "@/components/ui/LayerSurface";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 
 export default function LoginPageUi(props) {
   const {
@@ -98,7 +99,9 @@ export default function LoginPageUi(props) {
                   <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} className="app-input" required disabled={isRedirecting} />
                 </div>
 
-                {errorMessage && <p className="login-error" role="alert">
+                {/* Global danger banner from staffglobal.css — replaces the
+                    per-module .login-error block. */}
+                {errorMessage && <p className="app-status-message app-status-message--danger" role="alert">
                     {errorMessage}
                   </p>}
 
@@ -118,8 +121,8 @@ export default function LoginPageUi(props) {
                 <div className="login-dev-content">
                   <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} onSingleUserDepartmentLogin={handleDevLogin} onPresentationSelect={handlePresentationSelect} onDevPlatformSelect={handleDevPlatformSelect} />
 
-                  <p className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")}>
-                    Loading database users for dev login...
+                  <p className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")} aria-busy={loadingDevUsers || rosterLoading ? "true" : undefined}>
+                    <InlineLoading width={220} height={10} label="Loading database users for dev login" />
                   </p>
 
 
@@ -287,24 +290,11 @@ export default function LoginPageUi(props) {
             </div>
           </LayerSurface>}
       </div>
-      {showResetModal && <div style={{
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.35)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: "var(--z-modal)",
-    padding: "16px"
-  }}>
-          <div style={{
+      {showResetModal && <div className="popup-backdrop">
+          <div className="popup-card" style={{
       width: "100%",
       maxWidth: "420px",
-      background: "var(--surface)",
-      borderRadius: "var(--radius-md)",
-      border: "none",
-      padding: "18px",
-      boxShadow: "var(--shadow-xl)"
+      padding: "18px"
     }}>
             <h3 style={{
         margin: 0,

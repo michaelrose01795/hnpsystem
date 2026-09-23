@@ -29,9 +29,11 @@ import {
 import { normalizeRequests } from "@/lib/jobCards/utils";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import LayerSurface from "@/components/ui/LayerSurface";
+import SymbolButton from "@/components/ui/SymbolButton";
 import LayerTheme from "@/components/ui/LayerTheme";
 import SearchBar from "@/components/ui/searchBarAPI/SearchBar";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import useIsMobile from "@/hooks/useIsMobile";
 import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { logFailure } from "@/lib/utils/logFailure";
@@ -756,14 +758,6 @@ export default function NotesTabNew({
           ))}
         </div>
         <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
-          <DropdownField
-            options={filterOptions}
-            value={activeFilter}
-            onValueChange={(value) => setActiveFilter(value)}
-            ariaLabel="Filter notes"
-            size="sm"
-            style={{ width: "200px", maxWidth: "100%" }}
-          />
           <SearchBar
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -772,6 +766,21 @@ export default function NotesTabNew({
             ariaLabel="Search notes"
             style={{ width: "240px", maxWidth: "100%" }}
           />
+          <FilterButton
+            activeCount={activeFilter !== "all" ? 1 : 0}
+            onClear={() => setActiveFilter("all")}
+          >
+            <FilterField label="Notes" htmlFor="notes-filter-type">
+              <DropdownField
+                id="notes-filter-type"
+                options={filterOptions}
+                value={activeFilter}
+                onValueChange={(value) => setActiveFilter(value)}
+                ariaLabel="Filter notes"
+                size="sm"
+              />
+            </FilterField>
+          </FilterButton>
           <button
             type="button"
             className="app-btn app-btn--secondary"
@@ -794,7 +803,7 @@ export default function NotesTabNew({
                 }
               }}
             >
-              + Add note
+              Add note
             </button>
           )}
         </div>
@@ -1011,23 +1020,14 @@ export default function NotesTabNew({
                         </span>
                       </button>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flex: "0 0 auto" }}>
-                        <button
-                          type="button"
+                      {/* Opacity carries the pinned/unpinned state: the symbol family
+                          has one fill and no tone axis, so state cannot come from colour. */}
+                      <SymbolButton
+                          symbol="pin"
+                          label={isPinned ? "Unpin note" : "Pin note"}
+                          aria-pressed={isPinned}
                           onClick={() => togglePin(note.noteId)}
-                          title={isPinned ? "Unpin note" : "Pin note"}
-                          aria-label={isPinned ? "Unpin note" : "Pin note"}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            cursor: "pointer",
-                            fontSize: "16px",
-                            lineHeight: 1,
-                            padding: "2px",
-                            opacity: isPinned ? 1 : 0.4,
-                          }}
-                        >
-                          📌
-                        </button>
+                          style={{ opacity: isPinned ? 1 : 0.45 }} />
                         <span
                           className={`app-badge ${note.hiddenFromCustomer ? "app-badge--warning" : "app-badge--success"}`}
                         >
@@ -1391,7 +1391,7 @@ export default function NotesTabNew({
                               setShowAddViewer(true);
                             }}
                           >
-                            + Add user
+                            Add user
                           </button>
                         </div>
                         {viewersLoading && (
@@ -1529,22 +1529,10 @@ export default function NotesTabNew({
             }));
 
             return (
-              <div
-                style={{
-                  position: "fixed",
-                  inset: 0,
-                  backgroundColor: "rgba(10, 10, 20, 0.45)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  zIndex: 230,
-                  padding: "20px",
-                }}
-              >
+              <div className="popup-backdrop">
                 <div
+                  className="popup-card"
                   style={{
-                    backgroundColor: "var(--surface)",
-                    borderRadius: "var(--radius-md)",
                     padding: "var(--section-card-padding)",
                     width: "min(420px, 100%)",
                     display: "flex",
@@ -1618,26 +1606,12 @@ export default function NotesTabNew({
       {linkingNote &&
         typeof document !== "undefined" &&
         createPortal(
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(10, 10, 20, 0.45)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: "var(--z-modal)",
-              padding: "20px",
-            }}
-          >
+          <div className="popup-backdrop">
             <div
+              className="popup-card"
               style={{
-                backgroundColor: "var(--surface)",
-                borderRadius: "var(--radius-md)",
                 padding: "var(--section-card-padding)",
                 width: "min(520px, 100%)",
-                maxHeight: "85vh",
-                overflowY: "auto",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",

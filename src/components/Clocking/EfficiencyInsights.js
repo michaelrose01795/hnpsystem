@@ -154,7 +154,7 @@ function JobsTableSkeleton({ showTechnician }) {
   const columns = showTechnician ? 6 : 5;
   return (
     <div className="app-table-shell-scroll efficiency-analysis-table" data-app-table-shell-scroll aria-hidden="true">
-      <table className="app-table-shell app-table-shell--with-headings">
+      <table className="app-data-table app-table-shell app-table-shell--with-headings">
         <thead><tr>{Array.from({ length: columns }).map((_, index) => <th key={index}><SkeletonBlock width={index === 2 ? "120px" : "72px"} height="11px" /></th>)}</tr></thead>
         <tbody>{Array.from({ length: 4 }).map((_, index) => <SkeletonTableRow key={index} cols={columns} />)}</tbody>
       </table>
@@ -215,7 +215,7 @@ function JobsTable({ jobs }) {
   const showTechnician = jobs.some((job) => job.technicianName);
   return (
     <div className="app-table-shell-scroll efficiency-analysis-table" data-app-table-shell-scroll>
-      <table className="app-table-shell app-table-shell--with-headings">
+      <table className="app-data-table app-table-shell app-table-shell--with-headings">
         <thead>
           <tr>
             <th>Job</th>
@@ -236,9 +236,9 @@ function JobsTable({ jobs }) {
               </td>
               {showTechnician ? <td>{job.technicianName || "—"}</td> : null}
               <td>{job.description}</td>
-              <td>{formatHours(job.allocatedHours)}</td>
-              <td>{formatHours(job.actualHours)}</td>
-              <td className={job.difference > 0 ? "is-negative" : "is-positive"}>
+              <td className="efficiency-num">{formatHours(job.allocatedHours)}</td>
+              <td className="efficiency-num">{formatHours(job.actualHours)}</td>
+              <td className={`efficiency-num ${job.difference > 0 ? "is-negative" : "is-positive"}`}>
                 {formatChange(job.difference)}
               </td>
             </tr>
@@ -461,78 +461,93 @@ export default function EfficiencyInsights({
         )}
       </LayerTheme>
 
-      {/* These classes are feature-local because the panel packing and SVG sizing are unique to this workspace. */}
-      <style jsx>{`
+      {/* Feature-local classes: the panel packing and chart sizing are unique to
+          this workspace. The block is `global` because these panels are built
+          from sub-components in this file (PanelHeader, TrendChart, JobsTable,
+          the skeletons) and styled-jsx only scopes elements declared inside the
+          component that owns the <style> tag, so scoped rules never reached
+          them. Every selector is nested under .efficiency-insights-stack so
+          nothing leaks past this feature. */}
+      <style jsx global>{`
         .efficiency-insights-stack { display: flex; flex-direction: column; gap: var(--page-stack-gap); min-width: 0; color: var(--surfaceText); }
-        :global(.efficiency-headline) { gap: var(--space-md); }
-        .efficiency-headline-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-lg); align-items: end; }
-        .efficiency-headline-value-row { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
-        .efficiency-skeleton-value-row { margin: var(--space-sm) 0; }
-        .efficiency-headline-value-row > strong { color: var(--primary-selected); font-size: clamp(2.5rem, 7vw, 4.6rem); line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
-        .efficiency-headline-caption, .efficiency-panel-note { color: var(--surfaceTextMuted); font-size: var(--text-caption); margin: var(--space-xs) 0 0; }
-        .efficiency-headline-comparison { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
-        .efficiency-headline-comparison span, .efficiency-headline-comparison small { color: var(--surfaceTextMuted); }
-        .efficiency-headline-comparison strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
-        .efficiency-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: var(--space-sm); }
-        :global(.efficiency-kpi-card span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
-        :global(.efficiency-kpi-card strong) { color: var(--surfaceText); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
-        .efficiency-primary-analysis-grid { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(420px, 1.4fr); gap: var(--page-stack-gap); align-items: stretch; }
-        .efficiency-secondary-analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: var(--page-stack-gap); }
-        :global(.efficiency-analysis-panel) { min-height: 0; }
-        .efficiency-insight-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-sm); flex-wrap: wrap; }
-        .efficiency-insight-header h3 { margin: 0; color: var(--primary-selected); font-size: 1rem; letter-spacing: -.01em; }
-        .efficiency-trend-header { align-items: center; flex-wrap: nowrap; }
-        .efficiency-trend-header h3 { white-space: nowrap; }
-        .efficiency-insight-eyebrow { margin: 0 0 3px; color: var(--surfaceTextMuted); font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
-        .efficiency-comparison-list { display: flex; flex-direction: column; gap: var(--space-xs); }
-        :global(.efficiency-comparison-row) { display: grid !important; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; }
-        :global(.efficiency-comparison-row > div) { display: flex; flex-direction: column; gap: 2px; }
-        :global(.efficiency-comparison-row span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
-        .is-positive { color: var(--success) !important; font-weight: 700; }
-        .is-negative { color: var(--danger) !important; font-weight: 700; }
-        .efficiency-trend-chart { min-width: 0; display: flex; flex-direction: column; gap: var(--space-xs); }
-        .efficiency-trend-header-meta { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-xs); flex: 0 0 auto; flex-wrap: nowrap; }
-        .efficiency-trend-summary { margin: 0; color: var(--surfaceTextMuted); font-size: var(--text-caption); }
-        .efficiency-trend-summary strong { color: var(--surfaceText); font-variant-numeric: tabular-nums; }
-        .efficiency-breakdown-list { display: flex; flex-direction: column; gap: var(--space-sm); }
-        .efficiency-breakdown-row > div:first-child { display: flex; justify-content: space-between; gap: var(--space-sm); font-size: var(--text-caption); }
-        .efficiency-breakdown-track, .efficiency-target-progress { height: 8px; margin-top: 5px; background: var(--surface); border-radius: var(--radius-pill); overflow: hidden; }
-        .efficiency-breakdown-track span, .efficiency-target-progress span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
-        .efficiency-breakdown-track .is-overtime { background: var(--info); }
-        .efficiency-breakdown-track .is-unallocated { background: var(--warning); }
-        .efficiency-target-progress-copy { display: flex; align-items: baseline; gap: var(--space-xs); }
-        .efficiency-target-progress-copy strong { color: var(--primary-selected); font-size: 2rem; }
-        .efficiency-target-progress-copy span, .efficiency-target-progress-meta { color: var(--surfaceTextMuted); }
-        .efficiency-target-progress-meta { display: flex; justify-content: space-between; gap: var(--space-sm); margin-top: var(--space-xs); font-size: var(--text-caption); }
-        .efficiency-target-skeleton { display: flex; flex-direction: column; gap: var(--space-xs); }
-        .efficiency-lost-time-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); }
-        :global(.efficiency-lost-time-grid > div span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
-        :global(.efficiency-lost-time-grid > div strong) { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
-        .efficiency-alert-list { list-style: none; display: flex; flex-direction: column; gap: var(--space-xs); padding: 0; margin: 0; }
-        .efficiency-alert-list li { display: flex; align-items: flex-start; gap: var(--space-sm); padding-bottom: var(--space-xs); border-bottom: 1px solid var(--separating-line-color); }
-        .efficiency-alert-list li:last-child { border-bottom: 0; }
-        .efficiency-alert-list li div { display: flex; flex-direction: column; gap: 2px; }
-        .efficiency-alert-list li div span { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
-        .efficiency-alert-list--skeleton { margin: 0; }
-        .efficiency-alert-skeleton-row { display: flex; align-items: flex-start; gap: var(--space-sm); padding-bottom: var(--space-xs); }
-        .efficiency-alert-skeleton-row > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-        .efficiency-insight-empty { color: var(--surfaceTextMuted); margin: auto 0; padding: var(--space-lg) 0; text-align: center; }
-        .efficiency-analysis-table { max-height: 330px; overflow: auto; }
-        .efficiency-analysis-table table { min-width: 700px; }
-        .efficiency-job-link { color: var(--primary-selected); font-weight: 700; text-decoration: none; }
-        .efficiency-job-link:hover { text-decoration: underline; }
-        .efficiency-category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-sm); }
-        :global(.efficiency-category-card > div) { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); }
-        :global(.efficiency-category-card > span) { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
+        .efficiency-insights-stack .efficiency-headline { gap: var(--space-md); }
+        .efficiency-insights-stack .efficiency-headline-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-lg); align-items: end; }
+        .efficiency-insights-stack .efficiency-headline-value-row { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+        .efficiency-insights-stack .efficiency-skeleton-value-row { margin: var(--space-sm) 0; }
+        .efficiency-insights-stack .efficiency-headline-value-row > strong { color: var(--primary-selected); font-size: clamp(2.5rem, 7vw, 4.6rem); line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+        .efficiency-insights-stack .efficiency-headline-caption,
+        .efficiency-insights-stack .efficiency-panel-note { color: var(--surfaceTextMuted); font-size: var(--text-caption); margin: var(--space-xs) 0 0; }
+        .efficiency-insights-stack .efficiency-headline-comparison { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+        .efficiency-insights-stack .efficiency-headline-comparison span,
+        .efficiency-insights-stack .efficiency-headline-comparison small { color: var(--surfaceTextMuted); }
+        .efficiency-insights-stack .efficiency-headline-comparison strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+        .efficiency-insights-stack .efficiency-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: var(--space-sm); }
+        .efficiency-insights-stack .efficiency-kpi-card span { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
+        .efficiency-insights-stack .efficiency-kpi-card strong { color: var(--surfaceText); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+        .efficiency-insights-stack .efficiency-primary-analysis-grid { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(420px, 1.4fr); gap: var(--page-stack-gap); align-items: stretch; }
+        .efficiency-insights-stack .efficiency-secondary-analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: var(--page-stack-gap); }
+        .efficiency-insights-stack .efficiency-analysis-panel { min-height: 0; }
+        .efficiency-insights-stack .efficiency-insight-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-sm); flex-wrap: wrap; }
+        .efficiency-insights-stack .efficiency-insight-header h3 { margin: 0; color: var(--primary-selected); font-size: 1rem; letter-spacing: -.01em; }
+        .efficiency-insights-stack .efficiency-trend-header { align-items: center; flex-wrap: nowrap; }
+        .efficiency-insights-stack .efficiency-trend-header h3 { white-space: nowrap; }
+        .efficiency-insights-stack .efficiency-insight-eyebrow { margin: 0 0 3px; color: var(--surfaceTextMuted); font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+        .efficiency-insights-stack .efficiency-comparison-list { display: flex; flex-direction: column; gap: var(--space-xs); }
+        .efficiency-insights-stack .efficiency-comparison-row { display: grid !important; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; }
+        .efficiency-insights-stack .efficiency-comparison-row > div { display: flex; flex-direction: column; gap: 2px; }
+        .efficiency-insights-stack .efficiency-comparison-row span { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
+        .efficiency-insights-stack .is-positive { color: var(--success) !important; font-weight: 700; }
+        .efficiency-insights-stack .is-negative { color: var(--danger) !important; font-weight: 700; }
+        .efficiency-insights-stack .efficiency-trend-chart { min-width: 0; display: flex; flex-direction: column; gap: var(--space-xs); }
+        .efficiency-insights-stack .efficiency-trend-header-meta { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-xs); flex: 0 0 auto; flex-wrap: nowrap; }
+        .efficiency-insights-stack .efficiency-trend-summary { margin: 0; color: var(--surfaceTextMuted); font-size: var(--text-caption); }
+        .efficiency-insights-stack .efficiency-trend-summary strong { color: var(--surfaceText); font-variant-numeric: tabular-nums; }
+        .efficiency-insights-stack .efficiency-breakdown-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+        .efficiency-insights-stack .efficiency-breakdown-row > div:first-child { display: flex; justify-content: space-between; gap: var(--space-sm); font-size: var(--text-caption); }
+        .efficiency-insights-stack .efficiency-breakdown-track,
+        .efficiency-insights-stack .efficiency-target-progress { height: 8px; margin-top: 5px; background: var(--surface); border-radius: var(--radius-pill); overflow: hidden; }
+        .efficiency-insights-stack .efficiency-breakdown-track span,
+        .efficiency-insights-stack .efficiency-target-progress span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+        .efficiency-insights-stack .efficiency-breakdown-track .is-overtime { background: var(--info); }
+        .efficiency-insights-stack .efficiency-breakdown-track .is-unallocated { background: var(--warning); }
+        .efficiency-insights-stack .efficiency-target-progress-copy { display: flex; align-items: baseline; gap: var(--space-xs); }
+        .efficiency-insights-stack .efficiency-target-progress-copy strong { color: var(--primary-selected); font-size: 2rem; }
+        .efficiency-insights-stack .efficiency-target-progress-copy span,
+        .efficiency-insights-stack .efficiency-target-progress-meta { color: var(--surfaceTextMuted); }
+        .efficiency-insights-stack .efficiency-target-progress-meta { display: flex; justify-content: space-between; gap: var(--space-sm); margin-top: var(--space-xs); font-size: var(--text-caption); }
+        .efficiency-insights-stack .efficiency-target-skeleton { display: flex; flex-direction: column; gap: var(--space-xs); }
+        .efficiency-insights-stack .efficiency-lost-time-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); }
+        .efficiency-insights-stack .efficiency-lost-time-grid > div span { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
+        .efficiency-insights-stack .efficiency-lost-time-grid > div strong { font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+        .efficiency-insights-stack .efficiency-alert-list { list-style: none; display: flex; flex-direction: column; gap: var(--space-xs); padding: 0; margin: 0; }
+        .efficiency-insights-stack .efficiency-alert-list li { display: flex; align-items: flex-start; gap: var(--space-sm); padding-bottom: var(--space-xs); border-bottom: 1px solid var(--separating-line-color); }
+        .efficiency-insights-stack .efficiency-alert-list li:last-child { border-bottom: 0; }
+        .efficiency-insights-stack .efficiency-alert-list li div { display: flex; flex-direction: column; gap: 2px; }
+        .efficiency-insights-stack .efficiency-alert-list li div span { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
+        .efficiency-insights-stack .efficiency-alert-list--skeleton { margin: 0; }
+        .efficiency-insights-stack .efficiency-alert-skeleton-row { display: flex; align-items: flex-start; gap: var(--space-sm); padding-bottom: var(--space-xs); }
+        .efficiency-insights-stack .efficiency-alert-skeleton-row > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .efficiency-insights-stack .efficiency-insight-empty { color: var(--surfaceTextMuted); margin: auto 0; padding: var(--space-lg) 0; text-align: center; }
+        /* Scroll shell only. The table look itself comes from the shared
+           .app-data-table / .app-table-shell rules in staffglobal.css. */
+        .efficiency-insights-stack .efficiency-analysis-table { max-height: 330px; overflow: auto; border-radius: var(--radius-md); }
+        .efficiency-insights-stack .efficiency-analysis-table table { min-width: 700px; }
+        .efficiency-insights-stack .efficiency-analysis-table td.efficiency-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .efficiency-insights-stack .efficiency-job-link { color: var(--primary-selected); font-weight: 700; text-decoration: none; }
+        .efficiency-insights-stack .efficiency-job-link:hover { text-decoration: underline; }
+        .efficiency-insights-stack .efficiency-category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-sm); }
+        .efficiency-insights-stack .efficiency-category-card > div { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); }
+        .efficiency-insights-stack .efficiency-category-card > span { color: var(--surfaceTextMuted); font-size: var(--text-caption); }
         @media (max-width: 980px) {
-          .efficiency-primary-analysis-grid { grid-template-columns: 1fr; }
+          .efficiency-insights-stack .efficiency-primary-analysis-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 620px) {
-          .efficiency-headline-main { grid-template-columns: 1fr; align-items: start; }
-          .efficiency-headline-comparison { align-items: flex-start; text-align: left; }
-          .efficiency-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          :global(.efficiency-comparison-row) { grid-template-columns: minmax(0, 1fr) auto; }
-          :global(.efficiency-comparison-row > span) { grid-column: 1 / -1; }
+          .efficiency-insights-stack .efficiency-headline-main { grid-template-columns: 1fr; align-items: start; }
+          .efficiency-insights-stack .efficiency-headline-comparison { align-items: flex-start; text-align: left; }
+          .efficiency-insights-stack .efficiency-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .efficiency-insights-stack .efficiency-comparison-row { grid-template-columns: minmax(0, 1fr) auto; }
+          .efficiency-insights-stack .efficiency-comparison-row > span { grid-column: 1 / -1; }
+          .efficiency-insights-stack .efficiency-analysis-table table { min-width: 560px; }
         }
       `}</style>
     </div>

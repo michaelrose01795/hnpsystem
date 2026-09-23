@@ -3,7 +3,23 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { InlineLoading, SkeletonBlock, SkeletonKeyframes, SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
+
+// Request status -> canonical badge tone (families/badges.css). Keeps the
+// desktop table on .app-badge instead of a hand-rolled pill, so it inherits the
+// 32px in-table height from `.app-data-table .app-badge` automatically.
+const REQUEST_BADGE_TONES = {
+  pending: "app-badge--accent-soft",
+  urgent: "app-badge--warning",
+  fulfilled: "app-badge--success",
+  ordered: "app-badge--success",
+  arrived: "app-badge--success",
+  rejected: "app-badge--danger",
+};
+const requestBadgeTone = (status) => REQUEST_BADGE_TONES[status] || REQUEST_BADGE_TONES.pending;
+const requestStatusIcon = (status) =>
+  status === "fulfilled" || status === "arrived" ? "✅" : status === "urgent" ? "⏰" : status === "rejected" ? "✖️" : "📦";
 
 // Quantity steppers intentionally use the compact 32px table-control geometry.
 // Lock every sizing axis so the global 44px raw-button floor cannot distort the circles.
@@ -76,7 +92,6 @@ export default function TechConsumableRequestPageUi(props) {
     stockLoading,
     stockMatches,
     successMessage,
-    tableHeaderStyle,
     updateSelectedStockQuantity,
     visibleStockItems,
   } = props; // receive page logic props.
@@ -137,7 +152,7 @@ export default function TechConsumableRequestPageUi(props) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
                 <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>Stock Check</h2>
                 <span style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
-                  {stockLoading ? "Loading…" : `${stockItems.length} items`}
+                  {stockLoading ? <InlineLoading width={70} label="Loading" /> : `${stockItems.length} items`}
                 </span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
@@ -171,10 +186,7 @@ export default function TechConsumableRequestPageUi(props) {
             flexDirection: "column",
             gap: "6px"
           }}>
-                  {stockLoading ? <span style={{
-              color: "var(--grey-accent-dark)",
-              fontSize: "0.85rem"
-            }}>Searching stock…</span> : stockMatches.length > 0 ? <>
+                  {stockLoading ? <InlineLoading width={160} label="Searching stock" /> :stockMatches.length > 0 ? <>
                       <span style={{
                 color: "var(--grey-accent-dark)",
                 fontSize: "0.8rem"
@@ -309,13 +321,24 @@ export default function TechConsumableRequestPageUi(props) {
         flexDirection: "column",
         gap: "12px"
       }}>
-              {loadingRequests ? <LayerSurface padding="14px" gap="12px" style={{
-          ...requestCardStyle,
-          textAlign: "center",
-          color: "var(--text-1)"
+              {loadingRequests ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading requests" style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px"
         }}>
-                  Loading requests…
-                </LayerSurface> : filteredRequests.length > 0 ? filteredRequests.map(request => <LayerSurface key={request.id} as="article" sectionKey={`tech-consumables-request-mobile-card-${request.id}`} sectionType="content-card" parentKey="tech-consumables-request-mobile-list" padding="14px" gap="12px" style={requestCardStyle}>
+                  <SkeletonKeyframes />
+                  {["60%", "48%", "70%"].map((width, index) => <LayerSurface key={index} padding="14px" gap="12px" style={requestCardStyle}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                        <SkeletonBlock width={width} height="16px" />
+                        <SkeletonBlock width="80px" height="22px" borderRadius="var(--radius-pill)" />
+                      </div>
+                      <div style={requestCardMetaGridStyle}>
+                        <SkeletonBlock width="70%" height="12px" />
+                        <SkeletonBlock width="70%" height="12px" />
+                        <SkeletonBlock width="50%" height="12px" />
+                      </div>
+                    </LayerSurface>)}
+                </div> :filteredRequests.length > 0 ? filteredRequests.map(request => <LayerSurface key={request.id} as="article" sectionKey={`tech-consumables-request-mobile-card-${request.id}`} sectionType="content-card" parentKey="tech-consumables-request-mobile-list" padding="14px" gap="12px" style={requestCardStyle}>
                     <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -397,103 +420,43 @@ export default function TechConsumableRequestPageUi(props) {
         }}>
                   No consumable requests match the current filter.
                 </LayerSurface>}
-            </DevLayoutSection> : <LayerSurface as="div" sectionKey="tech-consumables-request-auto-data-table-1-shell" parentKey="tech-consumables-requests-panel" sectionType="data-table-shell" padding="0" style={{
-        overflowX: "auto",
-        maxHeight: "604px",
-        overflowY: "auto"
-      }}>
-              <DevLayoutSection as="table" sectionKey="tech-consumables-request-auto-data-table-1" parentKey="tech-consumables-request-auto-data-table-1-shell" sectionType="data-table" backgroundToken="surface" className="app-data-table" style={{
-          minWidth: "640px",
-          background: "var(--surface)"
-        }}>
-                <thead data-dev-section="1" data-dev-section-key="tech-consumables-request-auto-data-table-1-headings" data-dev-section-type="table-headings" data-dev-section-parent="tech-consumables-request-auto-data-table-1" style={{
-            // Opaque sticky header: --theme-hover is translucent, so composite it over
-            // opaque --surface so scrolling rows never read through the heading.
-            background: "linear-gradient(var(--theme-hover), var(--theme-hover)), var(--surface)",
-            position: "sticky",
-            top: 0,
-            zIndex: 1
-          }}>
+            </DevLayoutSection> : <DevLayoutSection as="div" sectionKey="tech-consumables-request-auto-data-table-1-shell" parentKey="tech-consumables-requests-panel" sectionType="data-table-shell" className="app-table-scroll">
+              <DevLayoutSection as="table" sectionKey="tech-consumables-request-auto-data-table-1" parentKey="tech-consumables-request-auto-data-table-1-shell" sectionType="data-table" backgroundToken="surface" className="app-data-table app-data-table--rounded">
+                <thead data-dev-section="1" data-dev-section-key="tech-consumables-request-auto-data-table-1-headings" data-dev-section-type="table-headings" data-dev-section-parent="tech-consumables-request-auto-data-table-1">
                   <tr>
-                    <th style={tableHeaderStyle}>Status</th>
-                    <th style={tableHeaderStyle}>Part Name</th>
-                    <th style={tableHeaderStyle}>Quantity</th>
-                    <th style={tableHeaderStyle}>Requested</th>
-                    <th style={tableHeaderStyle}>Requested By</th>
+                    <th data-table-cell="nowrap">Status</th>
+                    <th>Part Name</th>
+                    <th data-table-cell="nowrap">Quantity</th>
+                    <th data-table-cell="nowrap">Requested</th>
+                    <th>Requested By</th>
                   </tr>
                 </thead>
-                <tbody data-dev-section="1" data-dev-section-key="tech-consumables-request-auto-data-table-1-rows" data-dev-section-type="table-rows" data-dev-section-parent="tech-consumables-request-auto-data-table-1">
-                  {loadingRequests ? <tr data-dev-section="1" data-dev-section-key="tech-consumables-requests-loading-row" data-dev-section-type="state-banner" data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows" style={{
-              background: "var(--surface)"
-            }}>
-                      <td colSpan={5} style={{
-                padding: "18px 12px",
-                color: "var(--text-1)",
-                textAlign: "center"
-              }}>
-                        Loading requests…
-                      </td>
-                    </tr> : filteredRequests.length > 0 ? filteredRequests.map(request => <tr key={request.id} data-dev-section="1" data-dev-section-key={`tech-consumables-request-auto-data-table-1-row-${request.id}`} data-dev-section-type="table-row" data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows" style={{
-              background: "var(--surface)"
-            }}>
-                        <td style={{
-                padding: "12px"
-              }}>
-                          <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  height: "32px",
-                  padding: "0 14px",
-                  borderRadius: "var(--radius-pill)",
-                  fontWeight: 600,
-                  fontSize: "0.8rem",
-                  lineHeight: 1,
-                  whiteSpace: "nowrap",
-                  ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending)
-                }}>
-                            {request.status === "fulfilled" || request.status === "arrived" ? "✅" : request.status === "urgent" ? "⏰" : request.status === "rejected" ? "✖️" : "📦"}
+                <tbody data-dev-section="1" data-dev-section-key="tech-consumables-request-auto-data-table-1-rows" data-dev-section-type="table-rows" data-dev-section-parent="tech-consumables-request-auto-data-table-1" aria-busy={loadingRequests || undefined} aria-label={loadingRequests ? "Loading requests" : undefined}>
+                  {loadingRequests ? [0, 1, 2, 3].map(index => <SkeletonTableRow key={index} cols={5} />) :filteredRequests.length > 0 ? filteredRequests.map(request => <tr key={request.id} data-dev-section="1" data-dev-section-key={`tech-consumables-request-auto-data-table-1-row-${request.id}`} data-dev-section-type="table-row" data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows">
+                        <td data-table-cell="nowrap">
+                          <span className={`app-badge ${requestBadgeTone(request.status)}`}>
+                            {requestStatusIcon(request.status)}
                             {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                           </span>
                         </td>
-                        <td style={{
-                padding: "12px",
-                fontWeight: 600,
-                color: "var(--text-1)"
-              }}>{request.itemName}</td>
-                        <td style={{
-                padding: "12px",
-                color: "var(--text-1)"
-              }}>{request.quantity}</td>
-                        <td style={{
-                padding: "12px",
-                color: "var(--text-1)"
-              }}>
+                        <td style={{ fontWeight: 600 }}>{request.itemName}</td>
+                        <td data-table-cell="nowrap">{request.quantity}</td>
+                        <td data-table-cell="nowrap">
                           {request.requestedAt ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
                   day: "2-digit",
                   month: "short",
                   year: "numeric"
                 }) : "—"}
                         </td>
-                        <td style={{
-                padding: "12px",
-                color: "var(--text-1)"
-              }}>{request.requestedByName || "—"}</td>
-                      </tr>) : <tr data-dev-section="1" data-dev-section-key="tech-consumables-requests-empty-row" data-dev-section-type="empty-state" data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows" style={{
-              background: "var(--surface)"
-            }}>
-                      <td colSpan={5} style={{
-                padding: "18px 12px",
-                color: "var(--text-1)",
-                textAlign: "center"
-              }}>
+                        <td>{request.requestedByName || "—"}</td>
+                      </tr>) : <tr data-dev-section="1" data-dev-section-key="tech-consumables-requests-empty-row" data-dev-section-type="empty-state" data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows">
+                      <td colSpan={5} style={{ textAlign: "center" }}>
                         No consumable requests match the current filter.
                       </td>
                     </tr>}
                 </tbody>
               </DevLayoutSection>
-            </LayerSurface>}
+            </DevLayoutSection>}
         </DevLayoutSection>
       </div>
       <PopupModal

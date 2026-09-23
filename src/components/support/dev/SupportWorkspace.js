@@ -12,6 +12,7 @@ import { useRouter } from "next/router";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { useSupportReports } from "@/components/support/dev/useSupportAdmin";
 import { useSupportKeyboard } from "@/components/support/dev/useSupportKeyboard";
 import {
@@ -135,6 +136,18 @@ export default function SupportWorkspace() {
     [setFilters, setView]
   );
 
+  // The status / severity / category / sort dropdowns live in the filter card.
+  const activeFilterCount =
+    (filters.status ? 1 : 0) +
+    (filters.severity ? 1 : 0) +
+    (filters.category ? 1 : 0) +
+    ((view.sort || "impact") !== "impact" ? 1 : 0);
+
+  const clearFilters = useCallback(() => {
+    patchFilter({ status: "", severity: "", category: "" });
+    setView((v) => ({ ...v, sort: "impact" }));
+  }, [patchFilter, setView]);
+
   const openReport = useCallback((id) => router.push(`/dev/support-reports/${id}`), [router]);
 
   const saveCurrentView = useCallback(async () => {
@@ -213,18 +226,29 @@ export default function SupportWorkspace() {
         sectionKey="support-centre-filters"
         actions={<button type="button" onClick={saveCurrentView} className="app-btn app-btn--secondary app-btn--sm">Save view</button>}
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-sm)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)" }}>
           <input
             ref={searchRef}
             className="app-input"
             placeholder="Search title, description, route…"
             value={filters.q || ""}
             onChange={(e) => patchFilter({ q: e.target.value })}
+            style={{ flex: "1 1 auto", minWidth: 0 }}
           />
-          <DropdownField options={withDefault(STATUS_OPTIONS, "All statuses")} value={filters.status || ""} onChange={(e) => patchFilter({ status: e.target.value })} />
-          <DropdownField options={withDefault(SEVERITY_OPTIONS, "All severities")} value={filters.severity || ""} onChange={(e) => patchFilter({ severity: e.target.value })} />
-          <DropdownField options={withDefault(CATEGORY_OPTIONS, "All categories")} value={filters.category || ""} onChange={(e) => patchFilter({ category: e.target.value })} />
-          <DropdownField options={SORT_OPTIONS} value={view.sort || "impact"} onChange={(e) => setView((v) => ({ ...v, sort: e.target.value }))} />
+          <FilterButton activeCount={activeFilterCount} onClear={clearFilters}>
+            <FilterField label="Status" htmlFor="support-filter-status">
+              <DropdownField id="support-filter-status" options={withDefault(STATUS_OPTIONS, "All statuses")} value={filters.status || ""} onChange={(e) => patchFilter({ status: e.target.value })} />
+            </FilterField>
+            <FilterField label="Severity" htmlFor="support-filter-severity">
+              <DropdownField id="support-filter-severity" options={withDefault(SEVERITY_OPTIONS, "All severities")} value={filters.severity || ""} onChange={(e) => patchFilter({ severity: e.target.value })} />
+            </FilterField>
+            <FilterField label="Category" htmlFor="support-filter-category">
+              <DropdownField id="support-filter-category" options={withDefault(CATEGORY_OPTIONS, "All categories")} value={filters.category || ""} onChange={(e) => patchFilter({ category: e.target.value })} />
+            </FilterField>
+            <FilterField label="Sort" htmlFor="support-filter-sort">
+              <DropdownField id="support-filter-sort" options={SORT_OPTIONS} value={view.sort || "impact"} onChange={(e) => setView((v) => ({ ...v, sort: e.target.value }))} />
+            </FilterField>
+          </FilterButton>
         </div>
 
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>

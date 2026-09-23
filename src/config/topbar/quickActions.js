@@ -19,7 +19,7 @@
 
 export const SERVICE_QUICK_ACTIONS = [
   { label: "Create Job Card", href: "/new-job" },
-  { label: "Appointments", href: "/job-cards/appointments" },
+  { label: "Appointments", href: "/appointments" },
 ];
 
 export const PARTS_QUICK_ACTIONS = [

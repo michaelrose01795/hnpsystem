@@ -30,6 +30,8 @@ const INTENTIONAL_NATIVE_SELECTS = new Map([
   ["src/features/website/components/WebsiteNativeSelect.js", 1],
   ["src/singlescroll/components/WebsiteNativeSelect.js", 1],
   ["src/pages/website/dev.js", 1],
+  // Showcases custglobal.css's raw <select> fallback styling.
+  ["src/features/website/showcase/sections/ControlsShowcase.js", 1],
 ]);
 
 // Transitional ceiling for staff files that pre-date the DropdownField rule.

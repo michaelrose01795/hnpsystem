@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/job-cards/archive/job-cards-archive-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 
 export default function ArchivedJobsPageUi(props) {
   const {
@@ -57,56 +58,45 @@ export default function ArchivedJobsPageUi(props) {
         alignItems: "center",
         gap: "8px"
       }}>
-            <DropdownField aria-label="Filter archive results by status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)} options={availableStatuses.map(status => ({
-          value: status,
-          label: status === "all" ? "All statuses" : status
-        }))} placeholder="All statuses" style={{
-          minWidth: "150px",
-          width: "auto"
-        }} />
-
-            <DropdownField aria-label="Sort archive results" value={sortOrder} onChange={event => setSortOrder(event.target.value)} options={[{
-          value: "updated-desc",
-          label: "Newest completed"
-        }, {
-          value: "updated-asc",
-          label: "Oldest completed"
-        }, {
-          value: "job-asc",
-          label: "Job number A-Z"
-        }, {
-          value: "job-desc",
-          label: "Job number Z-A"
-        }, {
-          value: "customer-asc",
-          label: "Customer A-Z"
-        }]} placeholder="Sort archive" style={{
-          minWidth: "180px",
-          width: "auto"
-        }} />
-
-            <Button type="submit" variant="primary" disabled={isSearching} style={{
-          minWidth: "120px",
-          opacity: isSearching ? 0.6 : 1
-        }}>
-              {isSearching ? "Searching…" : "Search"}
-            </Button>
-
-            <Button type="button" variant={regOnly ? "primary" : "secondary"} onClick={() => {
-          setRegOnly(current => !current);
-        }} aria-pressed={regOnly}>
-              Registration Only
-            </Button>
-
-            <Button type="button" variant="secondary" onClick={() => {
-          setQuery("");
+            <FilterButton activeCount={(statusFilter !== "all" ? 1 : 0) + (sortOrder !== "updated-desc" ? 1 : 0) + (regOnly ? 1 : 0)} onClear={() => {
           setStatusFilter("all");
           setSortOrder("updated-desc");
           setRegOnly(false);
-          runSearch("");
         }}>
-              Clear filtes
-            </Button>
+              <FilterField label="Status" htmlFor="job-cards-archive-filter-status">
+                <DropdownField id="job-cards-archive-filter-status" aria-label="Filter archive results by status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)} options={availableStatuses.map(status => ({
+              value: status,
+              label: status === "all" ? "All statuses" : status
+            }))} placeholder="All statuses" />
+              </FilterField>
+
+              <FilterField label="Sort" htmlFor="job-cards-archive-filter-sort">
+                <DropdownField id="job-cards-archive-filter-sort" aria-label="Sort archive results" value={sortOrder} onChange={event => setSortOrder(event.target.value)} options={[{
+              value: "updated-desc",
+              label: "Newest completed"
+            }, {
+              value: "updated-asc",
+              label: "Oldest completed"
+            }, {
+              value: "job-asc",
+              label: "Job number A-Z"
+            }, {
+              value: "job-desc",
+              label: "Job number Z-A"
+            }, {
+              value: "customer-asc",
+              label: "Customer A-Z"
+            }]} placeholder="Sort archive" />
+              </FilterField>
+
+              <FilterField label="Vehicle">
+                <Button type="button" variant={regOnly ? "primary" : "secondary"} onClick={() => {
+              setRegOnly(current => !current);
+            }} aria-pressed={regOnly}>
+                  Registration Only
+                </Button>
+              </FilterField>
+            </FilterButton>
           </DevLayoutSection>
         </DevLayoutSection>
 

@@ -16,6 +16,14 @@
   z-index: 2900;
 }
 
+/* /website: selection runs through document capture listeners, so the layer
+   itself stays out of the way of the top bar's Overlay toggle and of touch
+   scrolling. Labels keep pointer-events: auto. */
+.rootPassThrough {
+  pointer-events: none;
+  touch-action: auto;
+}
+
 .box {
   /* Diagram primitive — solid outline only, fully transparent fill so the
      underlying card is unchanged. The outline alone tells the user which

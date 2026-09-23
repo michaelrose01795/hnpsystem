@@ -3,6 +3,8 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 import LayerSurface from "@/components/ui/LayerSurface";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import PopupModal from "@/components/popups/popupStyleApi";
 
 const formatQuickNoteDate = (value) => {
@@ -57,9 +59,7 @@ export default function ViewJobCardsUi(props) {
     operationalStatusCounts,
     nextJobsTechnicians,
     onOpenQuickNote,
-    popupCardStyles,
     popupJob,
-    popupOverlayStyles,
     popupPrimaryActionButtonStyle,
     popupQuietActionButtonStyle,
     popupSecondaryActionButtonStyle,
@@ -102,31 +102,30 @@ export default function ViewJobCardsUi(props) {
               </div>
               <div className="job-cards-view-search-shell">
                 <SearchBar data-presentation="job-cards-search" className="job-cards-view-searchbar" placeholder={searchPlaceholder} value={searchValues[activeTab]} onChange={event => handleSearchValueChange(activeTab, event.target.value)} onClear={() => handleSearchValueChange(activeTab, "")} />
-                <DevLayoutSection className="job-cards-view-filter-controls" sectionKey="job-cards-view-filter-controls" parentKey="job-cards-view-filter-shell" sectionType="toolbar">
-                    <DevLayoutSection data-presentation="job-cards-division-filter" className="job-cards-view-filter-slot" sectionKey="job-cards-view-filter-controls-division-slot" parentKey="job-cards-view-filter-controls" sectionType="filter-control">
-                      <DevLayoutSection className="job-cards-view-filter-control" sectionKey="job-cards-view-division-filter" parentKey="job-cards-view-filter-controls-division-slot" sectionType="filter-control">
-                        <DropdownField className="job-cards-filter" value={divisionFilter} options={[{
-                      value: "All",
-                      label: "Division filter: All"
-                    }, {
-                      value: "Retail",
-                      label: "Division filter: Retail"
-                    }, {
-                      value: "Sales",
-                      label: "Division filter: Sales"
-                    }]} size="sm" onValueChange={value => handleDivisionFilterChange(value)} />
-                      </DevLayoutSection>
-                    </DevLayoutSection>
-                    <DevLayoutSection data-presentation="job-cards-status-filter" className="job-cards-view-filter-slot" sectionKey="job-cards-view-filter-controls-status-slot" parentKey="job-cards-view-filter-controls" sectionType="filter-control">
-                      <DevLayoutSection className="job-cards-view-filter-control" sectionKey="job-cards-view-status-filter" parentKey="job-cards-view-filter-controls-status-slot" sectionType="filter-control">
-                        <DropdownField className="job-cards-filter" value={activeStatusFilter} options={statusTabs.map(status => ({
-                      value: status,
-                      label: `Status filter: ${status}`,
-                      description: status === "All" ? `${baseJobs.length} total` : `${statusCounts[status] || 0} jobs`
-                    }))} size="sm" onValueChange={value => handleStatusFilterChange(activeTab, value)} />
-                      </DevLayoutSection>
-                    </DevLayoutSection>
-                  </DevLayoutSection>
+                <FilterButton data-presentation="job-cards-filters" activeCount={(divisionFilter !== "All" ? 1 : 0) + (activeStatusFilter !== "All" ? 1 : 0)} onClear={() => {
+                  handleDivisionFilterChange("All");
+                  handleStatusFilterChange(activeTab, "All");
+                }}>
+                  <FilterField label="Division" htmlFor="job-cards-view-filter-division">
+                    <DropdownField id="job-cards-view-filter-division" value={divisionFilter} options={[{
+                  value: "All",
+                  label: "All divisions"
+                }, {
+                  value: "Retail",
+                  label: "Retail"
+                }, {
+                  value: "Sales",
+                  label: "Sales"
+                }]} onValueChange={value => handleDivisionFilterChange(value)} />
+                  </FilterField>
+                  <FilterField label="Status" htmlFor="job-cards-view-filter-status">
+                    <DropdownField id="job-cards-view-filter-status" value={activeStatusFilter} options={statusTabs.map(status => ({
+                  value: status,
+                  label: status === "All" ? "All statuses" : status,
+                  description: status === "All" ? `${baseJobs.length} total` : `${statusCounts[status] || 0} jobs`
+                }))} onValueChange={value => handleStatusFilterChange(activeTab, value)} />
+                  </FilterField>
+                </FilterButton>
               </div>
             </div>
           </SectionShell>
@@ -161,17 +160,11 @@ export default function ViewJobCardsUi(props) {
 
           {/* ✅ Job Popup - Enhanced with all new fields */}
           {popupJob && <>
-              <DevLayoutSection sectionKey="job-cards-view-quick-view-overlay" parentKey="job-cards-view-shell" sectionType="floating-action" style={{
-            ...popupOverlayStyles,
-            zIndex: "var(--z-modal)"
-          }} onClick={() => setPopupJob(null)}>
-              <DevLayoutSection sectionKey="job-cards-view-quick-view-card" parentKey="job-cards-view-quick-view-overlay" sectionType="content-card" onClick={e => e.stopPropagation()} style={{
-              ...popupCardStyles,
+              <DevLayoutSection sectionKey="job-cards-view-quick-view-overlay" parentKey="job-cards-view-shell" sectionType="floating-action" className="popup-backdrop" onClick={() => setPopupJob(null)}>
+              <DevLayoutSection sectionKey="job-cards-view-quick-view-card" parentKey="job-cards-view-quick-view-overlay" sectionType="content-card" className="popup-card" onClick={e => e.stopPropagation()} style={{
               padding: "var(--page-card-padding)",
               maxWidth: "700px",
-              width: "90%",
-              maxHeight: "85vh",
-              overflowY: "auto"
+              width: "90%"
             }}>
               {/* Popup Header */}
               <div style={{
@@ -560,7 +553,17 @@ export default function ViewJobCardsUi(props) {
             <div className="app-job-quick-note__section-heading">
               <h3>Recent notes</h3>
             </div>
-            {quickNoteLoading ? <p className="app-job-quick-note__empty">Loading notes...</p> : quickNoteNotes.length === 0 ? <p className="app-job-quick-note__empty">No notes have been added to this job.</p> : <ol>
+            {quickNoteLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading notes" style={{ display: "grid", gap: "var(--layout-card-gap)" }}>
+              <SkeletonKeyframes />
+              {[0, 1, 2].map((index) => <div key={index} style={{ display: "grid", gap: "8px" }}>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                  <SkeletonBlock width="110px" height="14px" />
+                  <SkeletonBlock width="90px" height="12px" />
+                  <SkeletonBlock width="96px" height="20px" borderRadius="999px" />
+                </div>
+                <SkeletonBlock width={index % 2 ? "72%" : "92%"} height="12px" />
+              </div>)}
+            </div> : quickNoteNotes.length === 0 ? <p className="app-job-quick-note__empty">No notes have been added to this job.</p> : <ol>
               {quickNoteNotes.slice(0, 4).map((note) => <li key={note.noteId}>
                 <div className="app-job-quick-note__note-meta">
                   <strong>{note.createdBy || "Unknown"}</strong>

@@ -2,6 +2,7 @@
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { CalendarField } from "@/components/ui/calendarAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { TRANSACTION_TYPES, PAYMENT_METHODS } from "@/config/accounts";
 
 export default function AccountTransactionsPageUi(props) {
@@ -55,20 +56,28 @@ export default function AccountTransactionsPageUi(props) {
               <Button type="button" variant="secondary" size="sm" onClick={() => router.push(`/accounts/view/${accountId}`)}>
                 Account
               </Button>
-              <DropdownField
-                name="type"
-                value={filters.type}
-                onChange={handleFilterChange}
-                placeholder="All types"
-                options={[{ label: "All Types", value: "", placeholder: true }, ...TRANSACTION_TYPES.map((option) => ({ label: option, value: option }))]}
-                style={{ flex: "0 0 170px" }} />
-              <DropdownField
-                name="payment_method"
-                value={filters.payment_method}
-                onChange={handleFilterChange}
-                placeholder="All methods"
-                options={[{ label: "All Methods", value: "", placeholder: true }, ...PAYMENT_METHODS.map((method) => ({ label: method, value: method }))]}
-                style={{ flex: "0 0 170px" }} />
+              <FilterButton
+                activeCount={(filters.type ? 1 : 0) + (filters.payment_method ? 1 : 0)}
+                onClear={() => setFilters({ ...filters, type: "", payment_method: "" })}>
+                <FilterField label="Type" htmlFor="account-transactions-filter-type">
+                  <DropdownField
+                    id="account-transactions-filter-type"
+                    name="type"
+                    value={filters.type}
+                    onChange={handleFilterChange}
+                    placeholder="All types"
+                    options={[{ label: "All Types", value: "", placeholder: true }, ...TRANSACTION_TYPES.map((option) => ({ label: option, value: option }))]} />
+                </FilterField>
+                <FilterField label="Payment Method" htmlFor="account-transactions-filter-method">
+                  <DropdownField
+                    id="account-transactions-filter-method"
+                    name="payment_method"
+                    value={filters.payment_method}
+                    onChange={handleFilterChange}
+                    placeholder="All methods"
+                    options={[{ label: "All Methods", value: "", placeholder: true }, ...PAYMENT_METHODS.map((method) => ({ label: method, value: method }))]} />
+                </FilterField>
+              </FilterButton>
               <div style={{ flex: "0 0 160px" }}>
                 <CalendarField name="from" placeholder="From date" value={filters.from} onChange={handleFilterChange} size="sm" />
               </div>

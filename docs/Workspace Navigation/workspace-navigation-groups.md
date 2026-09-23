@@ -16,7 +16,7 @@ Everything is driven by the manifest in [`src/config/workspace/`](../../src/conf
 
 ### State 1 — Groups view
 
-- A flat list of the user's top-level **Workspace Groups** from `getWorkspaceGroups(roles)`: **General** first, then every accessible department group (Reception, Workshop, Parts, MOT, Valeting, Accounts, Reports, Admin, Developer …) in manifest order.
+- A flat list of the user's top-level **Workspace Groups** from `getWorkspaceGroups(roles)`: **General** first, then every accessible department group (Service, Workshop, Parts, MOT, Valeting, Accounts, Reports, Admin, Developer …) in manifest order.
 - General is itself a selectable group — there is **no** always-visible General block.
 - The group that owns the current route is highlighted.
 - The **Account controls** (clock in/out, Profile, Logout, Vision, dev tools) sit at the bottom in both states; they are persistent app controls, not a group.

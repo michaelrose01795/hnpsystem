@@ -53,6 +53,17 @@ export const RECOVERY_ACTIONS = Object.freeze({
   REPORT: "report",
 });
 
+// How the recovery screen should FEEL. In a borderless system the badge tint is
+// the only thing carrying severity (§3.0a), so the plan names it rather than
+// letting each screen guess: DANGER for a genuine fault, WARNING for "you must
+// do something before you can continue" (stale bundle, no permission), INFO for
+// a situation that is not a fault at all (a page that does not exist).
+export const RECOVERY_TONES = Object.freeze({
+  DANGER: "danger",
+  WARNING: "warning",
+  INFO: "info",
+});
+
 // A subtree that crashes again within this window of a recovery attempt is
 // treated as still-failing rather than a fresh, unrelated crash.
 export const CRASH_LOOP_WINDOW_MS = 8000;
@@ -177,18 +188,18 @@ export function resolveHomeHref(variant, homeHref) {
 export function labelFor(actionId, { level, variant } = {}) {
   switch (actionId) {
     case RECOVERY_ACTIONS.RETRY:
-      return level === RECOVERY_LEVELS.SECTION ? "Retry" : "Try Again";
+      return level === RECOVERY_LEVELS.SECTION ? "Retry" : "Try again";
     case RECOVERY_ACTIONS.RELOAD:
-      if (level === RECOVERY_LEVELS.APP) return "Reload app";
-      return "Reload page";
+      if (level === RECOVERY_LEVELS.APP) return "Reload the app";
+      return "Reload the page";
     case RECOVERY_ACTIONS.BACK:
       return "Go back";
     case RECOVERY_ACTIONS.HOME:
       // Staff home is /newsfeed (DEFAULT_HOME), so the label names where the
       // button actually goes rather than a "dashboard" the app has no route for.
-      return variant === RECOVERY_VARIANTS.CUSTOMER ? "Return home" : "Return to Newsfeed";
+      return variant === RECOVERY_VARIANTS.CUSTOMER ? "Return home" : "Return to the newsfeed";
     case RECOVERY_ACTIONS.REPORT:
-      return "Report Problem";
+      return "Report a problem";
     default:
       return actionId;
   }
@@ -229,6 +240,9 @@ function toneFor(actionId, primaryId) {
  *   loop: boolean,
  *   headline: string,
  *   message: string,
+ *   hint: string,
+ *   tone: string,
+ *   icon: string,
  *   primaryActionId: string,
  *   actions: Array<{ id: string, label: string, tone: string }>,
  *   homeHref: string,
@@ -294,6 +308,8 @@ export function resolveRecovery({
 
   let headline;
   let message;
+  let tone;
+  let icon;
   if (loopDetected) {
     headline =
       variant === RECOVERY_VARIANTS.CUSTOMER
@@ -302,12 +318,16 @@ export function resolveRecovery({
     message =
       variant === RECOVERY_VARIANTS.CUSTOMER
         ? "We’re sorry — this keeps failing. Reloading or heading back usually clears it. If not, please let us know."
-        : "It’s failed a few times in a row, so trying again won’t help. Reload or head back, and please send a report so we can fix it.";
+        : "It has failed several times in a row, so trying again will not help. Reload or head back, and please send a report — the code below tells us exactly which failure was yours.";
+    tone = RECOVERY_TONES.DANGER;
+    icon = "!";
   } else if (classification.retryUseless) {
     headline =
       variant === RECOVERY_VARIANTS.CUSTOMER ? "A newer version is available" : "This screen needs a reload";
     message =
-      "Part of the app updated while you were here. Reload to get the latest version — your place will be restored where possible.";
+      "Part of the app was updated while you were here, so this screen is running older code. Reload to pick up the latest version — you will come back to the same place, and anything you had typed is restored where possible.";
+    tone = RECOVERY_TONES.WARNING;
+    icon = "↻";
   } else {
     headline =
       variant === RECOVERY_VARIANTS.CUSTOMER
@@ -316,14 +336,27 @@ export function resolveRecovery({
     message =
       variant === RECOVERY_VARIANTS.CUSTOMER
         ? "Something didn’t load correctly. You can try again or head back — and if it keeps happening, please report it."
-        : "You can try again, reload, or send us a report so we can look into it. Your unsaved changes are kept where possible.";
+        : "Trying again usually clears a one-off. If it does not, reload the page or head back — nothing you had already saved is affected, and anything you had typed is restored where possible.";
+    tone = RECOVERY_TONES.DANGER;
+    icon = "!";
   }
+
+  // The quiet closing line. Staff get told the failure is already recorded (so
+  // "Report a problem" is for adding what they were doing, not for making us
+  // aware); customers are simply reassured.
+  const hint =
+    variant === RECOVERY_VARIANTS.CUSTOMER
+      ? "If this keeps happening, please get in touch and quote the reference code above."
+      : "This has already been logged against the reference code above — reporting it adds what you were doing, which is the part we cannot see.";
 
   return {
     recoverable: classification.recoverable,
     loop: Boolean(loopDetected),
     headline,
     message,
+    hint,
+    tone,
+    icon,
     primaryActionId: primaryId,
     actions,
     homeHref: resolveHomeHref(variant, homeHref),

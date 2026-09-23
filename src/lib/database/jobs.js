@@ -228,7 +228,7 @@ const fetchJobSubStatusSet = async (jobId) => {
   return set;
 };
 
-const hasInvoiceForJob = async (jobId) => {
+export const hasInvoiceForJob = async (jobId) => {
   const { data, error } = await supabase
     .from("invoices")
     .select("id")
@@ -3207,6 +3207,14 @@ const JOB_DETAIL_FIELD_LABELS = {
   appointment_window_start: "Appointment start",
   appointment_window_end: "Appointment end",
   access_notes: "Access notes",
+  job_source: "Job source",
+  vehicle_id: "Vehicle record",
+  next_update_due: "Next customer update",
+  // Job card settings fields (migration 20260923120000_job_card_settings_fields).
+  priority: "Priority",
+  service_advisor_id: "Service advisor",
+  next_update_owner_id: "Next update owner",
+  next_update_reminder_enabled: "Next update reminder",
 };
 
 // Resolve the acting user id from the update payload (callers may pass any of
@@ -3275,8 +3283,17 @@ export const updateJob = async (jobId, updates) => {
   try {
     console.log("🔄 Updating job:", jobId, "with updates:", updates);
 
+    // status_change_reason and activity_actor_id are audit context, not jobs
+    // columns: they feed job_status_history.reason and the activity actor
+    // below. Sending them in the row update makes PostgREST reject the whole
+    // write as an unknown column.
+    const {
+      status_change_reason: _statusChangeReason,
+      activity_actor_id: _activityActorId,
+      ...columnUpdates
+    } = updates;
     const payload = {
-      ...updates,
+      ...columnUpdates,
       updated_at: new Date().toISOString(),
     };
 
@@ -3773,7 +3790,8 @@ export const updateJobStatus = async (
 export const cancelJobAppointment = async (
   jobId,
   appointmentId = null,
-  statusUpdatedBy = null
+  statusUpdatedBy = null,
+  reason = "Appointment cancelled from the Scheduling tab"
 ) => {
   if (!jobId) {
     return { success: false, error: { message: "Job ID is required" } };
@@ -3797,7 +3815,7 @@ export const cancelJobAppointment = async (
       jobId,
       "Cancelled",
       statusUpdatedBy,
-      "Appointment cancelled from the Scheduling tab"
+      reason
     );
 
     if (!statusResult?.success) {
@@ -3868,6 +3886,7 @@ export const assignTechnicianToJob = async (
   return updateJob(jobId, {
     assigned_to: resolvedTechnicianId,
     ...(options.status ? { status: options.status } : {}),
+    ...(options.actorId ? { activity_actor_id: options.actorId } : {}),
   });
 };
 
@@ -3902,12 +3921,15 @@ export const getJobRequestCapacityProgress = async (jobIds = []) => {
 
 /* ============================================
    UNASSIGN TECHNICIAN FROM JOB
-   Removes technician and resets status to "Open"
+   Removes the technician. The status only changes when the caller asks for
+   one: "Open" is not a canonical main status, so defaulting to it made
+   updateJob reject every unassign that did not pass options.status.
 ============================================ */
 export const unassignTechnicianFromJob = async (jobId, options = {}) => {
   return updateJob(jobId, {
     assigned_to: null,
-    status: options.status || "Open",
+    ...(options.status ? { status: options.status } : {}),
+    ...(options.actorId ? { activity_actor_id: options.actorId } : {}),
   });
 };
 
@@ -3916,9 +3938,10 @@ export const unassignTechnicianFromJob = async (jobId, options = {}) => {
    Stores the target time the customer should next be updated by
    (Scheduling dashboard → Customer Updates). Pass null to clear.
 ============================================ */
-export const setJobNextUpdateDue = async (jobId, nextUpdateDueIso) => {
+export const setJobNextUpdateDue = async (jobId, nextUpdateDueIso, { actorId = null } = {}) => {
   return updateJob(jobId, {
     next_update_due: nextUpdateDueIso || null,
+    ...(actorId ? { activity_actor_id: actorId } : {}),
   });
 };
 
@@ -4985,6 +5008,89 @@ export const convertToPrimeJob = async (jobId) => {
     return { success: true, data: formatJobData(updated) };
   } catch (error) {
     logFailure("❌ convertToPrimeJob error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
+   UNLINK JOB FROM PRIME GROUP
+   The reverse of the Link Job flow (convertToPrimeJob + pointing a job at the
+   host). A linked job becomes standalone again. The host cannot be unlinked
+   while it still hosts other jobs, because every sub-job is keyed to its job
+   number; once its last linked job is removed it reverts to standalone too.
+============================================ */
+export const unlinkJobFromPrimeGroup = async (jobId, { actorId = null } = {}) => {
+  try {
+    if (!jobId) {
+      return { success: false, error: { message: "Job ID is required" } };
+    }
+
+    const { data: job, error: fetchError } = await supabase
+      .from("jobs")
+      .select("id, job_number, is_prime_job, prime_job_id, prime_job_number")
+      .eq("id", jobId)
+      .single();
+
+    if (fetchError || !job) {
+      return { success: false, error: { message: "Job not found" } };
+    }
+
+    if (!job.prime_job_number) {
+      return { success: false, error: { message: `Job #${job.job_number} is not linked to a group.` } };
+    }
+
+    const { data: groupRows, error: groupError } = await supabase
+      .from("jobs")
+      .select("id, job_number, is_prime_job")
+      .eq("prime_job_number", job.prime_job_number);
+
+    if (groupError) throw groupError;
+
+    const others = (groupRows || []).filter((row) => row.id !== job.id);
+    const isHost = job.is_prime_job === true || job.job_number === job.prime_job_number;
+
+    if (isHost && others.length > 0) {
+      return {
+        success: false,
+        error: {
+          message: `Job #${job.job_number} hosts ${others.length} linked job${others.length === 1 ? "" : "s"}. Unlink those first.`,
+        },
+      };
+    }
+
+    const unlinkResult = await updateJob(job.id, {
+      prime_job_id: null,
+      prime_job_number: null,
+      is_prime_job: false,
+      sub_job_sequence: null,
+      ...(actorId ? { activity_actor_id: actorId } : {}),
+    });
+    if (!unlinkResult?.success) {
+      return unlinkResult;
+    }
+
+    // Removing the last linked job leaves a host of one: revert it as well.
+    if (!isHost) {
+      const remaining = others.filter((row) => row.job_number !== job.prime_job_number);
+      const host = others.find((row) => row.is_prime_job || row.job_number === job.prime_job_number);
+      if (host && remaining.length === 0) {
+        const hostResult = await updateJob(host.id, {
+          prime_job_id: null,
+          prime_job_number: null,
+          is_prime_job: false,
+          sub_job_sequence: null,
+          ...(actorId ? { activity_actor_id: actorId } : {}),
+        });
+        if (!hostResult?.success) {
+          logFailure("❌ Unlinked job but could not revert the host job:", hostResult?.error);
+        }
+      }
+    }
+
+    invalidateCache("jobs:");
+    return { success: true, data: unlinkResult.data };
+  } catch (error) {
+    logFailure("❌ unlinkJobFromPrimeGroup error:", error);
     return { success: false, error: { message: error.message } };
   }
 };

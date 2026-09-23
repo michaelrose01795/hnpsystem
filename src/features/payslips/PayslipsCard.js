@@ -9,6 +9,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Button from "@/components/ui/Button";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import PersonalPasscodeModal from "@/components/profile/PersonalPasscodeModal";
 import usePersonalLock from "@/hooks/usePersonalLock";
 import {
@@ -313,13 +314,12 @@ export default function PayslipsCard({
 
           {loading && isUnlocked && payslips.length === 0 ? (
             <div
+              aria-busy="true"
               style={{
                 padding: "6px 14px",
-                fontSize: "0.72rem",
-                color: "var(--text-1)",
               }}
             >
-              Loading…
+              <InlineLoading width={96} height={10} label="Loading payslips" />
             </div>
           ) : null}
 

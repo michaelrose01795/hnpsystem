@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
@@ -87,32 +88,34 @@ export default function SarsPage() {
           </p>
         )}
         {rows === null ? (
-          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          <div style={{ overflowX: "auto" }}>
+            <TableSkeleton columns={["Type", "Subject", "Status", "Received", "Due", "Action"]} rows={5} label="Loading subject requests" />
+          </div>
         ) : rows.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No subject requests on record.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+            <table className="app-data-table">
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Type</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Subject</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Status</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Received</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Due</th>
-                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Action</th>
+                  <th>Type</th>
+                  <th>Subject</th>
+                  <th>Status</th>
+                  <th>Received</th>
+                  <th>Due</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                    <td>
                       {row.request_type}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                    <td>
                       {row.subject_email || `#${row.subject_user_id || "—"}`}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                    <td>
                       <DropdownField
                         value={row.status}
                         disabled={busyId === row.id}
@@ -121,9 +124,9 @@ export default function SarsPage() {
                         size="sm"
                       />
                     </td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.received_at)}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.due_at)}</td>
-                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
+                    <td>{fmt(row.received_at)}</td>
+                    <td>{fmt(row.due_at)}</td>
+                    <td>
                       {row.status !== "fulfilled" && row.status !== "rejected" && (
                         <Button
                           type="button"
