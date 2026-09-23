@@ -181,7 +181,7 @@ const labelGlyphHits = ({ body }) => {
   const hits = [];
 
   // Plain JSX text: <Button>+ Add Part</Button>
-  const stripped = inner.replace(/<[^>]*>/g, "").replace(/</g, "");
+  const stripped = inner.replace(/[<>]/g, "");
   // "+ {hiddenCount} more" is counting notation, not furniture — the glyph
   // belongs to the number, so it is left alone.
   const isNotation = new RegExp(`^\\s*${LABEL_GLYPH}\\uFE0F?\\s*\\{`, "u").test(stripped);
