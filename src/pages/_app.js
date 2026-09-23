@@ -379,8 +379,9 @@ function AppWrapper({ Component, pageProps }) {
       // away the error that caused the developer to open F12 in the first
       // place; the [NAV] banner below is enough to find where a nav starts.
       native.log(
-        `%c[NAV] ${sourceLabel} → ${href || "(unknown)"}`,
-        "color:#fff;background:#0b66ff;padding:2px 6px;border-radius:3px;font-weight:600"
+        "%c%s",
+        "color:#fff;background:#0b66ff;padding:2px 6px;border-radius:3px;font-weight:600",
+        `[NAV] ${sourceLabel} → ${href || "(unknown)"}`
       );
       native.log(
         `[NAV] from ${window.location.pathname}${window.location.search}`

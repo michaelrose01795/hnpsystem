@@ -10,6 +10,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import InputField from "@/components/ui/InputField";
 import { RecordHeading, StatusBadge, LinkButton } from "./RecordPrimitives";
 import useCopyToClipboard from "./useCopyToClipboard";
@@ -143,24 +144,41 @@ export default function CustomerFilesSection({ files = [] }) {
             placeholder="File name, job number, registration…"
             onChange={(event) => setSearch(event.target.value)}
           />
-          <DropdownField
-            label="File type"
-            value={kind}
-            options={KIND_OPTIONS}
-            onChange={(event) => setKind(event.target.value)}
-          />
-          <DropdownField
-            label="Job"
-            value={job}
-            options={jobOptions}
-            onChange={(event) => setJob(event.target.value)}
-          />
-          <DropdownField
-            label="Sort"
-            value={sort}
-            options={FILE_SORT_OPTIONS}
-            onChange={(event) => setSort(event.target.value)}
-          />
+        </div>
+        <div className="app-filter-bar__actions">
+          <FilterButton
+            activeCount={(kind !== "all" ? 1 : 0) + (job !== "all" ? 1 : 0) + (sort !== "newest" ? 1 : 0)}
+            onClear={() => {
+              setKind("all");
+              setJob("all");
+              setSort("newest");
+            }}
+          >
+            <FilterField label="File Type" htmlFor="customer-files-kind">
+              <DropdownField
+                id="customer-files-kind"
+                value={kind}
+                options={KIND_OPTIONS}
+                onChange={(event) => setKind(event.target.value)}
+              />
+            </FilterField>
+            <FilterField label="Job" htmlFor="customer-files-job">
+              <DropdownField
+                id="customer-files-job"
+                value={job}
+                options={jobOptions}
+                onChange={(event) => setJob(event.target.value)}
+              />
+            </FilterField>
+            <FilterField label="Sort" htmlFor="customer-files-sort">
+              <DropdownField
+                id="customer-files-sort"
+                value={sort}
+                options={FILE_SORT_OPTIONS}
+                onChange={(event) => setSort(event.target.value)}
+              />
+            </FilterField>
+          </FilterButton>
         </div>
       </div>
 

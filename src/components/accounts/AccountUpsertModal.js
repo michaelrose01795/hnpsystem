@@ -40,7 +40,7 @@ export default function AccountUpsertModal({ isOpen, mode, accountId, onClose, o
       setLoading(true);
       setMessage("");
       try {
-        const response = await fetch(`/api/accounts/${accountId}`, { signal: controller.signal });
+        const response = await fetch(`/api/accounts/${encodeURIComponent(accountId)}`, { signal: controller.signal });
         const payload = await response.json();
         if (!response.ok) {
           throw new Error(payload?.message || "Failed to load account");
@@ -64,7 +64,7 @@ export default function AccountUpsertModal({ isOpen, mode, accountId, onClose, o
     setMessage("");
 
     try {
-      const response = await fetch(isEditMode ? `/api/accounts/${accountId}` : "/api/accounts", {
+      const response = await fetch(isEditMode ? `/api/accounts/${encodeURIComponent(accountId)}` : "/api/accounts", {
         method: isEditMode ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),

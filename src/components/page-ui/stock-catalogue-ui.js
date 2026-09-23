@@ -6,6 +6,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import SymbolButton from "@/components/ui/SymbolButton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
 import DataTableShell from "@/components/ui/DataTableShell";
 import { InlineLoading, TableSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -777,47 +778,56 @@ export default function StockCataloguePageUi(props) {
         }} />
 
             {/* Two-step filter dropdown */}
-            <div style={{
-          display: "flex",
-          gap: "8px"
+            <FilterButton activeCount={[statusFilter, locationFilter, categoryFilter, supplierFilter].filter(value => value !== "all").length} onClear={() => {
+          setFilterType("status");
+          setStatusFilter("all");
+          setLocationFilter("all");
+          setLocationSearchTerm("");
+          setCategoryFilter("all");
+          setSupplierFilter("all");
+          setDisplayLimit(20);
         }}>
-              <DropdownField
-                ariaLabel="Choose which catalogue filter to apply"
-                value={filterType}
-                options={[
-                  { value: "status", label: "Filter by Status" },
-                  { value: "location", label: "Filter by Location" },
-                  { value: "category", label: "Filter by Category" },
-                  { value: "supplier", label: "Filter by Supplier" },
-                ]}
-                onChange={e => {
-                  setFilterType(e.target.value);
-                  setStatusFilter("all");
-                  setLocationFilter("all");
-                }}
-                style={{ minWidth: "140px", width: "auto" }}
-              />
+              <FilterField label="Filter Type" htmlFor="stock-catalogue-filter-type">
+                <DropdownField
+                  id="stock-catalogue-filter-type"
+                  ariaLabel="Choose which catalogue filter to apply"
+                  value={filterType}
+                  options={[
+                    { value: "status", label: "Filter by Status" },
+                    { value: "location", label: "Filter by Location" },
+                    { value: "category", label: "Filter by Category" },
+                    { value: "supplier", label: "Filter by Supplier" },
+                  ]}
+                  onChange={e => {
+                    setFilterType(e.target.value);
+                    setStatusFilter("all");
+                    setLocationFilter("all");
+                  }}
+                />
+              </FilterField>
 
-              {filterType === "status" && <DropdownField
-                ariaLabel="Filter catalogue by stock status"
-                value={statusFilter}
-                options={[
-                  { value: "all", label: "All Status" },
-                  { value: "low_stock", label: "Low Stock" },
-                  { value: "in_stock", label: "Good Stock" },
-                  { value: "high_stock", label: "High Stock" },
-                  { value: "back_order", label: "Back Order" },
-                ]}
-                onChange={e => setStatusFilter(e.target.value)}
-                style={{ minWidth: "140px", width: "auto" }}
-              />}
+              {filterType === "status" && <FilterField label="Status" htmlFor="stock-catalogue-filter-status">
+                <DropdownField
+                  id="stock-catalogue-filter-status"
+                  ariaLabel="Filter catalogue by stock status"
+                  value={statusFilter}
+                  options={[
+                    { value: "all", label: "All Status" },
+                    { value: "low_stock", label: "Low Stock" },
+                    { value: "in_stock", label: "Good Stock" },
+                    { value: "high_stock", label: "High Stock" },
+                    { value: "back_order", label: "Back Order" },
+                  ]}
+                  onChange={e => setStatusFilter(e.target.value)}
+                />
+              </FilterField>}
 
-              {filterType === "location" && <div style={{
+              {filterType === "location" && <FilterField label="Location" htmlFor="stock-catalogue-filter-location"><div style={{
             position: "relative"
           }}>
-                  <input className="app-input" type="text" placeholder="Search location..." value={locationSearchTerm} onChange={e => setLocationSearchTerm(e.target.value)} onFocus={() => {
+                  <input id="stock-catalogue-filter-location" className="app-input" type="text" placeholder="Search location..." value={locationSearchTerm} onChange={e => setLocationSearchTerm(e.target.value)} onFocus={() => {
               document.getElementById('location-dropdown').style.display = 'block';
-            }} style={{ minWidth: "140px", width: "auto" }} />
+            }} />
                   <div id="location-dropdown" style={{
               display: "none",
               position: "absolute",
@@ -867,26 +877,32 @@ export default function StockCataloguePageUi(props) {
                           {code}
                         </div>)}
                   </div>
-                </div>}
-              {filterType === "category" && <DropdownField
-                ariaLabel="Filter catalogue by category"
-                value={categoryFilter}
-                options={[{ value: "all", label: "All categories" }, ...categories.map(category => ({ value: category, label: category }))]}
-                onChange={event => {
-                  setCategoryFilter(event.target.value);
-                  setDisplayLimit(20);
-                }}
-              />}
-              {filterType === "supplier" && <DropdownField
-                ariaLabel="Filter catalogue by supplier"
-                value={supplierFilter}
-                options={[{ value: "all", label: "All suppliers" }, ...suppliers.map(supplier => ({ value: supplier, label: supplier }))]}
-                onChange={event => {
-                  setSupplierFilter(event.target.value);
-                  setDisplayLimit(20);
-                }}
-              />}
-            </div>
+                </div></FilterField>}
+              {filterType === "category" && <FilterField label="Category" htmlFor="stock-catalogue-filter-category">
+                <DropdownField
+                  id="stock-catalogue-filter-category"
+                  ariaLabel="Filter catalogue by category"
+                  value={categoryFilter}
+                  options={[{ value: "all", label: "All categories" }, ...categories.map(category => ({ value: category, label: category }))]}
+                  onChange={event => {
+                    setCategoryFilter(event.target.value);
+                    setDisplayLimit(20);
+                  }}
+                />
+              </FilterField>}
+              {filterType === "supplier" && <FilterField label="Supplier" htmlFor="stock-catalogue-filter-supplier">
+                <DropdownField
+                  id="stock-catalogue-filter-supplier"
+                  ariaLabel="Filter catalogue by supplier"
+                  value={supplierFilter}
+                  options={[{ value: "all", label: "All suppliers" }, ...suppliers.map(supplier => ({ value: supplier, label: supplier }))]}
+                  onChange={event => {
+                    setSupplierFilter(event.target.value);
+                    setDisplayLimit(20);
+                  }}
+                />
+              </FilterField>}
+            </FilterButton>
           </div>
 
           {inventoryError && <div style={{

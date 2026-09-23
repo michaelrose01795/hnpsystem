@@ -7,6 +7,8 @@
 // each page is reached from its own sidebar button. The location modals and the
 // route skeleton belong to Key/Parking and are only rendered when supplied.
 
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
+
 export default function TrackingDashboardUi(props) {
   const {
     Button,
@@ -25,8 +27,8 @@ export default function TrackingDashboardUi(props) {
     entries,
     entryModal,
     canManageEquipment,
-    equipmentTypeFilter,
-    equipmentTypeFilters,
+
+
     error,
     handleLocationSelect,
     handleSave,
@@ -40,14 +42,16 @@ export default function TrackingDashboardUi(props) {
     renderActiveTabContent,
     searchModal,
     onAddEquipment,
-    setEquipmentTypeFilter,
+
     stockCapabilities,
     stockFilterSlotRef,
     setSimplifiedModal,
     setSharedSearchValue,
     setTrackerLocationFilter,
     simplifiedModal,
+    sharedSearchControls,
     sharedSearchPlaceholder,
+    sharedSearchResultsSlotRef,
     sharedSearchValue,
     trackerLocationFilter,
     trackerLocationFilters,
@@ -107,6 +111,25 @@ export default function TrackingDashboardUi(props) {
           // Leads the row now that there is no tab strip before it.
           justifyContent: shouldStackHeaderControls ? "stretch" : "flex-start"
         }}>
+                  {sharedSearchResultsSlotRef ? (
+                  // Key/Parking: the one search on the page. The Map view portals
+                  // its "find a vehicle" results into the slot below, so they
+                  // drop down under this bar (TrackingSiteMap `findResultsSlot`).
+                  <div className="tracking-shared-find" style={{
+              flex: shouldStackHeaderControls ? "1 1 100%" : compactSearchTabs ? "1 1 clamp(180px, 26vw, 360px)" : "1 1 clamp(180px, 34vw, 520px)",
+              minWidth: shouldStackHeaderControls ? "100%" : "160px"
+            }}>
+                    <SearchBar
+              value={sharedSearchValue}
+              onChange={(event) => setSharedSearchValue(event.target.value)}
+              onClear={() => setSharedSearchValue("")}
+              placeholder={sharedSearchPlaceholder}
+              ariaLabel={sharedSearchPlaceholder}
+              aria-controls={sharedSearchControls || undefined}
+              style={{ width: "100%" }} />
+                    <div ref={sharedSearchResultsSlotRef} />
+                  </div>
+                  ) : (
                   <SearchBar
             value={sharedSearchValue}
             onChange={(event) => setSharedSearchValue(event.target.value)}
@@ -115,53 +138,38 @@ export default function TrackingDashboardUi(props) {
             ariaLabel={sharedSearchPlaceholder}
             style={{
               flex: shouldStackHeaderControls ? "1 1 100%" : compactSearchTabs ? "1 1 clamp(180px, 26vw, 360px)" : "1 1 clamp(180px, 34vw, 520px)",
-              minWidth: shouldStackHeaderControls ? "100%" : "160px",
-              maxWidth: shouldStackHeaderControls ? "100%" : compactSearchTabs ? "360px" : "520px"
+              minWidth: shouldStackHeaderControls ? "100%" : "160px"
             }} />
-                  {activeTab === "tracker" && DropdownField && (
-                  <DropdownField
-              value={trackerLocationFilter}
-              onValueChange={setTrackerLocationFilter}
-              options={trackerLocationFilters}
-              ariaLabel="Filter tracker by location"
-              placeholder="All locations"
-              size="sm"
-              style={{
-                flex: shouldStackHeaderControls ? "1 1 100%" : "0 1 190px",
-                minWidth: shouldStackHeaderControls ? "100%" : "160px",
-                maxWidth: shouldStackHeaderControls ? "100%" : "210px"
-              }} />
                   )}
                   {activeTab === "tracker" && DropdownField && (
-                  <DropdownField
-              value={trackerQuickFilter}
-              onValueChange={setTrackerQuickFilter}
-              options={trackerQuickFilters}
-              ariaLabel="Filter tracker by status"
-              placeholder="All"
-              size="sm"
-              style={{
-                flex: shouldStackHeaderControls ? "1 1 100%" : "0 1 190px",
-                minWidth: shouldStackHeaderControls ? "100%" : "160px",
-                maxWidth: shouldStackHeaderControls ? "100%" : "210px"
-              }} />
+                  <FilterButton
+              activeCount={(trackerLocationFilter !== "all" ? 1 : 0) + (trackerQuickFilter !== "all" ? 1 : 0)}
+              onClear={() => {
+                setTrackerLocationFilter("all");
+                setTrackerQuickFilter("all");
+              }}>
+                    <FilterField label="Location" htmlFor="tracking-filter-location">
+                      <DropdownField
+                  id="tracking-filter-location"
+                  value={trackerLocationFilter}
+                  onValueChange={setTrackerLocationFilter}
+                  options={trackerLocationFilters}
+                  ariaLabel="Filter tracker by location"
+                  placeholder="All locations" />
+                    </FilterField>
+                    <FilterField label="Status" htmlFor="tracking-filter-status">
+                      <DropdownField
+                  id="tracking-filter-status"
+                  value={trackerQuickFilter}
+                  onValueChange={setTrackerQuickFilter}
+                  options={trackerQuickFilters}
+                  ariaLabel="Filter tracker by status"
+                  placeholder="All" />
+                    </FilterField>
+                  </FilterButton>
                   )}
-                  {activeTab === "equipment" && DropdownField && (
-                  <DropdownField
-              value={equipmentTypeFilter}
-              onValueChange={setEquipmentTypeFilter}
-              options={equipmentTypeFilters}
-              ariaLabel="Filter equipment by type"
-              placeholder="All equipment"
-              size="sm"
-              style={{
-                flex: shouldStackHeaderControls ? "1 1 100%" : "0 1 190px",
-                minWidth: shouldStackHeaderControls ? "100%" : "160px",
-                maxWidth: shouldStackHeaderControls ? "100%" : "210px"
-              }} />
-                  )}
-                  {/* Oil/Stock portals its filter and sort dropdowns in here
-                      (StockControlPanel `filterSlot`), keeping them on this row. */}
+                  {/* Oil/Stock portals its filter button in here
+                      (StockControlPanel `filterSlot`), keeping it on this row. */}
                   {activeTab === "oil-stock" && stockFilterSlotRef && <div ref={stockFilterSlotRef} className="stock-header-filters" />}
               </DevLayoutSection>
               <div style={{

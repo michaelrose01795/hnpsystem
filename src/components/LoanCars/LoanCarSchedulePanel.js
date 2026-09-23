@@ -53,8 +53,8 @@ const FILTER_TONE = {
   overdue: "loan-car-filter--overdue",
 };
 
-/** Booking draft pre-filled from the job card the panel is embedded in. */
-function buildJobDraft(jobData, highlightedJobNumber, highlightedReg) {
+/** Booking draft pre-filled from a job card (also used by the job card settings popup). */
+export function buildJobDraft(jobData, highlightedJobNumber = "", highlightedReg = "") {
   if (!jobData) return null;
   return {
     startDate: jobData.appointment?.date || "",

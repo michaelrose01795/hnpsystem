@@ -720,7 +720,7 @@ const parseSlashCommandMetadata = async (text = "", thread = null) => {
   // fetch the job data to link vehicle and customer
   if (hasJobNumber && (hasVehicleCommand || hasCustomerCommand)) {
     try {
-      const response = await fetch(`/api/jobcards/${metadata.jobNumber}`);
+      const response = await fetch(`/api/jobcards/${encodeURIComponent(metadata.jobNumber)}`);
       if (response.ok) {
         const jobData = await response.json();
 

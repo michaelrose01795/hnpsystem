@@ -956,6 +956,7 @@ html.staff-scope .app-news-revision__body {
    At the stacked width it keeps the mark on the right of its own line. */
 html.staff-scope .app-news-toolbar__control--action {
   flex: 0 0 auto;
+  gap: var(--space-sm);
   margin-left: auto;
 }
 

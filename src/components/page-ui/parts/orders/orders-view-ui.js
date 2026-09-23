@@ -7,6 +7,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { PageShell, SectionShell } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import OrderListCard from "./OrderListCard";
 import { ListLoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 
@@ -57,18 +58,25 @@ export default function OrdersViewUi(props) {
                 onClear={() => onSearchValueChange("")}
                 style={{ flex: "1 1 18rem", minWidth: 0 }}
               />
-              <DropdownField
-                name="fulfilment"
-                ariaLabel="Filter orders by fulfilment type"
-                value={fulfilmentFilter}
-                onChange={(event) => onFulfilmentFilterChange(event.target.value)}
-                options={[
-                  { value: "all", label: "All fulfilment" },
-                  { value: "collection", label: "Collection" },
-                  { value: "delivery", label: "Delivery" }
-                ]}
-                style={{ flex: "0 1 13rem", minWidth: "11rem" }}
-              />
+              <FilterButton
+                activeCount={fulfilmentFilter !== "all" ? 1 : 0}
+                onClear={() => onFulfilmentFilterChange("all")}
+              >
+                <FilterField label="Fulfilment" htmlFor="orders-view-filter-fulfilment">
+                  <DropdownField
+                    id="orders-view-filter-fulfilment"
+                    name="fulfilment"
+                    ariaLabel="Filter orders by fulfilment type"
+                    value={fulfilmentFilter}
+                    onChange={(event) => onFulfilmentFilterChange(event.target.value)}
+                    options={[
+                      { value: "all", label: "All fulfilment" },
+                      { value: "collection", label: "Collection" },
+                      { value: "delivery", label: "Delivery" }
+                    ]}
+                  />
+                </FilterField>
+              </FilterButton>
             </DevLayoutSection>
             <DevLayoutSection sectionKey="orders-view-list-viewport" parentKey="orders-view-list-shell" sectionType="scroll-region" style={{
             flex: 1,

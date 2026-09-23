@@ -1,6 +1,11 @@
 // file location: src/features/jobCards/workflow/permissions.js
 import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
-import { hasAllAccessRole } from "@/lib/auth/roles";
+import {
+  ADMIN_ROLES,
+  DEALERSHIP_MANAGER_ROLES,
+  hasAllAccessRole,
+  hasAnyRole,
+} from "@/lib/auth/roles";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 
 // Build a shared permission model for the job-card workflow page.
@@ -81,6 +86,23 @@ export const resolveJobCardPermissions = ({
     mainStatusForEditLock === JOB_STATUSES.CANCELLED;
 
   const canEditPartsWriteUpVhc = canEdit && !isPartsWriteUpVhcLockedByStatus;
+
+  // Job card settings control centre. Anything that breaks the forward
+  // workflow — moving a job backwards, reopening an invoiced or released job —
+  // is a manager / admin override. The same flags are re-resolved server-side
+  // by /api/job-cards/[jobNumber]/settings from the session's roles.
+  const canOverrideWorkflow =
+    !isArchiveMode && hasAnyRole(normalizedRoles, [...DEALERSHIP_MANAGER_ROLES, ...ADMIN_ROLES]);
+  const canReopenJob =
+    canOverrideWorkflow &&
+    (mainStatusForEditLock === JOB_STATUSES.INVOICED ||
+      mainStatusForEditLock === JOB_STATUSES.RELEASED);
+  const canCancelJob = !isArchiveMode && canEditBase && !isInvoiceOrBeyondReadOnly;
+  const canArchiveJob =
+    !isArchiveMode &&
+    canEditBase &&
+    (mainStatusForEditLock === JOB_STATUSES.RELEASED ||
+      mainStatusForEditLock === JOB_STATUSES.CANCELLED);
 
   const isClockingLockedByStatus =
     mainStatusForEditLock === JOB_STATUSES.INVOICED ||
@@ -163,6 +185,10 @@ export const resolveJobCardPermissions = ({
     canViewPartsTab,
     canViewVhcTab,
     canEditPartsWriteUpVhc,
+    canOverrideWorkflow,
+    canReopenJob,
+    canCancelJob,
+    canArchiveJob,
     isPartsWriteUpVhcLockedByStatus,
     isClockingLockedByStatus,
     clockingLockDescription,

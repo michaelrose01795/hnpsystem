@@ -834,6 +834,9 @@ export default function TrackingDashboard() {
   useIdleWarm([loadTrackingSiteMap]);
   const [isMobileView, setIsMobileView] = useState(false); // portrait phone layout toggle
   const [trackerSearchTerm, setTrackerSearchTerm] = useState("");
+  // The node under the shared search bar that the Map view portals its
+  // find-a-vehicle results into (state, so the map re-renders once it mounts).
+  const [trackerFindSlot, setTrackerFindSlot] = useState(null);
   const [trackerQuickFilter, setTrackerQuickFilter] = useState("all");
   const [trackerLocationFilter, setTrackerLocationFilter] = useState("all");
 
@@ -1236,7 +1239,10 @@ export default function TrackingDashboard() {
     getVehicleLabel={getVehicleSummaryLabel}
     formatRelativeTime={formatRelativeTime}
     onOpenEntry={openTrackingEntry}
-    onMoveVehicle={handleMapMove} />;
+    onMoveVehicle={handleMapMove}
+    findQuery={trackerSearchTerm}
+    onFindQueryChange={setTrackerSearchTerm}
+    findResultsSlot={trackerFindSlot} />;
 
   const renderTrackerContent = () =>
   <>
@@ -1362,7 +1368,9 @@ export default function TrackingDashboard() {
       setSharedSearchValue={setTrackerSearchTerm}
       setTrackerLocationFilter={setTrackerLocationFilter}
       setTrackerQuickFilter={setTrackerQuickFilter}
-      sharedSearchPlaceholder="Search active jobs"
+      sharedSearchPlaceholder={trackerView === "map" ? "Search or find a vehicle by reg, job or customer" : "Search active jobs"}
+      sharedSearchResultsSlotRef={setTrackerFindSlot}
+      sharedSearchControls={trackerView === "map" ? "tracking-map-find-results" : null}
       sharedSearchValue={trackerSearchTerm}
       simplifiedModal={simplifiedModal}
       SimplifiedTrackingModal={SimplifiedTrackingModal}

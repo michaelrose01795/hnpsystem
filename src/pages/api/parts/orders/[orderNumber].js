@@ -50,7 +50,7 @@ export async function partsOrderDetailHandler(req, res) {
     res.setHeader("Allow", ["GET", "PATCH"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
   } catch (error) {
-    console.error(`Parts order ${orderNumber} request failed:`, error);
+    console.error("Parts order %s request failed:", orderNumber, error);
     const isValidationError = /required|no supported order fields/i.test(error?.message || "");
     return res.status(isValidationError ? 400 : 500).json({
       success: false,

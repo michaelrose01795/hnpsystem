@@ -2,6 +2,7 @@
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { SectionSkeleton, SkeletonBlock, SkeletonKeyframes, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function PartsDeliveryPlannerPageUi(props) {
@@ -318,21 +319,16 @@ export default function PartsDeliveryPlannerPageUi(props) {
           flexWrap: "wrap",
           gap: "12px"
         }}>
-                <label style={{
-            fontSize: "0.85rem",
-            color: "var(--info-dark)"
-          }}>
-                  <span style={{
-              display: "block",
-              fontWeight: 600,
-              marginBottom: "4px"
-            }}>Filter by day</span>
-                  <DropdownField
-                    value={selectedDate}
-                    onChange={event => setSelectedDate(event.target.value)}
-                    options={[{ value: "", label: "All days" }, ...dateOptions]}
-                  />
-                </label>
+                <FilterButton activeCount={selectedDate ? 1 : 0} onClear={() => setSelectedDate("")}>
+                  <FilterField label="Day" htmlFor="parts-delivery-planner-filter-day">
+                    <DropdownField
+                      id="parts-delivery-planner-filter-day"
+                      value={selectedDate}
+                      onChange={event => setSelectedDate(event.target.value)}
+                      options={[{ value: "", label: "All days" }, ...dateOptions]}
+                    />
+                  </FilterField>
+                </FilterButton>
                 {selectedDate && <button type="button" onClick={() => setSelectedDate("")} style={{
             padding: "8px 14px",
             borderRadius: "var(--radius-pill)",

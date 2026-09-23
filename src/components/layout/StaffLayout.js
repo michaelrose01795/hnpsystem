@@ -1611,7 +1611,10 @@ export default function Layout({
           padding: hideSidebar
             ? "0"
             : isTablet
-              ? "var(--page-gutter-y-mobile) 10px" // Exact compact screen gutter requested for the 50/50 sidebar layout.
+              ? // Exact compact screen gutter requested for the 50/50 sidebar layout, grown to
+                // clear the notch / status bar: viewport-fit=cover + black-translucent
+                // (_document.js) draws the page under them, which hid Menu / Status in portrait.
+                "max(var(--page-gutter-y-mobile), env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) var(--page-gutter-y-mobile) max(10px, env(safe-area-inset-left))"
               : isMessagesRoute
                 ? "var(--page-gutter-y) var(--page-gutter-x) 16px"
               : undefined,

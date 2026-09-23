@@ -10,6 +10,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import InputField from "@/components/ui/InputField";
 import { prefetchJob } from "@/lib/swr/prefetch";
 import {
@@ -113,17 +114,27 @@ export default function CustomerHistoryTab({ entries = [], initialSearch = "", a
                 setLimit(PAGE_SIZE);
               }}
             />
-            <DropdownField
-              label="Event type"
-              value={kind}
-              options={filterOptions}
-              onChange={(event) => {
-                setKind(event.target.value);
-                setLimit(PAGE_SIZE);
-              }}
-            />
           </div>
           <div className="app-filter-bar__actions">
+            <FilterButton
+              activeCount={kind !== "all" ? 1 : 0}
+              onClear={() => {
+                setKind("all");
+                setLimit(PAGE_SIZE);
+              }}
+            >
+              <FilterField label="Event Type" htmlFor="customer-history-kind">
+                <DropdownField
+                  id="customer-history-kind"
+                  value={kind}
+                  options={filterOptions}
+                  onChange={(event) => {
+                    setKind(event.target.value);
+                    setLimit(PAGE_SIZE);
+                  }}
+                />
+              </FilterField>
+            </FilterButton>
             <Button
               variant="ghost"
               size="sm"

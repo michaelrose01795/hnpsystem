@@ -33,6 +33,7 @@ import SymbolButton from "@/components/ui/SymbolButton";
 import LayerTheme from "@/components/ui/LayerTheme";
 import SearchBar from "@/components/ui/searchBarAPI/SearchBar";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import useIsMobile from "@/hooks/useIsMobile";
 import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { logFailure } from "@/lib/utils/logFailure";
@@ -757,14 +758,6 @@ export default function NotesTabNew({
           ))}
         </div>
         <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
-          <DropdownField
-            options={filterOptions}
-            value={activeFilter}
-            onValueChange={(value) => setActiveFilter(value)}
-            ariaLabel="Filter notes"
-            size="sm"
-            style={{ width: "200px", maxWidth: "100%" }}
-          />
           <SearchBar
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -773,6 +766,21 @@ export default function NotesTabNew({
             ariaLabel="Search notes"
             style={{ width: "240px", maxWidth: "100%" }}
           />
+          <FilterButton
+            activeCount={activeFilter !== "all" ? 1 : 0}
+            onClear={() => setActiveFilter("all")}
+          >
+            <FilterField label="Notes" htmlFor="notes-filter-type">
+              <DropdownField
+                id="notes-filter-type"
+                options={filterOptions}
+                value={activeFilter}
+                onValueChange={(value) => setActiveFilter(value)}
+                ariaLabel="Filter notes"
+                size="sm"
+              />
+            </FilterField>
+          </FilterButton>
           <button
             type="button"
             className="app-btn app-btn--secondary"

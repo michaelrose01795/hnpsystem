@@ -11,6 +11,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { offers as codeOffers } from "@/features/website/data/offers";
 import { vehicles as codeVehicles } from "@/features/website/data/vehicles";
 import { SECTIONS_BY_PAGE } from "../editors/sectionSchemas";
@@ -160,17 +161,21 @@ export default function OverviewPanel({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <DropdownField
-            className="website-manager__toolbar-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Filter by status"
-            options={[
-              { value: "all", label: "All statuses" },
-              { value: "published", label: "Published only" },
-              { value: "draft", label: "Draft only" },
-            ]}
-          />
+          <FilterButton activeCount={statusFilter !== "all" ? 1 : 0} onClear={() => setStatusFilter("all")}>
+            <FilterField label="Status" htmlFor="website-pages-filter-status">
+              <DropdownField
+                id="website-pages-filter-status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                aria-label="Filter by status"
+                options={[
+                  { value: "all", label: "All statuses" },
+                  { value: "published", label: "Published only" },
+                  { value: "draft", label: "Draft only" },
+                ]}
+              />
+            </FilterField>
+          </FilterButton>
         </div>
 
         {filteredPages.length === 0 ? (

@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Button, EmptyState, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { useUser } from "@/context/UserContext";
 import useIdleWarm from "@/hooks/useIdleWarm";
 import { reportSuccess, reportWarning } from "@/lib/notifications/report";
@@ -73,6 +74,10 @@ const storeView = (value) => {
 export default function EquipmentTrackerPanel({
   searchTerm = "",
   categoryFilter = "all",
+  // The page owns the type filter (it scopes the page's data too); the panel
+  // only shows it, as the first field of its filter card.
+  categoryOptions = [],
+  onCategoryChange,
   addRequest = 0,
   deepLink = null,
   onDeepLinkHandled,
@@ -271,44 +276,83 @@ export default function EquipmentTrackerPanel({
 
   const activeCount = summary.total;
 
+  // Defaults mirror the useState initial values above.
+  const activeFilterCount =
+    (categoryFilter !== "all" ? 1 : 0) +
+    (department !== "all" ? 1 : 0) +
+    (location !== "all" ? 1 : 0) +
+    (quickFilter !== "active" ? 1 : 0) +
+    (sort !== "urgency" ? 1 : 0);
+
+  const clearFilters = () => {
+    onCategoryChange?.("all");
+    setDepartment("all");
+    setLocation("all");
+    setQuickFilter("active");
+    setSort("urgency");
+  };
+
   return (
     <div className="equipment-tracker">
       <EquipmentSummaryBar summary={summary} activeFilter={quickFilter} onSelect={setQuickFilter} />
 
       <div className="equipment-toolbar" role="group" aria-label="Equipment filters">
-        <div className="equipment-toolbar__field">
-          <DropdownField
-            value={department}
-            onValueChange={(value) => {
-              setDepartment(value);
-              setLocation("all");
-            }}
-            options={toOptions(EQUIPMENT_DEPARTMENTS, { allLabel: "All areas" })}
-            ariaLabel="Filter equipment by area"
-            size="sm"
-          />
-        </div>
-        <div className="equipment-toolbar__field">
-          <DropdownField value={location} onValueChange={setLocation} options={locationOptions} ariaLabel="Filter equipment by location" size="sm" />
-        </div>
-        <div className="equipment-toolbar__field">
-          <DropdownField
-            value={quickFilter}
-            onValueChange={setQuickFilter}
-            options={toOptions(EQUIPMENT_QUICK_FILTERS)}
-            ariaLabel="Filter equipment by status"
-            size="sm"
-          />
-        </div>
-        <div className="equipment-toolbar__field">
-          <DropdownField
-            value={sort}
-            onValueChange={setSort}
-            options={EQUIPMENT_SORTS.map((option) => ({ key: option.key, value: option.key, label: `Sort: ${option.label}` }))}
-            ariaLabel="Sort equipment"
-            size="sm"
-          />
-        </div>
+        <FilterButton activeCount={activeFilterCount} onClear={clearFilters}>
+          {onCategoryChange && categoryOptions.length > 0 && (
+            <FilterField label="Type" htmlFor="equipment-filter-type">
+              <DropdownField
+                id="equipment-filter-type"
+                value={categoryFilter}
+                onValueChange={onCategoryChange}
+                options={categoryOptions}
+                placeholder="All equipment"
+              />
+            </FilterField>
+          )}
+          <FilterField label="Area" htmlFor="equipment-filter-area">
+            <DropdownField
+              id="equipment-filter-area"
+              value={department}
+              onValueChange={(value) => {
+                setDepartment(value);
+                setLocation("all");
+              }}
+              options={toOptions(EQUIPMENT_DEPARTMENTS, { allLabel: "All areas" })}
+              ariaLabel="Filter equipment by area"
+              size="sm"
+            />
+          </FilterField>
+          <FilterField label="Location" htmlFor="equipment-filter-location">
+            <DropdownField
+              id="equipment-filter-location"
+              value={location}
+              onValueChange={setLocation}
+              options={locationOptions}
+              ariaLabel="Filter equipment by location"
+              size="sm"
+            />
+          </FilterField>
+          <FilterField label="Status" htmlFor="equipment-filter-status">
+            <DropdownField
+              id="equipment-filter-status"
+              value={quickFilter}
+              onValueChange={setQuickFilter}
+              options={toOptions(EQUIPMENT_QUICK_FILTERS)}
+              ariaLabel="Filter equipment by status"
+              size="sm"
+            />
+          </FilterField>
+          <FilterField label="Sort" htmlFor="equipment-filter-sort">
+            <DropdownField
+              id="equipment-filter-sort"
+              value={sort}
+              onValueChange={setSort}
+              options={EQUIPMENT_SORTS.map((option) => ({ key: option.key, value: option.key, label: `Sort: ${option.label}` }))}
+              ariaLabel="Sort equipment"
+              size="sm"
+            />
+          </FilterField>
+        </FilterButton>
         <div className="equipment-toolbar__end">
           <div className="tracking-viewswitch" role="group" aria-label="Equipment view">
             {[

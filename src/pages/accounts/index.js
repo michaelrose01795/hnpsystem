@@ -12,6 +12,7 @@ import { exportToCsv } from "@/utils/exportUtils";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -214,6 +215,17 @@ export default function AccountsListPage() {
     setFilters(defaultFilters);
   };
 
+  // The filter button's card holds the status and account-type dropdowns. A
+  // restricted user's account type is pinned by permissions, so it neither
+  // counts as an active filter nor gets cleared.
+  const isAccountTypeLocked = Boolean(permissions.restrictedAccountTypes?.length);
+  const activeFilterCount = (filters.status ? 1 : 0) + (!isAccountTypeLocked && filters.accountType ? 1 : 0);
+
+  const handleClearDropdownFilters = () => {
+    handleFilterChange("status", "");
+    if (!isAccountTypeLocked) handleFilterChange("accountType", "");
+  };
+
   const financeLinks = [
   {
     title: "Invoices",
@@ -260,22 +272,28 @@ export default function AccountsListPage() {
             flex: "1 1 240px"
           }} />
 
-      <DropdownField
-          name="status"
-          value={filters.status}
-          onChange={(event) => handleFilterChange("status", event.target.value)}
-          placeholder="All statuses"
-          options={[{ label: "All Statuses", value: "", placeholder: true }, ...ACCOUNT_STATUSES.map((status) => ({ label: status, value: status }))]}
-          style={{ flex: "0 0 200px" }} />
+      <FilterButton activeCount={activeFilterCount} onClear={handleClearDropdownFilters}>
+        <FilterField label="Status" htmlFor="accounts-filter-status">
+          <DropdownField
+              id="accounts-filter-status"
+              name="status"
+              value={filters.status}
+              onChange={(event) => handleFilterChange("status", event.target.value)}
+              placeholder="All statuses"
+              options={[{ label: "All Statuses", value: "", placeholder: true }, ...ACCOUNT_STATUSES.map((status) => ({ label: status, value: status }))]} />
+        </FilterField>
 
-      <DropdownField
-          name="accountType"
-          value={filters.accountType}
-          onChange={(event) => handleFilterChange("accountType", event.target.value)}
-          placeholder="All account types"
-          options={[{ label: "All Account Types", value: "", placeholder: true }, ...ACCOUNT_TYPES.map((type) => ({ label: type, value: type }))]}
-          disabled={Boolean(permissions.restrictedAccountTypes?.length)}
-          style={{ flex: "0 0 220px" }} />
+        <FilterField label="Account Type" htmlFor="accounts-filter-account-type">
+          <DropdownField
+              id="accounts-filter-account-type"
+              name="accountType"
+              value={filters.accountType}
+              onChange={(event) => handleFilterChange("accountType", event.target.value)}
+              placeholder="All account types"
+              options={[{ label: "All Account Types", value: "", placeholder: true }, ...ACCOUNT_TYPES.map((type) => ({ label: type, value: type }))]}
+              disabled={isAccountTypeLocked} />
+        </FilterField>
+      </FilterButton>
 
       <div style={{ flex: "0 0 180px" }}>
         <CalendarField name="dateFrom" placeholder="From date" value={filters.dateFrom} onChange={(event) => handleFilterChange("dateFrom", event.target.value)} />

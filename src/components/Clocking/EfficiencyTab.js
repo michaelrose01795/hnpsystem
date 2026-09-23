@@ -24,6 +24,7 @@ import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
@@ -1501,26 +1502,6 @@ export default function EfficiencyTab({
               onChange={(event) => setFilterDate(event.target.value)}
             />
           </div>
-          {activeTab === "overall" && (
-            <div style={{ width: "100%", maxWidth: "220px", flex: "1 1 180px" }}>
-              <DropdownField
-                id="efficiencyOverviewTech"
-                className="compact-picker efficiency-tech-filter-dropdown"
-                style={{ width: "100%" }}
-                value={overviewTechFilter}
-                onChange={(event) => setOverviewTechFilter(event.target.value)}
-                placeholder="All technicians"
-                options={[
-                  { key: "all", value: "all", label: "All technicians" },
-                  ...technicians.map((tech) => ({
-                    key: `tech-${tech.user_id}`,
-                    value: String(tech.user_id),
-                    label: tech.first_name,
-                  })),
-                ]}
-              />
-            </div>
-          )}
           <div className="efficiency-search-wrap" style={{ width: "100%", flex: "2 1 280px", minWidth: "220px" }}>
             <SearchBar
               value={searchTerm}
@@ -1530,6 +1511,29 @@ export default function EfficiencyTab({
               ariaLabel="Search efficiency entries"
             />
           </div>
+          {activeTab === "overall" && (
+            <FilterButton
+              activeCount={overviewTechFilter !== "all" ? 1 : 0}
+              onClear={() => setOverviewTechFilter("all")}
+            >
+              <FilterField label="Technician" htmlFor="efficiencyOverviewTech">
+                <DropdownField
+                  id="efficiencyOverviewTech"
+                  value={overviewTechFilter}
+                  onChange={(event) => setOverviewTechFilter(event.target.value)}
+                  placeholder="All technicians"
+                  options={[
+                    { key: "all", value: "all", label: "All technicians" },
+                    ...technicians.map((tech) => ({
+                      key: `tech-${tech.user_id}`,
+                      value: String(tech.user_id),
+                      label: tech.first_name,
+                    })),
+                  ]}
+                />
+              </FilterField>
+            </FilterButton>
+          )}
         </div>
       </DevLayoutSection>
 
@@ -2569,7 +2573,7 @@ export default function EfficiencyTab({
             gap: 8px !important;
             justify-content: flex-start !important;
           }
-          :global(.efficiency-filter-shell > div:first-child > div) {
+          :global(.efficiency-filter-shell > div:first-child > div:not(.app-filter)) {
             min-width: min(100%, 180px) !important;
             max-width: 100% !important;
           }

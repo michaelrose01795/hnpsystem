@@ -134,7 +134,7 @@ export function VhcLinkedCustomerPage({
       setError(null);
       try {
         const response = await fetch(
-          `/api/job-cards/${jobNumber}/share-link?linkCode=${linkCode}`
+          `/api/job-cards/${encodeURIComponent(jobNumber)}/share-link?linkCode=${encodeURIComponent(linkCode)}`
         );
         let data;
         try {

@@ -46,7 +46,9 @@ const slugifyKey = (value, fallback = "module") => {
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    // Runs are already collapsed to one dash above, so a single-dash trim is
+    // enough and stays linear on hostile input.
+    .replace(/^-|-$/g, "");
   return slug || fallback;
 };
 

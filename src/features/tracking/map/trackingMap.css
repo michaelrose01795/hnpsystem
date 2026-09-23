@@ -51,25 +51,9 @@ html.staff-scope[data-theme="dark"] .tracking-map {
   --pmap-label-bg: color-mix(in srgb, var(--surface) 86%, transparent);
 }
 
-/* ---------------------------------------------------------------- toolbar */
-
-html.staff-scope .tracking-map__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-sm);
-  width: 100%;
-  min-width: 0;
-}
-
 /* ------------------------------------------------------- find a vehicle */
-
-html.staff-scope .tracking-map__find {
-  position: relative;
-  flex: 1 1 260px;
-  min-width: 0;
-  max-width: 420px;
-}
+/* The Map view's find-a-vehicle results, dropped under the page's shared
+   search bar (.tracking-shared-find below). */
 
 html.staff-scope .tracking-map__find-results {
   position: absolute;
@@ -457,12 +441,6 @@ html.staff-scope .tracking-panel__sr {
   }
 }
 
-@media (max-width: 767px) {
-  html.staff-scope .tracking-map__find {
-    flex-basis: 100%;
-    max-width: none;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   html.staff-scope .tracking-map__stage,
@@ -497,4 +475,13 @@ html.staff-scope .tracking-viewswitch > :first-child {
 html.staff-scope .tracking-viewswitch > :last-child {
   border-start-start-radius: 0;
   border-end-start-radius: 0;
+}
+
+/* ---------------------------------------------- shared search anchor */
+/* The page's shared search bar on Key/Parking (tracking-ui.js). The Map view
+   portals .tracking-map__find-results in here, so they drop down under it. */
+
+html.staff-scope .tracking-shared-find {
+  position: relative;
+  min-width: 0;
 }

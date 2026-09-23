@@ -76,7 +76,7 @@ const INDEXED = HELP_ENTRIES.map((entry) => ({
 
 export function getPageGuide(pagePath) {
   const path = String(pagePath || "/website").split(/[?#]/)[0].replace(/\/+$/, "") || "/website";
-  return PAGE_GUIDES.find((guide) => guide.match(path)) || PAGE_GUIDES[PAGE_GUIDES.length - 1];
+  return PAGE_GUIDES.find((guide) => guide.matches(path)) || PAGE_GUIDES[PAGE_GUIDES.length - 1];
 }
 
 export function getGreeting(pagePath) {

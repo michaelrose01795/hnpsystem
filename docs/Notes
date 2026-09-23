@@ -26,3 +26,13 @@ remove "Pages & sections Design & layout Shop Media SEO Analytics" from the "/we
 
 TODO
 Tracking pages and feauture updates
+
+
+
+TODO
+On the phone app in portrait mode, the top menu and status buttons are missing, although they appear in landscape; inspect the shared mobile header and fix the layout so these controls stay visible and tappable in portrait without breaking landscape or desktop.
+
+
+
+----- FIlter button ------
+CHECK all pages for the filter option is working correctly 

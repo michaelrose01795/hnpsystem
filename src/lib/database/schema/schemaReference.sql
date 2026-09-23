@@ -284,6 +284,10 @@ CREATE TABLE public.jobs (
   redirect_reason text,
   queue_position integer,
   next_update_due timestamp with time zone,
+  priority text NOT NULL DEFAULT 'normal'::text CHECK (priority = ANY (ARRAY['normal'::text, 'priority'::text, 'urgent'::text, 'vehicle_waiting'::text, 'comeback'::text])),
+  service_advisor_id integer,
+  next_update_owner_id integer,
+  next_update_reminder_enabled boolean NOT NULL DEFAULT false,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_booked_by_fkey FOREIGN KEY (booked_by) REFERENCES public.users(user_id),
   CONSTRAINT jobs_checked_in_by_fkey FOREIGN KEY (checked_in_by) REFERENCES public.users(user_id),
@@ -296,7 +300,9 @@ CREATE TABLE public.jobs (
   CONSTRAINT jobs_warranty_vhc_master_job_id_fkey FOREIGN KEY (warranty_vhc_master_job_id) REFERENCES public.jobs(id),
   CONSTRAINT jobs_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.accounts(account_id),
   CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id),
-  CONSTRAINT jobs_redirected_from_mobile_by_fkey FOREIGN KEY (redirected_from_mobile_by) REFERENCES public.users(user_id)
+  CONSTRAINT jobs_redirected_from_mobile_by_fkey FOREIGN KEY (redirected_from_mobile_by) REFERENCES public.users(user_id),
+  CONSTRAINT jobs_service_advisor_id_fkey FOREIGN KEY (service_advisor_id) REFERENCES public.users(user_id),
+  CONSTRAINT jobs_next_update_owner_id_fkey FOREIGN KEY (next_update_owner_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.job_notes (
   note_id integer NOT NULL DEFAULT nextval('job_notes_note_id_seq'::regclass),

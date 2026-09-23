@@ -13,6 +13,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import InputField from "@/components/ui/InputField";
 import {
   RecordFieldGrid,
@@ -86,17 +87,27 @@ export default function CustomerActivityTab({
                     setLimit(PAGE_SIZE);
                   }}
                 />
-                <DropdownField
-                  label="Show"
-                  value={filter}
-                  options={filterOptions}
-                  onChange={(event) => {
-                    setFilter(event.target.value);
-                    setLimit(PAGE_SIZE);
-                  }}
-                />
               </div>
               <div className="app-filter-bar__actions">
+                <FilterButton
+                  activeCount={filter !== "all" ? 1 : 0}
+                  onClear={() => {
+                    setFilter("all");
+                    setLimit(PAGE_SIZE);
+                  }}
+                >
+                  <FilterField label="Source"htmlFor="customer-activity-filter">
+                    <DropdownField
+                      id="customer-activity-filter"
+                      value={filter}
+                      options={filterOptions}
+                      onChange={(event) => {
+                        setFilter(event.target.value);
+                        setLimit(PAGE_SIZE);
+                      }}
+                    />
+                  </FilterField>
+                </FilterButton>
                 <Button
                   variant="ghost"
                   size="sm"

@@ -38,7 +38,7 @@ const EquipmentTrackerPanel = dynamic(loadEquipmentPanel, {
   loading: () => <EquipmentPanelSkeleton />,
 });
 
-// Category filter in the header row. The vocabulary (and every other equipment
+// Type (category) filter, shown in the equipment panel's filter card. The vocabulary (and every other equipment
 // rule) lives in src/config/equipmentTracking.js and
 // src/features/tracking/equipment/.
 const EQUIPMENT_TYPE_FILTERS = [
@@ -93,6 +93,8 @@ export default function EquipmentToolsPage() {
       <EquipmentTrackerPanel
         searchTerm={searchTerm}
         categoryFilter={categoryFilter}
+        categoryOptions={EQUIPMENT_TYPE_FILTERS}
+        onCategoryChange={setCategoryFilter}
         addRequest={addRequest}
         deepLink={deepLink}
         onDeepLinkHandled={clearDeepLink}
@@ -112,9 +114,6 @@ export default function EquipmentToolsPage() {
       isMobileView={isMobileView}
       canManageEquipment={capabilities.manage}
       onAddEquipment={() => setAddRequest((value) => value + 1)}
-      equipmentTypeFilter={categoryFilter}
-      equipmentTypeFilters={EQUIPMENT_TYPE_FILTERS}
-      setEquipmentTypeFilter={setCategoryFilter}
       renderActiveTabContent={renderContent}
       sharedSearchPlaceholder="Search equipment"
       sharedSearchValue={searchTerm}

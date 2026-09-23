@@ -150,6 +150,7 @@ import {
 "@/lib/prePickLocations";
 import { revalidateJob, revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { useJob, buildJobCardKey } from "@/hooks/useJob"; // SWR-powered job card data with caching and revalidation
+import { useJobSettings } from "@/hooks/useJobSettings"; // settings popup fields (priority, advisor, next-update owner)
 import {
   WORKSHOP_APPOINTMENT_TIME_OPTIONS,
   toAppointmentTimestamp,
@@ -762,6 +763,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   const [linkJobInput, setLinkJobInput] = useState("");
   const [isLinking, setIsLinking] = useState(false);
   const [linkError, setLinkError] = useState(null);
+  const [linkSuccess, setLinkSuccess] = useState(null);
 
   const applyWriteUpOptimisticState = useCallback(
     ({ completionStatus, tasks, requestStatuses } = {}) => {
@@ -1680,45 +1682,90 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
   }, [jobData?.id, jobData?.vhcRequired, jobData?.vhcCompletedAt, vhcAuthorizedWorkCompleted, canEdit]);
 
-  // Fetch related jobs when job data loads
-  useEffect(() => {
-    const primeJobNumber = jobData?.primeJobNumber;
+  // Fetch related jobs when job data loads. `isActive` lets the effect drop a
+  // response that lands after the job changed; the settings popup calls this
+  // directly after linking or unlinking, when the group can change without the
+  // current job's primeJobNumber changing.
+  const loadRelatedJobs = useCallback(async (primeJobNumber, currentJobNumber, isActive = () => true) => {
     if (!primeJobNumber) {
       setRelatedJobs([]);
       return;
     }
-
-    let isActive = true;
-    const fetchRelatedJobs = async () => {
-      setRelatedJobsLoading(true);
-      try {
-        const result = await (await loadJobsDb()).getJobsByPrimeGroup(primeJobNumber);
-        if (!isActive) return;
-        if (result.success && result.data?.allJobs) {
-          // Filter out the current job from the list
-          const others = result.data.allJobs.filter(
-            (job) => job.jobNumber !== jobData.jobNumber
-          );
-          setRelatedJobs(others);
-        }
-      } catch (err) {
-        logFailure("Failed to fetch related jobs:", err);
-      } finally {
-        if (isActive) setRelatedJobsLoading(false);
+    setRelatedJobsLoading(true);
+    try {
+      const result = await (await loadJobsDb()).getJobsByPrimeGroup(primeJobNumber);
+      if (!isActive()) return;
+      if (result.success && result.data?.allJobs) {
+        // Filter out the current job from the list
+        const others = result.data.allJobs.filter(
+          (job) => job.jobNumber !== currentJobNumber
+        );
+        setRelatedJobs(others);
       }
-    };
+    } catch (err) {
+      logFailure("Failed to fetch related jobs:", err);
+    } finally {
+      if (isActive()) setRelatedJobsLoading(false);
+    }
+  }, []);
 
-    fetchRelatedJobs();
+  useEffect(() => {
+    let isActive = true;
+    loadRelatedJobs(jobData?.primeJobNumber, jobData?.jobNumber, () => isActive);
     return () => {
       isActive = false;
     };
-  }, [jobData?.primeJobNumber, jobData?.jobNumber]);
+  }, [jobData?.primeJobNumber, jobData?.jobNumber, loadRelatedJobs]);
+
+  // Job card settings popup. Its settings-only fields (priority, service
+  // advisor, next-update owner / reminder) come from
+  // /api/job-cards/[jobNumber]/settings. The header shows the priority, so the
+  // read is warmed once the browser is idle — off the critical path, like the
+  // VHC and write-up tabs — and opening the popup enables it straight away.
+  const [jobSettingsWarm, setJobSettingsWarm] = useState(false);
+  useEffect(() => {
+    if (jobSettingsWarm || typeof window === "undefined") return undefined;
+    let idleId = null;
+    let timeoutId = null;
+    const warm = () => setJobSettingsWarm(true);
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(warm, { timeout: 4000 });
+    } else {
+      timeoutId = window.setTimeout(warm, 2000);
+    }
+    return () => {
+      if (idleId !== null && typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(idleId);
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+    };
+  }, [jobSettingsWarm]);
+  const { meta: jobSettingsMeta, refresh: refreshJobSettings } = useJobSettings(jobNumber, {
+    enabled: jobSettingsWarm || isLinkPopupOpen,
+    jobId: jobData?.id ?? null,
+  });
+  // Held in a ref so the realtime channel below does not resubscribe when the
+  // settings read switches on.
+  const refreshJobSettingsRef = useRef(refreshJobSettings);
+  refreshJobSettingsRef.current = refreshJobSettings;
+
+  // After any change made from the settings popup: reload the card, its status
+  // snapshot (header badge, Audit timeline), the linked group and the settings
+  // fields, and tell other pages their job lists are stale.
+  const handleJobSettingsChanged = useCallback(async () => {
+    await Promise.all([
+      fetchJobData({ silent: true, force: true }),
+      jobData?.id ? loadStatusSnapshot(jobData.id) : null,
+      refreshJobSettingsRef.current?.(),
+      loadRelatedJobs(jobData?.primeJobNumber, jobData?.jobNumber),
+    ]);
+    revalidateAllJobs();
+  }, [fetchJobData, loadStatusSnapshot, loadRelatedJobs, jobData?.id, jobData?.primeJobNumber, jobData?.jobNumber]);
 
   const handleLinkJob = useCallback(async () => {
     const trimmed = linkJobInput.trim();
     if (!trimmed) {setLinkError("Please enter a job number.");return;}
     setIsLinking(true);
     setLinkError(null);
+    setLinkSuccess(null);
     try {
       const result = await (await loadJobsDb()).getJobByNumber(trimmed, { noCache: true });
       if (!result?.data?.jobCard) {
@@ -1754,15 +1801,19 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       if (refreshResult.success && refreshResult.data?.allJobs) {
         setRelatedJobs(refreshResult.data.allJobs.filter((j) => j.jobNumber !== jobData.jobNumber));
       }
-      setIsLinkPopupOpen(false);
+      // The link lives in the job settings popup, which stays open so the
+      // refreshed group is visible; reload the job so the header's group
+      // buttons pick up a newly created host job.
       setLinkJobInput("");
+      setLinkSuccess(`Job #${targetJob.jobNumber} linked.`);
+      fetchJobData({ silent: true, force: true });
     } catch (err) {
       setLinkError("An unexpected error occurred.");
       logFailure("Link job error:", err);
     } finally {
       setIsLinking(false);
     }
-  }, [linkJobInput, jobData, setRelatedJobs]);
+  }, [linkJobInput, jobData, setRelatedJobs, fetchJobData]);
 
   // Read through /api/tracking/snapshot rather than calling
   // `fetchTrackingSnapshot()` in the browser.
@@ -1870,8 +1921,12 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         // Debug logs removed after troubleshooting.
         await loadTrackerEntry();
         setTrackerQuickModalOpen(false);
+        return { success: true };
       } catch (saveError) {
         logFailure("Failed to save tracking entry", saveError);
+        // Returned (not thrown) so the quick modal keeps its old behaviour and
+        // the settings popup can show the failure.
+        return { success: false, error: saveError?.message || "Failed to save tracking entry" };
       }
     },
     [dbUserId, jobData, loadTrackerEntry]
@@ -2063,7 +2118,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
 
     const tablesToWatch = [
-    { table: "jobs", filter: `id=eq.${jobData.id}` },
+    // The settings popup's fields (priority, advisor, …) live on the jobs row
+    // too, so a change made elsewhere refreshes them alongside the card.
+    { table: "jobs", filter: `id=eq.${jobData.id}`, onPayload: () => refreshJobSettingsRef.current?.() },
     { table: "appointments", filter: `job_id=eq.${jobData.id}` },
     { table: "parts_job_items", filter: `job_id=eq.${jobData.id}` },
     { table: "parts_requests", filter: `job_id=eq.${jobData.id}` },
@@ -4030,7 +4087,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
 
     // Main Render
-    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleSaveWriteUp={handleSaveWriteUp} WriteUpWorkspace={WriteUpWorkspace} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} vhcTabDangerReadyInstant={vhcTabDangerReadyInstant} writeUpCompleteInstant={writeUpCompleteInstant} writeUpPartiallyCompleteInstant={writeUpPartiallyCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} vhcTabMounted={vhcTabMounted} />;
+    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSchedulingLogisticsChange={handleSchedulingLogisticsChange} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleUpdateRequestStatus={handleUpdateRequestStatus} handleSaveRequestWorkDetails={handleSaveRequestWorkDetails} handleMarkAllRequestsComplete={handleMarkAllRequestsComplete} handleSaveWriteUp={handleSaveWriteUp} WriteUpWorkspace={WriteUpWorkspace} clockingEntries={clockingEntries} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} linkSuccess={linkSuccess} setLinkSuccess={setLinkSuccess} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} vhcTabDangerReadyInstant={vhcTabDangerReadyInstant} writeUpCompleteInstant={writeUpCompleteInstant} writeUpPartiallyCompleteInstant={writeUpPartiallyCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} vhcTabMounted={vhcTabMounted} permissions={permissions} statusTimeline={statusSnapshot?.timeline || []} handleMileageSave={handleMileageSave} jobSettingsMeta={jobSettingsMeta} handleJobSettingsChanged={handleJobSettingsChanged} />;
 
 
 
@@ -7094,7 +7151,7 @@ function VHCTab({
   const handleCopyToClipboard = async () => {
     setGeneratingLink(true);
     try {
-      const response = await fetch(`/api/job-cards/${jobNumber}/share-link`, {
+      const response = await fetch(`/api/job-cards/${encodeURIComponent(jobNumber)}/share-link`, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });
@@ -7134,7 +7191,7 @@ function VHCTab({
     setSendingVhc(true);
     setSendVhcMessage("");
     try {
-      const response = await fetch(`/api/job-cards/${jobNumber}/send-vhc`, {
+      const response = await fetch(`/api/job-cards/${encodeURIComponent(jobNumber)}/send-vhc`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -43,6 +43,7 @@ export function TabGroup({
             role="tab"
             aria-selected={isActive}
             className={`tab-api__item${isActive ? " is-active" : ""}${item.className ? ` ${item.className}` : ""}`}
+            data-tone={item.tone || undefined}
             onClick={() => onChange?.(itemValue, item)}
             {...(itemDevSectionKey
               ? {

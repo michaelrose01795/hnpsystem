@@ -132,7 +132,8 @@ const isIconOnly = ({ open, body }) => {
   const hasSvg = /<svg\b/.test(inner);
   // <Symbol …/> is the registry's own mark, so it does not count as hand-rolled.
   const withoutSymbol = inner.replace(/<Symbol\b[^>]*\/>/g, "");
-  const textNodes = withoutSymbol.replace(/<[^>]*>/g, "");
+  // Drop any "<" left by a malformed tag so nothing tag-like survives the strip.
+  const textNodes = withoutSymbol.replace(/<[^>]*>/g, "").replace(/</g, "");
   // A {expression} child may render words, so the button is not icon-only.
   if (textNodes.includes("{")) return false;
   const words = textNodes.trim();
@@ -172,7 +173,7 @@ const labelGlyphHits = ({ body }) => {
   const hits = [];
 
   // Plain JSX text: <Button>+ Add Part</Button>
-  const stripped = inner.replace(/<[^>]*>/g, "");
+  const stripped = inner.replace(/<[^>]*>/g, "").replace(/</g, "");
   // "+ {hiddenCount} more" is counting notation, not furniture — the glyph
   // belongs to the number, so it is left alone.
   const isNotation = new RegExp(`^\\s*${LABEL_GLYPH}\\uFE0F?\\s*\\{`, "u").test(stripped);

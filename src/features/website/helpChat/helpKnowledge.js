@@ -452,7 +452,7 @@ export const HELP_PHONE = { label: phone, href: phoneHref };
 export const PAGE_GUIDES = [
   {
     id: "stock-detail",
-    match: (path) => path.startsWith("/website/stock/"),
+    matches: (path) => path.startsWith("/website/stock/"),
     title: "this car",
     questions: [
       "Can I book a test drive?",
@@ -464,7 +464,7 @@ export const PAGE_GUIDES = [
   },
   {
     id: "stock",
-    match: (path) => path === "/website/available-stock",
+    matches: (path) => path === "/website/available-stock",
     title: "our stock",
     questions: [
       "Do you have any new car offers?",
@@ -476,7 +476,7 @@ export const PAGE_GUIDES = [
   },
   {
     id: "shop",
-    match: (path) => path.startsWith("/website/shop"),
+    matches: (path) => path.startsWith("/website/shop"),
     title: "the shop",
     questions: [
       "How does the basket and checkout work?",
@@ -488,7 +488,7 @@ export const PAGE_GUIDES = [
   },
   {
     id: "parts",
-    match: (path) => path.startsWith("/website/parts-catalog"),
+    matches: (path) => path.startsWith("/website/parts-catalog"),
     title: "the parts catalogue",
     questions: [
       "Are your parts genuine?",
@@ -500,7 +500,7 @@ export const PAGE_GUIDES = [
   },
   {
     id: "valuation",
-    match: (path) => path.startsWith("/website/valuation"),
+    matches: (path) => path.startsWith("/website/valuation"),
     title: "selling your car",
     questions: [
       "How does the free valuation work?",
@@ -512,7 +512,7 @@ export const PAGE_GUIDES = [
   },
   {
     id: "appointment",
-    match: (path) => path.startsWith("/website/request-appointment"),
+    matches: (path) => path.startsWith("/website/request-appointment"),
     title: "workshop appointments",
     questions: [
       "What happens at a service?",
@@ -524,7 +524,7 @@ export const PAGE_GUIDES = [
   },
   {
     id: "login",
-    match: (path) => path.startsWith("/website/login"),
+    matches: (path) => path.startsWith("/website/login"),
     title: "signing in",
     questions: [
       "How do I create an account?",
@@ -536,7 +536,7 @@ export const PAGE_GUIDES = [
   },
   {
     id: "profile",
-    match: (path) => path.startsWith("/website/profile"),
+    matches: (path) => path.startsWith("/website/profile"),
     title: "your account",
     questions: [
       "How do I add a vehicle?",
@@ -548,7 +548,7 @@ export const PAGE_GUIDES = [
   },
   {
     id: "legal",
-    match: (path) => path.startsWith("/website/privacy") || path.startsWith("/website/terms"),
+    matches: (path) => path.startsWith("/website/privacy") || path.startsWith("/website/terms"),
     title: "our policies",
     questions: [
       "How do you use my data?",
@@ -560,7 +560,7 @@ export const PAGE_GUIDES = [
   },
   {
     id: "home",
-    match: () => true,
+    matches: () => true,
     title: `${brandName}`,
     questions: [
       "What are your opening hours?",

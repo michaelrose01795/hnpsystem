@@ -6,9 +6,14 @@
 //
 // ONE TOOL, THREE PARTS, ONE SELECTION
 // ------------------------------------
-//   toolbar   find-a-vehicle search
+//   results   find-a-vehicle matches for the PAGE's search bar
 //   map       the supplied site-plan image with a selectable overlay
 //   panel     the selected section (or an overview of all of them)
+//
+// There is no search bar in here. The page's shared search (tracking-ui.js)
+// is the only one on the page: it filters the entries this view draws AND,
+// as `findQuery`, drives the find-a-vehicle results, which are portalled into
+// `findResultsSlot` so they drop down under that bar.
 //
 // All three share `selectedId`. Clicking a map label, clicking a building or
 // yard region, choosing an overview row and choosing a search
@@ -33,9 +38,9 @@
 // a pinch (or the wheel) and panned with a drag.
 
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
-import { SearchBar } from "@/components/ui/searchBarAPI";
 import ParkingSiteMap from "@/features/tracking/map/ParkingSiteMap";
 import SectionPanel from "@/features/tracking/map/SectionPanel";
 import { useIsTablet } from "@/hooks/useIsMobile";
@@ -72,6 +77,9 @@ export default function TrackingSiteMap({
   onOpenEntry,
   onMoveVehicle,
   initialSelectedId = null,
+  findQuery = "",
+  onFindQueryChange,
+  findResultsSlot = null,
 }) {
   const [view, setView] = useState(INITIAL_VIEW);
   const canZoom = useIsTablet();
@@ -83,8 +91,8 @@ export default function TrackingSiteMap({
   const [selection, dispatch] = useReducer(sectionSelectionReducer, initialSelectedId, (id) =>
     sectionSelectionReducer(INITIAL_SECTION_SELECTION, { type: "select", id })
   );
-  const { selectedId, highlightKey, findQuery } = selection;
-  const setFindQuery = useCallback((query) => dispatch({ type: "find", query }), []);
+  // The find query belongs to the page's shared search bar, not the reducer.
+  const { selectedId, highlightKey } = selection;
 
   const frameRef = useRef(null);
   const panRef = useRef(null);
@@ -102,16 +110,24 @@ export default function TrackingSiteMap({
 
   const selectSection = useCallback((id) => dispatch({ type: "select", id }), []);
 
-  const chooseResult = (result) => dispatch({ type: "choose-result", sectionId: result.section.id, key: result.key });
+  // Picking a result opens its section with the car highlighted, and clears
+  // the shared search so the map shows the whole section again.
+  const chooseResult = (result) => {
+    dispatch({ type: "choose-result", sectionId: result.section.id, key: result.key });
+    onFindQueryChange?.("");
+  };
 
   // Escape backs out one step: first the find results, then the selection.
   // Only swallowed when it did something, so an Escape with nothing to close
   // still reaches anything listening further up.
   const handleKeyDown = (event) => {
     if (event.key !== "Escape") return;
-    if (findQuery || selectedId) {
+    if (findQuery) {
       event.stopPropagation();
-      dispatch({ type: "escape" });
+      onFindQueryChange?.("");
+    } else if (selectedId) {
+      event.stopPropagation();
+      dispatch({ type: "clear" });
     }
   };
 
@@ -226,6 +242,35 @@ export default function TrackingSiteMap({
 
   const shouldIgnoreClick = useCallback(() => draggedRef.current, []);
 
+  // Portalled under the page's search bar when the slot is there; drawn at the
+  // top of the map otherwise, so the results are never lost.
+  const findResultsList = findQuery ? (
+    <ul id="tracking-map-find-results" className="tracking-map__find-results" aria-label="Matching vehicles">
+      {findResults.length === 0 ? (
+        <li className="tracking-map__find-empty">No tracked vehicle matches “{findQuery}”.</li>
+      ) : (
+        findResults.map((result) => (
+          <li key={result.key}>
+            <Button
+              variant="secondary"
+              size="sm"
+              symbol={false}
+              className="tracking-map__find-result"
+              onClick={() => chooseResult(result)}
+              aria-label={`${String(result.entry.reg || "No reg").toUpperCase()}, in ${result.section.label}`}
+            >
+              <span className="app-record-plate">{String(result.entry.reg || "No reg").toUpperCase()}</span>
+              <span className="tracking-map__find-meta">
+                {result.entry.jobNumber ? `Job ${result.entry.jobNumber}` : ""}
+              </span>
+              <span className="tracking-map__find-section">{result.section.label}</span>
+            </Button>
+          </li>
+        ))
+      )}
+    </ul>
+  ) : null;
+
   const stageStyle = {
     transform: `scale(${view.scale}) translate(${view.x * 100}%, ${view.y * 100}%)`,
     transformOrigin: "0 0",
@@ -239,45 +284,9 @@ export default function TrackingSiteMap({
       sectionType="section-shell"
       onKeyDown={handleKeyDown}
     >
-      <div className="tracking-map__toolbar">
-        <div className="tracking-map__find">
-          <SearchBar
-            value={findQuery}
-            onChange={(event) => setFindQuery(event.target.value)}
-            onClear={() => setFindQuery("")}
-            placeholder="Find a vehicle by reg or job"
-            ariaLabel="Find a vehicle by registration or job number"
-            aria-controls="tracking-map-find-results"
-            aria-expanded={findQuery ? findResults.length > 0 : false}
-          />
-          {findQuery && (
-            <ul id="tracking-map-find-results" className="tracking-map__find-results" aria-label="Matching vehicles">
-              {findResults.length === 0 ? (
-                <li className="tracking-map__find-empty">No tracked vehicle matches “{findQuery}”.</li>
-              ) : (
-                findResults.map((result) => (
-                  <li key={result.key}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      symbol={false}
-                      className="tracking-map__find-result"
-                      onClick={() => chooseResult(result)}
-                      aria-label={`${String(result.entry.reg || "No reg").toUpperCase()}, in ${result.section.label}`}
-                    >
-                      <span className="app-record-plate">{String(result.entry.reg || "No reg").toUpperCase()}</span>
-                      <span className="tracking-map__find-meta">
-                        {result.entry.jobNumber ? `Job ${result.entry.jobNumber}` : ""}
-                      </span>
-                      <span className="tracking-map__find-section">{result.section.label}</span>
-                    </Button>
-                  </li>
-                ))
-              )}
-            </ul>
-          )}
-        </div>
-      </div>
+      {findResultsSlot
+        ? createPortal(findResultsList, findResultsSlot)
+        : findResultsList && <div className="tracking-shared-find">{findResultsList}</div>}
 
       <div className="tracking-map__body">
         {/* The frame sizes the view; the plan inside it is fitted, never

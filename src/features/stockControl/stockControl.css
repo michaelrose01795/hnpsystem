@@ -54,7 +54,9 @@ html.staff-scope .stock-header-filters {
   flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-sm);
-  flex: 1 1 auto;
+  /* Holds the shared filter button now, not the dropdowns, so it sizes to
+     that 44px circle instead of taking a share of the row. */
+  flex: 0 0 auto;
   min-width: 0;
 }
 
@@ -617,10 +619,6 @@ html.staff-scope .stock-stocktake__compare {
     min-width: 0;
   }
 
-  html.staff-scope .stock-header-filters {
-    flex: 1 1 100%;
-    flex-wrap: wrap;
-  }
 
   html.staff-scope .stock-header-filters .stock-toolbar__filter {
     flex: 1 1 calc(50% - var(--space-sm));

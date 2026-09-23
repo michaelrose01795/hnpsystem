@@ -382,7 +382,6 @@ html.staff-scope .job-cards-view-filter-control .dropdown-api {
 
 html.staff-scope .job-cards-view-searchbar.searchbar-api {
   min-width: 0;
-  max-width: none;
   min-height: var(--control-height-sm);
   padding: var(--space-xs) var(--space-sm);
 }
@@ -1524,6 +1523,55 @@ html.staff-scope .app-settings-popup-card {
 html.staff-scope .app-settings-popup {
   height: 100%;
   min-height: 0;
+}
+
+/* Sectioned settings popup (e.g. Job Card Settings).
+   Opt in with app-settings-popup__layout inside app-settings-popup. The nav is
+   the shared tab strip (TabGroup → .tab-api) with app-settings-popup__nav;
+   the panel is the only scrolling region, so the compact header and the nav
+   stay put. Below 900px the nav is the ordinary wrapping tab row above the
+   panel; from 900px it stacks as a column beside it. */
+html.staff-scope .app-settings-popup__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--layout-card-gap);
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+html.staff-scope .app-settings-popup__nav {
+  align-self: start;
+}
+
+html.staff-scope .app-settings-popup__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 900px) {
+  html.staff-scope .app-settings-popup__layout {
+    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  html.staff-scope .tab-api.app-settings-popup__nav {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  html.staff-scope .app-settings-popup__nav > .tab-api__item {
+    justify-content: flex-start;
+    width: 100%;
+  }
 }
 
 /* Media editor popup convention (Edit photo / Edit video).
@@ -3314,6 +3362,17 @@ html.staff-scope .searchbar-api:focus-within {
   height: var(--control-height) !important;
   padding: 0 !important;
   background: var(--theme) !important;
+}
+
+/* Search bar width cap. A search bar is sized to hold a short query, not to
+   span a toolbar: it is capped at the width of "Search.." followed by 25
+   spaces (33 characters), plus room for the clear button, and still shrinks
+   to its column below that. Only the standalone SearchBar — the multi-select
+   dropdown's control reuses .searchbar-api for its look and must keep
+   filling its field. The filters that used to sit beside a search bar now
+   live in the shared filter button (.app-filter, end of this file). */
+html.staff-scope .searchbar-api:not(.dropdown-api__control) {
+  max-width: calc(33ch + var(--control-height));
 }
 
 html.staff-scope .dropdown-api.is-open .dropdown-api__control,
@@ -9911,5 +9970,301 @@ html.staff-scope .tracking-popup__footer {
 
   html.staff-scope .loan-car-form-grid--pair {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ========================================================================== */
+/* === Filter button + floating filter card                               === */
+/* ========================================================================== */
+/*
+ * Component: src/components/ui/filterAPI/FilterButton.js
+ *
+ * A 44px circle with the filter mark that opens a floating filter card, the
+ * way the calendar picker opens its grid. Everything visual about the button
+ * and the card lives here; a page supplies only the content (dropdowns,
+ * search bars, toggles) inside <FilterField> rows.
+ *
+ * The card is portalled to <body> and fixed-positioned by the component, so
+ * it sits above every page card, sticky bar and modal (--z-popover). Menus
+ * opened from inside it (portalled dropdowns) use --z-dropdown, which is
+ * higher again, so they still land on top of the card.
+ *
+ * Ladder: the card is a floating --surface with the dropdown-menu shadow, the
+ * same treatment as the calendar/dropdown menus. Being in <body> it sits on no
+ * theme layer, so the controls inside keep their default accent fill, which
+ * is what separates them from a --surface.
+ */
+
+/* The count badge overhangs the circle's top-right corner. Any scroll or
+   clipping ancestor (the desktop page scroller is overflow:auto, so is every
+   modal body) cuts off whatever pokes out past its edge, so the wrapper
+   reserves the overhang inside its own box and the badge can never leave it.
+   The reserve is always on, so the toolbar does not shift when a filter is
+   applied; top and bottom match so the circle stays centred in its row. */
+html.staff-scope .app-filter {
+  --app-filter-badge-overhang: 6px; /* 4px offset + 2px surface halo on .app-filter__count */
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  padding-block: var(--app-filter-badge-overhang);
+  padding-inline-end: var(--app-filter-badge-overhang);
+}
+
+/* The trigger — locked to the control floor in both axes so no flex parent
+   can stretch it out of round. Qualified with `button` so it outranks the
+   global `button:not(.app-btn)` primary fill. */
+html.staff-scope button.app-filter__trigger {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  width: var(--control-height);
+  min-width: var(--control-height);
+  max-width: var(--control-height);
+  height: var(--control-height);
+  min-height: var(--control-height);
+  max-height: var(--control-height);
+  flex: 0 0 auto;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  aspect-ratio: 1 / 1;
+  background: var(--secondary);
+  color: var(--accent-text-on-tint);
+  line-height: 0;
+  font-size: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+html.staff-scope button.app-filter__trigger:hover:not(:disabled) {
+  background: var(--secondary-hover);
+}
+
+/* Open, or pressed: the pressed tint holds while the card is showing, so the
+   button reads as the thing the card belongs to. */
+html.staff-scope button.app-filter__trigger[aria-expanded="true"],
+html.staff-scope button.app-filter__trigger:active:not(:disabled) {
+  background: var(--secondary-pressed);
+}
+
+html.staff-scope button.app-filter__trigger:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+html.staff-scope button.app-filter__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope button.app-filter__trigger:disabled {
+  background: var(--control-disabled-bg);
+  color: var(--control-disabled-text);
+  cursor: not-allowed;
+}
+
+html.staff-scope .app-filter__glyph {
+  grid-area: 1 / 1;
+  display: block;
+  width: var(--symbol-glyph-size);
+  height: var(--symbol-glyph-size);
+  stroke-width: var(--symbol-stroke-width);
+  max-width: none;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+/* Active-filter count, pinned to the top-right of the circle. The surface
+   halo is a box-shadow (not a border) that cuts it cleanly out of the circle. */
+html.staff-scope .app-filter__count {
+  position: absolute;
+  z-index: 1; /* paints above the glyph and any later sibling in the row */
+  top: -4px;
+  right: -4px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--onAccentText);
+  box-shadow: 0 0 0 2px var(--surface);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* The floating card. It unfolds out of the button: the component sets
+   transform-origin to the button's position, and data-state drives an open
+   and a close animation (the component keeps the card mounted until the
+   close one ends). */
+html.staff-scope .app-filter__panel {
+  position: fixed;
+  z-index: var(--z-popover);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: var(--section-card-padding);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--dropdown-menu-shadow);
+  color: var(--text-1);
+  outline: none;
+  will-change: opacity, transform;
+}
+
+/* First frame, before the component has measured and placed it: keep it out
+   of sight so it never flashes at the top-left of the screen. The open
+   animation is attached only once it is placed, so it plays in full from the
+   right spot rather than part-way through. */
+html.staff-scope .app-filter__panel[data-positioned="false"] {
+  visibility: hidden;
+}
+
+html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] {
+  animation: app-filter-panel-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html.staff-scope .app-filter__panel[data-state="closing"] {
+  animation: app-filter-panel-out 0.14s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+/* Opening upwards, the card rises instead of dropping. */
+html.staff-scope .app-filter__panel[data-placement="above"] {
+  --app-filter-panel-shift: 6px;
+}
+
+@keyframes app-filter-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--app-filter-panel-shift, -6px)) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes app-filter-panel-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--app-filter-panel-shift, -6px)) scale(0.97);
+  }
+}
+
+/* The fields follow the card in a beat behind it, so the content settles
+   rather than arriving in one block. */
+html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] .app-filter__body {
+  animation: app-filter-body-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
+}
+
+@keyframes app-filter-body-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header: title on the left; Clear all and Show results on the right. */
+html.staff-scope .app-filter__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .app-filter__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-h4);
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+html.staff-scope .app-filter__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 0 0 auto;
+}
+
+html.staff-scope .app-filter__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+html.staff-scope .app-filter__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+/* Controls inside a field fill the card's width. */
+html.staff-scope .app-filter__field > :not(.app-filter__label) {
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .app-filter__label {
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+/* Phone: the title keeps the first line; the two actions drop to their own
+   full-width line beneath and share it evenly. */
+@media (max-width: 480px) {
+  html.staff-scope .app-filter__header {
+    flex-wrap: wrap;
+  }
+
+  html.staff-scope .app-filter__actions {
+    flex: 1 1 100%;
+  }
+
+  html.staff-scope .app-filter__actions > * {
+    flex: 1 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope button.app-filter__trigger {
+    transition: none;
+  }
+
+  html.staff-scope button.app-filter__trigger:active:not(:disabled) {
+    transform: none;
+  }
+
+  html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"],
+  html.staff-scope .app-filter__panel[data-state="closing"],
+  html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] .app-filter__body {
+    animation: none;
   }
 }

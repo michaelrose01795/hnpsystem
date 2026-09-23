@@ -7,14 +7,15 @@
 // The page owns only the shared search box and the header buttons; it passes
 // the search term, a `command` ({ type, at }) for the header buttons, any
 // QR deep-link focus ({ itemId, action }) and `filterSlot` — a header element
-// the filter / sort dropdowns are portalled into so they share the search row
-// (without one they stay in the toolbar). Everything else lives here. All
+// the filter button (holding the filter / sort dropdowns) is portalled into so
+// it shares the search row (without one it stays in the toolbar). Everything else lives here. All
 // business rules come from stockModel.js; all requests from stockClient.js.
 
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { SectionGridSkeleton } from "@/components/ui/LoadingSkeleton";
 import { Button, EmptyState, StatusMessage } from "@/components/ui";
 import { logFailure } from "@/lib/utils/logFailure";
@@ -298,16 +299,34 @@ export default function StockControlPanel({ searchTerm = "", command = null, foc
     onStockAction: (row) => setModal({ type: "action", row, action: capabilities.check ? "check" : "use" }),
   };
 
+  // The filter and sort dropdowns live in the filter button's floating card.
+  const activeFilterCount = Object.values(filters).filter((value) => value !== "all").length + (sort !== "action" ? 1 : 0);
   const filterControls = (
-    <>
-      <DropdownField className="stock-toolbar__filter" size="sm" ariaLabel="Filter by category" options={categoryOptions} value={filters.categoryId} onValueChange={(value) => setFilter("categoryId", value)} />
-      <DropdownField className="stock-toolbar__filter" size="sm" ariaLabel="Filter by location" options={locationOptions} value={filters.locationId} onValueChange={(value) => setFilter("locationId", value)} />
-      <DropdownField className="stock-toolbar__filter" size="sm" ariaLabel="Filter by status" options={STATUS_FILTER_OPTIONS} value={filters.status} onValueChange={(value) => setFilter("status", value)} />
+    <FilterButton
+      activeCount={activeFilterCount}
+      onClear={() => {
+        setFilters({ categoryId: "all", locationId: "all", status: "all", supplier: "all" });
+        setSort("action");
+      }}
+    >
+      <FilterField label="Category" htmlFor="stock-filter-category">
+        <DropdownField id="stock-filter-category" ariaLabel="Filter by category" options={categoryOptions} value={filters.categoryId} onValueChange={(value) => setFilter("categoryId", value)} />
+      </FilterField>
+      <FilterField label="Location" htmlFor="stock-filter-location">
+        <DropdownField id="stock-filter-location" ariaLabel="Filter by location" options={locationOptions} value={filters.locationId} onValueChange={(value) => setFilter("locationId", value)} />
+      </FilterField>
+      <FilterField label="Status" htmlFor="stock-filter-status">
+        <DropdownField id="stock-filter-status" ariaLabel="Filter by status" options={STATUS_FILTER_OPTIONS} value={filters.status} onValueChange={(value) => setFilter("status", value)} />
+      </FilterField>
       {data.suppliers.length > 0 && (
-        <DropdownField className="stock-toolbar__filter" size="sm" ariaLabel="Filter by supplier" options={supplierOptions} value={filters.supplier} onValueChange={(value) => setFilter("supplier", value)} />
+        <FilterField label="Supplier" htmlFor="stock-filter-supplier">
+          <DropdownField id="stock-filter-supplier" ariaLabel="Filter by supplier" options={supplierOptions} value={filters.supplier} onValueChange={(value) => setFilter("supplier", value)} />
+        </FilterField>
       )}
-      <DropdownField className="stock-toolbar__filter" size="sm" ariaLabel="Sort by" options={SORT_OPTIONS.filter((option) => option.value !== "value" || capabilities.viewCosts)} value={sort} onValueChange={(value) => setSort(value || "action")} />
-    </>
+      <FilterField label="Sort" htmlFor="stock-filter-sort">
+        <DropdownField id="stock-filter-sort" ariaLabel="Sort by" options={SORT_OPTIONS.filter((option) => option.value !== "value" || capabilities.viewCosts)} value={sort} onValueChange={(value) => setSort(value || "action")} />
+      </FilterField>
+    </FilterButton>
   );
 
   // Keep the popup's row fresh after a background refresh.

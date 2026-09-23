@@ -12,6 +12,7 @@ import SidebarAccessEditor from "@/components/HR/SidebarAccessEditor";
 import { roleCategories } from "@/config/users";
 import { CalendarField } from "@/components/ui/calendarAPI"; // Date input component
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
@@ -163,33 +164,40 @@ function DirectoryFilters({ filters, setFilters, departments, employmentTypes })
     label: type === "all" ? "All Types" : type,
   }));
 
+  const activeCount = Object.keys(defaultFilters).filter(
+    (key) => filters[key] !== defaultFilters[key]
+  ).length;
+
   return (
-    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
-      <div style={{ minWidth: "160px" }}>
+    <FilterButton activeCount={activeCount} onClear={() => setFilters(defaultFilters)}>
+      <FilterField label="Department" htmlFor="hr-employees-filter-department">
         <DropdownField
+          id="hr-employees-filter-department"
           value={filters.department}
           onChange={(e) => setFilters({ ...filters, department: e.target.value })}
           options={departmentOptions}
           size="sm"
         />
-      </div>
-      <div style={{ minWidth: "140px" }}>
+      </FilterField>
+      <FilterField label="Status" htmlFor="hr-employees-filter-status">
         <DropdownField
+          id="hr-employees-filter-status"
           value={filters.status}
           onChange={(e) => setFilters({ ...filters, status: e.target.value })}
           options={statusOptions}
           size="sm"
         />
-      </div>
-      <div style={{ minWidth: "140px" }}>
+      </FilterField>
+      <FilterField label="Employment Type" htmlFor="hr-employees-filter-employment-type">
         <DropdownField
+          id="hr-employees-filter-employment-type"
           value={filters.employmentType}
           onChange={(e) => setFilters({ ...filters, employmentType: e.target.value })}
           options={employmentOptions}
           size="sm"
         />
-      </div>
-    </div>
+      </FilterField>
+    </FilterButton>
   );
 }
 

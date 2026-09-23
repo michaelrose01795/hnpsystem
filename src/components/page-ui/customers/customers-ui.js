@@ -7,6 +7,7 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import EmptyState from "@/components/ui/EmptyState";
 import StatusMessage from "@/components/ui/StatusMessage";
 import Button from "@/components/ui/Button";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 
 const dash = (value) => (value ? value : "—");
 const countLabel = (value) => (typeof value === "number" ? String(value) : "—");
@@ -81,14 +82,21 @@ export default function CustomersIndexUi(props) {
                     onClear={handleClearSearch}
                   />
                 </div>
-                <div style={{ flex: "0 1 220px", minWidth: 0 }}>
-                  <DropdownField
-                    value={sort}
-                    options={sortOptions}
-                    size="sm"
-                    onValueChange={handleSortChange}
-                  />
-                </div>
+                {/* The first sort option is the page's default ("recent"). */}
+                <FilterButton
+                  activeCount={sort !== sortOptions[0]?.value ? 1 : 0}
+                  onClear={() => handleSortChange(sortOptions[0]?.value)}
+                >
+                  <FilterField label="Sort" htmlFor="customers-filter-sort">
+                    <DropdownField
+                      id="customers-filter-sort"
+                      value={sort}
+                      options={sortOptions}
+                      size="sm"
+                      onValueChange={handleSortChange}
+                    />
+                  </FilterField>
+                </FilterButton>
               </div>
 
               {/* Summary strip. Sits inside the filter shell, directly below

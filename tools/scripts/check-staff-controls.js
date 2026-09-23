@@ -231,6 +231,8 @@ const CANONICAL_BUTTON_CLASSES = [
   "loan-car-calendar__corner-button",
   "loan-car-lookup__result",
   "loan-car-fleet-list__row",
+  // Shared filter button (staffglobal.css `.app-filter` block, FilterButton.js).
+  "app-filter__trigger",
 ];
 const CANONICAL_BUTTON_ALT = CANONICAL_BUTTON_CLASSES.join("|");
 const BACKTICK = String.fromCharCode(96);

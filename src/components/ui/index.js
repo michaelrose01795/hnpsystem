@@ -18,6 +18,7 @@ export { default as StatusMessage } from "./StatusMessage";
 export { default as Button } from "./Button";
 export { default as InputField } from "./InputField";
 export { default as SymbolButton, Symbol, SYMBOLS, SYMBOL_NAMES } from "./SymbolButton";
+export { FilterButton, FilterField } from "./filterAPI";
 export { default as EmptyState } from "./EmptyState";
 export { default as FieldError } from "./FieldError";
 export { default as FormErrorSummary } from "./FormErrorSummary";

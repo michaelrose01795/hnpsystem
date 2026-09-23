@@ -4,7 +4,14 @@ import WarrantyTab from "@/components/page-ui/job-cards/WarrantyTab"; // redesig
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import Button from "@/components/ui/Button";
+import SymbolButton from "@/components/ui/SymbolButton";
+import dynamic from "next/dynamic";
 import { formatVehicleLocation } from "@/lib/tracking/vehicleLocations"; // canonical vehicle-location display
+import { getJobPriorityOption } from "@/features/jobCards/workflow/jobSettings"; // priority label + badge tone
+
+// Job Card Settings control centre (header settings symbol). Code-split and
+// rendered only while open: nobody pays for it until they reach for it.
+const JobSettingsPopup = dynamic(() => import("@/components/page-ui/job-cards/JobSettingsPopup"), { ssr: false });
 
 export default function JobCardDetailPageUi(props) {
   const {
@@ -111,6 +118,7 @@ export default function JobCardDetailPageUi(props) {
     jobVhcChecks,
     linkError,
     linkJobInput,
+    linkSuccess,
     lockAlertStyle,
     lockedTabIds,
     mileageInputDirtyRef,
@@ -128,6 +136,7 @@ export default function JobCardDetailPageUi(props) {
     setIsLinkPopupOpen,
     setLinkError,
     setLinkJobInput,
+    setLinkSuccess,
     setShowDocumentsPopup,
     setTrackerQuickModalOpen,
     setVehicleMileageInput,
@@ -158,7 +167,17 @@ export default function JobCardDetailPageUi(props) {
     writeUpPartiallyCompleteInstant,
     writeUpTabMounted,
     vhcTabMounted,
+    permissions,
+    statusTimeline,
+    handleMileageSave,
+    jobSettingsMeta,
+    handleJobSettingsChanged,
   } = props; // receive page logic props.
+  // Only a non-normal priority earns a header badge.
+  const jobPriority =
+    jobSettingsMeta && !jobSettingsMeta.migrationPending && jobSettingsMeta.priority && jobSettingsMeta.priority !== "normal"
+      ? getJobPriorityOption(jobSettingsMeta.priority)
+      : null;
   const activeTabLabel = tabs?.find(tab => tab.id === activeTab)?.label || activeTab;
   const normaliseBadgeText = (value) => String(value || "").trim().toLowerCase();
   const jobHeaderStatusToneClass = (() => {
@@ -272,6 +291,9 @@ export default function JobCardDetailPageUi(props) {
               {jobDivisionLabel && <span className={`app-badge app-badge--uppercase ${jobDivisionToneClass}`}>
                   {jobDivisionLabel}
                 </span>}
+              {jobPriority && <span className={`app-badge app-badge--uppercase app-badge--${jobPriority.tone}`}>
+                  {jobPriority.label}
+                </span>}
             </div>
             <div style={{
             display: "flex",
@@ -301,12 +323,10 @@ export default function JobCardDetailPageUi(props) {
                     </button>;
               })}
               </>}
-            {/* Link Job — hidden once job reaches Invoiced / Released / Archived (read-only). */}
-            {!isInvoiceOrBeyondReadOnly && !isArchiveMode &&
-            <Button type="button" variant="secondary" size="sm" onClick={() => setIsLinkPopupOpen(true)}>
-                Link Job
-              </Button>}
-            {/* Archive — replaces Link Job once the job is Released (awaits archival). */}
+            {/* Job settings — opens the Job Card Settings control centre (status,
+                assignment, scheduling, tracking, linked jobs, audit, danger zone). */}
+            <SymbolButton symbol="settings" label="Job settings" onClick={() => setIsLinkPopupOpen(true)} />
+            {/* Archive — shown once the job is Released (awaits archival). */}
             {jobReleased && !isArchiveMode &&
             <Button type="button" variant="danger" size="sm" onClick={handleArchiveJob}>
                 Archive Job
@@ -941,54 +961,40 @@ export default function JobCardDetailPageUi(props) {
 
       </div>
 
-      {/* ✅ Link Job Popup */}
-      {isLinkPopupOpen && <div className="popup-backdrop" onClick={() => {
+      {/* ✅ Job Card Settings — opened from the settings symbol in the header. */}
+      {isLinkPopupOpen && <JobSettingsPopup isOpen onClose={() => {
       setIsLinkPopupOpen(false);
       setLinkJobInput("");
       setLinkError(null);
-    }}>
-          <div className="popup-card" style={{
-        maxWidth: "400px",
-        padding: "32px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "20px"
-      }} onClick={e => e.stopPropagation()}>
-            <h3 style={{
-          margin: 0,
-          fontSize: "20px",
-          fontWeight: "700",
-          color: "var(--primary)"
-        }}>Link Job Card</h3>
-            <input className="app-input" type="text" placeholder="e.g. 00099" value={linkJobInput} onChange={e => {
-          setLinkJobInput(e.target.value);
-          setLinkError(null);
-        }} onKeyDown={e => {
-          if (e.key === "Enter") handleLinkJob();
-        }} autoFocus />
-            {linkError && <p style={{
-          margin: 0,
-          fontSize: "13px",
-          color: "var(--danger)"
-        }}>{linkError}</p>}
-            <div style={{
-          display: "flex",
-          gap: "8px",
-          justifyContent: "flex-end"
-        }}>
-              <Button type="button" variant="secondary" onClick={() => {
-            setIsLinkPopupOpen(false);
-            setLinkJobInput("");
-            setLinkError(null);
-          }}>
-                Cancel
-              </Button>
-              <Button type="button" variant="primary" onClick={handleLinkJob} busy={isLinking}>
-                {isLinking ? "Linking…" : "Link"}
-              </Button>
-            </div>
-          </div>
-        </div>}
+      setLinkSuccess(null);
+    }} jobData={jobData} permissions={permissions} isArchiveMode={isArchiveMode} statusLabel={overallStatusLabel} statusTimeline={statusTimeline} trackerEntry={trackerEntry} canEditTrackingLocations={canEditTrackingLocations} customerVehicles={customerVehicles} onChanged={handleJobSettingsChanged} handlers={{
+      onAppointmentSave: handleAppointmentSave,
+      onMileageSave: handleMileageSave,
+      onBookingFlowSave: handleBookingFlowSave,
+      onLogisticsChange: handleSchedulingLogisticsChange,
+      onTrackerSave: handleTrackerSave,
+      onArchiveJob: handleArchiveJob
+    }} linking={{
+      relatedJobs,
+      relatedJobsLoading,
+      linkJobInput,
+      onLinkJobInputChange: value => {
+        setLinkJobInput(value);
+        setLinkError(null);
+        setLinkSuccess(null);
+      },
+      onLinkJob: handleLinkJob,
+      isLinking,
+      linkError,
+      linkSuccess,
+      onOpenJob: targetJobNumber => {
+        setIsLinkPopupOpen(false);
+        setLinkJobInput("");
+        setLinkError(null);
+        setLinkSuccess(null);
+        router.push(`/job-cards/${targetJobNumber}`);
+      }
+    }} />}
 
       </>
     </JobCardErrorBoundary>; // render extracted page section.

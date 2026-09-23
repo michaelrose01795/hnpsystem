@@ -118,7 +118,7 @@ function VehicleRow({
           <span aria-hidden="true">{status.glyph}</span>
           <span className="tracking-panel__sr">{status.label}</span>
         </span>
-        <Button variant="ghost" size="xs" symbol={false} onClick={() => onOpenEntry?.(entry)}>
+        <Button variant="primary" size="xs" symbol={false} onClick={() => onOpenEntry?.(entry)}>
           Open
         </Button>
       </div>
@@ -260,7 +260,7 @@ export default function SectionPanel({
       <div className="tracking-panel__head">
         <div className="tracking-panel__title-row">
           <h3 className="tracking-panel__title">{selectedSection.label}</h3>
-          <Button variant="ghost" size="xs" symbol={false} onClick={() => onSelect?.(null)} aria-label="Close section">
+          <Button variant="secondary" size="xs" symbol={false} onClick={() => onSelect?.(null)} aria-label="Close section">
             Close
           </Button>
         </div>

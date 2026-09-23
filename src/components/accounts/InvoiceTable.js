@@ -9,6 +9,7 @@ import { isInvoiceSettled } from "@/lib/status/statusHelpers"; // Centralized in
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import { SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import Button from "@/components/ui/Button";
@@ -160,13 +161,17 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                 onClear={() => onFilterChange({ ...filters, search: "" })}
                 style={{ flex: "1 1 240px" }} />
 
-              <DropdownField
-                name="status"
-                value={filters.status}
-                onChange={handleFilterChange}
-                placeholder="All statuses"
-                options={[{ label: "All Statuses", value: "", placeholder: true }, ...INVOICE_STATUSES.map((status) => ({ label: status, value: status }))]}
-                style={{ flex: "0 0 180px" }} />
+              <FilterButton activeCount={filters.status ? 1 : 0} onClear={() => onFilterChange({ ...filters, status: "" })}>
+                <FilterField label="Status" htmlFor="accounts-invoices-filter-status">
+                  <DropdownField
+                    id="accounts-invoices-filter-status"
+                    name="status"
+                    value={filters.status}
+                    onChange={handleFilterChange}
+                    placeholder="All statuses"
+                    options={[{ label: "All Statuses", value: "", placeholder: true }, ...INVOICE_STATUSES.map((status) => ({ label: status, value: status }))]} />
+                </FilterField>
+              </FilterButton>
 
               <div style={{ flex: "0 0 160px" }}>
                 <CalendarField name="from" placeholder="From date" value={filters.from} onChange={handleFilterChange} size="sm" />

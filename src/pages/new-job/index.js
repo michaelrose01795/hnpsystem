@@ -534,7 +534,7 @@ export default function CreateJobCardPage() {
     const hydrateFromEvent = async () => {
       try {
         const res = await fetch(
-          `/api/messages/customer-requests/${eventId}`,
+          `/api/messages/customer-requests/${encodeURIComponent(eventId)}`,
           { credentials: "same-origin" },
         );
         if (!res.ok) {

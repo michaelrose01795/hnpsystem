@@ -445,7 +445,7 @@ export default function ConsumablesTrackerPageUi(props) {
             meta={loadingConsumables ? "Loading" : `${scheduled.length} items`}
             actionsStyle={{ flex: "1 1 460px", minWidth: 0, flexWrap: "nowrap", justifyContent: "flex-end" }}
             actions={<>
-              <SearchBar value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onClear={() => setSearchQuery("")} placeholder="Search stock or supplier" style={{ flex: "1 1 200px", minWidth: 0, maxWidth: "420px" }} />
+              <SearchBar value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onClear={() => setSearchQuery("")} placeholder="Search stock or supplier" style={{ flex: "1 1 200px", minWidth: 0 }} />
               <Button type="button" variant="primary" size="sm" onClick={openBulkOrder} disabled={!bulkSelectionValid} style={{ flexShrink: 0 }}>Order selected ({selectedConsumableIds.size})</Button>
             </>}
           />

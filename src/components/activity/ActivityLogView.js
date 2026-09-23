@@ -10,6 +10,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import StatusMessage from "@/components/ui/StatusMessage";
 import StaffPageHeader from "@/components/ui/StaffPageHeader";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 
 const PAGE_SIZE = 25;
@@ -221,6 +222,16 @@ export default function ActivityLogView() {
   const updateDraft = (key, value) =>
     setDraftFilters((current) => ({ ...current, [key]: value }));
 
+  // The dropdown filters live in the FilterButton card; like every other field
+  // they edit the draft, and "Show results" applies it.
+  const DROPDOWN_FILTER_KEYS = ["userId", "role", "department", "sessionId", "device", "browser", "actionCategory", "outcome"];
+  const activeDropdownFilterCount = DROPDOWN_FILTER_KEYS.filter((key) => draftFilters[key]).length;
+  const clearDropdownFilters = () =>
+    setDraftFilters((current) => ({
+      ...current,
+      ...Object.fromEntries(DROPDOWN_FILTER_KEYS.map((key) => [key, EMPTY_FILTERS[key]])),
+    }));
+
   const applyFilters = () => {
     setPageNumber(1);
     setFilters(draftFilters);
@@ -306,27 +317,6 @@ export default function ActivityLogView() {
             alignItems: "end",
           }}
         >
-          <DropdownField
-            label="User"
-            value={draftFilters.userId}
-            onValueChange={(value) => updateDraft("userId", value)}
-            options={options.users.map((item) => ({ value: item.id, label: item.name }))}
-            placeholder="All users"
-          />
-          <DropdownField
-            label="Role"
-            value={draftFilters.role}
-            onValueChange={(value) => updateDraft("role", value)}
-            options={options.roles}
-            placeholder="All roles"
-          />
-          <DropdownField
-            label="Department"
-            value={draftFilters.department}
-            onValueChange={(value) => updateDraft("department", value)}
-            options={options.departments}
-            placeholder="All departments"
-          />
           <InputField
             label="From"
             type="datetime-local"
@@ -339,43 +329,11 @@ export default function ActivityLogView() {
             value={draftFilters.to}
             onChange={(event) => updateDraft("to", event.target.value)}
           />
-          <DropdownField
-            label="Session"
-            value={draftFilters.sessionId}
-            onValueChange={(value) => updateDraft("sessionId", value)}
-            options={options.sessions.map((item) => ({
-              value: item.id,
-              label: `${item.userName} - ${formatDateTime(item.startedAt)}`,
-            }))}
-            placeholder="All sessions"
-            searchable
-          />
-          <DropdownField
-            label="Device"
-            value={draftFilters.device}
-            onValueChange={(value) => updateDraft("device", value)}
-            options={options.devices}
-            placeholder="All devices"
-          />
-          <DropdownField
-            label="Browser"
-            value={draftFilters.browser}
-            onValueChange={(value) => updateDraft("browser", value)}
-            options={options.browsers}
-            placeholder="All browsers"
-          />
           <InputField
             label="Page or route"
             value={draftFilters.page}
             onChange={(event) => updateDraft("page", event.target.value)}
             placeholder="/job-cards"
-          />
-          <DropdownField
-            label="Action type"
-            value={draftFilters.actionCategory}
-            onValueChange={(value) => updateDraft("actionCategory", value)}
-            options={ACTION_OPTIONS}
-            placeholder="All actions"
           />
           <InputField
             label="Record type"
@@ -388,13 +346,6 @@ export default function ActivityLogView() {
             value={draftFilters.recordId}
             onChange={(event) => updateDraft("recordId", event.target.value)}
           />
-          <DropdownField
-            label="Status"
-            value={draftFilters.outcome}
-            onValueChange={(value) => updateDraft("outcome", value)}
-            options={["success", "failure", "cancelled", "unknown"]}
-            placeholder="All statuses"
-          />
           <InputField
             label="Search"
             type="search"
@@ -404,6 +355,84 @@ export default function ActivityLogView() {
           />
         </div>
         <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+          <FilterButton activeCount={activeDropdownFilterCount} onClear={clearDropdownFilters} onApply={applyFilters}>
+            <FilterField label="User" htmlFor="activity-filter-userId">
+              <DropdownField
+                id="activity-filter-userId"
+                value={draftFilters.userId}
+                onValueChange={(value) => updateDraft("userId", value)}
+                options={options.users.map((item) => ({ value: item.id, label: item.name }))}
+                placeholder="All users"
+              />
+            </FilterField>
+            <FilterField label="Role" htmlFor="activity-filter-role">
+              <DropdownField
+                id="activity-filter-role"
+                value={draftFilters.role}
+                onValueChange={(value) => updateDraft("role", value)}
+                options={options.roles}
+                placeholder="All roles"
+              />
+            </FilterField>
+            <FilterField label="Department" htmlFor="activity-filter-department">
+              <DropdownField
+                id="activity-filter-department"
+                value={draftFilters.department}
+                onValueChange={(value) => updateDraft("department", value)}
+                options={options.departments}
+                placeholder="All departments"
+              />
+            </FilterField>
+            <FilterField label="Session" htmlFor="activity-filter-sessionId">
+              <DropdownField
+                id="activity-filter-sessionId"
+                value={draftFilters.sessionId}
+                onValueChange={(value) => updateDraft("sessionId", value)}
+                options={options.sessions.map((item) => ({
+                  value: item.id,
+                  label: `${item.userName} - ${formatDateTime(item.startedAt)}`,
+                }))}
+                placeholder="All sessions"
+                searchable
+              />
+            </FilterField>
+            <FilterField label="Device" htmlFor="activity-filter-device">
+              <DropdownField
+                id="activity-filter-device"
+                value={draftFilters.device}
+                onValueChange={(value) => updateDraft("device", value)}
+                options={options.devices}
+                placeholder="All devices"
+              />
+            </FilterField>
+            <FilterField label="Browser" htmlFor="activity-filter-browser">
+              <DropdownField
+                id="activity-filter-browser"
+                value={draftFilters.browser}
+                onValueChange={(value) => updateDraft("browser", value)}
+                options={options.browsers}
+                placeholder="All browsers"
+              />
+            </FilterField>
+            <FilterField label="Action" htmlFor="activity-filter-actionCategory">
+              <DropdownField
+                id="activity-filter-actionCategory"
+                value={draftFilters.actionCategory}
+                onValueChange={(value) => updateDraft("actionCategory", value)}
+                options={ACTION_OPTIONS}
+                placeholder="All actions"
+              />
+            </FilterField>
+            <FilterField label="Status" htmlFor="activity-filter-outcome">
+              <DropdownField
+                id="activity-filter-outcome"
+                value={draftFilters.outcome}
+                onValueChange={(value) => updateDraft("outcome", value)}
+                options={["success", "failure", "cancelled", "unknown"]}
+                placeholder="All statuses"
+              />
+            </FilterField>
+          </FilterButton>
           <Button type="button" onClick={applyFilters}>Apply filters</Button>
           <Button type="button" variant="secondary" onClick={resetFilters}>Reset</Button>
         </div>

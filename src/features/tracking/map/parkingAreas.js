@@ -50,7 +50,8 @@ const MAP_PLACEMENTS = {
   "sales-2": { zone: "Service yard", labelAnchor: { x: 0.477, y: 0.631 }, region: { x0: 0.410, y0: 0.560, x1: 0.545, y1: 0.700 } },
 
   // The lower dealership yard - the largest single area on the site.
-  "sales-3": { zone: "Lower yard", labelAnchor: { x: 0.243, y: 0.674 }, region: { x0: 0.110, y0: 0.636, x1: 0.380, y1: 0.712 } },
+  // Sales 3 runs right up to Sales 2's left edge (x 0.410) so the two regions meet with no gap.
+  "sales-3": { zone: "Lower yard", labelAnchor: { x: 0.243, y: 0.674 }, region: { x0: 0.110, y0: 0.636, x1: 0.410, y1: 0.712 } },
   "sales-4": { zone: "Lower yard", labelAnchor: { x: 0.243, y: 0.749 }, region: { x0: 0.080, y0: 0.712, x1: 0.460, y1: 0.790 } },
   "sales-5": { zone: "Lower yard", labelAnchor: { x: 0.255, y: 0.593 }, region: { x0: 0.110, y0: 0.540, x1: 0.400, y1: 0.636 } },
   "sales-6": { zone: "Lower yard", labelAnchor: { x: 0.269, y: 0.463 }, region: { x0: 0.130, y0: 0.395, x1: 0.310, y1: 0.540 } },

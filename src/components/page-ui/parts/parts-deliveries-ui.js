@@ -17,6 +17,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import DeliveryRow from "@/components/Deliveries/DeliveryRow";
 import DeliveryDetailPanel from "@/components/Deliveries/DeliveryDetailPanel";
@@ -354,7 +355,8 @@ export default function PartsDeliveriesPageUi(props) {
             gap="var(--space-sm)"
             radius="var(--radius-sm)"
           >
-            <div style={isMobile ? deliveryStyles.filterRowMobile : deliveryStyles.filterRow}>
+            {/* The three filter columns of deliveryStyles.filterRow now live in the filter button's card. */}
+            <div style={isMobile ? deliveryStyles.filterRowMobile : { ...deliveryStyles.filterRow, gridTemplateColumns: "minmax(200px, 1fr) auto auto auto" }}>
               <SearchBar
                 ariaLabel="Search deliveries"
                 onChange={(event) => setSearchTerm(event.target.value)}
@@ -362,27 +364,45 @@ export default function PartsDeliveriesPageUi(props) {
                 placeholder="Customer, invoice, job, postcode, part…"
                 value={searchTerm}
               />
-              <DropdownField
-                name="statusFilter"
-                options={statusOptions}
-                value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value)}
-                aria-label="Filter by status"
-              />
-              <DropdownField
-                name="driverFilter"
-                options={driverOptions}
-                value={driverFilter}
-                onValueChange={(value) => setDriverFilter(value)}
-                aria-label="Filter by driver"
-              />
-              <DropdownField
-                name="vehicleFilter"
-                options={vehicleOptions}
-                value={vehicleFilter}
-                onValueChange={(value) => setVehicleFilter(value)}
-                aria-label="Filter by delivery vehicle"
-              />
+              <FilterButton
+                activeCount={[statusFilter, driverFilter, vehicleFilter].filter((value) => value !== "all").length}
+                onClear={() => {
+                  setStatusFilter("all");
+                  setDriverFilter("all");
+                  setVehicleFilter("all");
+                }}
+              >
+                <FilterField label="Status" htmlFor="parts-deliveries-filter-status">
+                  <DropdownField
+                    id="parts-deliveries-filter-status"
+                    name="statusFilter"
+                    options={statusOptions}
+                    value={statusFilter}
+                    onValueChange={(value) => setStatusFilter(value)}
+                    aria-label="Filter by status"
+                  />
+                </FilterField>
+                <FilterField label="Driver" htmlFor="parts-deliveries-filter-driver">
+                  <DropdownField
+                    id="parts-deliveries-filter-driver"
+                    name="driverFilter"
+                    options={driverOptions}
+                    value={driverFilter}
+                    onValueChange={(value) => setDriverFilter(value)}
+                    aria-label="Filter by driver"
+                  />
+                </FilterField>
+                <FilterField label="Vehicle" htmlFor="parts-deliveries-filter-vehicle">
+                  <DropdownField
+                    id="parts-deliveries-filter-vehicle"
+                    name="vehicleFilter"
+                    options={vehicleOptions}
+                    value={vehicleFilter}
+                    onValueChange={(value) => setVehicleFilter(value)}
+                    aria-label="Filter by delivery vehicle"
+                  />
+                </FilterField>
+              </FilterButton>
               <Button variant="secondary" onClick={() => setRouteSettingsOpen(true)}>
                 Route
               </Button>

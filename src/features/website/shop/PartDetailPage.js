@@ -45,7 +45,7 @@ export default function PartDetailPage() {
     setLoading(true);
     setError(null);
     setQty(1);
-    fetch(`/api/shop/parts-catalog/${partId}`)
+    fetch(`/api/shop/parts-catalog/${encodeURIComponent(partId)}`)
       .then(async (res) => {
         const json = await res.json().catch(() => null);
         if (!res.ok || !json?.success) {
