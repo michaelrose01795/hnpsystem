@@ -17,7 +17,6 @@ import ToolbarRow from "@/components/ui/ToolbarRow";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface";
-import SymbolButton from "@/components/ui/SymbolButton"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import AccountsListPageUi from "@/components/page-ui/accounts/accounts-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
@@ -303,7 +302,7 @@ export default function AccountsListPage() {
       </div>
       <input className="app-input" type="number" name="minBalance" value={filters.minBalance} placeholder="Min balance" onChange={(event) => handleFilterChange("minBalance", event.target.value)} style={{ flex: "0 0 124px" }} />
       <input className="app-input" type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max balance" onChange={(event) => handleFilterChange("maxBalance", event.target.value)} style={{ flex: "0 0 124px" }} />
-      <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters} style={{ color: "var(--primary)" }}>
+      <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters}>
         Clear filters
       </Button>
       </ToolbarRow>
@@ -336,7 +335,7 @@ export default function AccountsListPage() {
                 <strong style={{ color: "var(--text-1)", fontSize: "1.05rem", minWidth: 0 }}>
                   {link.value}
                 </strong>
-                <SymbolButton symbol="open" label={link.actionLabel} onClick={link.onClick} />
+                <Button type="button" variant="secondary" symbol="open" aria-label={link.actionLabel} onClick={link.onClick}>{link.actionLabel}</Button>
               </div>
             </div>
             <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5 }}>
@@ -351,7 +350,7 @@ export default function AccountsListPage() {
         <LayerSurface as="article" sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Invoice References</h3>
-            <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/accounts/invoices")}>
+            <Button type="button" variant="secondary" size="xs" onClick={() => router.push("/accounts/invoices")}>
               All invoices
             </Button>
           </div>
@@ -380,7 +379,7 @@ export default function AccountsListPage() {
                   </Button>
               }
                 {invoice.invoice_id &&
-              <Button type="button" variant="ghost" size="xs" onClick={() => router.push(`/accounts/invoices/${encodeURIComponent(invoice.invoice_id)}`)}>
+              <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/accounts/invoices/${encodeURIComponent(invoice.invoice_id)}`)}>
                     Invoice details
                   </Button>
               }
@@ -391,7 +390,7 @@ export default function AccountsListPage() {
         <LayerSurface as="article" sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Goods In References</h3>
-            <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/goods-in")}>
+            <Button type="button" variant="secondary" size="xs" onClick={() => router.push("/goods-in")}>
               Goods in
             </Button>
           </div>
@@ -414,7 +413,7 @@ export default function AccountsListPage() {
                     {record.goods_in_number}
                   </Button>
               }
-                <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/goods-in")}>
+                <Button type="button" variant="secondary" size="xs" onClick={() => router.push("/goods-in")}>
                   Goods in workspace
                 </Button>
               </div>

@@ -1,5 +1,7 @@
 // file location: src/components/page-ui/valet/valet-ui.js
 
+import Button from "@/components/ui/Button"; // canonical staffglobal button family
+
 export default function ValetDashboardUi(props) {
   const {
     CalendarField,
@@ -95,26 +97,24 @@ export default function ValetDashboardUi(props) {
         }}>
               <CalendarField value={selectedDay} onChange={event => setSelectedDay(event.target.value)} placeholder="Filter by day" size="md" />
             </div>
-            <button type="button" onClick={() => setSelectedDay(getTodayDateValue())} style={{
-          padding: "10px 14px",
-          borderRadius: "var(--radius-sm)",
-          background: "var(--surface)",
-          color: "var(--text-1)",
-          fontWeight: 600,
-          cursor: "pointer"
-        }}>
-              Today
-            </button>
-            <button type="button" onClick={() => setSelectedDay("")} style={{
-          padding: "10px 14px",
-          borderRadius: "var(--radius-sm)",
-          background: "var(--surface)",
-          color: "var(--text-1)",
-          fontWeight: 600,
-          cursor: "pointer"
-        }}>
-              All days
-            </button>
+            {/* Today / All days — the same joined segmented pair as the Grid / Map
+                switch on /tracking (shared Button + .tracking-viewswitch). */}
+            <div className="tracking-viewswitch" role="group" aria-label="Valet day filter">
+              <Button
+                variant={selectedDay === getTodayDateValue() ? "primary" : "secondary"}
+                size="sm"
+                aria-pressed={selectedDay === getTodayDateValue()}
+                onClick={() => setSelectedDay(getTodayDateValue())}>
+                Today
+              </Button>
+              <Button
+                variant={selectedDay === "" ? "primary" : "secondary"}
+                size="sm"
+                aria-pressed={selectedDay === ""}
+                onClick={() => setSelectedDay("")}>
+                All days
+              </Button>
+            </div>
             <span
               className="app-btn"
               data-dev-section-key="valet-showing-jobs-label"
@@ -137,6 +137,27 @@ export default function ValetDashboardUi(props) {
               {filteredJobs.length === 1 ? "" : "s"}
             </span>
           </DevLayoutSection>
+          {/* The segment join rules live in trackingMap.css, which only loads on
+              /tracking, so they are mirrored here (as appointments-ui.js does). */}
+          <style jsx global>{`
+            [data-presentation="valet-filters"] .tracking-viewswitch {
+              display: inline-flex;
+              align-items: stretch;
+              gap: 1px;
+              min-width: 0;
+              border-radius: var(--control-radius);
+              background: color-mix(in srgb, var(--text-1) 12%, transparent);
+              padding: 1px;
+            }
+            [data-presentation="valet-filters"] .tracking-viewswitch > :first-child {
+              border-start-end-radius: 0;
+              border-end-end-radius: 0;
+            }
+            [data-presentation="valet-filters"] .tracking-viewswitch > :last-child {
+              border-start-start-radius: 0;
+              border-end-start-radius: 0;
+            }
+          `}</style>
           {error && <DevLayoutSection sectionKey="valet-error-banner" parentKey="valet-controls-shell" sectionType="content-card" style={{
         padding: "12px 16px",
         borderRadius: "var(--radius-xs)",

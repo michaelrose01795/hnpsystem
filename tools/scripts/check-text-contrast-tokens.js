@@ -34,7 +34,6 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/dev/dev-user-diagnostic-ui.js", 5],
   ["src/components/page-ui/job-cards/job-cards-job-number-ui.js", 1],
   ["src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js", 6],
-  ["src/components/page-ui/messages/messages-ui.js", 1],
   ["src/components/page-ui/stock-catalogue-ui.js", 0],
   ["src/components/page-ui/tech/tech-dashboard-ui.js", 2],
   ["src/pages/accounts/invoices/[invoiceId].js", 4],

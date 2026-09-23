@@ -46,7 +46,7 @@ export const NON_GLOBAL_AUDIT = {
   },
   "non-global-form-labels": {
     title: "form labels styled locally — there is no label primitive to use",
-    total: 132,
+    total: 131,
     files: 42,
     usage: [
       { label: "stock-catalogue (pages) — 15", file: "src/pages/stock-catalogue.js", route: "/stock-catalogue" },
@@ -126,7 +126,7 @@ export const NON_GLOBAL_AUDIT = {
     total: 3,
     files: 3,
     usage: [
-      { label: "TabGroup / .tab-api — dominant (39 files)", file: "src/components/ui/tabAPI/TabGroup.js" },
+      { label: "TabGroup / .tab-api — dominant (42 files)", file: "src/components/ui/tabAPI/TabGroup.js" },
       { label: ".app-tab--* — second base (3 files)", file: "src/styles/families/tabs.css" },
       { label: "StaffTabs / .app-staff-tabs — third (2 files)", file: "src/styles/staffglobal.css" },
     ],

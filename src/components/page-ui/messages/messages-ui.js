@@ -1,1690 +1,723 @@
 // file location: src/components/page-ui/messages/messages-ui.js
+//
+// Presentation layer for /messages. All state, data and behaviour live in
+// src/pages/messages/index.js; this file composes the workspace:
+//
+//   ┌ list ─────────┐┌ conversation ──────────────────┐┌ details ─────┐
+//   │ search/filter ││ header · search · pinned bar   ││ Details      │
+//   │ pinned feeds  ││ transcript                     ││ Files        │
+//   │ conversations ││ composer (fixed at the bottom) ││ Links/Pinned │
+//   └───────────────┘└────────────────────────────────┘└──────────────┘
+//
+// Styling is the messages family (src/styles/families/messages.css) plus the
+// shared families it composes; panels are <LayerTheme> on the page card.
+// No avatars or initials anywhere.
 
-import React from "react"; // support extracted fragments.
+import React from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
-import WebsiteHelpQueue from "@/components/page-ui/messages/WebsiteHelpQueue";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerTheme from "@/components/ui/LayerTheme";
+import Button from "@/components/ui/Button";
+import SymbolButton from "@/components/ui/SymbolButton";
+import InputField from "@/components/ui/InputField";
+import StatusMessage from "@/components/ui/StatusMessage";
+import EmptyState from "@/components/ui/EmptyState";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { SearchBar } from "@/components/ui/searchBarAPI";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+import { SkeletonBlock, SkeletonKeyframes, InlineLoading } from "@/components/ui/LoadingSkeleton";
+import ConversationList from "@/components/page-ui/messages/ConversationList";
+import ConversationHeader from "@/components/page-ui/messages/ConversationHeader";
+import ConversationDetails from "@/components/page-ui/messages/ConversationDetails";
+import MessageComposer from "@/components/page-ui/messages/MessageComposer";
+import MessageItem from "@/components/page-ui/messages/MessageItem";
+import {
+  COMMAND_GROUPS,
+  DEPARTMENTS,
+  formatDayLabel,
+} from "@/lib/messages/conversationModel";
 
-// Presentation-only: renders a thread member's last_read_at (the last time they
-// opened this conversation on /messages) as "HH:MM - DDth MMM".
-const ORDINAL_SUFFIX = (day) => {
-  if (day % 100 >= 11 && day % 100 <= 13) return "th";
-  return { 1: "st", 2: "nd", 3: "rd" }[day % 10] || "th";
-};
+const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
-const formatLastSeen = (value) => {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const time = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-  const day = date.getDate();
-  const month = date.toLocaleString("en-GB", { month: "short" });
-  return `${time} - ${day}${ORDINAL_SUFFIX(day)} ${month}`;
-};
+const NEW_CONVERSATION_MODES = [
+  { value: "direct", label: "Direct" },
+  { value: "group", label: "Group" },
+  { value: "department", label: "Department" },
+  { value: "job", label: "Job" },
+  { value: "announcement", label: "Announcement" },
+];
 
-export default function MessagesPageUi(props) {
+function FeedSkeleton() {
+  return (
+    <>
+      <SkeletonKeyframes />
+      {[62, 48, 70, 40].map((width, index) => (
+        <div
+          key={index}
+          className={`app-msg-item${index % 2 ? " app-msg-item--mine" : ""}`}
+          aria-hidden="true"
+        >
+          <div className="app-msg-bubble">
+            <SkeletonBlock width={`${width * 4}px`} height="12px" />
+            <SkeletonBlock width={`${width * 2}px`} height="10px" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function Separator({ label, unread = false, innerRef }) {
+  return (
+    <div ref={innerRef} className={`app-msg-separator${unread ? " app-msg-separator--unread" : ""}`} role="separator">
+      <span className="app-msg-separator__label">{label}</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// System / bookings feed (read only)
+// ---------------------------------------------------------------------------
+function SystemFeed({ feed, isMobileView, onBack }) {
+  return (
+    <>
+      <header className="app-msg-header">
+        <div className="app-msg-header__identity">
+          {isMobileView && <SymbolButton symbol="back" label="Back to conversations" onClick={onBack} />}
+          <div className="app-msg-header__text">
+            <h2 className="app-msg-header__title">{feed.isBookings ? "Bookings" : "System notifications"}</h2>
+            <div className="app-msg-header__meta">
+              <span className="app-msg-tag">{feed.isBookings ? "Customer requests" : "System"} · read only</span>
+              <span className="app-msg-muted">
+                {feed.loading ? (
+                  <InlineLoading width={140} label={feed.isBookings ? "Loading bookings" : "Loading updates"} />
+                ) : (
+                  `Latest ${feed.timestampLabel}`
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="app-msg-feed custom-scrollbar" data-dev-section="1" data-dev-section-key="messages-system-feed" data-dev-section-type="section-shell">
+        {feed.loading && <FeedSkeleton />}
+        {!feed.loading && feed.error && <StatusMessage tone="danger">{feed.error}</StatusMessage>}
+        {!feed.loading && !feed.error && feed.notes.length === 0 && (
+          <EmptyState
+            variant="bare"
+            title={feed.isBookings ? "No booking requests" : "No system notifications"}
+            description={feed.isBookings ? "Customer booking requests will appear here." : "Automated DMS alerts will appear here."}
+          />
+        )}
+        {!feed.loading &&
+          !feed.error &&
+          feed.notes.map((note, index) => (
+            <React.Fragment key={`system-${note.notification_id}`}>
+              {feed.showUnread && feed.unreadIndex === index && (
+                <Separator label="New" unread innerRef={feed.setUnreadEl} />
+              )}
+              <article className="app-msg-notice">
+                {note.kind === "customer_request" ? (
+                  <>
+                    <div className="app-msg-notice__body">
+                      <div>
+                        <p className="app-msg-notice__title">{note.customer_name}</p>
+                        <span className="app-msg-muted">{note.type_label}</span>
+                      </div>
+                      {note.vehicle_label ? <p className="app-msg-notice__title">{note.vehicle_label}</p> : null}
+                      <p className="app-msg-notice__text">{note.description || ""}</p>
+                      <div>
+                        {note.preferred_date ? <p className="app-msg-notice__title">Preferred: {note.preferred_date}</p> : null}
+                        <span className="app-msg-muted">{feed.formatTimestamp(note.created_at)}</span>
+                      </div>
+                    </div>
+                    <Button type="button" variant="primary" pill symbol={false} onClick={() => feed.onCreateJob?.(note)}>
+                      Create job
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="app-msg-notice__text">
+                      {String(note.message || "System update").replace(/^[\s\p{Extended_Pictographic}️]+/u, "").trim() || "System update"}
+                    </p>
+                    <span className="app-msg-muted">{feed.formatTimestamp(note.created_at)}</span>
+                  </>
+                )}
+              </article>
+            </React.Fragment>
+          ))}
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Transcript
+// ---------------------------------------------------------------------------
+function Transcript({ feed }) {
+  const { messages } = feed;
+  return (
+    <div
+      ref={feed.scrollerRef}
+      className="app-msg-feed custom-scrollbar"
+      aria-live="polite"
+      aria-relevant="additions"
+      data-dev-section="1"
+      data-dev-section-key="messages-thread-feed"
+      data-dev-section-type="section-shell"
+    >
+      {feed.loading && <FeedSkeleton />}
+      {!feed.loading && messages.length === 0 && (
+        <EmptyState
+          variant="bare"
+          title="No messages yet"
+          description="Say hello, or type / to link a job, vehicle or customer."
+        />
+      )}
+      {!feed.loading &&
+        messages.map((message, index) => {
+          const prev = index > 0 ? messages[index - 1] : null;
+          const current = new Date(message.createdAt);
+          const prevDate = prev ? new Date(prev.createdAt) : null;
+          const sameDay = prevDate && prevDate.toDateString() === current.toDateString();
+          const groupedWithPrev =
+            prev &&
+            sameDay &&
+            prev.senderId === message.senderId &&
+            !prev.metadata?.event &&
+            !message.metadata?.event &&
+            current - prevDate < GROUP_WINDOW_MS &&
+            !(feed.showUnread && feed.unreadIndex === index);
+          const member = feed.memberFor(message.senderId);
+          const isExternal = String(member?.role || member?.profile?.role || message.sender?.role || "")
+            .toLowerCase()
+            .includes("customer");
+          return (
+            <React.Fragment key={message.id}>
+              {!sameDay && <Separator label={formatDayLabel(message.createdAt)} />}
+              {feed.showUnread && feed.unreadIndex === index && (
+                <Separator label="New messages" unread innerRef={feed.setUnreadEl} />
+              )}
+              <MessageItem
+                message={message}
+                threadId={feed.threadId}
+                isMine={message.senderId === feed.dbUserId}
+                isExternal={isExternal}
+                showMeta={!groupedWithPrev}
+                senderLabel={message.sender?.name || member?.profile?.name || "Unknown"}
+                senderRole={isExternal ? "Customer" : member?.profile?.jobTitle || ""}
+                roles={feed.roles}
+                currentUserId={feed.dbUserId}
+                reactions={feed.reactions[message.id] || []}
+                onReact={(emoji) => feed.onReact(message.id, emoji)}
+                onReply={feed.onReply}
+                onAction={feed.onAction}
+                onJumpTo={feed.onJumpTo}
+                actionBusy={feed.actionBusyId === message.id}
+                receipt={feed.receiptFor(message)}
+                highlighted={feed.highlightId === message.id}
+                readOnly={feed.readOnly}
+                leave={feed.leave}
+                registerRef={feed.registerRef}
+              />
+            </React.Fragment>
+          );
+        })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Popups
+// ---------------------------------------------------------------------------
+function NewConversationModal({ modal }) {
   const {
-    Button,
-    Chip,
-    ColleagueRowsSkeleton,
-    DevLayoutSection,
-    InlineLoading,
-    InputField,
-    MessageBubble,
-    MessageBubblesSkeleton,
-    SearchBar,
-    StatusMessage,
-    ThreadRowsSkeleton,
-    activeBookingsView,
-    activeSystemView,
-    activeThread,
-    activeThreadId,
-    activeThreadUnreadMarkerIndex,
-    availableCommands,
-    canEditGroup,
-    canInitiateChat,
-    canSend,
-    canSeeCustomerRequests,
-    cardStyle,
-    closeGroupEditModal,
-    closeNewChatModal,
-    commandHelpOpen,
-    commandSuggestions,
-    composeError,
-    composeMode,
-    conversationError,
-    customerDetail,
-    dbUserId,
-    messageFilter = "all",
-    handleSelectMessageFilter,
+    mode,
+    onModeChange,
     directory,
     directoryLoading,
     directorySearch,
-    filteredThreads,
-    formatNotificationTimestamp,
-    groupEditBusy,
-    groupEditError,
-    groupEditModalOpen,
-    groupEditTitle,
-    groupLeaderCount,
-    groupManageBusy,
-    groupManageError,
-    groupMembersModalOpen,
-    groupName,
-    groupSearchLoading,
-    groupSearchResults,
-    groupSearchTerm,
-    handleAddMemberToGroup,
-    handleApproveLeaveRequest,
-    handleCloseSelectionMode,
-    handleConfirmDeclineLeaveRequest,
-    handleDeleteSelectedThreads,
-    handleDirectoryUser,
-    handleInsertCommandFromHelp,
-    handleMessageDraftChange,
-    handleMobileBack,
-    handleOpenDeclineLeaveRequest,
-    handleOpenNewChatModal,
-    handleRemoveMemberFromGroup,
-    handleSaveGroupDetails,
-    handleSelectCommand,
-    handleSendMessage,
-    handleStartChat,
-    handleThreadCheckboxChange,
-    handleTogglePinnedThread,
-    hasBookingsUnread,
-    hasSystemUnread,
-    isGroupChat,
-    isGroupLeader,
-    isMobileView,
-    isRecipientSelected,
-    leaveDecisionBusy,
-    leaveDecisionError,
-    leaveDeclineModal,
-    leaveDeclineReason,
-    loadingMessages,
-    loadingThreads,
-    messageDraft,
-    messageReactions,
-    messages,
-    mobilePanelView,
-    newChatModalOpen,
-    openBookingsThread,
-    openGroupEditModal,
-    openThread,
-    onWebsiteHelpJoined,
-    orderedSystemNotifications,
-    handleCreateJobFromRequest,
-    palette,
-    pinnedThreads = [],
-    radii,
-    replyTo,
-    scrollerRef,
-    selectedRecipients,
-    selectedThreadIds,
-    sending,
-    setCommandHelpOpen,
-    setComposeError,
-    setComposeMode,
-    setDirectorySearch,
-    setGroupEditTitle,
-    setGroupMembersModalOpen,
-    setGroupName,
-    setGroupSearchTerm,
-    setLeaveDecisionError,
-    setLeaveDeclineModal,
-    setLeaveDeclineReason,
-    handleReactToMessage,
-    setReplyTo,
-    setSelectedRecipients,
-    setSelectedThreadIds,
-    setSystemUnreadMarkerEl,
-    setThreadSearchTerm,
-    setThreadSelectionMode,
-    setThreadUnreadMarkerEl,
-    shadows,
-    showCommandSuggestions,
-    showSystemUnreadMarker,
-    showThreadUnreadMarker,
-    systemError,
-    systemLoading,
-    systemTimestampLabel,
-    systemTitleColor,
-    systemUnreadMarkerIndex,
-    threadDeleteBusy,
-    threadDeleteError,
-    threadSearchTerm,
-    threadSelectionMode,
-    user,
-    userNameColor,
-    visibleThreads,
-  } = props; // receive page logic props.
-  const isCustomerChat = Boolean(
-    isGroupChat &&
-    activeThread?.members?.some((member) =>
-      String(member?.role || "").toLowerCase().includes("customer")
-    )
-  );
-  // True for any thread that has a customer member, regardless of thread type —
-  // drives the customer summary line in the thread header.
-  const headerHasCustomerMember = Boolean(
-    activeThread?.members?.some((member) =>
-      String(member?.role || member?.profile?.role || "")
-        .toLowerCase()
-        .includes("customer")
-    )
-  );
-  // The 5 left-bar category filters. "system" opens the read-only system view.
-  const MESSAGE_FILTERS = [
-    { key: "all", label: "All" },
-    { key: "unread", label: "Unread" },
-    { key: "customer", label: "Customer" },
-    { key: "team", label: "Team" },
-    { key: "system", label: "System" },
-  ];
-  const threadPinCount = (canSeeCustomerRequests ? 1 : 0) + pinnedThreads.length;
+    onDirectorySearch,
+    isSelected,
+    onToggle,
+    selected,
+    onRemoveSelected,
+    name,
+    onNameChange,
+    department,
+    onDepartmentChange,
+    includeDepartment,
+    onIncludeDepartmentChange,
+    jobNumber,
+    onJobNumberChange,
+    error,
+    busy,
+    canStart,
+    onStart,
+    onClose,
+  } = modal;
 
-  switch (props.view) { // choose the page section requested by logic.
-    case "section1":
-      return <div style={{
-  padding: "var(--space-2xl)",
-  textAlign: "center"
-}}>
-        <h2>Please log in to access internal messages.</h2>
-      </div>; // render extracted page section.
+  const needsPeople = mode === "direct" || mode === "group";
+  return (
+    <PopupModal
+      isOpen
+      onClose={onClose}
+      ariaLabel="New conversation"
+      cardClassName="app-settings-popup-card"
+      cardStyle={{
+        width: "min(100%, 680px)",
+        maxHeight: "92vh",
+        overflowY: "auto",
+        padding: "var(--page-card-padding)",
+      }}
+    >
+      <div className="app-msg-form">
+        <header className="app-popup-compact-header">
+          <h2>New conversation</h2>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </header>
 
-    case "section2":
-      return <>
-      <DevLayoutSection sectionKey="messages-page-shell" sectionType="page-shell" shell widthMode="page" className="app-page-stack" style={{
-    height: "100%",
-    minHeight: isMobileView ? "100%" : 0,
-    overflow: "hidden"
-  }}>
-        <DevLayoutSection sectionKey="messages-top-bar" parentKey="messages-page-shell" sectionType="filter-row" style={{
-      display: isMobileView && mobilePanelView === "conversation" ? "none" : "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: "var(--space-sm)",
-      flexWrap: "wrap",
-      flex: "0 0 auto"
-    }}>
-          {/* Left: category filter pills */}
-          <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--space-1)",
-        flexWrap: "wrap",
-        minWidth: 0
-      }}>
-            {MESSAGE_FILTERS.map(item => {
-          const active = item.key === "system"
-            ? activeSystemView
-            : messageFilter === item.key && !activeSystemView && !activeBookingsView;
-          return <button key={item.key} type="button" className={`app-btn app-btn--${active ? "primary" : "secondary"} app-btn--pill`} onClick={() => handleSelectMessageFilter?.(item.key)} style={{
-            height: "44px",
-            minWidth: 0
-          }}>
-                {item.label}
-                {item.key === "system" && hasSystemUnread && <span aria-label="Unread system messages" style={{
-              width: "var(--space-sm)",
-              height: "var(--space-sm)",
-              borderRadius: "var(--radius-full)",
-              backgroundColor: "currentColor",
-              display: "inline-block",
-              marginLeft: "var(--space-1)",
-              flex: "0 0 auto"
-            }} />}
-              </button>;
-        })}
-          </div>
+        <TabGroup ariaLabel="Conversation type" value={mode} onChange={onModeChange} items={NEW_CONVERSATION_MODES} />
 
-          {/* Right: search + select/remove + add */}
-          <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--space-sm)",
-        flex: "1 1 320px",
-        justifyContent: "flex-end",
-        minWidth: 0
-      }}>
-            <div style={{
-          flex: "1 1 auto",
-          minWidth: 0,
-          maxWidth: "360px"
-        }}>
-              <SearchBar placeholder="Search messages..." value={threadSearchTerm} onChange={event => setThreadSearchTerm(event.target.value)} onClear={() => setThreadSearchTerm("")} style={{
-            width: "100%",
-            margin: 0
-          }} />
-            </div>
-            {threadSelectionMode ? <>
-                <span style={{
-            color: "var(--text-2)",
-            fontSize: "var(--text-body-sm)",
-            fontWeight: 700,
-            whiteSpace: "nowrap"
-          }}>
-                  {selectedThreadIds.length ? `${selectedThreadIds.length} selected` : "Select threads"}
-                </span>
-                <Button type="button" variant="danger" size="sm" pill onClick={handleDeleteSelectedThreads} disabled={threadDeleteBusy || !selectedThreadIds.length}>
-                  {threadDeleteBusy ? "Removing..." : "Remove"}
-                </Button>
-                <Button type="button" variant="secondary" size="sm" pill onClick={handleCloseSelectionMode}>
-                  Close
-                </Button>
-              </> : <>
-                <Button type="button" variant="secondary" size="sm" pill onClick={() => {
-            if (!visibleThreads.length) return;
-            setThreadSelectionMode(true);
-            setSelectedThreadIds([]);
-          }} disabled={!visibleThreads.length}>
-                  Select
-                </Button>
-                <Button type="button" variant="primary" size="sm" pill className="app-btn--icon app-btn--glyph-lg" onClick={handleOpenNewChatModal} aria-label="Start new chat">
-                  +
-                </Button>
-              </>}
-          </div>
-        </DevLayoutSection>
+        {mode === "department" && (
+          <>
+            <StatusMessage tone="info">
+              Each department has one standing chat. If it already exists you are added to it.
+            </StatusMessage>
+            <DropdownField
+              label="Department"
+              value={department}
+              placeholder="Choose a department"
+              options={DEPARTMENTS.map((entry) => ({ value: entry, label: entry }))}
+              onValueChange={onDepartmentChange}
+            />
+          </>
+        )}
 
-        <DevLayoutSection sectionKey="messages-main-layout" parentKey="messages-page-shell" sectionType="section-shell" shell style={{
-      flex: 1,
-      height: "100%",
-      display: isMobileView ? "flex" : "grid",
-      // flex on mobile for single-panel view
-      flexDirection: isMobileView ? "column" : undefined,
-      gridTemplateColumns: isMobileView ? undefined : "360px minmax(0, 1fr)",
-      gap: isMobileView ? "0px" : "20px",
-      minHeight: 0,
-      overflow: "hidden"
-    }}>
-          <DevLayoutSection sectionKey="messages-threads-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-threads-panel" style={{
-        display: isMobileView && mobilePanelView === "conversation" ? "none" : "flex",
-        // hide thread list on mobile when viewing a conversation
-        flexDirection: "column",
-        gap: "18px",
-        flex: 1,
-        minHeight: 0,
-        ...(isMobileView ? {
-          height: "100%"
-        } : {})
-      }}>
-            <DevLayoutSection sectionKey="messages-threads-card" parentKey="messages-threads-panel" sectionType="content-card" backgroundToken="messages-thread-card-shell" style={{
-          ...cardStyle,
-          background: "var(--theme)",
-          flex: 1,
-          minHeight: 0,
-          overflow: "hidden"
-        }}>
-              {threadDeleteError && <StatusMessage tone="danger">{threadDeleteError}</StatusMessage>}
+        {mode === "job" && (
+          <>
+            <StatusMessage tone="info">
+              An internal chat about one job card. Customers never see it — use the job card to message the customer.
+            </StatusMessage>
+            <InputField
+              label="Job number"
+              value={jobNumber}
+              inputMode="numeric"
+              placeholder="e.g. 24019"
+              onChange={(event) => onJobNumberChange(event.target.value)}
+            />
+          </>
+        )}
 
-              <DevLayoutSection data-presentation="messages-thread-list" sectionKey="messages-thread-list" parentKey="messages-threads-card" sectionType="section-shell" shell backgroundToken="messages-thread-list" className="custom-scrollbar" style={{
-            flex: 1,
-            minHeight: 0,
-            maxHeight: "none",
-            // fill available space on mobile
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-            paddingTop: "6px",
-            paddingBottom: "6px",
-            paddingRight: "2px",
-            userSelect: "none",
-            WebkitUserSelect: "none"
-          }}>
-                <DevLayoutSection sectionKey="messages-thread-pins" parentKey="messages-thread-list" sectionType="toolbar" style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${Math.max(threadPinCount, 1)}, minmax(0, 1fr))`,
-              gap: "10px", // Exact inter-button spacing requested for this local toolbar.
-              width: "100%",
-              flex: "0 0 auto"
-            }}>
-                  {canSeeCustomerRequests && <button type="button" className={`app-btn app-btn--${activeBookingsView ? "primary" : "secondary"} app-btn--pill`} onClick={openBookingsThread} style={{
-                width: "100%",
-                height: "44px",
-                minWidth: 0,
-                justifyContent: "center",
-                overflow: "hidden"
-              }}>
-                    <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "var(--space-1)",
-                  minWidth: 0
-                }}>
-                      <span style={{
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap"
-                  }}>
-                        Bookings
-                      </span>
-                      {hasBookingsUnread && <span aria-label="Unread booking messages" style={{
-                    width: "var(--space-sm)",
-                    height: "var(--space-sm)",
-                    borderRadius: "var(--radius-full)",
-                    backgroundColor: "currentColor",
-                    display: "inline-block",
-                    flex: "0 0 auto"
-                  }} />}
-                    </span>
-                  </button>}
-                  {pinnedThreads.map(thread => <button key={`pin-${thread.id}`} type="button" className={`app-btn app-btn--${activeThreadId === thread.id && !activeSystemView && !activeBookingsView ? "primary" : "secondary"} app-btn--pill app-hover-tooltip`} data-tooltip={thread.title} onClick={() => openThread(thread.id, thread)} onDoubleClick={() => handleTogglePinnedThread(thread.id)} aria-label={thread.title} style={{
-                width: "100%",
-                height: "44px",
-                minWidth: 0,
-                justifyContent: "center",
-                overflow: "visible"
-              }}>
-                      <span style={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  minWidth: 0
-                }}>
-                        {thread.title}
-                      </span>
-                      {thread.hasUnread && <span aria-label="Unread messages" style={{
-                  width: "var(--space-sm)",
-                  height: "var(--space-sm)",
-                  borderRadius: "var(--radius-full)",
-                  backgroundColor: "currentColor",
-                  display: "inline-block",
-                  flex: "0 0 auto",
-                  marginLeft: "var(--space-1)"
-                }} />}
-                    </button>)}
-                </DevLayoutSection>
-                {canSeeCustomerRequests && <WebsiteHelpQueue onJoined={onWebsiteHelpJoined} />}
-                {loadingThreads && <ThreadRowsSkeleton count={5} />}
-                {!loadingThreads && <>
-                    {filteredThreads.length ? <div style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-                userSelect: "none",
-                WebkitUserSelect: "none"
-              }}>
-                        {filteredThreads.map(thread => <div key={thread.id} data-dev-section="1" data-dev-section-key={`messages-thread-row-${thread.id}`} data-dev-section-type="section-shell" data-dev-section-parent="messages-thread-list" data-dev-background-token="messages-thread-row" onMouseDown={event => {
-                  if (!threadSelectionMode && event.detail > 1) {
-                    event.preventDefault();
-                  }
-                }} style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  userSelect: "none",
-                  WebkitUserSelect: "none"
-                }}>
-                            {threadSelectionMode && <input type="checkbox" checked={selectedThreadIds.includes(thread.id)} onChange={() => handleThreadCheckboxChange(thread.id)} style={{
-                    width: "16px",
-                    height: "16px",
-                    cursor: "pointer"
-                  }} />}
-                            <div role="button" tabIndex={threadSelectionMode ? -1 : 0} aria-disabled={threadSelectionMode} onClick={() => threadSelectionMode ? null : openThread(thread.id, thread)} onMouseDown={event => {
-                    if (!threadSelectionMode && event.detail > 1) {
-                      event.preventDefault();
-                    }
-                  }} onKeyDown={event => {
-                    if (threadSelectionMode) return;
+        {mode === "announcement" && (
+          <>
+            <StatusMessage tone="info">
+              You lead the channel and can post; everyone else reads and reacts.
+            </StatusMessage>
+            <InputField label="Channel name" value={name} placeholder="e.g. Workshop notices" onChange={(event) => onNameChange(event.target.value)} />
+            <DropdownField
+              label="Audience department (optional)"
+              value={department}
+              options={[{ value: "", label: "No department" }, ...DEPARTMENTS.map((entry) => ({ value: entry, label: entry }))]}
+              onValueChange={onDepartmentChange}
+            />
+          </>
+        )}
+
+        {(mode === "department" || (mode === "announcement" && department)) && (
+          <label className="app-toggle-field">
+            <input
+              type="checkbox"
+              className="app-toggle app-toggle--checkbox"
+              checked={includeDepartment}
+              onChange={(event) => onIncludeDepartmentChange(event.target.checked)}
+            />
+            <span>Add everyone in {department || "the department"}</span>
+          </label>
+        )}
+
+        {mode === "group" && (
+          <InputField label="Group name (optional)" value={name} placeholder="e.g. Saturday rota" onChange={(event) => onNameChange(event.target.value)} />
+        )}
+
+        <SearchBar
+          placeholder={needsPeople ? "Search everyone…" : "Add people (optional)…"}
+          value={directorySearch}
+          onChange={(event) => onDirectorySearch(event.target.value)}
+          onClear={() => onDirectorySearch("")}
+        />
+
+        <div className="app-msg-picker custom-scrollbar" role="listbox" aria-multiselectable={mode !== "direct"} aria-label="People">
+          {directoryLoading && <InlineLoading width={180} label="Loading colleagues" />}
+          {!directoryLoading && directory.length === 0 && <span className="app-msg-muted">No colleagues found.</span>}
+          {!directoryLoading &&
+            directory.map((entry) => {
+              const picked = isSelected(entry);
+              return (
+                <div
+                  key={entry.id}
+                  role="option"
+                  aria-selected={picked}
+                  tabIndex={0}
+                  className={`app-msg-entry app-msg-entry--clickable${picked ? " is-selected" : ""}`}
+                  onClick={() => onToggle(entry)}
+                  onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      openThread(thread.id, thread);
+                      onToggle(entry);
                     }
-                  }} onDoubleClick={() => threadSelectionMode ? null : handleTogglePinnedThread(thread.id)} title={threadSelectionMode ? undefined : "Double click to pin"} data-dev-section="1" data-dev-section-key={`messages-thread-card-${thread.id}`} data-dev-section-type="content-card" data-dev-section-parent={`messages-thread-row-${thread.id}`} data-dev-background-token={activeThreadId === thread.id ? "messages-thread-card-active" : thread.hasUnread ? "messages-thread-card-unread" : "messages-thread-card"} style={{
-                    flex: 1,
-                    height: "44px",
-                    borderRadius: "var(--radius-md)",
-                    backgroundColor: activeThreadId === thread.id ? "rgba(var(--accent-purple-rgb), 0.12)" : "var(--surface)",
-                    padding: "0 12px",
-                    textAlign: "left",
-                    cursor: threadSelectionMode ? "default" : "pointer",
-                    boxShadow: activeThreadId === thread.id ? `inset 4px 0 0 ${palette.accent}` : "none",
-                    transition: "background-color 0.16s ease",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    minWidth: 0,
-                    userSelect: "none",
-                    WebkitUserSelect: "none"
-                  }} onMouseEnter={event => {
-                    if (threadSelectionMode || activeThreadId === thread.id) return;
-                    event.currentTarget.style.backgroundColor = "var(--surface)";
-                  }} onMouseLeave={event => {
-                    if (threadSelectionMode || activeThreadId === thread.id) return;
-                    event.currentTarget.style.backgroundColor = "var(--surface)";
-                  }}>
-                              <strong style={{
-                      display: "block",
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      fontSize: "var(--text-body)",
-                      fontWeight: activeThreadId === thread.id ? 800 : 700,
-                      color: systemTitleColor
-                    }}>
-                                {thread.title}
-                              </strong>
-                              {thread.hasUnread && <span style={{
-                      width: "18px",
-                      height: "18px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: "var(--radius-full)",
-                      backgroundColor: palette.accent,
-                      color: "var(--onAccentText)",
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      flex: "0 0 auto"
-                    }} aria-label="Unread messages">
-                                  !
-                                </span>}
-                            </div>
-                          </div>)}
-                      </div> : <p style={{
-                color: palette.textMuted,
-                margin: 0
-              }}>
-                        {threadSearchTerm.trim() ? "No threads match your search." : "No conversations yet. Start one above."}
-                      </p>}
-                  </>}
-              </DevLayoutSection>
-            </DevLayoutSection>
-          </DevLayoutSection>
-
-          <DevLayoutSection data-presentation="messages-conversation" sectionKey="messages-conversation-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-conversation-panel" style={{
-        ...cardStyle,
-        background: "var(--theme)",
-        position: "relative", // anchors the floating slash-command help button
-        flex: 1,
-        minHeight: 0,
-        flexDirection: "column",
-        overflow: "hidden",
-        display: isMobileView && mobilePanelView !== "conversation" ? "none" : "flex" // hide conversation panel when thread list is active in portrait phone view
-      }}>
-            {/* Mobile back button — iPhone-style navigation */}
-            {isMobileView && mobilePanelView === "conversation" && <div style={{
-          display: "flex",
-          marginBottom: "var(--space-xs)"
-        }}>
-                <Button type="button" variant="ghost" size="sm" onClick={() => handleMobileBack(false)}>
-                  Back
-                </Button>
-              </div>}
-            {activeSystemView || activeBookingsView ? <>
-                <DevLayoutSection sectionKey="messages-system-header" parentKey="messages-conversation-panel" sectionType="section-header-row" style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "12px"
-          }}>
-                  <div>
-                    <h3 style={{
-                margin: 0,
-                color: systemTitleColor
-              }}>{activeBookingsView ? "Bookings" : "System notifications"}</h3>
-                    <p style={{
-                margin: "4px 0 0",
-                color: palette.textMuted
-              }}>
-                      {systemLoading ? (
-                        <InlineLoading width={140} label={activeBookingsView ? "Loading bookings" : "Loading updates"} />
-                      ) : activeBookingsView ? (
-                        `Customer service requests. Latest ${systemTimestampLabel}.`
-                      ) : (
-                        `Read-only alerts feed. Latest ${systemTimestampLabel}.`
-                      )}
-                    </p>
-                  </div>
-                  <span style={{
-              padding: "4px 10px",
-              borderRadius: radii.pill,
-              backgroundColor: "var(--danger-surface)",
-              color: "var(--danger)",
-              fontSize: "var(--text-caption)",
-              fontWeight: 600
-            }}>
-                      Read only
-                    </span>
-                </DevLayoutSection>
-                <DevLayoutSection sectionKey="messages-system-feed" parentKey="messages-conversation-panel" sectionType="section-shell" shell backgroundToken="messages-system-feed" style={{
-            marginTop: "16px",
-            flex: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-            overflowY: "auto",
-            paddingRight: "4px"
-          }}>
-                  {systemLoading && <ThreadRowsSkeleton count={3} />}
-                  {!systemLoading && systemError && <StatusMessage tone="danger">{systemError}</StatusMessage>}
-                  {!systemLoading && !systemError && orderedSystemNotifications.length === 0 && <p style={{
-              color: palette.textMuted,
-              margin: 0
-            }}>{activeBookingsView ? "No booking messages yet." : "No system notifications yet."}</p>}
-                  {!systemLoading && !systemError && orderedSystemNotifications.length > 0 && <div style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px"
-            }}>
-                      {orderedSystemNotifications.map((note, index) => <React.Fragment key={`system-${note.notification_id}`}>
-                          {showSystemUnreadMarker && systemUnreadMarkerIndex === index && <div ref={setSystemUnreadMarkerEl} style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  width: "100%"
-                }}>
-                              <div style={{
-                    flex: 1,
-                    height: "1px",
-                    backgroundColor: palette.border
-                  }} />
-                              <span style={{
-                    fontSize: "var(--text-caption)",
-                    fontWeight: 700,
-                    color: systemTitleColor
-                  }}>
-                                Unread
-                              </span>
-                              <div style={{
-                    flex: 1,
-                    height: "1px",
-                    backgroundColor: palette.border
-                  }} />
-                            </div>}
-                          <article data-dev-section="1" data-dev-section-key={`messages-system-note-${note.notification_id}`} data-dev-section-type="content-card" data-dev-section-parent="messages-system-feed" data-dev-background-token="messages-system-note" style={{
-                  borderRadius: "var(--radius-md)",
-                  padding: "12px 14px",
-                  backgroundColor: "var(--surface)",
-                  boxShadow: "none",
-                  minHeight: "44px",
-                  display: "flex",
-                  flexDirection: note.kind === "customer_request" ? "row" : "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "16px",
-                  width: "100%"
-                }}>
-                            {note.kind === "customer_request" ? (
-                              <>
-                                <div style={{
-                                  display: "grid",
-                                  // Four tracks with 160+120+0+120 of hard minimum need 400px before gaps,
-                                  // so at the 375px floor the last column was pushed outside the card and
-                                  // clipped (the app never scrolls sideways). Stack on mobile instead.
-                                  gridTemplateColumns: isMobileView
-                                    ? "minmax(0, 1fr)"
-                                    : "minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(0, 2fr) minmax(120px, auto)",
-                                  alignItems: "center",
-                                  gap: "16px",
-                                  flex: 1,
-                                  minWidth: 0
-                                }}>
-                                  <div style={{ minWidth: 0 }}>
-                                    <p style={{
-                                      margin: 0,
-                                      color: palette.textPrimary,
-                                      fontSize: "var(--text-body-sm)",
-                                      fontWeight: 700,
-                                      lineHeight: 1.3,
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap"
-                                    }}>
-                                      {note.customer_name}
-                                    </p>
-                                    <p style={{
-                                      margin: "2px 0 0",
-                                      fontSize: "var(--text-caption)",
-                                      color: palette.textMuted,
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap"
-                                    }}>
-                                      {note.type_label}
-                                    </p>
-                                  </div>
-                                  <div style={{ minWidth: 0 }}>
-                                    {note.vehicle_label ? (
-                                      <p style={{
-                                        margin: 0,
-                                        fontSize: "var(--text-body-sm)",
-                                        color: palette.textPrimary,
-                                        fontWeight: 600,
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap"
-                                      }}>
-                                        {note.vehicle_label}
-                                      </p>
-                                    ) : null}
-                                  </div>
-                                  <p style={{
-                                    margin: 0,
-                                    fontSize: "var(--text-body-sm)",
-                                    color: palette.textPrimary,
-                                    lineHeight: 1.4,
-                                    minWidth: 0,
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    display: "-webkit-box",
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: "vertical"
-                                  }}>
-                                    {note.description || ""}
-                                  </p>
-                                  <div style={{ minWidth: 0, textAlign: "right" }}>
-                                    {note.preferred_date ? (
-                                      <p style={{
-                                        margin: 0,
-                                        fontSize: "var(--text-caption)",
-                                        color: palette.textPrimary,
-                                        fontWeight: 600,
-                                        whiteSpace: "nowrap"
-                                      }}>
-                                        Preferred: {note.preferred_date}
-                                      </p>
-                                    ) : null}
-                                    <p style={{
-                                      margin: note.preferred_date ? "2px 0 0" : 0,
-                                      fontSize: "var(--text-caption)",
-                                      color: palette.textMuted,
-                                      whiteSpace: "nowrap"
-                                    }}>
-                                      {formatNotificationTimestamp(note.created_at)}
-                                    </p>
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  className="app-btn app-btn--primary app-btn--sm app-btn--pill"
-                                  style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}
-                                  onClick={() =>
-                                    typeof handleCreateJobFromRequest === "function" &&
-                                    handleCreateJobFromRequest(note)
-                                  }
-                                >
-                                  Create job
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <p style={{
-                                  margin: 0,
-                                  color: palette.textPrimary,
-                                  fontSize: "var(--text-body-sm)",
-                                  fontWeight: 650,
-                                  lineHeight: 1.35,
-                                  minWidth: 0,
-                                }}>
-                                  {String(note.message || "System update").replace(/^[\s\p{Extended_Pictographic}\uFE0F]+/u, "").trim() || "System update"}
-                                </p>
-                                <p style={{
-                                  margin: 0,
-                                  fontSize: "var(--text-caption)",
-                                  color: palette.textMuted,
-                                  flex: "0 0 auto",
-                                  whiteSpace: "nowrap",
-                                }}>
-                                  {formatNotificationTimestamp(note.created_at)}
-                                </p>
-                              </>
-                            )}
-                          </article>
-                        </React.Fragment>)}
-                    </div>}
-                </DevLayoutSection>
-              </> : activeThread ? <>
-                <DevLayoutSection sectionKey="messages-thread-header" parentKey="messages-conversation-panel" sectionType="section-header-row" style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: "16px",
-            paddingBottom: "12px",
-            flexWrap: "wrap"
-          }}>
-                  {(() => {
-              const otherMember = isGroupChat ? null : (activeThread.members || []).find(member => member.userId !== dbUserId);
-              // DM headers show the person, not the stored thread title: first +
-              // last name only, with their last visit to /messages underneath.
-              const headerTitle = otherMember?.profile?.name || activeThread.title;
-              const lastSeen = otherMember ? formatLastSeen(otherMember.lastReadAt) : null;
-              return <div style={{
-                flex: "1 1 auto",
-                minWidth: 0,
-                marginRight: "54px" // clears the floating slash-command help button
-              }}>
-                      {isGroupChat ? <h3 onClick={() => setGroupMembersModalOpen(true)} style={{
-                  margin: 0,
-                  color: systemTitleColor,
-                  cursor: "pointer"
-                }} title="Click to view members">
-                          {activeThread.title}
-                        </h3> : <h3 style={{
-                  margin: 0,
-                  color: systemTitleColor
-                }}>{headerTitle}</h3>}
-                      {headerHasCustomerMember ? (
-                        customerDetail && (customerDetail.phone || customerDetail.vehicle || customerDetail.jobNumber) ? <p style={{
-                    margin: "4px 0 0",
-                    color: palette.textMuted,
-                    fontSize: "var(--text-body-sm)",
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "4px 12px"
-                  }}>
-                          {customerDetail.phone ? <span>{customerDetail.phone}</span> : null}
-                          {customerDetail.vehicle ? <span>{customerDetail.vehicle}</span> : null}
-                          {customerDetail.jobNumber ? <span>JOB {customerDetail.jobNumber}</span> : null}
-                        </p> : null
-                      ) : lastSeen ? <p style={{
-                    margin: "2px 0 0",
-                    color: palette.textMuted,
-                    fontSize: "var(--text-caption)"
-                  }}>
-                          Last seen {lastSeen}
-                        </p> : null}
-                    </div>;
-            })()}
-                  {isGroupChat && canEditGroup && !isCustomerChat && <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-3)",
-              flexWrap: "wrap",
-              justifyContent: "flex-end",
-              flex: "0 0 auto",
-              marginRight: "54px"
-            }}>
-                      <Button type="button" variant="secondary" size="sm" pill onClick={openGroupEditModal}>
-                        Edit
-                      </Button>
-                    </div>}
-                  {/* Pinned to the conversation card itself (10px in from its
-                      top-right corner), not to the header's flow. */}
-                  <Button type="button" variant="secondary" pill className="app-btn--icon app-btn--glyph-lg" onClick={() => setCommandHelpOpen(true)} title="Slash command help" aria-label="Slash command help" style={{
-              position: "absolute",
-              top: "10px",
-              right: "10px",
-              zIndex: 1
-            }}>
-                    ?
-                  </Button>
-                </DevLayoutSection>
-
-                {/* Divides the thread header from the transcript. Inset from
-                    the card's edges rather than running the full width. The
-                    conversation panel is itself painted --theme, so the rule
-                    takes --surface — the next rung of the surface ladder, and
-                    the one step guaranteed to be visible against it. */}
-                <div aria-hidden="true" style={{
-            height: "1px",
-            margin: "0 20px",
-            flex: "0 0 auto",
-            backgroundColor: "var(--surface)"
-          }} />
-
-                <DevLayoutSection sectionKey="messages-thread-feed" parentKey="messages-conversation-panel" sectionType="section-shell" shell backgroundToken="messages-thread-feed" ref={scrollerRef} style={{
-            marginTop: isMobileView ? "8px" : "16px",
-            flex: 1,
-            minHeight: 0,
-            height: isMobileView ? "min(52vh, 360px)" : undefined,
-            maxHeight: isMobileView ? "min(52vh, 360px)" : "none",
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: isMobileView ? "12px" : "18px",
-            padding: isMobileView ? "18px 10px 12px" : "22px 12px 14px",
-            overscrollBehavior: "contain"
-          }}>
-                  {loadingMessages && <MessageBubblesSkeleton count={4} />}
-                  {!loadingMessages && messages.length === 0 && <p style={{
-              color: palette.textMuted
-            }}>No messages yet.</p>}
-                  {messages.map((message, index) => {
-              const prev = index > 0 ? messages[index - 1] : null;
-              const next = index < messages.length - 1 ? messages[index + 1] : null;
-              const currentDate = new Date(message.createdAt);
-              const prevDate = prev ? new Date(prev.createdAt) : null;
-              const sameDayAsPrev = prevDate && prevDate.toDateString() === currentDate.toDateString();
-              const showDayDivider = !sameDayAsPrev;
-              const GROUP_WINDOW_MS = 5 * 60 * 1000;
-              const sameSenderAsPrev = prev && sameDayAsPrev && prev.senderId === message.senderId && currentDate - prevDate < GROUP_WINDOW_MS;
-              const nextDate = next ? new Date(next.createdAt) : null;
-              const sameDayAsNext = nextDate && nextDate.toDateString() === currentDate.toDateString();
-              const sameSenderAsNext = next && sameDayAsNext && next.senderId === message.senderId && nextDate - currentDate < GROUP_WINDOW_MS;
-              const isFirstInGroup = !sameSenderAsPrev;
-              const isLastInGroup = !sameSenderAsNext;
-              const dayLabel = currentDate.toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric"
-              });
-              return <React.Fragment key={message.id}>
-                        {showDayDivider && <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  width: "100%"
-                }}>
-                            <div style={{
-                    flex: 1,
-                    height: "1px",
-                    backgroundColor: palette.border
-                  }} />
-                            <span style={{
-                    fontSize: "var(--text-caption)",
-                    fontWeight: 700,
-                    color: systemTitleColor
-                  }}>
-                              {dayLabel}
-                            </span>
-                            <div style={{
-                    flex: 1,
-                    height: "1px",
-                    backgroundColor: palette.border
-                  }} />
-                          </div>}
-                        {showThreadUnreadMarker && activeThreadUnreadMarkerIndex === index && <div ref={setThreadUnreadMarkerEl} style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  width: "100%"
-                }}>
-                            <div style={{
-                    flex: 1,
-                    height: "1px",
-                    backgroundColor: palette.border
-                  }} />
-                            <span style={{
-                    fontSize: "var(--text-caption)",
-                    fontWeight: 700,
-                    color: systemTitleColor
-                  }}>
-                              Unread
-                            </span>
-                            <div style={{
-                    flex: 1,
-                    height: "1px",
-                    backgroundColor: palette.border
-                  }} />
-                          </div>}
-                        <MessageBubble message={message} isMine={message.senderId === dbUserId} nameColor={userNameColor} userRoles={user?.roles || []} currentUserId={dbUserId} onApproveLeaveRequest={handleApproveLeaveRequest} onDeclineLeaveRequest={handleOpenDeclineLeaveRequest} decisionBusy={leaveDecisionBusy} isFirstInGroup={isFirstInGroup} isLastInGroup={isLastInGroup} reactions={messageReactions[message.id] || []} onReact={emoji => handleReactToMessage?.(message.id, emoji)} onReply={() => setReplyTo(message)} />
-                      </React.Fragment>;
+                  }}
+                >
+                  <span className="app-msg-entry__text">
+                    <span className="app-msg-entry__primary">{entry.name}</span>
+                    <span className="app-msg-entry__secondary">{entry.jobTitle || entry.role || "Team member"}</span>
+                  </span>
+                  {picked ? <span className="app-msg-tag">Selected</span> : null}
+                </div>
+              );
             })}
-                </DevLayoutSection>
+        </div>
 
-                <DevLayoutSection as="form" sectionKey="messages-thread-composer" parentKey="messages-conversation-panel" sectionType="toolbar" onSubmit={handleSendMessage} style={{
-            marginTop: "16px",
-            paddingTop: "12px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-            position: "relative"
-          }}>
-                  {/* Command suggestions dropdown */}
-                  {showCommandSuggestions && commandSuggestions.length > 0 && <div data-dev-section="1" data-dev-section-key="messages-command-suggestions" data-dev-section-type="floating-action" data-dev-section-parent="messages-thread-composer" data-dev-background-token="messages-command-suggestions" style={{
-              position: "absolute",
-              bottom: "100%",
-              left: 0,
-              right: 0,
-              marginBottom: "8px",
-              maxHeight: "240px",
-              overflowY: "auto",
-              backgroundColor: "var(--surface)",
-              borderRadius: radii.lg,
-              boxShadow: shadows.lg,
-              zIndex: "var(--z-dropdown)"
-            }}>
-                      {commandSuggestions.map((cmd, index) => <div key={index} role="button" tabIndex={0} onClick={() => handleSelectCommand(cmd)} onKeyDown={event => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  handleSelectCommand(cmd);
-                }
-              }} style={{
-                width: "100%",
-                height: "44px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "var(--space-3)",
-                textAlign: "left",
-                padding: "0 var(--space-4)",
-                borderBottom: index < commandSuggestions.length - 1 ? "var(--separating-line)" : "none",
-                backgroundColor: "var(--surface)",
-                cursor: "pointer",
-                transition: "background-color 0.15s"
-              }} onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = "var(--theme)";
-              }} onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = "var(--surface)";
-              }}>
-                          <span style={{
-                  fontWeight: 700,
-                  color: palette.accent,
-                  fontSize: "var(--text-body-sm)",
-                  whiteSpace: "nowrap",
-                  flex: "0 0 auto"
-                }}>
-                            {cmd.command}
-                          </span>
-                          <span style={{
-                  fontSize: "var(--text-caption)",
-                  color: palette.textMuted,
-                  minWidth: 0,
-                  textAlign: "right",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
-                }}>
-                            {cmd.description}
-                          </span>
-                        </div>)}
-                    </div>}
+        {selected.length > 0 && (
+          <div className="app-msg-chips" aria-label="Selected people">
+            {selected.map((entry) => (
+              <Button
+                key={entry.id}
+                type="button"
+                variant="secondary"
+               
+                pill
+                symbol={false}
+                aria-label={`Remove ${entry.name}`}
+                onClick={() => onRemoveSelected(entry)}
+              >
+                {entry.name}
+              </Button>
+            ))}
+          </div>
+        )}
 
-                  {replyTo && <div style={{
-              display: "flex",
-              alignItems: "stretch",
-              gap: "10px",
-              padding: "8px 12px",
-              borderRadius: radii.lg,
-              backgroundColor: "var(--search-surface)",
-              position: "relative"
-            }}>
-                      <div style={{
-                width: "3px",
-                borderRadius: "2px",
-                backgroundColor: palette.accent
-              }} />
-                      <div style={{
-                flex: 1,
-                minWidth: 0
-              }}>
-                        <div style={{
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  color: palette.accent
-                }}>
-                          Replying to {replyTo.sender?.name || "message"}
+        {error ? <StatusMessage tone="danger">{error}</StatusMessage> : null}
+
+        <div className="app-msg-list__selection">
+          <span className="app-msg-muted">
+            {mode === "direct"
+              ? "Pick one person."
+              : mode === "group"
+                ? "Pick everyone who should be in the group."
+                : "People are optional here."}
+          </span>
+          <Button type="button" variant="primary" symbol={false} busy={busy} disabled={!canStart} onClick={onStart}>
+            Start conversation
+          </Button>
+        </div>
+      </div>
+    </PopupModal>
+  );
+}
+
+// Slash-command help. Keeps the conventions of the staffglobal pass on this
+// popup: compact header with the canonical secondary Close, StatusMessage tips
+// and secondary Button rows.
+function CommandHelpModal({ help }) {
+  return (
+    <PopupModal
+      isOpen
+      onClose={help.onClose}
+      ariaLabel="Slash commands help"
+      cardStyle={{
+        width: "min(100%, 640px)",
+        maxHeight: "86vh",
+        overflowY: "auto",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}
+    >
+      <header className="app-popup-compact-header">
+        <h3>Slash commands</h3>
+        <Button type="button" variant="secondary" onClick={help.onClose}>
+          Close
+        </Button>
+      </header>
+
+      <p style={{ margin: 0 }}>
+        Commands link DMS records to the conversation and run quick actions. The ones shown depend on your role.
+      </p>
+      <StatusMessage tone="info">
+        Click a command to insert it, or type / in the message box to see suggestions as you type.
+      </StatusMessage>
+
+      {COMMAND_GROUPS.map((group) => {
+        const commands = help.commands.filter((cmd) => cmd.group === group.value);
+        if (!commands.length) return null;
+        return (
+          <div key={group.value} style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+            <h4 style={{ margin: 0 }}>{group.label}</h4>
+            {commands.map((cmd) => (
+              <Button
+                key={cmd.name}
+                type="button"
+                variant="secondary"
+                symbol={false}
+                onClick={() => help.onInsert(cmd)}
+                style={{ width: "100%", justifyContent: "space-between", gap: "12px", minWidth: 0 }}
+              >
+                <strong style={{ whiteSpace: "nowrap" }}>{cmd.syntax}</strong>
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {cmd.description}
+                </span>
+              </Button>
+            ))}
+          </div>
+        );
+      })}
+
+      <StatusMessage tone="success">
+        <strong>Smart linking:</strong> linking a job with /job also links its vehicle and customer to the
+        conversation. Everything linked is listed under Details → Links.
+      </StatusMessage>
+      <StatusMessage tone="warning">
+        <strong>Tip:</strong> a line that starts with /task, /remind, /assign, /status or /priority is an action —
+        it changes the conversation instead of being sent as text.
+      </StatusMessage>
+    </PopupModal>
+  );
+}
+
+function RenameModal({ rename }) {
+  return (
+    <PopupModal
+      isOpen
+      onClose={rename.onClose}
+      ariaLabel="Rename conversation"
+      cardStyle={{
+        width: "min(100%, 520px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}
+    >
+      <header className="app-popup-compact-header">
+        <h3>Rename conversation</h3>
+        <Button type="button" variant="secondary" onClick={rename.onClose}>
+          Close
+        </Button>
+      </header>
+      <InputField label="Name" value={rename.title} onChange={(event) => rename.onTitleChange(event.target.value)} />
+      {rename.error ? <StatusMessage tone="danger">{rename.error}</StatusMessage> : null}
+      <div className="app-msg-list__selection">
+        <span />
+        <Button type="button" variant="primary" symbol={false} busy={rename.busy} onClick={rename.onSave}>
+          Save name
+        </Button>
+      </div>
+    </PopupModal>
+  );
+}
+
+function LeaveDeclineModal({ decline }) {
+  return (
+    <PopupModal
+      isOpen
+      onClose={decline.onClose}
+      closeOnBackdrop={!decline.busy}
+      closeOnEscape={!decline.busy}
+      ariaLabel="Decline leave request"
+      cardStyle={{
+        width: "min(100%, 520px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap)",
+      }}
+    >
+      <header className="app-popup-compact-header">
+        <h3>Decline leave request</h3>
+        <Button type="button" variant="secondary" disabled={decline.busy} onClick={decline.onClose}>
+          Close
+        </Button>
+      </header>
+      <p style={{ margin: 0 }}>A reason is required before this request can be declined.</p>
+      <textarea
+        className="app-input"
+        rows={4}
+        value={decline.reason}
+        onChange={(event) => decline.onReasonChange(event.target.value)}
+        placeholder="Enter the reason for declining this request…"
+      />
+      {decline.error ? <StatusMessage tone="danger">{decline.error}</StatusMessage> : null}
+      <div className="app-msg-list__selection">
+        <span />
+        <Button type="button" variant="danger" symbol={false} busy={decline.busy} onClick={decline.onConfirm}>
+          Decline request
+        </Button>
+      </div>
+    </PopupModal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+export default function MessagesPageUi(props) {
+  if (props.view === "section1") {
+    return (
+      <EmptyState variant="page" title="Please log in" description="Sign in to read and send internal messages." />
+    );
+  }
+
+  const {
+    isMobileView,
+    mobilePanelView,
+    onMobileBack,
+    listProps,
+    mode, // "system" | "bookings" | "thread" | "empty"
+    systemFeed,
+    headerProps,
+    search,
+    feed,
+    composerProps,
+    readOnlyNotice,
+    conversationError,
+    details,
+    newConversation,
+    help,
+    rename,
+    leaveDecline,
+  } = props;
+
+  const detailsOpen = Boolean(details?.open && mode === "thread");
+  // Below the tablet breakpoint one panel shows at a time. Decided here, not
+  // in CSS, because the layer primitives set their display inline.
+  const showList = !isMobileView || mobilePanelView !== "conversation";
+  const showConversation = !isMobileView || mobilePanelView === "conversation";
+
+  return (
+    <>
+      <DevLayoutSection
+        sectionKey="messages-page-shell"
+        sectionType="page-shell"
+        shell
+        widthMode="page"
+        className={`app-msg${detailsOpen ? " app-msg--details-open" : ""}`}
+        data-mobile-view={isMobileView ? mobilePanelView : undefined}
+      >
+        <div className="app-msg__grid">
+          {showList && (
+            <div className="app-msg__slot app-msg__slot--list">
+              <LayerTheme
+                as="aside"
+                className="app-msg__panel app-msg__list"
+                sectionKey="messages-threads-panel"
+                parentKey="messages-page-shell"
+                sectionType="section-shell"
+                aria-label="Conversations"
+              >
+                <ConversationList {...listProps} />
+              </LayerTheme>
+            </div>
+          )}
+
+          {showConversation && (
+            <div className="app-msg__slot app-msg__slot--conversation">
+              <LayerTheme
+                as="section"
+                className="app-msg__panel app-msg__conversation app-msg-convo"
+                sectionKey="messages-conversation-panel"
+                parentKey="messages-page-shell"
+                sectionType="section-shell"
+                data-presentation="messages-conversation"
+                aria-label="Conversation"
+              >
+                {(mode === "system" || mode === "bookings") && (
+                  <SystemFeed feed={systemFeed} isMobileView={isMobileView} onBack={onMobileBack} />
+                )}
+
+                {mode === "thread" && (
+                  <>
+                    <ConversationHeader {...headerProps} />
+
+                    {search.open && (
+                      <div className="app-msg-search" role="search">
+                        <div className="app-msg-search__field">
+                          <SearchBar
+                            autoFocus
+                            placeholder="Search this conversation"
+                            value={search.term}
+                            onChange={(event) => search.onChange(event.target.value)}
+                            onClear={() => search.onChange("")}
+                          />
                         </div>
-                        <div style={{
-                  fontSize: "0.78rem",
-                  color: palette.textMuted,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
-                }}>
-                          {String(replyTo.content || "").slice(0, 140)}
-                        </div>
+                        <span className="app-msg-muted" aria-live="polite">
+                          {search.term.trim()
+                            ? search.matchCount
+                              ? `${search.matchIndex + 1} of ${search.matchCount}`
+                              : "No matches"
+                            : ""}
+                        </span>
+                        <SymbolButton symbol="up" label="Previous match" disabled={!search.matchCount} onClick={search.onPrev} />
+                        <SymbolButton symbol="down" label="Next match" disabled={!search.matchCount} onClick={search.onNext} />
+                        <SymbolButton symbol="close" label="Close search" onClick={search.onClose} />
                       </div>
-                      <Button type="button" variant="secondary" pill className="app-btn--icon" onClick={() => setReplyTo(null)} aria-label="Cancel reply" style={{
-                alignSelf: "center",
-                flex: "0 0 auto"
-              }}>
-                        {/* Drawn rather than typed: the "×" glyph sits on the
-                            font's math axis, so it renders visibly high inside
-                            a 44px circle. An SVG cross is centred exactly. */}
-                        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-                          <path d="M5 5 L15 15 M15 5 L5 15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                        </svg>
+                    )}
+
+                    <Transcript feed={feed} />
+
+                    {conversationError ? <StatusMessage tone="danger">{conversationError}</StatusMessage> : null}
+
+                    {readOnlyNotice ? (
+                      <div className="app-msg-composer__notice" role="note">
+                        <span>{readOnlyNotice}</span>
+                      </div>
+                    ) : (
+                      <MessageComposer {...composerProps} />
+                    )}
+                  </>
+                )}
+
+                {mode === "empty" && (
+                  <EmptyState
+                    variant="page"
+                    title="Select a conversation"
+                    description="Pick a conversation on the left, or start a new one with a colleague, a department or about a job."
+                    action={
+                      <Button type="button" variant="primary" symbol={false} onClick={listProps.onNewConversation}>
+                        New conversation
                       </Button>
-                    </div>}
-                  <div style={{
-              display: "flex",
-              alignItems: "flex-end",
-              gap: "var(--space-sm)"
-            }}>
-                    <textarea id="message-textarea" className="app-input" rows={3} value={messageDraft} onChange={handleMessageDraftChange} placeholder={'Write an internal message… (type "/" for commands)'} style={{
-                flex: 1,
-                minWidth: 0,
-                resize: "none"
-              }} />
-                    <Button type="submit" variant="primary" pill disabled={!canSend} style={{
-                flex: "0 0 auto"
-              }}>
-                      {sending ? "Sending…" : "Send"}
-                    </Button>
-                  </div>
-                  {conversationError && <StatusMessage tone="danger">{conversationError}</StatusMessage>}
-                </DevLayoutSection>
-              </> : <DevLayoutSection sectionKey="messages-empty-state" parentKey="messages-conversation-panel" sectionType="content-card" backgroundToken="messages-empty-state" style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: palette.textMuted,
-          textAlign: "center"
-        }}>
-                Select or start a conversation to begin messaging.
-              </DevLayoutSection>}
-          </DevLayoutSection>
-        </DevLayoutSection>
+                    }
+                  />
+                )}
+              </LayerTheme>
+            </div>
+          )}
+
+          {detailsOpen && (
+            <div className="app-msg__slot app-msg__slot--details">
+              <LayerTheme
+                as="aside"
+                className="app-msg__panel app-msg__details"
+                sectionKey="messages-details-panel"
+                parentKey="messages-page-shell"
+                sectionType="section-shell"
+                aria-label="Conversation details"
+              >
+                <ConversationDetails {...details.props} />
+              </LayerTheme>
+            </div>
+          )}
+        </div>
       </DevLayoutSection>
 
-      {leaveDeclineModal.open && <PopupModal
-        isOpen
-        onClose={() => {
-          if (leaveDecisionBusy) return;
-          setLeaveDeclineModal({ open: false, message: null });
-          setLeaveDeclineReason("");
-          setLeaveDecisionError("");
-        }}
-        closeOnBackdrop={!leaveDecisionBusy}
-        closeOnEscape={!leaveDecisionBusy}
-        ariaLabel="Decline leave request"
-        cardStyle={{
-          width: "min(100%, 520px)",
-          padding: "var(--section-card-padding)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--layout-card-gap)",
-        }}
-      >
-              <div>
-                <h3 style={{
-            margin: 0,
-            color: systemTitleColor
-          }}>Decline leave request</h3>
-                <p style={{
-            margin: "6px 0 0",
-            color: palette.textMuted
-          }}>
-                  A reason is required before this request can be declined.
-                </p>
-              </div>
-
-              <textarea className="app-input" rows={4} value={leaveDeclineReason} onChange={event => {
-          setLeaveDeclineReason(event.target.value);
-          setLeaveDecisionError("");
-        }} placeholder="Enter the reason for declining this request..." style={{
-          width: "100%",
-          resize: "vertical"
-        }} />
-
-              {leaveDecisionError ? <StatusMessage tone="danger">{leaveDecisionError}</StatusMessage> : null}
-
-              <div style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: "var(--space-2)"
-        }}>
-                <Button type="button" variant="secondary" pill disabled={leaveDecisionBusy} onClick={() => {
-            if (leaveDecisionBusy) return;
-            setLeaveDeclineModal({
-              open: false,
-              message: null
-            });
-            setLeaveDeclineReason("");
-            setLeaveDecisionError("");
-          }}>
-                  Cancel
-                </Button>
-                <Button type="button" variant="danger" pill disabled={leaveDecisionBusy} onClick={handleConfirmDeclineLeaveRequest}>
-                  {leaveDecisionBusy ? "Declining..." : "Decline request"}
-                </Button>
-              </div>
-        </PopupModal>}
-
-      {groupEditModalOpen && isGroupChat && <PopupModal
-        isOpen
-        onClose={closeGroupEditModal}
-        ariaLabel="Edit group chat"
-        cardStyle={{
-          width: "min(100%, 560px)",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          padding: "var(--section-card-padding)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--layout-card-gap)",
-        }}
-      >
-            <div>
-              <h3 style={{
-            margin: 0,
-            color: systemTitleColor
-          }}>Edit group chat</h3>
-              <p style={{
-            margin: "4px 0 0",
-            color: palette.textMuted
-          }}>
-                Rename the chat or remove people who should no longer access it.
-              </p>
-            </div>
-
-            <InputField label="Group name" type="text" value={groupEditTitle} onChange={event => setGroupEditTitle(event.target.value)} placeholder="Group name" />
-
-            <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px"
-        }}>
-              <strong style={{
-            fontSize: "var(--text-body-sm)",
-            color: palette.textMuted
-          }}>
-                Members ({activeThread.members.length})
-              </strong>
-              <div style={{
-            maxHeight: "240px",
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px"
-          }}>
-                {activeThread.members.map(member => {
-              const isSelf = member.userId === dbUserId;
-              const canRemoveMember = canEditGroup && member.userId !== dbUserId && !(member.role === "leader" && groupLeaderCount <= 1);
-              return <div key={member.userId} style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderRadius: "var(--radius-sm)",
-                padding: "10px 12px",
-                backgroundColor: "var(--surface)",
-                gap: "12px",
-                flexWrap: "wrap"
-              }}>
-                      <div style={{
-                  display: "flex",
-                  flexDirection: "column"
-                }}>
-                        <span style={{
-                    fontWeight: 600,
-                    color: userNameColor
-                  }}>
-                          {member.profile?.name || "Unknown"}
-                          {isSelf ? " • You" : ""}
-                        </span>
-                        <span style={{
-                    fontSize: "var(--text-label)",
-                    color: palette.textMuted
-                  }}>
-                          {member.role === "leader" ? "Leader" : "Member"}
-                        </span>
-                      </div>
-                      {canRemoveMember && <Button type="button" variant="danger" size="sm" pill onClick={() => handleRemoveMemberFromGroup(member.userId)} disabled={groupManageBusy}>
-                          Remove
-                        </Button>}
-                    </div>;
-            })}
-              </div>
-            </div>
-
-            {isGroupLeader && <div style={{
-          borderRadius: "var(--radius-md)",
-          padding: "12px",
-          backgroundColor: "var(--search-surface)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          color: "var(--search-text)"
-        }}>
-                <strong style={{
-            fontSize: "var(--text-body-sm)",
-            color: "var(--search-text)"
-          }}>
-                  Manage group members
-                </strong>
-                <SearchBar value={groupSearchTerm} onChange={event => setGroupSearchTerm(event.target.value)} onClear={() => setGroupSearchTerm("")} placeholder="Search colleagues to add (min 2 letters)…" style={{
-            width: "100%"
-          }} />
-                {groupSearchTerm.trim().length > 0 && groupSearchTerm.trim().length < 2 && <p style={{
-            margin: 0,
-            fontSize: "var(--text-caption)",
-            color: "var(--search-text)"
-          }}>
-                    Keep typing at least 2 letters to search.
-                  </p>}
-                {groupSearchLoading && <InlineLoading width={160} label="Looking up colleagues" />}
-                {!groupSearchLoading && groupSearchResults.length > 0 && <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-            maxHeight: "160px",
-            overflowY: "auto"
-          }}>
-                    {groupSearchResults.map(entry => <div key={entry.id} style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              borderRadius: "var(--radius-sm)",
-              padding: "8px 12px",
-              backgroundColor: "var(--surface)"
-            }}>
-                        <div>
-                          <strong style={{
-                  fontSize: "var(--text-body)",
-                  color: userNameColor
-                }}>
-                            {entry.name}
-                          </strong>
-                          <p style={{
-                  margin: 0,
-                  fontSize: "var(--text-caption)",
-                  color: palette.textMuted
-                }}>
-                            {entry.role || "Team member"}
-                          </p>
-                        </div>
-                        <Button type="button" variant="primary" size="sm" pill disabled={groupManageBusy} onClick={() => handleAddMemberToGroup(entry.id)}>
-                          Add
-                        </Button>
-                      </div>)}
-                  </div>}
-                {!groupSearchLoading && groupSearchTerm.trim().length >= 2 && groupSearchResults.length === 0 && <p style={{
-            margin: 0,
-            fontSize: "var(--text-label)",
-            color: palette.textMuted
-          }}>
-                      No colleagues match that search.
-                    </p>}
-                {groupManageError && <StatusMessage tone="danger">{groupManageError}</StatusMessage>}
-              </div>}
-
-            {groupEditError && <StatusMessage tone="danger">{groupEditError}</StatusMessage>}
-
-            <div style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: "var(--space-2)"
-        }}>
-              <Button type="button" variant="secondary" pill onClick={closeGroupEditModal}>
-                Cancel
-              </Button>
-              <Button type="button" variant="primary" pill onClick={handleSaveGroupDetails} disabled={groupEditBusy}>
-                {groupEditBusy ? "Saving…" : "Save changes"}
-              </Button>
-            </div>
-        </PopupModal>}
-
-      {newChatModalOpen && <PopupModal
-        isOpen
-        onClose={closeNewChatModal}
-        ariaLabel="Start new chat"
-        backdropClassName="start-new-chat-backdrop"
-        cardClassName="app-settings-popup-card start-new-chat-popup"
-        cardStyle={{
-          width: "min(100%, 640px)",
-          padding: "var(--page-card-padding)",
-          overflow: "hidden",
-          boxSizing: "border-box",
-        }}
-      >
-              <div className="app-settings-popup" style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--layout-card-gap)",
-          overflow: "hidden"
-        }}>
-                <header className="app-popup-compact-header">
-                  <h2 style={{ color: systemTitleColor }}>Start New Chat</h2>
-                  <div className="app-popup-compact-header__actions">
-                    <Button type="button" variant="primary" onClick={handleStartChat} disabled={!canInitiateChat}>
-                      Start Chat
-                    </Button>
-                    <Button type="button" variant="secondary" onClick={closeNewChatModal}>
-                      Cancel
-                    </Button>
-                  </div>
-                </header>
-
-            <div className="tab-api" role="tablist" aria-label="Chat type" style={{
-            width: "100%",
-            maxWidth: "none",
-            flexWrap: "nowrap"
-          }}>
-              <button type="button" role="tab" aria-selected={composeMode === "direct"} className={`tab-api__item${composeMode === "direct" ? " is-active" : ""}`} style={{ flex: "1 1 0", minWidth: 0 }} onClick={() => {
-              setComposeMode("direct");
-              setComposeError("");
-              setSelectedRecipients(prev => prev.length ? [prev[0]] : []);
-              }}>
-                Direct
-              </button>
-              <button type="button" role="tab" aria-selected={composeMode === "group"} className={`tab-api__item${composeMode === "group" ? " is-active" : ""}`} style={{ flex: "1 1 0", minWidth: 0 }} onClick={() => {
-              setComposeMode("group");
-              setComposeError("");
-              }}>
-                Group
-              </button>
-            </div>
-
-            <SearchBar placeholder="Search everyone..." value={directorySearch} onChange={event => setDirectorySearch(event.target.value)} onClear={() => setDirectorySearch("")} style={{
-            width: "100%"
-          }} />
-
-            <div style={{
-            flex: "1 1 auto",
-            minHeight: "220px",
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-            paddingTop: "2px",
-            paddingBottom: "2px"
-          }}>
-              {directoryLoading && <ColleagueRowsSkeleton count={6} />}
-              {!directoryLoading && directory.length === 0 && <p style={{
-              margin: 0,
-              color: palette.textMuted
-            }}>No colleagues found.</p>}
-              {!directoryLoading && directory.length > 0 && <>
-                  {directory.map(entry => {
-                const selected = isRecipientSelected(entry);
-                return <div key={entry.id} className="chat-user-option" role="button" tabIndex={0} onClick={() => handleDirectoryUser(entry)} onKeyDown={event => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    handleDirectoryUser(entry);
-                  }
-                }} style={{
-                  textAlign: "left",
-                  borderRadius: "var(--radius-md)",
-                  border: `1px solid ${selected ? palette.accent : palette.border}`,
-                  padding: "var(--space-3) var(--space-4)",
-                  backgroundColor: selected ? palette.accentSurface : "var(--surface)",
-                  cursor: "pointer"
-                }}>
-                        <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "var(--space-3)"
-                  }}>
-                          <span style={{
-                      fontSize: "var(--text-h4)",
-                      fontWeight: 700,
-                      color: userNameColor
-                    }}>
-                            {entry.name}
-                          </span>
-                          <span style={{
-                      fontSize: "var(--text-body-sm)",
-                      color: palette.textMuted,
-                      fontWeight: 600
-                    }}>
-                            {entry.role || "Team member"}
-                          </span>
-                        </div>
-                      </div>;
-              })}
-                </>}
-            </div>
-
-            <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px"
-          }}>
-              <div style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "8px",
-              maxHeight: "120px",
-              overflowY: "auto",
-              paddingRight: "2px"
-            }}>
-                {selectedRecipients.length ? selectedRecipients.map(entry => <Chip key={entry.id} label={entry.name} onRemove={() => setSelectedRecipients(prev => prev.filter(user => user.id !== entry.id))} color={userNameColor} />) : <span style={{
-                color: palette.textMuted,
-                fontSize: "var(--text-body-sm)"
-              }}>
-                    No participants selected yet.
-                  </span>}
-              </div>
-
-              {composeMode === "group" && <InputField type="text" placeholder="Group name (optional)" value={groupName} onChange={event => setGroupName(event.target.value)} />}
-            </div>
-
-            {composeError && <StatusMessage tone="danger">{composeError}</StatusMessage>}
-
-              </div>
-        </PopupModal>}
-
-      {/* Command Help Modal */}
-      {commandHelpOpen && <PopupModal
-        isOpen
-        onClose={() => setCommandHelpOpen(false)}
-        ariaLabel="Slash commands help"
-        cardStyle={{
-          width: "min(100%, 600px)",
-          maxHeight: "80vh",
-          overflowY: "auto",
-          padding: "var(--section-card-padding)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--layout-card-gap)",
-        }}
-      >
-            <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}>
-              <h3 style={{
-            margin: 0,
-            color: palette.textPrimary
-          }}>Slash Commands Help</h3>
-              <Button variant="ghost" size="sm" pill onClick={() => setCommandHelpOpen(false)} aria-label="Close">
-                ×
-              </Button>
-            </div>
-
-            <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px"
-        }}>
-              <p style={{
-            color: palette.textMuted,
-            margin: 0
-          }}>
-                Use slash commands in your messages to create quick links and references.
-                Commands shown are based on your role and permissions.
-              </p>
-              <div style={{
-            padding: "8px 12px",
-            backgroundColor: "var(--theme)",
-            borderRadius: radii.lg,
-            fontSize: "var(--text-body-sm)"
-          }}>
-                <strong style={{
-              color: palette.accent
-            }}>Click any command below</strong> to insert it into your message!
-              </div>
-
-              {/* Organize commands by category */}
-              {(() => {
-            const categories = {
-              'Jobs & Work': availableCommands.filter(cmd => ['job', '', 'myjobs', 'archive', 'appointments'].includes(cmd.pattern)),
-              'Customers & Accounts': availableCommands.filter(cmd => ['cust', 'customer', 'addcust', 'account', 'invoice'].includes(cmd.pattern)),
-              'Vehicles': availableCommands.filter(cmd => ['vehicle', 'vhc', 'tracking', 'valet'].includes(cmd.pattern)),
-              'Parts & Inventory': availableCommands.filter(cmd => ['part', 'parts', 'order'].includes(cmd.pattern)),
-              'Team & Operations': availableCommands.filter(cmd => ['user', 'hr', 'clocking'].includes(cmd.pattern))
-            };
-            return Object.entries(categories).map(([category, commands]) => {
-              if (commands.length === 0) return null;
-              return <div key={category}>
-                      <h4 style={{
-                  margin: "0 0 8px 0",
-                  fontSize: "var(--text-body-sm)",
-                  fontWeight: 700,
-                  color: palette.accent,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em"
-                }}>
-                        {category}
-                      </h4>
-                      <div style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-xs)"
-                }}>
-                        {commands.map((cmd, idx) => <div key={idx} role="button" tabIndex={0} onClick={() => handleInsertCommandFromHelp(cmd)} onKeyDown={event => {
-                    if (event.key !== "Enter" && event.key !== " ") return;
-                    event.preventDefault();
-                    handleInsertCommandFromHelp(cmd);
-                  }} style={{
-                    minHeight: "44px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "12px",
-                    padding: "0 12px",
-                    backgroundColor: "var(--theme)",
-                    borderRadius: radii.lg,
-                    cursor: "pointer"
-                  }}>
-                            <strong style={{
-                      color: palette.accent,
-                      fontSize: "var(--text-body)",
-                      whiteSpace: "nowrap"
-                    }}>
-                              {cmd.command}
-                            </strong>
-                            <span style={{
-                      fontSize: "var(--text-body-sm)",
-                      color: palette.textMuted,
-                      textAlign: "right",
-                      minWidth: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap"
-                    }}>
-                              {cmd.description}
-                            </span>
-                          </div>)}
-                      </div>
-                    </div>;
-            });
-          })()}
-
-              {/* Tips Section */}
-              <div style={{
-            marginTop: "8px",
-            paddingTop: "16px"
-          }}>
-                <div style={{
-              padding: "12px",
-              backgroundColor: "var(--success-surface)",
-              borderRadius: radii.lg
-            }}>
-                <strong style={{
-                color: "var(--success)"
-              }}>Smart Linking:</strong>
-                <p style={{
-                margin: "4px 0 0 0",
-                fontSize: "var(--text-body)",
-                color: palette.textMuted
-              }}>
-                  When you use <code>/job[number]</code> together with <code>/vehicle</code> or <code>/customer</code>,
-                  the system automatically links the vehicle and customer from that job!
-                </p>
-              </div>
-
-              <div style={{
-              padding: "12px",
-              backgroundColor: "var(--warning-surface)",
-              borderRadius: radii.lg
-            }}>
-                <strong style={{
-                color: "var(--warning)"
-              }}>Tip:</strong>
-                <p style={{
-                margin: "4px 0 0 0",
-                fontSize: "var(--text-body)",
-                color: palette.textMuted
-              }}>
-                  Commands are case-insensitive and will be automatically linked when you send your message.
-                </p>
-              </div>
-              </div>
-            </div>
-        </PopupModal>}
-
-      {/* Group Members Modal */}
-      {groupMembersModalOpen && activeThread && isGroupChat && <PopupModal
-        isOpen
-        onClose={() => setGroupMembersModalOpen(false)}
-        ariaLabel={`${activeThread.title || "Group chat"} members`}
-        cardStyle={{
-          width: "min(100%, 500px)",
-          maxHeight: "70vh",
-          overflowY: "auto",
-          padding: "var(--section-card-padding)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--layout-card-gap)",
-        }}
-      >
-            <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}>
-              <h3 style={{
-            margin: 0,
-            color: palette.textPrimary
-          }}>
-                {activeThread.title || "Group Chat"}
-              </h3>
-              <Button variant="ghost" size="sm" pill onClick={() => setGroupMembersModalOpen(false)} aria-label="Close">
-                ×
-              </Button>
-            </div>
-
-            <div>
-              <h4 style={{
-            margin: "0 0 12px 0",
-            color: palette.textMuted,
-            fontSize: "var(--text-body)"
-          }}>
-                Members ({activeThread.members.length})
-              </h4>
-              <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px"
-          }}>
-                {activeThread.members.map(member => <div key={member.userId} style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "12px",
-              backgroundColor: "var(--theme)",
-              borderRadius: radii.lg
-            }}>
-                    <div>
-                      <div style={{
-                  fontWeight: 600,
-                  color: palette.textPrimary
-                }}>
-                        {member.profile?.name || "Unknown"}
-                      </div>
-                      <div style={{
-                  fontSize: "var(--text-body-sm)",
-                  color: palette.textMuted
-                }}>
-                        {member.profile?.role || "Unknown role"}
-                      </div>
-                    </div>
-                    {member.role === "leader" && <span style={{
-                padding: "4px 12px",
-                borderRadius: radii.pill,
-                backgroundColor: palette.accentSurface,
-                color: palette.accent,
-                fontSize: "var(--text-caption)",
-                fontWeight: 700
-              }}>
-                        Leader
-                      </span>}
-                  </div>)}
-              </div>
-            </div>
-        </PopupModal>}
-    </>; // render extracted page section.
-    default:
-      return null; // keep unknown sections visually empty.
-  }
+      {newConversation?.open && <NewConversationModal modal={newConversation} />}
+      {help?.open && <CommandHelpModal help={help} />}
+      {rename?.open && <RenameModal rename={rename} />}
+      {leaveDecline?.open && <LeaveDeclineModal decline={leaveDecline} />}
+    </>
+  );
 }

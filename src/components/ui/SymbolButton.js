@@ -297,6 +297,26 @@ export const SYMBOLS = {
       </>
     ),
   },
+  emoji: {
+    label: "Emoji",
+    render: () => (
+      <>
+        <circle cx="12" cy="12" r="9.5" {...S} />
+        <circle cx="8.6" cy="9.6" r="1.25" {...F} />
+        <circle cx="15.4" cy="9.6" r="1.25" {...F} />
+        <path d="M7.6 14.2a5.1 5.1 0 0 0 8.8 0" {...S} />
+      </>
+    ),
+  },
+  command: {
+    label: "Commands",
+    render: () => (
+      <>
+        <rect x="2.5" y="2.5" width="19" height="19" rx="3.2" {...S} />
+        <path d="M14.8 6.8 9.2 17.2" {...S} />
+      </>
+    ),
+  },
 
   // ── Data & tools ──────────────────────────────────────────
   search: {

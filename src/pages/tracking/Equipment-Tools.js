@@ -58,6 +58,10 @@ export default function EquipmentToolsPage() {
   // The header's Add button opens the panel's editor; a counter so the same
   // button can fire twice.
   const [addRequest, setAddRequest] = useState(0);
+  // Header elements the panel portals its view controls and filter button
+  // into, so they sit on the search row beside the Add button.
+  const [viewSlot, setViewSlot] = useState(null);
+  const [filterSlot, setFilterSlot] = useState(null);
   const [deepLink, setDeepLink] = useState(null);
   const clearDeepLink = useCallback(() => setDeepLink(null), []);
 
@@ -98,6 +102,8 @@ export default function EquipmentToolsPage() {
         addRequest={addRequest}
         deepLink={deepLink}
         onDeepLinkHandled={clearDeepLink}
+        viewSlot={viewSlot}
+        filterSlot={filterSlot}
       />
     );
   };
@@ -113,6 +119,8 @@ export default function EquipmentToolsPage() {
       StatusMessage={StatusMessage}
       isMobileView={isMobileView}
       canManageEquipment={capabilities.manage}
+      equipmentViewSlotRef={capabilities.view ? setViewSlot : null}
+      equipmentFilterSlotRef={capabilities.view ? setFilterSlot : null}
       onAddEquipment={() => setAddRequest((value) => value + 1)}
       renderActiveTabContent={renderContent}
       sharedSearchPlaceholder="Search equipment"

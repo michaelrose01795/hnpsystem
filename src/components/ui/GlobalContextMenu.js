@@ -28,6 +28,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
+import { canOpenInOtherWorkspace, openInOtherWorkspace } from "@/features/workspaces/workspaceBridge";
+import { toWorkspaceHref } from "@/features/workspaces/workspaceModel";
 import LayerSurface from "@/components/ui/LayerSurface";
 
 const VIEWPORT_PAD = 8; // px — keep the menu this far from the viewport edge
@@ -209,6 +211,16 @@ export default function GlobalContextMenu() {
 
       if (link) {
         const href = link.href;
+        // Multi-workspace shell: offered only where it can work (a wide staff
+        // window, or inside a workspace) and only for staff pages a workspace
+        // can show. See src/features/workspaces.
+        if (!website && canOpenInOtherWorkspace() && toWorkspaceHref(href, window.location.origin)) {
+          items.push({
+            label: "Open link in other workspace",
+            icon: "◫",
+            onSelect: () => openInOtherWorkspace(href),
+          });
+        }
         items.push(
           {
             label: "Open link in new tab",

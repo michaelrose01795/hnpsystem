@@ -36,3 +36,12 @@ On the phone app in portrait mode, the top menu and status buttons are missing, 
 
 ----- FIlter button ------
 CHECK all pages for the filter option is working correctly 
+
+
+
+TODO
+messsages age for the all access user add mock data within the database so they have messages etc
+
+
+TODO
+"Extra screen space detected" to be opened by a button as well as screen size etc. lets have the butotn within the rigth click section, when the user rigth clicks anywhere add a button section within there like milti workspace as the name etc. when with the multie screen section the only which which chanes within the ui dislay is the surface colour card which is outisde "App Layout Page Card | 1.2.2.1 | key app-layout-page-card | file src/components/layout/StaffLayout.js:1825 | route /messages | where App Layout Page Card | parent app-layout-main-shell 1.2.2 | 1 child" card for example wil strink, the topbar will go the full width and the sidebars will do the same, popups will be in the middle of the surface colour card the (main page card) when in this view and wont distrub the visiblity of the otehr pages which might be open. if a new page is opened that section has to be selcted by clicking within the main page card like if u was on windows going from one app to another etc. when clciked the sidebar will then be linked to that mian card section, if you click onot anothe the sidebar will move again etc. within the content within the main page cards will change size just like the screen is changing size but not the sidebar or the topbar etc if that makes sense. deep dive to make this mutle dispace screen perfect etc. 

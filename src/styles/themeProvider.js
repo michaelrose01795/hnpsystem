@@ -440,6 +440,24 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     // memo block where these are derived.
   }, [hasUser, numericUserId, authUserId, isSyntheticDevUser, normalizedDefault]);
 
+  // Follow a theme change made in ANOTHER document of this app — a second tab,
+  // or the host window of a multi-workspace frame (src/features/workspaces).
+  // The `storage` event only fires in the other documents, never the writer.
+  // State-only: the writer already persisted it, so nothing is written here.
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const onStorage = (event) => {
+      if (event.key === STORAGE_KEY) {
+        const next = event.newValue;
+        if (next === "light" || next === "dark" || next === "system") setMode(next);
+      } else if (event.key === ACCENT_STORAGE_KEY && event.newValue) {
+        setAccent(normalizeAccent(event.newValue));
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const toggleTheme = useCallback(() => {
     const currentIndex = THEME_SEQUENCE.indexOf(mode);
     const nextMode = THEME_SEQUENCE[(currentIndex + 1) % THEME_SEQUENCE.length];

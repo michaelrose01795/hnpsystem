@@ -8,6 +8,7 @@
 // route skeleton belong to Key/Parking and are only rendered when supplied.
 
 import { FilterButton, FilterField } from "@/components/ui/filterAPI";
+import SymbolButton from "@/components/ui/SymbolButton";
 
 export default function TrackingDashboardUi(props) {
   const {
@@ -27,6 +28,8 @@ export default function TrackingDashboardUi(props) {
     entries,
     entryModal,
     canManageEquipment,
+    equipmentFilterSlotRef,
+    equipmentViewSlotRef,
 
 
     error,
@@ -35,6 +38,7 @@ export default function TrackingDashboardUi(props) {
     isMobileView,
     loading,
     loanCarCapabilities,
+    loanCarFilterSlotRef,
     loanCarMonthPicker,
     requestLoanCarView,
     onStockCommand,
@@ -168,9 +172,12 @@ export default function TrackingDashboardUi(props) {
                     </FilterField>
                   </FilterButton>
                   )}
-                  {/* Oil/Stock portals its filter button in here
+                  {/* Oil/Stock portals its filter and Categories & Locations buttons in here
                       (StockControlPanel `filterSlot`), keeping it on this row. */}
                   {activeTab === "oil-stock" && stockFilterSlotRef && <div ref={stockFilterSlotRef} className="stock-header-filters" />}
+                  {/* Loan cars (larger screens) portals its Available / Out /
+                      Due today / Overdue filters in here, beside the search. */}
+                  {activeTab === "loan-cars" && loanCarFilterSlotRef && <div ref={loanCarFilterSlotRef} style={{ display: "flex", flex: "0 0 auto" }} />}
               </DevLayoutSection>
               <div style={{
           display: "flex",
@@ -213,21 +220,21 @@ export default function TrackingDashboardUi(props) {
                   </Button>
                   )}
                   {activeTab === "loan-cars" && requestLoanCarView && loanCarCapabilities?.book && (
-                  <Button variant="secondary" size="sm" onClick={() => requestLoanCarView("quick")}>
-                    Quick add
-                  </Button>
-                  )}
-                  {activeTab === "loan-cars" && requestLoanCarView && loanCarCapabilities?.book && (
-                  <Button variant="primary" size="sm" onClick={() => requestLoanCarView("new")}>
+                  <Button variant="primary" size="sm" symbol="add" onClick={() => requestLoanCarView("new")}>
                     New loan booking
                   </Button>
                   )}
+                  {/* Equipment portals its view controls (Bulk check,
+                      Checklists) and filter button in here, ahead of the Add
+                      button. */}
+                  {activeTab === "equipment" && equipmentViewSlotRef && <div ref={equipmentViewSlotRef} style={{ display: "flex", flex: "0 0 auto" }} />}
+                  {activeTab === "equipment" && equipmentFilterSlotRef && <div ref={equipmentFilterSlotRef} style={{ display: "flex", flex: "0 0 auto" }} />}
                   {activeTab === "equipment" && canManageEquipment && (
                   <Button variant="primary" size="sm" onClick={onAddEquipment}>
                     Add Equipment/tools
                   </Button>
                   )}
-                  {/* Oil/Stock filters, sort and view live in the stock panel toolbar;
+                  {/* Oil/Stock filters, sort and settings sit beside the search;
                       the header keeps the whole-tab actions. */}
                   {activeTab === "oil-stock" && onStockCommand && stockCapabilities?.stocktake && (
                   <Button variant="secondary" size="sm" symbol={false} onClick={() => onStockCommand("stocktake")}>
@@ -235,9 +242,7 @@ export default function TrackingDashboardUi(props) {
                   </Button>
                   )}
                   {activeTab === "oil-stock" && onStockCommand && stockCapabilities?.manage && (
-                  <Button variant="primary" size="sm" symbol={false} onClick={() => onStockCommand("create")}>
-                    Add stock item
-                  </Button>
+                  <SymbolButton symbol="add" label="Add stock item" onClick={() => onStockCommand("create")} />
                   )}
                 </div>
             </div>

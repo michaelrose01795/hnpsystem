@@ -125,6 +125,90 @@ const StatusPill = ({ meta, marginLeftAuto = true }) => (
 );
 
 // ===========================================================================
+// Scroll arrows
+// ===========================================================================
+// Rows of cards can run past the screen, and not every user can scroll a strip
+// sideways (mouse without a tilt wheel, touchpads with it turned off). Each
+// scrolling strip gets arrow buttons that appear only while there is more to
+// see in that direction. They hide during a drag so they never sit over a drop
+// target (the drag engine resolves targets with elementFromPoint) — the drag
+// engine auto-scrolls rows on its own.
+const SCROLL_ARROWS = {
+  x: [
+    { dir: -1, symbol: "back", label: "Scroll left", pos: { left: "6px", top: "50%", transform: "translateY(-50%)" } },
+    { dir: 1, symbol: "next", label: "Scroll right", pos: { right: "6px", top: "50%", transform: "translateY(-50%)" } },
+  ],
+  y: [
+    { dir: -1, symbol: "up", label: "Scroll up", pos: { right: "10px", top: "6px" } },
+    { dir: 1, symbol: "down", label: "Scroll down", pos: { right: "10px", bottom: "6px" } },
+  ],
+};
+
+function ScrollArrowFrame({ axis = "x", hidden = false, style, children }) {
+  const scrollRef = React.useRef(null);
+  const [edges, setEdges] = React.useState({ back: false, forward: false });
+
+  const measure = React.useCallback(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const pos = axis === "x" ? node.scrollLeft : node.scrollTop;
+    const max = axis === "x" ? node.scrollWidth - node.clientWidth : node.scrollHeight - node.clientHeight;
+    const next = { back: pos > 1, forward: pos < max - 1 };
+    setEdges((prev) => (prev.back === next.back && prev.forward === next.forward ? prev : next));
+  }, [axis]);
+
+  React.useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return undefined;
+    measure();
+    node.addEventListener("scroll", measure, { passive: true });
+    // Cards arrive, leave and resize with the data and the window.
+    const resize = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    resize?.observe(node);
+    const mutations = typeof MutationObserver !== "undefined" ? new MutationObserver(measure) : null;
+    mutations?.observe(node, { childList: true });
+    return () => {
+      node.removeEventListener("scroll", measure);
+      resize?.disconnect();
+      mutations?.disconnect();
+    };
+  }, [measure]);
+
+  const scrollBy = (dir) => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const step = Math.max(160, (axis === "x" ? node.clientWidth : node.clientHeight) * 0.8);
+    node.scrollBy({ [axis === "x" ? "left" : "top"]: dir * step, behavior: "smooth" });
+  };
+
+  return (
+    <div style={{ position: "relative", minWidth: 0, ...style }}>
+      {children(scrollRef)}
+      {!hidden &&
+        SCROLL_ARROWS[axis].map(({ dir, symbol, label, pos }) =>
+          (dir < 0 ? edges.back : edges.forward) ? (
+            <span key={symbol} style={{ position: "absolute", zIndex: 3, ...pos }}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                symbol={symbol}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  scrollBy(dir);
+                }}
+              >
+                {label}
+              </Button>
+            </span>
+          ) : null
+        )}
+    </div>
+  );
+}
+
+// ===========================================================================
 // Dispatch board primitives
 // ===========================================================================
 
@@ -260,7 +344,10 @@ function WorkshopQueueDropZone({
   const dropBar = <div style={{ flex: "0 0 auto", width: "3px", alignSelf: "stretch", margin: "8px 1px", borderRadius: "var(--radius-pill)", background: "var(--primary)" }} />;
 
   return (
+    <ScrollArrowFrame axis="x" hidden={Boolean(draggingJob)} style={{ display: "flex" }}>
+    {(scrollRef) => (
     <div
+      ref={scrollRef}
       data-dnd-target-type="assignee"
       data-dnd-target-key={panelKey}
       data-dev-section="1"
@@ -270,6 +357,8 @@ function WorkshopQueueDropZone({
       data-dev-background-token="theme"
       data-dev-text-preview={`Drop zone for ${panelKey}`}
       style={{
+        flex: "1 1 auto",
+        minWidth: 0,
         display: "flex",
         alignItems: "center",
         gap: "var(--wqp-gap)",
@@ -316,6 +405,8 @@ function WorkshopQueueDropZone({
         })}
       {jobs.length > 0 && isActive && draggingJob && !jobs.some((j) => j.jobNumber === draggingJob.jobNumber) && dropBar}
     </div>
+    )}
+    </ScrollArrowFrame>
   );
 }
 
@@ -931,7 +1022,10 @@ export default function WorkshopQueuePlanner({
             <p style={{ margin: 0, fontSize: "12px", color: "var(--surfaceTextMuted)" }}>Jobs will appear here once a vehicle has been checked in.</p>
           </div>
         ) : (
+          <ScrollArrowFrame axis="x" hidden={Boolean(draggingJob)}>
+          {(scrollRef) => (
           <div
+            ref={scrollRef}
             data-dev-section="1"
             data-dev-section-key="workshop-checked-in-strip"
             data-dev-section-parent="workshop-checked-in-section"
@@ -960,6 +1054,8 @@ export default function WorkshopQueuePlanner({
               />
             ))}
           </div>
+          )}
+          </ScrollArrowFrame>
         ))}
       </LayerTheme>
 
@@ -1033,7 +1129,10 @@ export default function WorkshopQueuePlanner({
               : "Everything is allocated — drag a job here to return it to the pool."}
           </div>
         ) : (
+          <ScrollArrowFrame axis="y" hidden={Boolean(draggingJob)}>
+          {(scrollRef) => (
           <div
+            ref={scrollRef}
             data-dev-section="1"
             data-dev-section-key="workshop-unassigned-grid"
             data-dev-section-parent="workshop-unassigned-section"
@@ -1069,6 +1168,8 @@ export default function WorkshopQueuePlanner({
               </React.Fragment>
             ))}
           </div>
+          )}
+          </ScrollArrowFrame>
         ))}
       </LayerTheme>
 

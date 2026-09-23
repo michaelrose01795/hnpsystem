@@ -1,5 +1,6 @@
 // file location: src/pages/api/messages/threads/index.js
 import {
+  createConversationThread,
   createGroupThread,
   ensureDirectThread,
   getThreadsForUser,
@@ -28,8 +29,18 @@ async function handler(req, res, session) {
   }
 
   if (req.method === "POST") {
-    const { type = "direct", createdBy, memberIds = [], targetUserId, title } =
-      req.body || {};
+    const {
+      type = "direct",
+      createdBy,
+      memberIds = [],
+      targetUserId,
+      title,
+      conversationType,
+      department,
+      jobNumber,
+      includeDepartment,
+      priority,
+    } = req.body || {};
 
     if (!createdBy) {
       return res
@@ -49,6 +60,20 @@ async function handler(req, res, session) {
         return res.status(201).json({ success: true, data: thread });
       }
 
+      if (["department", "job", "announcement"].includes(conversationType)) {
+        const thread = await createConversationThread({
+          type: conversationType,
+          title,
+          memberIds,
+          createdBy,
+          department,
+          jobNumber,
+          includeDepartment: Boolean(includeDepartment),
+          priority,
+        });
+        return res.status(201).json({ success: true, data: thread });
+      }
+
       const thread = await createGroupThread({
         title,
         memberIds,
@@ -57,8 +82,13 @@ async function handler(req, res, session) {
       return res.status(201).json({ success: true, data: thread });
     } catch (error) {
       console.error("❌ POST /api/messages/threads error:", error);
+      // Validation messages (missing department, unknown job…) are the
+      // caller's to fix, not a server fault.
+      const status = /required|choose|enter|was not found|give the|add at least/i.test(error.message || "")
+        ? 400
+        : 500;
       return res
-        .status(500)
+        .status(status)
         .json({ success: false, message: error.message || "Server error" });
     }
   }

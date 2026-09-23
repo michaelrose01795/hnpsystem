@@ -64,6 +64,7 @@ import { RouteBoundary } from "@/components/support/SupportErrorBoundary";
 import WebsiteRouteBoundary from "@/features/website/errors/WebsiteRouteBoundary";
 import { isFrameworkErrorRoute } from "@/features/website/errors/websiteErrorRoutes";
 import Layout from "@/components/Layout";
+import useWorkspaceEmbed from "@/features/workspaces/useWorkspaceEmbed";
 
 // Keep staff-only providers, shell code and global listeners out of the login
 // route's initial JavaScript. These chunks are requested only when rendered.
@@ -80,6 +81,9 @@ const GlobalTypingAssist = dynamic(() => import("@/components/ui/typingAssist/Gl
 const ActivityTracker = dynamic(() => import("@/components/activity/ActivityTracker"), { ssr: false });
 // Customer help chat (bottom-right on /website). Its own chunk, requested only on website routes.
 const WebsiteHelpChat = dynamic(() => import("@/features/website/components/WebsiteHelpChat"), { ssr: false });
+// Runs only inside an extra workspace frame (multi-workspace shell) — reports
+// the frame's page/focus to the host and follows the host's sidebar.
+const WorkspaceEmbedBridge = dynamic(() => import("@/features/workspaces/WorkspaceEmbedBridge"), { ssr: false });
 // StaffProviders and Layout are imported STATICALLY (at the top of this file) and
 // must stay that way.
 //
@@ -213,7 +217,10 @@ function AppWrapper({ Component, pageProps }) {
   // that also touches the DOM (see the sidebar collapse). A route class costs
   // nothing and matches exactly the same pages.
   const isLoginRoute = pathname === "/login" || pathname === "/loginPresentation";
+  // Extra workspace frame: the host document already shows the notes widget.
+  const embeddedWorkspaceId = useWorkspaceEmbed();
   const hideNotesWidget =
+    Boolean(embeddedWorkspaceId) ||
     isPresentationRoute ||
     isCustomerRoute ||
     isPublicVhcReportRoute ||
@@ -764,10 +771,12 @@ function AppWrapper({ Component, pageProps }) {
       <RouteProgressBar />
       {!isCustomerFacingSurface && <GlobalDraftPersistence />}
       {!isCustomerFacingSurface && <GlobalTableShells />}
-      <PageAccessGuard pathname={pathname} />
+      <PageAccessGuard pathname={pathname} isWorkspaceFrame={Boolean(embeddedWorkspaceId)} />
+      {embeddedWorkspaceId && <WorkspaceEmbedBridge workspaceId={embeddedWorkspaceId} />}
       {getLayout(pageElement)}
       {!hideNotesWidget && <GlobalNotesWidget />}
-      <CookieBanner />
+      {/* Consent is the host window's; a workspace frame would stack a second banner. */}
+      {!embeddedWorkspaceId && <CookieBanner />}
       {isWebsiteRoute && !isWebsitePreviewEmbed && <WebsiteHelpChat />}
       <GlobalTooltip />
       {/* In-app right-click menu — replaces the browser native context menu app-wide. */}
@@ -786,7 +795,7 @@ function AppWrapper({ Component, pageProps }) {
 // changes (or on first paint). Pages reachable via the user's filtered
 // sidebar/topbar are allowed; everything else is rejected. See
 // src/lib/auth/pageAccess.js for the rule.
-function PageAccessGuard({ pathname }) {
+function PageAccessGuard({ pathname, isWorkspaceFrame = false }) {
   const router = useRouter();
   const { user, loading, sidebarAccessReady } = useUser();
   useEffect(() => {
@@ -810,12 +819,14 @@ function PageAccessGuard({ pathname }) {
       // running on the broader role-derived set, and remembering then could
       // store a route the snapshot goes on to deny. `pathname` is the route
       // PATTERN the check needs; asPath is the real URL worth returning to.
-      if (sidebarAccessReady) rememberStaffRoute(user.id, router.asPath);
+      // An extra workspace frame is not where the user "is", so it never
+      // overwrites the route the main window would return to.
+      if (sidebarAccessReady && !isWorkspaceFrame) rememberStaffRoute(user.id, router.asPath);
       return;
     }
     if (router.pathname === "/newsfeed") return;
     router.replace("/newsfeed");
-  }, [pathname, user, loading, router, sidebarAccessReady]);
+  }, [pathname, user, loading, router, sidebarAccessReady, isWorkspaceFrame]);
   return null;
 }
 

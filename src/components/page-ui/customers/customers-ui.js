@@ -82,6 +82,74 @@ export default function CustomersIndexUi(props) {
                     onClear={handleClearSearch}
                   />
                 </div>
+
+                {/* Summary strip. Sits in the search row, between the search
+                    bar and the filter button, so search, counts and sort read
+                    as one control line. The shell is a --theme layer, so the
+                    tiles stay LayerSurface and the alternation holds. Tiles
+                    are a fixed 44px (.app-summary-item) and lay out nowrap;
+                    on a narrow screen the strip wraps onto its own line and
+                    scrolls horizontally if it still does not fit. */}
+                <DevLayoutSection
+                  sectionKey="customers-list-summary"
+                  parentKey="customers-list-filter-shell"
+                  sectionType="content-card"
+                  className="app-summary-section"
+                  style={{ flex: "0 1 auto", minWidth: 0 }}
+                >
+                  <div
+                    className="app-summary-grid"
+                    role="list"
+                    aria-label="Customer list summary"
+                    style={{
+                      display: "flex",
+                      flexFlow: "row nowrap",
+                      gap: "10px",
+                      width: "100%",
+                      minWidth: 0,
+                      overflowX: "auto",
+                      overflowY: "hidden",
+                    }}
+                  >
+                    <LayerSurface
+                      as="div"
+                      className="app-summary-item"
+                      radius="var(--radius-sm)"
+                      role="listitem"
+                      style={SUMMARY_TILE_STYLE}
+                    >
+                      <span className="app-summary-label">
+                        {searchTerm ? "Matches" : "Total customers"}
+                      </span>
+                      <strong className="app-summary-value">{totalCount}</strong>
+                    </LayerSurface>
+                    <LayerSurface
+                      as="div"
+                      className="app-summary-item"
+                      radius="var(--radius-sm)"
+                      role="listitem"
+                      style={SUMMARY_TILE_STYLE}
+                    >
+                      <span className="app-summary-label">Showing</span>
+                      <strong className="app-summary-value">
+                        {totalCount === 0 ? "0" : `${rangeStart}–${rangeEnd}`}
+                      </strong>
+                    </LayerSurface>
+                    <LayerSurface
+                      as="div"
+                      className="app-summary-item"
+                      radius="var(--radius-sm)"
+                      role="listitem"
+                      style={SUMMARY_TILE_STYLE}
+                    >
+                      <span className="app-summary-label">Page</span>
+                      <strong className="app-summary-value">
+                        {pageNumber} of {pageCount}
+                      </strong>
+                    </LayerSurface>
+                  </div>
+                </DevLayoutSection>
+
                 {/* The first sort option is the page's default ("recent"). */}
                 <FilterButton
                   activeCount={sort !== sortOptions[0]?.value ? 1 : 0}
@@ -98,73 +166,6 @@ export default function CustomersIndexUi(props) {
                   </FilterField>
                 </FilterButton>
               </div>
-
-              {/* Summary strip. Sits inside the filter shell, directly below
-                  the search + sort row, so search, sort and counts read as one
-                  control block. The shell is a --theme layer, so the tiles stay
-                  LayerSurface and the alternation holds. Tiles are a fixed 44px
-                  (.app-summary-item) and lay out nowrap with a horizontal
-                  scroll — as on /jobs — so a narrow screen scrolls the tiles
-                  rather than wrapping them. */}
-              <DevLayoutSection
-                sectionKey="customers-list-summary"
-                parentKey="customers-list-filter-shell"
-                sectionType="content-card"
-                className="app-summary-section"
-                style={{ minWidth: 0 }}
-              >
-                <div
-                  className="app-summary-grid"
-                  role="list"
-                  aria-label="Customer list summary"
-                  style={{
-                    display: "flex",
-                    flexFlow: "row nowrap",
-                    gap: "10px",
-                    width: "100%",
-                    minWidth: 0,
-                    overflowX: "auto",
-                    overflowY: "hidden",
-                  }}
-                >
-                  <LayerSurface
-                    as="div"
-                    className="app-summary-item"
-                    radius="var(--radius-sm)"
-                    role="listitem"
-                    style={SUMMARY_TILE_STYLE}
-                  >
-                    <span className="app-summary-label">
-                      {searchTerm ? "Matches" : "Total customers"}
-                    </span>
-                    <strong className="app-summary-value">{totalCount}</strong>
-                  </LayerSurface>
-                  <LayerSurface
-                    as="div"
-                    className="app-summary-item"
-                    radius="var(--radius-sm)"
-                    role="listitem"
-                    style={SUMMARY_TILE_STYLE}
-                  >
-                    <span className="app-summary-label">Showing</span>
-                    <strong className="app-summary-value">
-                      {totalCount === 0 ? "0" : `${rangeStart}–${rangeEnd}`}
-                    </strong>
-                  </LayerSurface>
-                  <LayerSurface
-                    as="div"
-                    className="app-summary-item"
-                    radius="var(--radius-sm)"
-                    role="listitem"
-                    style={SUMMARY_TILE_STYLE}
-                  >
-                    <span className="app-summary-label">Page</span>
-                    <strong className="app-summary-value">
-                      {pageNumber} of {pageCount}
-                    </strong>
-                  </LayerSurface>
-                </div>
-              </DevLayoutSection>
             </SectionShell>
 
             <SectionShell

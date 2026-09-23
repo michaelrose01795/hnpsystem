@@ -95,7 +95,7 @@ export default function WebsiteHelpQueue({ onJoined }) {
               {item.signedIn ? "Signed in · " : ""}Waiting {waitedFor(item.queuedAt)}
             </span>
           </div>
-          <Button type="button" variant="primary" size="sm" pill onClick={() => join(item)} disabled={joiningId !== null}>
+          <Button type="button" variant="primary" pill onClick={() => join(item)} disabled={joiningId !== null}>
             {joiningId === item.id ? "Joining…" : "Join"}
           </Button>
         </div>

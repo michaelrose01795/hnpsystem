@@ -19,6 +19,7 @@
 // in the `.loan-car-*` block of staffglobal.css.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { Button, EmptyState } from "@/components/ui";
 import StatusMessage from "@/components/ui/StatusMessage";
@@ -89,6 +90,9 @@ export default function LoanCarSchedulePanel({
   // parent renders the month picker, so the toolbar leaves it out.
   month = "",
   onMonthChange = null,
+  // Optional header element (/tracking on larger screens) the availability
+  // filters portal into, so they share the search row with the page actions.
+  filterSlot = null,
 }) {
   const isTracking = mode === "tracking";
   // The calendar always shows one whole month, chosen with the month picker.
@@ -194,27 +198,38 @@ export default function LoanCarSchedulePanel({
 
   const canBook = capabilities?.book === true;
   const closeDrawer = useCallback(() => setDrawer(null), []);
+  const showRange = !isMonthControlled || (!isTracking && canBook);
+
+  const filterControls = (
+    <div
+      className="loan-car-toolbar__filters"
+      role="group"
+      aria-label="Filter loan cars by availability"
+      style={filterSlot ? { flexWrap: "nowrap" } : undefined}>
+      {SUMMARY_FILTERS.map((filter) => {
+        const active = summaryFilter === filter.id;
+        return (
+          <button
+            key={filter.id}
+            type="button"
+            className={`loan-car-filter ${FILTER_TONE[filter.id]}${active ? " is-active" : ""}`}
+            aria-pressed={active}
+            onClick={() => setSummaryFilter(active ? "" : filter.id)}>
+            <span className="loan-car-filter__count">{summary[filter.id] ?? 0}</span>
+            <span className="loan-car-filter__label">{filter.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="loan-car-panel">
+      {filterSlot ? createPortal(filterControls, filterSlot) : null}
+      {!filterSlot || showRange ? (
       <div className="loan-car-toolbar" data-dev-section="1" data-dev-section-key={`${mode}-loan-car-toolbar`} data-dev-section-type="toolbar">
-        <div className="loan-car-toolbar__filters" role="group" aria-label="Filter loan cars by availability">
-          {SUMMARY_FILTERS.map((filter) => {
-            const active = summaryFilter === filter.id;
-            return (
-              <button
-                key={filter.id}
-                type="button"
-                className={`loan-car-filter ${FILTER_TONE[filter.id]}${active ? " is-active" : ""}`}
-                aria-pressed={active}
-                onClick={() => setSummaryFilter(active ? "" : filter.id)}>
-                <span className="loan-car-filter__count">{summary[filter.id] ?? 0}</span>
-                <span className="loan-car-filter__label">{filter.label}</span>
-              </button>
-            );
-          })}
-        </div>
-        {!isMonthControlled || (!isTracking && canBook) ? (
+        {filterSlot ? null : filterControls}
+        {showRange ? (
           <div className="loan-car-toolbar__range">
             {!isMonthControlled ? (
               <MonthPickerField
@@ -230,6 +245,7 @@ export default function LoanCarSchedulePanel({
           </div>
         ) : null}
       </div>
+      ) : null}
 
       {migrationPending ? (
         <StatusMessage tone="warning">

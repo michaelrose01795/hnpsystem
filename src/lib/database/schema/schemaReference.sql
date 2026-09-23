@@ -424,7 +424,18 @@ CREATE TABLE public.message_threads (
   created_by integer,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  -- (conversation hub) columns below arrive with
+  -- supabase/migrations/20260924120000_messages_conversation_hub.sql.
+  -- conversation_type is NULL on legacy rows; the app derives it.
+  conversation_type text CHECK (conversation_type IS NULL OR conversation_type = ANY (ARRAY['staff'::text, 'customer'::text, 'department'::text, 'job'::text, 'announcement'::text, 'system'::text])),
+  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'pending'::text, 'resolved'::text, 'closed'::text])),
+  priority text NOT NULL DEFAULT 'normal'::text CHECK (priority = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'urgent'::text])),
+  department text,
+  job_number text,
+  assigned_to integer,
+  linked_records jsonb NOT NULL DEFAULT '[]'::jsonb, -- [{ recordType, recordId, label, href }]
   CONSTRAINT message_threads_pkey PRIMARY KEY (thread_id),
+  CONSTRAINT message_threads_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id),
   CONSTRAINT message_threads_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.message_thread_members (
@@ -434,6 +445,7 @@ CREATE TABLE public.message_thread_members (
   role text NOT NULL DEFAULT 'member'::text,
   joined_at timestamp with time zone NOT NULL DEFAULT now(),
   last_read_at timestamp with time zone,
+  notification_level text NOT NULL DEFAULT 'all'::text CHECK (notification_level = ANY (ARRAY['all'::text, 'mentions'::text, 'none'::text])), -- (conversation hub)
   CONSTRAINT message_thread_members_pkey PRIMARY KEY (member_id),
   CONSTRAINT message_thread_members_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES public.message_threads(thread_id),
   CONSTRAINT message_thread_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)

@@ -690,8 +690,28 @@ function SchedulerBoard({
            narrower so the calendar picker and filter share the single row. */
         .appt-booking-toolbar {
           grid-template-columns:
-            minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr)
-            minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.1fr);
+            minmax(0, 1.4fr) minmax(0, 1fr) max-content
+            minmax(0, 0.9fr) minmax(0, 0.9fr) max-content;
+        }
+        /* Month / Day switch — the same joined pair as the Grid / Map switch
+           on /tracking. Those join rules live in trackingMap.css, which only
+           loads on /tracking, so they are mirrored here for this toolbar. */
+        .appt-booking-toolbar .tracking-viewswitch {
+          display: inline-flex;
+          align-items: stretch;
+          gap: 1px;
+          min-width: 0;
+          border-radius: var(--control-radius);
+          background: color-mix(in srgb, var(--text-1) 12%, transparent);
+          padding: 1px;
+        }
+        .appt-booking-toolbar .tracking-viewswitch > :first-child {
+          border-start-end-radius: 0;
+          border-end-end-radius: 0;
+        }
+        .appt-booking-toolbar .tracking-viewswitch > :last-child {
+          border-start-start-radius: 0;
+          border-end-start-radius: 0;
         }
         @media (max-width: 1023px) {
           .appt-booking-toolbar {
@@ -1379,13 +1399,27 @@ export default function AppointmentsUi(props) {
               <SearchBar value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onClear={() => setSearchQuery("")} placeholder="Search by Job #, Name, Reg, or Vehicle..." disabled={isLoading} />
             </div>
             <CalendarField value={isoDateKey(selectedDay)} onChange={(e) => handleSelectScheduleDate(e.target.value)} disabled={isLoading} placeholder="Select date" aria-label="Appointment date" />
-            <DropdownField value={scheduleViewMode} onChange={(e) => setScheduleViewMode(e.target.value)} disabled={isLoading} placeholder="View" aria-label="Scheduler view filter" title="Show the chosen day or its whole month">
-              <option value="month">Month view</option>
-              <option value="day">Day view</option>
-            </DropdownField>
+            <div className="tracking-viewswitch" role="group" aria-label="Scheduler view" title="Show the chosen day or its whole month">
+              <Button
+                variant={scheduleViewMode === "month" ? "primary" : "secondary"}
+                size="sm"
+                aria-pressed={scheduleViewMode === "month"}
+                disabled={isLoading}
+                onClick={() => setScheduleViewMode("month")}>
+                Month
+              </Button>
+              <Button
+                variant={scheduleViewMode === "day" ? "primary" : "secondary"}
+                size="sm"
+                aria-pressed={scheduleViewMode === "day"}
+                disabled={isLoading}
+                onClick={() => setScheduleViewMode("day")}>
+                Day
+              </Button>
+            </div>
             <input type="text" className="app-input" value={jobNumber} onChange={handleJobNumberInputChange} placeholder="Job Number" disabled={isLoading} />
             <DropdownField value={time} onChange={(e) => setTime(e.target.value)} disabled={isLoading} placeholder="Select time" options={timeSlots} />
-            <Button variant="secondary" onClick={() => handleAddAppointment(isoDateKey(selectedDay))} busy={isLoading} style={{ width: "100%" }}>
+            <Button variant="secondary" symbol="add" onClick={() => handleAddAppointment(isoDateKey(selectedDay))} busy={isLoading}>
               {isLoading ? "Booking..." : "Book Appointment"}
             </Button>
           </LayerSurface>

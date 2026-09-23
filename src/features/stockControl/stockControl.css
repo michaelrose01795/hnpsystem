@@ -54,8 +54,9 @@ html.staff-scope .stock-header-filters {
   flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-sm);
-  /* Holds the shared filter button now, not the dropdowns, so it sizes to
-     that 44px circle instead of taking a share of the row. */
+  /* Holds the shared filter button and the Categories & Locations button,
+     not the dropdowns, so it sizes to its content instead of taking a share
+     of the row. */
   flex: 0 0 auto;
   min-width: 0;
 }

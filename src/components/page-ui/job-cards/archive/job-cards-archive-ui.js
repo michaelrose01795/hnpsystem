@@ -58,9 +58,10 @@ export default function ArchivedJobsPageUi(props) {
         alignItems: "center",
         gap: "8px"
       }}>
-            <FilterButton activeCount={(statusFilter !== "all" ? 1 : 0) + (sortOrder !== "updated-desc" ? 1 : 0)} onClear={() => {
+            <FilterButton activeCount={(statusFilter !== "all" ? 1 : 0) + (sortOrder !== "updated-desc" ? 1 : 0) + (regOnly ? 1 : 0)} onClear={() => {
           setStatusFilter("all");
           setSortOrder("updated-desc");
+          setRegOnly(false);
         }}>
               <FilterField label="Status" htmlFor="job-cards-archive-filter-status">
                 <DropdownField id="job-cards-archive-filter-status" aria-label="Filter archive results by status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)} options={availableStatuses.map(status => ({
@@ -87,30 +88,15 @@ export default function ArchivedJobsPageUi(props) {
               label: "Customer A-Z"
             }]} placeholder="Sort archive" />
               </FilterField>
+
+              <FilterField label="Vehicle">
+                <Button type="button" variant={regOnly ? "primary" : "secondary"} onClick={() => {
+              setRegOnly(current => !current);
+            }} aria-pressed={regOnly}>
+                  Registration Only
+                </Button>
+              </FilterField>
             </FilterButton>
-
-            <Button type="submit" variant="primary" disabled={isSearching} style={{
-          minWidth: "120px",
-          opacity: isSearching ? 0.6 : 1
-        }}>
-              {isSearching ? "Searching…" : "Search"}
-            </Button>
-
-            <Button type="button" variant={regOnly ? "primary" : "secondary"} onClick={() => {
-          setRegOnly(current => !current);
-        }} aria-pressed={regOnly}>
-              Registration Only
-            </Button>
-
-            <Button type="button" variant="secondary" onClick={() => {
-          setQuery("");
-          setStatusFilter("all");
-          setSortOrder("updated-desc");
-          setRegOnly(false);
-          runSearch("");
-        }}>
-              Clear filtes
-            </Button>
           </DevLayoutSection>
         </DevLayoutSection>
 

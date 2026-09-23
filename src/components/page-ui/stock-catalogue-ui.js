@@ -355,10 +355,12 @@ export default function StockCataloguePageUi(props) {
           searchJob(jobSearch);
         }} style={{
           display: "flex",
-          gap: "12px",
+          justifyContent: "flex-end",
           flex: "1 1 320px",
-          maxWidth: "640px"
+          maxWidth: "420px",
+          marginLeft: "auto"
         }}>
+              {/* No submit button: pressing Enter in the field submits the form. */}
               <SearchBar
                 type="search"
                 placeholder="Job number or registration"
@@ -369,9 +371,6 @@ export default function StockCataloguePageUi(props) {
                 disabled={jobLoading}
                 style={{ flex: 1, minWidth: 0 }}
               />
-              <Button type="submit" variant="primary" busy={jobLoading}>
-                Search
-              </Button>
             </form>
           </div>
 
@@ -750,7 +749,15 @@ export default function StockCataloguePageUi(props) {
     }} id="stock-catalogue">
           <h2 style={sectionTitleStyle}>Stock Catalogue</h2>
 
-          <div className="tab-api" style={{ height: "auto", minHeight: "44px", flexWrap: "wrap", marginBottom: "var(--layout-card-gap)" }}>
+          {/* Tabs on the left, search + filter pushed right on the same row; wraps below on narrow widths. */}
+          <div style={{
+        display: "flex",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "var(--layout-card-gap)",
+        marginBottom: "var(--layout-card-gap)"
+      }}>
+          <div className="tab-api" style={{ height: "auto", minHeight: "44px", flexWrap: "wrap", flex: "0 1 auto" }}>
             {QUICK_FILTERS.map((filter) => <button
               key={filter.id}
               type="button"
@@ -769,12 +776,15 @@ export default function StockCataloguePageUi(props) {
           <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-filters" data-dev-section-type="filter-row" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory search and filters" style={{
         display: "flex",
         gap: "12px",
-        marginBottom: "12px",
-        alignItems: "flex-end",
-        flexWrap: "wrap"
+        alignItems: "center",
+        justifyContent: "flex-end",
+        flex: "1 1 320px",
+        marginLeft: "auto"
       }}>
             <SearchBar placeholder="Search part number, description, OEM code" value={inventorySearch} onChange={event => setInventorySearch(event.target.value)} onClear={() => setInventorySearch("")} style={{
-          flex: 1
+          flex: "1 1 auto",
+          minWidth: 0,
+          maxWidth: "420px"
         }} />
 
             {/* Two-step filter dropdown */}
@@ -903,6 +913,7 @@ export default function StockCataloguePageUi(props) {
                 />
               </FilterField>}
             </FilterButton>
+          </div>
           </div>
 
           {inventoryError && <div style={{

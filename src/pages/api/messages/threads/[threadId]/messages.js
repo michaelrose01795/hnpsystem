@@ -3,6 +3,7 @@ import {
   getThreadMessages,
   markThreadRead,
   sendThreadMessage,
+  updateThreadSettings,
 } from "@/lib/database/messages";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
@@ -46,8 +47,27 @@ async function handler(req, res, session) {
   }
 
   if (req.method === "POST") {
-    const { senderId, content, metadata } = req.body || {};
-    if (!senderId || !content) {
+    const { senderId, metadata, threadUpdates } = req.body || {};
+    let { content } = req.body || {};
+
+    // A message may be files only. The transcript needs text on every entry,
+    // so the file names stand in, flagged so the bubble shows just the files.
+    const attachments = Array.isArray(metadata?.attachments)
+      ? metadata.attachments.filter(
+          (file) => typeof file?.path === "string" && file.path.startsWith(`${threadId}/`)
+        )
+      : [];
+    let nextMetadata = metadata || null;
+    if (nextMetadata && "attachments" in nextMetadata) {
+      nextMetadata = { ...nextMetadata, attachments };
+      if (!attachments.length) delete nextMetadata.attachments;
+    }
+    if (!String(content || "").trim() && attachments.length) {
+      content = attachments.map((file) => file.fileName).join(", ");
+      nextMetadata = { ...nextMetadata, attachmentsOnly: true };
+    }
+
+    if (!senderId || !String(content || "").trim()) {
       return res.status(400).json({
         success: false,
         message: "senderId and content are required.",
@@ -59,16 +79,41 @@ async function handler(req, res, session) {
         threadId,
         senderId,
         content,
-        metadata,
+        metadata: nextMetadata,
       });
-      return res.status(201).json({ success: true, data: message });
+
+      // Slash-command side effects (/job links, /status, /priority, /assign).
+      // The message is already sent, so a failure here is reported, not fatal.
+      let thread = null;
+      let warning = null;
+      if (threadUpdates && typeof threadUpdates === "object") {
+        const settings = {};
+        ["status", "priority", "assignedTo"].forEach((key) => {
+          if (threadUpdates[key] !== undefined && threadUpdates[key] !== null) {
+            settings[key] = threadUpdates[key];
+          }
+        });
+        if (Array.isArray(threadUpdates.addLinks) && threadUpdates.addLinks.length) {
+          settings.addLinks = threadUpdates.addLinks;
+        }
+        if (Object.keys(settings).length) {
+          try {
+            thread = await updateThreadSettings({ threadId, actorId: senderId, ...settings });
+          } catch (updateError) {
+            warning = updateError.message;
+          }
+        }
+      }
+
+      return res.status(201).json({ success: true, data: message, thread, warning });
     } catch (error) {
       console.error("❌ POST /api/messages/threads/[id]/messages error:", error);
       const status =
-        error.message?.includes("group leader") ||
+        error.statusCode ||
+        (error.message?.includes("group leader") ||
         error.message?.includes("part of this conversation")
           ? 403
-          : 500;
+          : 500);
       return res
         .status(status)
         .json({ success: false, message: error.message || "Server error" });

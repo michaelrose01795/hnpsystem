@@ -1,14 +1,15 @@
 // file location: src/features/stockControl/StockControlPanel.js
 //
 // /tracking -> Oil/Stock. The operational stock screen: summary tiles that
-// double as filters, a filter / sort toolbar, Cards (workshop) or Compact
-// (Parts / management) view, and every stock workflow as a popup.
+// double as filters, a filter / sort toolbar, the card grid, and every stock
+// workflow as a popup.
 //
 // The page owns only the shared search box and the header buttons; it passes
 // the search term, a `command` ({ type, at }) for the header buttons, any
 // QR deep-link focus ({ itemId, action }) and `filterSlot` — a header element
-// the filter button (holding the filter / sort dropdowns) is portalled into so
-// it shares the search row (without one it stays in the toolbar). Everything else lives here. All
+// the filter button (holding the filter / sort dropdowns) and the Categories &
+// Locations button are portalled into so they share the search row (without one
+// they stay in the toolbar). Everything else lives here. All
 // business rules come from stockModel.js; all requests from stockClient.js.
 
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -38,7 +39,7 @@ import {
   setStockItemArchived,
   updateStockItem,
 } from "@/features/stockControl/stockClient";
-import { StockCompactTable, StockItemCard } from "@/features/stockControl/StockItemCard";
+import { StockItemCard } from "@/features/stockControl/StockItemCard";
 
 // Every workflow popup (~1,500 lines, plus the calendar, tab group and QR
 // generator they pull in) renders only after a click or a QR deep link, so they
@@ -55,7 +56,6 @@ const StockQrModal = dynamic(() => import("@/features/stockControl/StockQrModal"
 const StockSettingsModal = dynamic(() => import("@/features/stockControl/StockSettingsModal"), { ssr: false });
 const WARM_MODALS = [loadActionModal];
 
-const VIEW_STORAGE_KEY = "hnp.tracking.stockView";
 const ALERT_SUMMARIES = ["action", "critical", "out"];
 const NO_SIBLINGS = [];
 
@@ -64,23 +64,6 @@ const GROUPS = [
   { id: "incoming", label: "Ordered / Incoming", match: (row) => ["ordered", "awaiting_delivery", "partially_received"].includes(row.status.key) },
   { id: "stocked", label: "In Stock", match: () => true },
 ];
-
-const readStoredView = () => {
-  try {
-    const stored = window.localStorage.getItem(VIEW_STORAGE_KEY);
-    return stored === "cards" || stored === "compact" ? stored : null;
-  } catch {
-    return null;
-  }
-};
-
-const storeView = (view) => {
-  try {
-    window.localStorage.setItem(VIEW_STORAGE_KEY, view);
-  } catch {
-    // Private mode / blocked storage: the choice just isn't remembered.
-  }
-};
 
 const EMPTY_DATA = {
   items: [],
@@ -100,10 +83,6 @@ export default function StockControlPanel({ searchTerm = "", command = null, foc
   const [filters, setFilters] = useState({ categoryId: "all", locationId: "all", status: "all", supplier: "all" });
   const [summary, setSummary] = useState(null);
   const [sort, setSort] = useState("action");
-  // A remembered choice is read synchronously (the panel is client-only), so it
-  // never paints the other layout first; with none stored, the effect below
-  // picks one from the caller's capabilities once they arrive.
-  const [view, setView] = useState(readStoredView);
   const [modal, setModal] = useState(null);
   const lastCommand = useRef(null);
   const capabilities = data.capabilities;
@@ -139,13 +118,6 @@ export default function StockControlPanel({ searchTerm = "", command = null, foc
     refresh({ initial: true });
   }, [refresh]);
 
-  // Cards for the workshop; buyers (order capability) start on Compact. A
-  // choice made on the toggle is remembered per browser.
-  useEffect(() => {
-    if (view || loading) return;
-    setView(readStoredView() || (capabilities.order ? "compact" : "cards"));
-  }, [capabilities.order, loading, view]);
-
   useEffect(() => {
     if (!notice) return undefined;
     const timer = window.setTimeout(() => setNotice(null), 4000);
@@ -170,14 +142,14 @@ export default function StockControlPanel({ searchTerm = "", command = null, foc
   const rowById = useMemo(() => new Map(rows.map((row) => [row.item.id, row])), [rows]);
 
   const groups = useMemo(() => {
-    if (sort !== "action" || view === "compact") return [{ id: "all", label: null, rows: visibleRows }];
+    if (sort !== "action") return [{ id: "all", label: null, rows: visibleRows }];
     const remaining = [...visibleRows];
     return GROUPS.map((group) => {
       const matched = remaining.filter(group.match);
       matched.forEach((row) => remaining.splice(remaining.indexOf(row), 1));
       return { ...group, rows: matched };
     }).filter((group) => group.rows.length);
-  }, [sort, view, visibleRows]);
+  }, [sort, visibleRows]);
 
   // ---- mutations -----------------------------------------------------------
   const mergeItem = useCallback((item) => {
@@ -302,6 +274,7 @@ export default function StockControlPanel({ searchTerm = "", command = null, foc
   // The filter and sort dropdowns live in the filter button's floating card.
   const activeFilterCount = Object.values(filters).filter((value) => value !== "all").length + (sort !== "action" ? 1 : 0);
   const filterControls = (
+    <>
     <FilterButton
       activeCount={activeFilterCount}
       onClear={() => {
@@ -327,6 +300,12 @@ export default function StockControlPanel({ searchTerm = "", command = null, foc
         <DropdownField id="stock-filter-sort" ariaLabel="Sort by" options={SORT_OPTIONS.filter((option) => option.value !== "value" || capabilities.viewCosts)} value={sort} onValueChange={(value) => setSort(value || "action")} />
       </FilterField>
     </FilterButton>
+    {capabilities.configure && (
+      <Button type="button" variant="secondary" size="sm" symbol={false} onClick={() => setModal({ type: "settings" })}>
+        Categories & Locations
+      </Button>
+    )}
+    </>
   );
 
   // Keep the popup's row fresh after a background refresh.
@@ -376,8 +355,10 @@ export default function StockControlPanel({ searchTerm = "", command = null, foc
         </div>
       </div>
 
+      {filterSlot && createPortal(filterControls, filterSlot)}
+      {(!filterSlot || filtersActive) && (
       <div className="stock-toolbar">
-        {filterSlot ? createPortal(filterControls, filterSlot) : filterControls}
+        {filterSlot ? null : filterControls}
         <div className="stock-toolbar__end">
           {filtersActive && (
             <Button
@@ -393,34 +374,9 @@ export default function StockControlPanel({ searchTerm = "", command = null, foc
               Clear filters
             </Button>
           )}
-          {capabilities.configure && (
-            <Button type="button" variant="secondary" size="sm" symbol={false} onClick={() => setModal({ type: "settings" })}>
-              Categories & Locations
-            </Button>
-          )}
-          <div className="tracking-viewswitch" role="group" aria-label="Stock view">
-            {[
-              ["cards", "Cards"],
-              ["compact", "Compact"],
-            ].map(([value, label]) => (
-              <Button
-                key={value}
-                type="button"
-                size="sm"
-                symbol={false}
-                variant={view === value ? "primary" : "secondary"}
-                aria-pressed={view === value}
-                onClick={() => {
-                  setView(value);
-                  storeView(value);
-                }}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
         </div>
       </div>
+      )}
 
       {scanned && (
         <StatusMessage tone="info">
@@ -456,10 +412,7 @@ export default function StockControlPanel({ searchTerm = "", command = null, foc
         <EmptyState title="Nothing matches" description="No stock items match your search or filters." />
       )}
 
-      {view === "compact" && visibleRows.length > 0 && <StockCompactTable rows={visibleRows} {...cardHandlers} />}
-
-      {view !== "compact" &&
-        groups.map((group) => (
+      {groups.map((group) => (
           // Layout-only region: a section inherits global card padding and narrows the grid.
           <div key={group.id} className="stock-group" role="region" aria-label={group.label || "Stock items"}>
             {group.label && (

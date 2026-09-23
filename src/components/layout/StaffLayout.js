@@ -75,6 +75,8 @@ import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 import entranceStyles from "@/components/layout/StaffLayoutEntrance.module.css";
 import { trace, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 import { logFailure } from "@/lib/utils/logFailure";
+import WorkspaceHost, { GLOBAL_NAV_ATTRIBUTE } from "@/features/workspaces/WorkspaceHost";
+import useWorkspaceEmbed from "@/features/workspaces/useWorkspaceEmbed";
 
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
 
@@ -266,6 +268,11 @@ export default function Layout({
   const hideSidebar =
     router.pathname === "/login" || router.pathname === "/loginPresentation";
   const isMessagesRoute = router.pathname === "/messages";
+  // Set when this document is an extra workspace inside the multi-workspace
+  // shell (src/features/workspaces). It then renders the page only — the host
+  // document owns the sidebar, topbar and status drawer.
+  const embeddedWorkspaceId = useWorkspaceEmbed();
+  const isWorkspaceFrame = Boolean(embeddedWorkspaceId);
 
   const [viewportWidth, setViewportWidth] = useState(1440);
   const [viewportHeight, setViewportHeight] = useState(900);
@@ -630,8 +637,9 @@ export default function Layout({
     // real department otherwise (the two are the same when nothing is previewed).
     department: topbarDepartmentCode,
     isPresentation: presentationShell,
-    // The KPI/insight sections are desktop-only, so don't poll on tablet/mobile.
-    enabled: !isTablet,
+    // The KPI/insight sections are desktop-only, so don't poll on tablet/mobile
+    // or inside a workspace frame (no topbar there).
+    enabled: !isTablet && !isWorkspaceFrame,
   });
   // Live KPI widgets (2.2) + Smart Insight prompts (2.6) as separate sections.
   const topbarSections = useMemo(
@@ -649,7 +657,7 @@ export default function Layout({
     : isTech;
   const topbarTechUserId = topbarPreviewUser ? topbarPreviewUser.id : dbUserId;
   const technicianTopbarKey =
-    !presentationShell && topbarIsTech && topbarTechUserId && !isTablet
+    !presentationShell && topbarIsTech && topbarTechUserId && !isTablet && !isWorkspaceFrame
       ? ["technician-topbar", Number(topbarTechUserId)]
       : null;
   const { data: technicianTopbarSnapshot } = useSWR(
@@ -681,7 +689,7 @@ export default function Layout({
   // labels, so it needs no navigationItems.
   const behaviourReadOnly = useBehaviourModel({
     currentAsPath: router.asPath,
-    enabled: !presentationShell && !hideSidebar && Boolean(user),
+    enabled: !presentationShell && !hideSidebar && Boolean(user) && !isWorkspaceFrame,
     record: false,
   });
   const topPages = useMemo(
@@ -863,7 +871,7 @@ export default function Layout({
   // navigations and only refetches when the slot rolls over. Layout is persistent
   // now, so this only runs once per slot change for the whole session.
   const welcomeQuoteSlotKey = useMemo(() => getWelcomeQuoteSlotKey(new Date()), []);
-  const welcomeQuoteKey = userIdForQuote
+  const welcomeQuoteKey = userIdForQuote && !isWorkspaceFrame
     ? `/api/welcome-quote?userId=${encodeURIComponent(String(userIdForQuote))}&slot=${welcomeQuoteSlotKey}`
     : null;
   useSWR(
@@ -1531,6 +1539,64 @@ export default function Layout({
     return <>{children}</>;
   }
 
+  // Extra workspace inside the multi-workspace shell: the page only, in the same
+  // fixed-card scroll model as the desktop page card. No sidebar, topbar, status
+  // drawer or command centre — the host document owns those. Toasts stay, so a
+  // page's own alerts appear in the workspace that raised them.
+  if (isWorkspaceFrame) {
+    const embedCardStyle = isMessagesRoute
+      ? { height: "100%", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }
+      : { height: "100%", minHeight: 0, overflow: "hidden" };
+    if (contentBackground && !disableContentCard) embedCardStyle.background = contentBackground;
+    const embedScrollStyle = isMessagesRoute
+      ? { width: "100%", height: "100%", minHeight: 0, position: "relative" }
+      : {
+          width: "100%",
+          height: "100%",
+          minHeight: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          overscrollBehavior: "contain",
+          position: "relative",
+        };
+    return (
+      <div className="app-workspace-embed">
+        <main className="app-page-shell" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div className="app-page-content" style={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+            <div
+              className={[
+                "app-page-card",
+                disableContentCard ? "app-page-card--bare" : "",
+                disableContentCardHover ? "app-page-card--no-hover" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              style={embedCardStyle}
+            >
+              <div style={embedScrollStyle}>
+                <div
+                  className="app-page-stack"
+                  style={isMessagesRoute ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}
+                >
+                  {showPageSkeleton ? <PageSkeleton /> : children}
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+        <TopbarAlerts />
+      </div>
+    );
+  }
+
+  // Width the workspace shell has to lay panes out in: the viewport minus the
+  // chrome's side padding, the sidebar rail and the rail-to-content gap.
+  const workspaceAreaWidth = isTablet
+    ? viewportWidth
+    : viewportWidth - 32 - 12 - (isSidebarOpen ? NAV_DRAWER_WIDTH : COLLAPSED_RAIL_WIDTH);
+  const workspacesEnabled =
+    viewportReady && !hideSidebar && !presentationShell && !publicRoute && Boolean(user);
+
   if (authEntranceActive && authEntranceReady) {
     authEntranceStartedRef.current = true;
   }
@@ -1555,6 +1621,7 @@ export default function Layout({
           shell
           {...lockChromeInteraction}
           backgroundToken="app-sidebar-rail"
+          {...{ [GLOBAL_NAV_ATTRIBUTE]: "global" }}
           className={authEntranceActive ? entranceStyles.sidebarEntrance : undefined}
           style={{
             width: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : `${COLLAPSED_RAIL_WIDTH}px`,
@@ -1593,6 +1660,15 @@ export default function Layout({
         </DevLayoutSection>
       )}
 
+      {/* Multi-workspace shell (src/features/workspaces). With one workspace it
+          renders display:contents wrappers only, so this column lays out exactly
+          as before; the column below is left at its original indentation. */}
+      <WorkspaceHost
+        enabled={workspacesEnabled}
+        userId={dbUserId || user?.id || null}
+        areaWidth={workspaceAreaWidth}
+        navigationItems={navigationItems}
+      >
       <DevLayoutSection
         sectionKey="app-layout-main-column"
         parentKey="app-layout-chrome"
@@ -1690,6 +1766,7 @@ export default function Layout({
                 />
                 <div
                   id="compact-navigation-sidebar"
+                  {...{ [GLOBAL_NAV_ATTRIBUTE]: "global" }}
                   // --solo: no Status button, so Menu is the only control in the
                   // row and stretches full width. The close tab replaces Menu in
                   // place, so it has to stretch with it.
@@ -1890,6 +1967,7 @@ export default function Layout({
           </div>
         </DevLayoutSection>
       </DevLayoutSection>
+      </WorkspaceHost>
 
       {showNavToggleButton && (
         <NavEdgeToggle

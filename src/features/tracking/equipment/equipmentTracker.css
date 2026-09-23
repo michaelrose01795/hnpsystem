@@ -71,6 +71,16 @@ html.staff-scope .equipment-toolbar__end {
   margin-left: auto;
 }
 
+/* The view controls (Bulk check, Checklists) portalled into
+   the page's header row, between the search bar and the filter button. */
+html.staff-scope .equipment-header-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
 html.staff-scope .equipment-toolbar__note {
   color: var(--text-1);
   font-size: var(--text-caption);

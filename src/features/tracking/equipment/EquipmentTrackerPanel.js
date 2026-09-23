@@ -1,7 +1,7 @@
 // file location: src/features/tracking/equipment/EquipmentTrackerPanel.js
 //
 // The Equipment/Tools tab on /tracking. Owns the register data, the filters
-// below the page's shared search bar, the Cards / Compact views and the one
+// below the page's shared search bar, the card grid and the one
 // popup that is open at a time (record, check, fault, editor, checklists).
 //
 // The page keeps what it already owned: the shared search box, the category
@@ -9,6 +9,7 @@
 // here as props. Code-split by the page, like the Loan Cars panel.
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { Button, EmptyState, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
@@ -32,7 +33,6 @@ import { NO_EQUIPMENT_CAPABILITIES } from "@/features/tracking/equipment/equipme
 import { fetchEquipmentList } from "@/features/tracking/equipment/equipmentClient";
 import {
   EquipmentCard,
-  EquipmentCompactTable,
   EquipmentSummaryBar,
 } from "@/features/tracking/equipment/EquipmentViews";
 import EquipmentPanelSkeleton from "@/features/tracking/equipment/EquipmentPanelSkeleton";
@@ -51,25 +51,8 @@ const EquipmentEditorDrawer = dynamic(() => import("@/features/tracking/equipmen
 const EquipmentChecklistDrawer = dynamic(() => import("@/features/tracking/equipment/EquipmentChecklistDrawer"), { ssr: false });
 const WARM_DRAWERS = [loadDetailDrawer, loadCheckDrawer];
 
-const VIEW_STORAGE_KEY = "hnp:tracking:equipment-view";
 const GROUP_PAGE_SIZE = 12;
 const FLAT_PAGE_SIZE = 48;
-
-const readStoredView = () => {
-  try {
-    return window.localStorage.getItem(VIEW_STORAGE_KEY) === "compact" ? "compact" : "cards";
-  } catch {
-    return "cards";
-  }
-};
-
-const storeView = (value) => {
-  try {
-    window.localStorage.setItem(VIEW_STORAGE_KEY, value);
-  } catch {
-    // Per-viewer convenience only; the page works without it.
-  }
-};
 
 export default function EquipmentTrackerPanel({
   searchTerm = "",
@@ -82,6 +65,11 @@ export default function EquipmentTrackerPanel({
   deepLink = null,
   onDeepLinkHandled,
   onCapabilitiesChange,
+  // Optional header elements on /tracking/Equipment-Tools. The view controls
+  // (Bulk check, Checklists) and the filter button portal
+  // into them so they share the page's search row with the Add button.
+  viewSlot = null,
+  filterSlot = null,
 }) {
   const { user } = useUser();
   const [assets, setAssets] = useState([]);
@@ -94,9 +82,6 @@ export default function EquipmentTrackerPanel({
   const [department, setDepartment] = useState("all");
   const [location, setLocation] = useState("all");
   const [sort, setSort] = useState("urgency");
-  // Read synchronously (the panel is client-only), so a Compact user never
-  // sees the Cards layout first.
-  const [view, setView] = useState(readStoredView);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [pageSizes, setPageSizes] = useState({});
@@ -204,12 +189,6 @@ export default function EquipmentTrackerPanel({
       else next.add(id);
       return next;
     });
-  const toggleMany = (ids, select) =>
-    setSelectedIds((previous) => {
-      const next = new Set(previous);
-      ids.forEach((id) => (select ? next.add(id) : next.delete(id)));
-      return next;
-    });
   const stopSelecting = () => {
     setSelecting(false);
     setSelectedIds(new Set());
@@ -243,36 +222,24 @@ export default function EquipmentTrackerPanel({
   const actorName = user?.username || user?.name || "";
 
   /* ------------------------------------------------------------- render */
-  const renderEntries = (entries) =>
-    view === "compact" ? (
-      <EquipmentCompactTable
-        entries={entries}
-        capabilities={capabilities}
-        selectable={selecting}
-        selectedIds={selectedIds}
-        onToggleSelect={toggleSelect}
-        onToggleAll={toggleMany}
-        onOpen={(asset) => openDetail(asset)}
-        onCheck={openCheck}
-      />
-    ) : (
-      <div className="equipment-grid">
-        {entries.map((entry) => (
-          <EquipmentCard
-            key={entry.asset.id}
-            entry={entry}
-            capabilities={capabilities}
-            selectable={selecting}
-            selected={selectedIds.has(entry.asset.id)}
-            onToggleSelect={toggleSelect}
-            onOpen={(asset) => openDetail(asset)}
-            onHistory={(asset) => openDetail(asset, "history")}
-            onCheck={openCheck}
-            onFault={openFault}
-          />
-        ))}
-      </div>
-    );
+  const renderEntries = (entries) => (
+    <div className="equipment-grid">
+      {entries.map((entry) => (
+        <EquipmentCard
+          key={entry.asset.id}
+          entry={entry}
+          capabilities={capabilities}
+          selectable={selecting}
+          selected={selectedIds.has(entry.asset.id)}
+          onToggleSelect={toggleSelect}
+          onOpen={(asset) => openDetail(asset)}
+          onHistory={(asset) => openDetail(asset, "history")}
+          onCheck={openCheck}
+          onFault={openFault}
+        />
+      ))}
+    </div>
+  );
 
   const activeCount = summary.total;
 
@@ -292,100 +259,92 @@ export default function EquipmentTrackerPanel({
     setSort("urgency");
   };
 
+  const filterControl = (
+    <FilterButton activeCount={activeFilterCount} onClear={clearFilters}>
+      {onCategoryChange && categoryOptions.length > 0 && (
+        <FilterField label="Type" htmlFor="equipment-filter-type">
+          <DropdownField
+            id="equipment-filter-type"
+            value={categoryFilter}
+            onValueChange={onCategoryChange}
+            options={categoryOptions}
+            placeholder="All equipment"
+          />
+        </FilterField>
+      )}
+      <FilterField label="Area" htmlFor="equipment-filter-area">
+        <DropdownField
+          id="equipment-filter-area"
+          value={department}
+          onValueChange={(value) => {
+            setDepartment(value);
+            setLocation("all");
+          }}
+          options={toOptions(EQUIPMENT_DEPARTMENTS, { allLabel: "All areas" })}
+          ariaLabel="Filter equipment by area"
+          size="sm"
+        />
+      </FilterField>
+      <FilterField label="Location" htmlFor="equipment-filter-location">
+        <DropdownField
+          id="equipment-filter-location"
+          value={location}
+          onValueChange={setLocation}
+          options={locationOptions}
+          ariaLabel="Filter equipment by location"
+          size="sm"
+        />
+      </FilterField>
+      <FilterField label="Status" htmlFor="equipment-filter-status">
+        <DropdownField
+          id="equipment-filter-status"
+          value={quickFilter}
+          onValueChange={setQuickFilter}
+          options={toOptions(EQUIPMENT_QUICK_FILTERS)}
+          ariaLabel="Filter equipment by status"
+          size="sm"
+        />
+      </FilterField>
+      <FilterField label="Sort" htmlFor="equipment-filter-sort">
+        <DropdownField
+          id="equipment-filter-sort"
+          value={sort}
+          onValueChange={setSort}
+          options={EQUIPMENT_SORTS.map((option) => ({ key: option.key, value: option.key, label: `Sort: ${option.label}` }))}
+          ariaLabel="Sort equipment"
+          size="sm"
+        />
+      </FilterField>
+    </FilterButton>
+  );
+
+  const viewControls = (
+    <>
+      {canSelect && !selecting && (
+        <Button type="button" variant="secondary" size="sm" onClick={() => setSelecting(true)}>
+          Bulk check
+        </Button>
+      )}
+      {capabilities.manageChecklists && (
+        <Button type="button" variant="secondary" size="sm" onClick={() => setDrawer({ type: "checklists" })}>
+          Checklists
+        </Button>
+      )}
+    </>
+  );
+
   return (
     <div className="equipment-tracker">
       <EquipmentSummaryBar summary={summary} activeFilter={quickFilter} onSelect={setQuickFilter} />
 
-      <div className="equipment-toolbar" role="group" aria-label="Equipment filters">
-        <FilterButton activeCount={activeFilterCount} onClear={clearFilters}>
-          {onCategoryChange && categoryOptions.length > 0 && (
-            <FilterField label="Type" htmlFor="equipment-filter-type">
-              <DropdownField
-                id="equipment-filter-type"
-                value={categoryFilter}
-                onValueChange={onCategoryChange}
-                options={categoryOptions}
-                placeholder="All equipment"
-              />
-            </FilterField>
-          )}
-          <FilterField label="Area" htmlFor="equipment-filter-area">
-            <DropdownField
-              id="equipment-filter-area"
-              value={department}
-              onValueChange={(value) => {
-                setDepartment(value);
-                setLocation("all");
-              }}
-              options={toOptions(EQUIPMENT_DEPARTMENTS, { allLabel: "All areas" })}
-              ariaLabel="Filter equipment by area"
-              size="sm"
-            />
-          </FilterField>
-          <FilterField label="Location" htmlFor="equipment-filter-location">
-            <DropdownField
-              id="equipment-filter-location"
-              value={location}
-              onValueChange={setLocation}
-              options={locationOptions}
-              ariaLabel="Filter equipment by location"
-              size="sm"
-            />
-          </FilterField>
-          <FilterField label="Status" htmlFor="equipment-filter-status">
-            <DropdownField
-              id="equipment-filter-status"
-              value={quickFilter}
-              onValueChange={setQuickFilter}
-              options={toOptions(EQUIPMENT_QUICK_FILTERS)}
-              ariaLabel="Filter equipment by status"
-              size="sm"
-            />
-          </FilterField>
-          <FilterField label="Sort" htmlFor="equipment-filter-sort">
-            <DropdownField
-              id="equipment-filter-sort"
-              value={sort}
-              onValueChange={setSort}
-              options={EQUIPMENT_SORTS.map((option) => ({ key: option.key, value: option.key, label: `Sort: ${option.label}` }))}
-              ariaLabel="Sort equipment"
-              size="sm"
-            />
-          </FilterField>
-        </FilterButton>
-        <div className="equipment-toolbar__end">
-          <div className="tracking-viewswitch" role="group" aria-label="Equipment view">
-            {[
-              ["cards", "Cards"],
-              ["compact", "Compact"],
-            ].map(([value, label]) => (
-              <Button
-                key={value}
-                type="button"
-                size="sm"
-                variant={view === value ? "primary" : "secondary"}
-                aria-pressed={view === value}
-                onClick={() => {
-                  setView(value);
-                  storeView(value);
-                }}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
-          {canSelect && !selecting && (
-            <Button type="button" variant="secondary" size="sm" onClick={() => setSelecting(true)}>
-              Bulk check
-            </Button>
-          )}
-          {capabilities.manageChecklists && (
-            <Button type="button" variant="secondary" size="sm" onClick={() => setDrawer({ type: "checklists" })}>
-              Checklists
-            </Button>
-          )}
+      {filterSlot ? createPortal(filterControl, filterSlot) : null}
+      {viewSlot ? createPortal(<div className="equipment-header-actions">{viewControls}</div>, viewSlot) : null}
+      {!filterSlot || !viewSlot ? (
+        <div className="equipment-toolbar" role="group" aria-label="Equipment filters">
+          {filterSlot ? null : filterControl}
+          {viewSlot ? null : <div className="equipment-toolbar__end">{viewControls}</div>}
         </div>
-      </div>
+      ) : null}
 
       {selecting && (
         <div className="equipment-toolbar" role="group" aria-label="Bulk check">
@@ -418,7 +377,7 @@ export default function EquipmentTrackerPanel({
         </StatusMessage>
       )}
 
-      {loading && <EquipmentPanelSkeleton view={view} />}
+      {loading && <EquipmentPanelSkeleton />}
 
       {!loading && !loadError && assets.length === 0 && (
         <EmptyState

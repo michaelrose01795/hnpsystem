@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { logFailure } from "@/lib/utils/logFailure";
@@ -15,10 +16,10 @@ const consumableNameCollator = new Intl.Collator(undefined, {
 const modalStyle = {
   width: "min(100%, 1120px)",
   overflow: "hidden",
-  padding: "clamp(16px, 2.4vw, 24px)",
+  padding: "var(--page-card-padding)",
   display: "flex",
   flexDirection: "column",
-  gap: "16px",
+  gap: "var(--layout-card-gap)",
   minHeight: 0,
 };
 
@@ -76,17 +77,6 @@ const requestStatusTone = {
     color: "var(--primary-selected)",
     label: "Rejected",
   },
-};
-
-const headerChipBaseStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: "44px",
-  padding: "0 14px",
-  borderRadius: "var(--radius-sm)",
-  fontSize: "0.85rem",
-  fontWeight: 700,
 };
 
 const tableControlBaseStyle = {
@@ -787,56 +777,24 @@ function StockCheckPopup({
       ariaLabel="Stock Check"
       cardStyle={modalStyle}
     >
-        <div
-          style={{
-            ...subtleSectionStyle,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: "16px",
-            padding: "20px 22px",
-          }}
+        {/* Shared compact popup header (.app-popup-compact-header in
+            staffglobal.css) on a --theme layer: title vertically centred,
+            10px above and below the chips / actions row. */}
+        <LayerTheme
+          as="header"
+          className="app-popup-compact-header"
+          padding="10px var(--section-card-padding)"
+          style={{ flexDirection: "row", alignItems: "center" }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <h2 style={{ margin: 0, color: "var(--text-1)" }}>Stock Check</h2>
-          </div>
-          <div
-            className="app-popup-compact-header__actions"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              gap: "8px",
-              flexWrap: "wrap",
-            }}
-          >
-            <span
-              style={{
-                ...headerChipBaseStyle,
-                background: "rgba(var(--accent-base-rgb), 0.14)",
-                color: "var(--text-1)",
-              }}
-            >
+          <h2>Stock Check</h2>
+          <div className="app-popup-compact-header__actions">
+            <span className="app-badge app-badge--neutral">
               {totalItems} stock items
             </span>
-            <span
-              style={{
-                ...headerChipBaseStyle,
-                background: pendingRequestCount
-                  ? "rgba(var(--warning-rgb), 0.18)"
-                  : "rgba(var(--success-rgb), 0.16)",
-                color: pendingRequestCount ? "var(--warning-dark)" : "var(--success-dark)",
-              }}
-            >
+            <span className={`app-badge ${pendingRequestCount ? "app-badge--warning" : "app-badge--success"}`}>
               {pendingRequestCount} pending
             </span>
-            <span
-              style={{
-                ...headerChipBaseStyle,
-                background: selectedCount ? "rgba(var(--accent-base-rgb), 0.16)" : "rgba(var(--text-1-rgb), 0.08)",
-                color: "var(--text-1)",
-              }}
-            >
+            <span className={`app-badge ${selectedCount ? "app-badge--accent-strong" : "app-badge--neutral"}`}>
               {selectedCount} selected
             </span>
             <Button
@@ -868,15 +826,13 @@ function StockCheckPopup({
             <Button
               type="button"
               onClick={closePopup}
-              variant="ghost"
+              variant="secondary"
               size="sm"
-              style={{ width: "44px" }}
-              aria-label="Close stock check"
             >
-              ✕
+              Close
             </Button>
           </div>
-        </div>
+        </LayerTheme>
 
           <div
             style={{

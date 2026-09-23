@@ -42,6 +42,10 @@ export default function LoanCarTrackerPage() {
   // The same portrait-phone switch as /tracking/Key-Parking, so every tracker
   // page's header stacks at the same point.
   const isMobileView = useMediaQuery("(max-width: 640px) and (orientation: portrait)");
+  // On larger screens the availability filters leave the calendar toolbar and
+  // join the header row, between the search bar and the month picker.
+  const isWideView = useMediaQuery("(min-width: 1280px)");
+  const [filterSlot, setFilterSlot] = useState(null);
   const userRoles = useMemo(() => user?.roles || [], [user]);
   const capabilities = useMemo(
     () => resolveLoanCarCapabilities(userRoles, hasAllAccessRole(userRoles)),
@@ -81,6 +85,7 @@ export default function LoanCarTrackerPage() {
         request={request}
         month={month}
         onMonthChange={setMonth}
+        filterSlot={isWideView ? filterSlot : null}
       />
     );
   };
@@ -95,6 +100,7 @@ export default function LoanCarTrackerPage() {
       StatusMessage={StatusMessage}
       isMobileView={isMobileView}
       loanCarCapabilities={capabilities}
+      loanCarFilterSlotRef={capabilities.view && isWideView ? setFilterSlot : null}
       loanCarMonthPicker={
         capabilities.view && month ? (
           <MonthPickerField value={month} onValueChange={setMonth} aria-label="Loan car calendar month" />

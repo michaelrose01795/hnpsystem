@@ -176,7 +176,7 @@ function MetricGridSkeleton({ count, statCardStyle }) {
   );
 }
 
-function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, tableWrapperStyle, tableStyle }) {
+function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, tableWrapperStyle }) {
   return (
     <DevLayoutSection
       sectionKey={sectionKey}
@@ -196,7 +196,7 @@ function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, t
   );
 }
 
-function EfficiencyContentSkeleton({ individual, themedSectionStyle, statCardStyle, tableWrapperStyle, tableStyle }) {
+function EfficiencyContentSkeleton({ individual, themedSectionStyle, statCardStyle, tableWrapperStyle }) {
   return (
     <div
       className="efficiency-content-skeleton"
@@ -236,7 +236,6 @@ function EfficiencyContentSkeleton({ individual, themedSectionStyle, statCardSty
         titleWidth={individual ? "84px" : "190px"}
         themedSectionStyle={themedSectionStyle}
         tableWrapperStyle={tableWrapperStyle}
-        tableStyle={tableStyle}
       />
     </div>
   );
@@ -1566,7 +1565,6 @@ export default function EfficiencyTab({
           themedSectionStyle={themedSectionStyle}
           statCardStyle={statCardStyle}
           tableWrapperStyle={tableWrapperStyle}
-          tableStyle={tableStyle}
         />
       )}
 

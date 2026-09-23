@@ -13,6 +13,9 @@ import {
   sendThreadMessage,
   updateThread,
   deleteThread,
+  applyMessageAction,
+  resolveMessageRecords,
+  uploadMessageAttachment,
 } from "@/lib/api/messages";
 
 export const useMessagesApi = () =>
@@ -30,6 +33,9 @@ export const useMessagesApi = () =>
       updateThread,
       deleteThread,
       connectCustomer: connectCustomerToThread,
+      messageAction: applyMessageAction,
+      resolveRecords: resolveMessageRecords,
+      uploadAttachment: uploadMessageAttachment,
     }),
     []
   );

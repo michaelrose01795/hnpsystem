@@ -160,7 +160,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <h1 style={{ margin: 0, color: "var(--primary)", fontSize: "1.75rem" }}>Account Settings</h1>
         {embedded && onClose ? (
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Close
           </Button>
         ) : null}
