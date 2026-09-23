@@ -38,7 +38,7 @@ const FILE_EXT_RE = /\.(js|jsx|ts|tsx)$/;
 // Do not increase this map. New files default to 0. Regenerate with:
 //   node tools/scripts/check-staff-controls.js --print-baseline
 const MIGRATION_BASELINE = new Map([
-  ["src/components/accounts/AccountTable.js", 2],
+  ["src/components/accounts/AccountTable.js", 0],
   ["src/components/Clocking/CapacitySettingsPopup.js", 1],
   ["src/components/Clocking/EfficiencyTab.js", 5],
   ["src/components/companyAccounts/CompanyAccountForm.js", 3],
@@ -90,7 +90,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/page-ui/parts/parts-manager-ui.js", 0],
   ["src/components/page-ui/stock-catalogue-ui.js", 9],
   ["src/components/page-ui/tech/tech-consumables-request-ui.js", 3],
-  ["src/components/page-ui/valet/valet-ui.js", 2],
+  ["src/components/page-ui/valet/valet-ui.js", 0],
   ["src/components/page-ui/vhc/customer-preview/vhc-customer-preview-job-number-ui.js", 3],
   ["src/components/page-ui/vhc/customer-view/vhc-customer-view-job-number-ui.js", 1],
   ["src/components/page-ui/vhc/share/[jobNumber]/vhc-share-job-number-link-code-ui.js", 1],
