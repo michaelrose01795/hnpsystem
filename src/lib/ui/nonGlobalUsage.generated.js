@@ -71,15 +71,17 @@ export const NON_GLOBAL_AUDIT = {
   },
   "non-global-tables": {
     title: "tables that do not carry .app-data-table",
-    total: 7,
-    files: 6,
+    total: 9,
+    files: 8,
     usage: [
       { label: "VhcDetailsPanel (VHC) — 2", file: "src/components/VHC/VhcDetailsPanel.js" },
+      { label: "LoanCarCalendar (LoanCars) — 1", file: "src/components/LoanCars/LoanCarCalendar.js" },
       { label: "parts-goods-in-goods-in-number-ui (goods-in) — 1", file: "src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js" },
       { label: "parts-goods-in-ui (parts) — 1", file: "src/components/page-ui/parts/parts-goods-in-ui.js" },
       { label: "stock-catalogue-ui (page-ui) — 1", file: "src/components/page-ui/stock-catalogue-ui.js" },
       { label: "ProfileWorkTab (profile) — 1", file: "src/components/profile/ProfileWorkTab.js" },
       { label: "JobClockingCard (Workshop) — 1", file: "src/components/Workshop/JobClockingCard.js" },
+      { label: "SectionPanel (map) — 1", file: "src/features/tracking/map/SectionPanel.js" },
     ],
   },
   "non-global-badges": {

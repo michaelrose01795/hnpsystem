@@ -3,22 +3,20 @@
 // Vehicle / key location option data and the empty tracking-form shape. Moved
 // verbatim out of src/pages/job-cards/[jobNumber].js so the technician route
 // can reuse LocationUpdateModal without importing that 13k-line page.
+//
+// VEHICLE locations are no longer declared here. CAR_LOCATIONS and
+// CAR_LOCATION_OPTIONS are derived from the canonical registry in
+// src/lib/tracking/vehicleLocations.js, so the job card, the technician
+// workspace, /tracking and the site map all offer exactly the same list.
+//
+// KEY locations still live here and are a separate domain: a key board called
+// "Workshop" and a vehicle section called "Workshop" are different things that
+// happen to share a word. Nothing below is derived from the vehicle registry.
 
-const CAR_LOCATIONS = [
-{ id: "na", label: "N/A" },
-{ id: "service", label: "Service" },
-{ id: "sales-1", label: "Sales 1" },
-{ id: "sales-2", label: "Sales 2" },
-{ id: "sales-3", label: "Sales 3" },
-{ id: "sales-4", label: "Sales 4" },
-{ id: "sales-5", label: "Sales 5" },
-{ id: "sales-6", label: "Sales 6" },
-{ id: "sales-7", label: "Sales 7" },
-{ id: "sales-8", label: "Sales 8" },
-{ id: "sales-9", label: "Sales 9" },
-{ id: "sales-10", label: "Sales 10" },
-{ id: "staff", label: "Staff" },
-{ id: "trade", label: "Trade" }];
+import { VEHICLE_LOCATIONS, VEHICLE_LOCATION_OPTIONS } from "@/lib/tracking/vehicleLocations";
+
+// `{ id, label }` — the shape every existing consumer reads.
+const CAR_LOCATIONS = VEHICLE_LOCATIONS.map((section) => ({ id: section.id, label: section.label }));
 
 
 const KEY_LOCATION_GROUPS = [
@@ -49,11 +47,7 @@ group.options.map((option) => ({
 }))
 );
 
-const CAR_LOCATION_OPTIONS = CAR_LOCATIONS.map((location) => ({
-  key: location.id,
-  value: location.label,
-  label: location.label
-}));
+const CAR_LOCATION_OPTIONS = VEHICLE_LOCATION_OPTIONS;
 
 const KEY_LOCATION_OPTIONS = KEY_LOCATIONS.map((location) => ({
   key: location.id,

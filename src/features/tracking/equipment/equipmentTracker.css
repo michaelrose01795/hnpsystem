@@ -1,0 +1,465 @@
+/* file location: src/features/tracking/equipment/equipmentTracker.css
+ *
+ * The Equipment/Tools tab on /tracking. Route-scoped like trackingMap.css:
+ * emitted by tools/scripts/emit-route-scoped-css.js as "trackingEquipment" and
+ * linked only on /tracking, so no other route pays for it.
+ *
+ * These rules reproduce the tab's existing card look (previously inline styles
+ * in src/pages/tracking/index.js) as classes, and add the pieces the tracker
+ * needed that no shared family covers. Surfaces are still the LayerSurface /
+ * LayerTheme primitives; everything here is a token; there are no borders
+ * (CLAUDE.md §3.0a) — state is shown with fill and text colour.
+ */
+
+/* --------------------------------------------------------------- Layout */
+html.staff-scope .equipment-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* -------------------------------------------------- Summary filter tiles */
+/* The shared .app-summary-item tile, made into a toggle. Active = the
+   accent fill with on-accent text, the same pairing a primary button uses. */
+html.staff-scope .equipment-summary-tile {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+html.staff-scope .equipment-summary-tile:hover {
+  background: var(--theme-hover);
+}
+
+html.staff-scope .equipment-summary-tile:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .equipment-summary-tile.is-active {
+  background: var(--primary);
+}
+
+html.staff-scope .equipment-summary-tile.is-active .app-summary-label,
+html.staff-scope .equipment-summary-tile.is-active .app-summary-value {
+  color: var(--onAccentText);
+}
+
+/* --------------------------------------------------------------- Toolbar */
+html.staff-scope .equipment-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+/* Filters grow to share the row, so the toolbar runs the full width of the
+   page card with no hole before the view switch. */
+html.staff-scope .equipment-toolbar__field {
+  flex: 1 1 190px;
+  min-width: 160px;
+}
+
+html.staff-scope .equipment-toolbar__end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+html.staff-scope .equipment-toolbar__note {
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  html.staff-scope .equipment-toolbar__field {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  html.staff-scope .equipment-toolbar__end {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* ---------------------------------------------------------------- Groups */
+html.staff-scope .equipment-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .equipment-group__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .equipment-group__title {
+  margin: 0;
+  color: var(--accentText);
+  font-size: var(--text-h3);
+  line-height: 1.2;
+}
+
+html.staff-scope .equipment-group__count {
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+html.staff-scope .equipment-group__more {
+  display: flex;
+  justify-content: center;
+}
+
+/* auto-fill (not auto-fit) keeps empty tracks, so a lone card on a row stays
+   the same width as a full row; 1fr auto-rows keeps every row the same height. */
+html.staff-scope .equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  grid-auto-rows: 1fr;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------ Card */
+html.staff-scope .equipment-card {
+  cursor: pointer;
+  width: 100%;
+  min-width: 0;
+  min-height: 250px;
+  height: 100%;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+html.staff-scope .equipment-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .equipment-card__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  min-height: 42px;
+  min-width: 0;
+}
+
+html.staff-scope .equipment-card__title {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .equipment-card__name {
+  display: block;
+  color: var(--text-1);
+  font-size: clamp(0.85rem, 1.3vw, var(--text-h3));
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.staff-scope .equipment-card__meta {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.staff-scope .equipment-card__rows {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  align-content: start;
+}
+
+html.staff-scope .equipment-card__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .equipment-card__row > span {
+  flex-shrink: 0;
+}
+
+html.staff-scope .equipment-card__row > strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+html.staff-scope .equipment-card__alert {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.staff-scope .equipment-card__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: var(--space-sm);
+  margin-top: auto;
+}
+
+/* ------------------------------------------------------ Status as text */
+/* The card's status reads as coloured text, as it always has; dense rows and
+   the drawer use the badge family instead. */
+html.staff-scope .equipment-status {
+  min-width: 104px;
+  flex-shrink: 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  text-align: right;
+}
+
+html.staff-scope .equipment-status--danger {
+  color: var(--danger);
+}
+
+html.staff-scope .equipment-status--warning {
+  color: var(--warning);
+}
+
+html.staff-scope .equipment-status--success {
+  color: var(--success-dark);
+}
+
+html.staff-scope .equipment-status--neutral {
+  color: var(--text-1);
+  opacity: 0.72;
+}
+
+/* ------------------------------------------------------- Compact list */
+html.staff-scope .equipment-table__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html.staff-scope .equipment-table__primary {
+  color: var(--text-1);
+  font-weight: 700;
+}
+
+html.staff-scope .equipment-table__secondary {
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  opacity: 0.72;
+}
+
+html.staff-scope .equipment-table__nowrap {
+  white-space: nowrap;
+}
+
+html.staff-scope .equipment-table__select {
+  width: 44px;
+}
+
+/* -------------------------------------------------------------- Popups */
+/* Records and forms open in TrackingPopup; staffglobal.css owns its size. */
+html.staff-scope .equipment-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  min-width: 0;
+}
+
+html.staff-scope .equipment-drawer__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .equipment-drawer__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.staff-scope .equipment-drawer__list-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------- Forms */
+html.staff-scope .equipment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+html.staff-scope .equipment-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+html.staff-scope .equipment-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+/* Matches the label InputField renders, for the controls it does not wrap
+   (textareas, segmented choices, file pickers). */
+html.staff-scope .equipment-form__label {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-label);
+  font-weight: var(--control-label-weight);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+html.staff-scope .equipment-form__hint {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  opacity: 0.75;
+}
+
+html.staff-scope .equipment-form__textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+html.staff-scope .equipment-choice {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+/* --------------------------------------------------------- Checklists */
+html.staff-scope .equipment-checklist {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.staff-scope .equipment-checklist__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+  padding-block: var(--space-sm);
+  min-width: 0;
+}
+
+/* The single allowed row rule, drawn as a background line. */
+html.staff-scope .equipment-checklist__item + .equipment-checklist__item {
+  background-image: linear-gradient(var(--separating-line-color), var(--separating-line-color));
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  background-position: top;
+}
+
+html.staff-scope .equipment-checklist__label {
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .equipment-checklist__reading {
+  width: 140px;
+}
+
+html.staff-scope .equipment-checklist__editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: end;
+}
+
+@media (max-width: 640px) {
+  html.staff-scope .equipment-checklist__item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html.staff-scope .equipment-checklist__reading {
+    width: 100%;
+  }
+
+  html.staff-scope .equipment-checklist__editor-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ------------------------------------------------------------ QR label */
+html.staff-scope .equipment-qr {
+  display: grid;
+  place-items: center;
+  gap: var(--space-sm);
+}
+
+/* A QR code is machine-read: it stays dark-on-light in both themes, so the
+   SVG carries its own light quiet zone rather than taking a theme fill. */
+html.staff-scope .equipment-qr__code {
+  width: min(220px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+}
+
+html.staff-scope .equipment-qr__code-text {
+  color: var(--text-1);
+  font-family: var(--font-family-mono);
+  font-size: var(--text-h3);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+html.staff-scope .equipment-qr__url {
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  opacity: 0.75;
+  overflow-wrap: anywhere;
+  text-align: center;
+}

@@ -20,6 +20,29 @@ import SymbolButton from "@/components/ui/SymbolButton"; // canonical layer prim
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import AccountsListPageUi from "@/components/page-ui/accounts/accounts-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+
+// Placeholder mirroring the reference rows (title + meta line, date, action pills)
+// shown while linked invoice / goods-in references load.
+const LinkedReferencesSkeleton = () =>
+<div role="status" aria-live="polite" aria-busy="true" aria-label="Loading links" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <SkeletonKeyframes />
+    {["62%", "48%", "56%"].map((width, index) =>
+  <div key={index} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
+          <div style={{ display: "grid", gap: "6px", flex: 1, minWidth: 0 }}>
+            <SkeletonBlock width="120px" height="16px" />
+            <SkeletonBlock width={width} height="12px" />
+          </div>
+          <SkeletonBlock width="64px" height="12px" />
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <SkeletonBlock width="88px" height="28px" borderRadius="999px" />
+          <SkeletonBlock width="104px" height="28px" borderRadius="999px" />
+        </div>
+      </div>
+  )}
+  </div>;
 
 const ALLOWED_ROLES = [
 "ADMIN",
@@ -314,7 +337,7 @@ export default function AccountsListPage() {
               All invoices
             </Button>
           </div>
-          {linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading links…</p>}
+          {linkedLoading && linkedInvoices.length === 0 && <LinkedReferencesSkeleton />}
           {!linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>No invoice references available.</p>}
           {linkedInvoices.map((invoice) =>
           <div key={invoice.id || invoice.invoice_id} style={{ borderTop: "var(--separating-line)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -354,7 +377,7 @@ export default function AccountsListPage() {
               Goods in
             </Button>
           </div>
-          {linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading links…</p>}
+          {linkedLoading && linkedGoodsIn.length === 0 && <LinkedReferencesSkeleton />}
           {!linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>No goods-in references available.</p>}
           {linkedGoodsIn.map((record) =>
           <div key={record.id || record.goods_in_number} style={{ borderTop: "var(--separating-line)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>

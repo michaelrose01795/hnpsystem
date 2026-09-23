@@ -65,7 +65,7 @@ const MIGRATION_BASELINE = new Map([
   ["src/components/JobCards/WriteUpWorkspace.js", 3],
   ["src/components/layout/StaffLayout.js", 2],
   ["src/components/LoanCars/FuelGauge.js", 1],
-  ["src/components/LoanCars/LoanCarSchedulePanel.js", 3],
+  ["src/components/LoanCars/LoanCarSchedulePanel.js", 1],
   ["src/components/mobile/RedirectToWorkshopButton.js", 4],
   ["src/components/NotesTab.js", 8],
   ["src/components/page-ui/accounts/payslips/payslips-ui.js", 0],

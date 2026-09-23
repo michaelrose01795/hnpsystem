@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
@@ -138,7 +139,9 @@ export default function RopaPage() {
       <Section title="Activities">
         {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>{error}</p>}
         {rows === null ? (
-          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          <div style={{ overflowX: "auto" }}>
+            <TableSkeleton columns={["Name", "Lawful basis", "Purpose", "Last reviewed"]} rows={5} label="Loading activities" />
+          </div>
         ) : rows.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No activities recorded yet.</p>
         ) : (

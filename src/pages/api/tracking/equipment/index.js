@@ -1,155 +1,67 @@
-// file location: src/pages/api/tracking/equipment.js
-import { getDatabaseClient } from "@/lib/database/client";
+// file location: src/pages/api/tracking/equipment/index.js
+//
+//   GET  /api/tracking/equipment          the register + active checklists
+//   POST /api/tracking/equipment          add an asset            (manage)
+//   PUT  /api/tracking/equipment          edit an asset's details (manage)
+//
+// Checks, faults, status changes, documents and checklists have their own
+// routes beside this one. There is no DELETE: assets are retired, never
+// removed, so their history survives (PATCH /api/tracking/equipment/[id]).
+
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { normalizeRoles } from "@/lib/auth/roles";
+import { createEquipment, listEquipment, updateEquipment } from "@/lib/database/equipment";
+import {
+  authorizeEquipment,
+  resolveEquipmentCapabilities,
+} from "@/features/tracking/equipment/equipmentPermissions";
+import {
+  auditEquipment,
+  resolveEquipmentActor,
+  sendEquipmentError,
+} from "@/lib/tracking/equipmentRequest";
 
-const getUserDisplayName = (user) => {
-  if (!user) return "";
-  return user.name || [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || user.email || "";
-};
-
-const serializeEquipment = (record) => {
-  const createdByUser = Array.isArray(record.users) ? record.users[0] : record.users;
-  const createdByName = getUserDisplayName(createdByUser);
-  return {
-    id: record.id,
-    name: record.name,
-    lastChecked: record.last_checked,
-    nextDue: record.next_due,
-    intervalDays: record.interval_days,
-    intervalMonths: record.interval_months,
-    intervalLabel: record.interval_label,
-    createdBy: record.created_by,
-    createdByName,
-    lastCheckedByName: createdByName,
-    createdAt: record.created_at,
-    updatedAt: record.updated_at,
-  };
-};
-
-const sanitisePayload = (payload) => {
-  const entries = Object.entries(payload).filter(([, value]) => value !== undefined);
-  return Object.fromEntries(entries);
-};
-
-async function handler(req, res) {
-  const supabase = getDatabaseClient();
+async function handler(req, res, session) {
+  const capabilities = resolveEquipmentCapabilities(normalizeRoles(session?.user?.roles ?? []));
 
   if (req.method === "GET") {
-    const { data, error } = await supabase
-      .from("tracking_equipment_tools")
-      .select("*, users:created_by(first_name,last_name,name,email)")
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      console.error("Failed to load equipment/tools", error);
-      return res.status(500).json({ success: false, message: error.message || "Failed to load equipment" });
+    try {
+      const data = await listEquipment({ includeInactiveChecklists: capabilities.manageChecklists });
+      return res.status(200).json({ success: true, data: data.assets, checklists: data.checklists, capabilities });
+    } catch (error) {
+      return sendEquipmentError(res, error, "Failed to load equipment");
     }
-
-    return res.status(200).json({ success: true, data: (data || []).map(serializeEquipment) });
   }
 
-  if (req.method === "POST") {
-    const {
-      name,
-      lastChecked,
-      nextDue,
-      intervalDays,
-      intervalMonths,
-      intervalLabel,
-      createdBy,
-    } = req.body || {};
-
-    if (!name) {
-      return res.status(400).json({ success: false, message: "name is required" });
+  if (req.method === "POST" || req.method === "PUT") {
+    if (!capabilities.manage) {
+      return res.status(403).json({ success: false, message: "Your role cannot change the equipment register." });
     }
-
-    const payload = sanitisePayload({
-      name,
-      last_checked: lastChecked || null,
-      next_due: nextDue || null,
-      interval_days: intervalDays || null,
-      interval_months: intervalMonths || null,
-      interval_label: intervalLabel || null,
-      created_by: createdBy || null,
-    });
-
-    const { data, error } = await supabase
-      .from("tracking_equipment_tools")
-      .insert(payload)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Failed to create equipment entry", error);
-      return res.status(500).json({ success: false, message: error.message || "Failed to create equipment entry" });
+    try {
+      const { actor, auditContext } = await resolveEquipmentActor(req, res, session);
+      const { id, ...fields } = req.body || {};
+      const asset =
+        req.method === "POST" ? await createEquipment(fields, actor) : await updateEquipment(id, fields, actor);
+      await auditEquipment(auditContext, {
+        action: req.method === "POST" ? "equipment_created" : "equipment_updated",
+        entityId: asset.id,
+        afterData: { assetCode: asset.assetCode, name: asset.name },
+      });
+      return res.status(req.method === "POST" ? 201 : 200).json({ success: true, data: asset });
+    } catch (error) {
+      return sendEquipmentError(res, error, "Failed to save equipment");
     }
-
-    return res.status(201).json({ success: true, data: serializeEquipment(data) });
-  }
-
-  if (req.method === "PUT") {
-    const {
-      id,
-      name,
-      lastChecked,
-      nextDue,
-      intervalDays,
-      intervalMonths,
-      intervalLabel,
-    } = req.body || {};
-
-    if (!id) {
-      return res.status(400).json({ success: false, message: "id is required" });
-    }
-
-    const payload = sanitisePayload({
-      name,
-      last_checked: lastChecked,
-      next_due: nextDue,
-      interval_days: intervalDays,
-      interval_months: intervalMonths,
-      interval_label: intervalLabel,
-      updated_at: new Date().toISOString(),
-    });
-
-    if (Object.keys(payload).length === 0) {
-      return res.status(400).json({ success: false, message: "No update fields provided" });
-    }
-
-    const { data, error } = await supabase
-      .from("tracking_equipment_tools")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Failed to update equipment entry", error);
-      return res.status(500).json({ success: false, message: error.message || "Failed to update equipment entry" });
-    }
-
-    return res.status(200).json({ success: true, data: serializeEquipment(data) });
   }
 
   if (req.method === "DELETE") {
-    const { id } = req.query;
-
-    if (!id) {
-      return res.status(400).json({ success: false, message: "id is required" });
-    }
-
-    const { error } = await supabase.from("tracking_equipment_tools").delete().eq("id", id);
-
-    if (error) {
-      console.error("Failed to delete equipment entry", error);
-      return res.status(500).json({ success: false, message: error.message || "Failed to delete equipment entry" });
-    }
-
-    return res.status(200).json({ success: true });
+    return res.status(405).json({
+      success: false,
+      message: "Equipment is retired rather than deleted, so its history is kept.",
+    });
   }
 
-  res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
+  res.setHeader("Allow", ["GET", "POST", "PUT"]);
   return res.status(405).json({ success: false, message: "Method not allowed" });
 }
 
-export default withRoleGuard(handler);
+export default withRoleGuard(handler, { authorize: authorizeEquipment("view") });

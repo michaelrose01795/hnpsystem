@@ -5,9 +5,14 @@ import {
   getRoleDefaultWorkspaceModules,
   getRoleWorkspaceModules,
   getWorkspacePageCatalog,
+  SIDEBAR_LAYOUT_MIGRATION,
   resolveAccessiblePaths,
 } from "@/config/workspace/manifest";
 import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
+
+// A layout saved on the current version, so these tests exercise placement
+// rules without the pre-split migration adding new pages to it.
+const CURRENT = SIDEBAR_LAYOUT_MIGRATION.version;
 
 const REQUIRED_ROLES = [
   "Retail",
@@ -42,6 +47,7 @@ const REQUIRED_ROLES = [
 describe("role workspace defaults", () => {
   it("places Next Jobs in Workshop for All Access and saved Service layouts", () => {
     const savedLayout = {
+      version: CURRENT,
       items: ["/appointments", "/nextjobs"],
       modules: [{ key: "department-service", label: "Service", items: ["/appointments", "/nextjobs"] }],
     };
@@ -66,6 +72,7 @@ describe("role workspace defaults", () => {
 
   it("moves saved Workshop technician pages into Tech without adding access", () => {
     const modules = getRoleWorkspaceModules(["mobile technician"], {
+      version: CURRENT,
       items: ["/dashboard/mobile", "/tech"],
       modules: [{ key: "department-workshop", label: "Workshop", items: ["/dashboard/mobile", "/tech"] }],
     });
@@ -153,6 +160,7 @@ describe("role workspace defaults", () => {
     }
 
     const savedLayout = {
+      version: CURRENT,
       items: ["/jobs"],
       modules: [{ key: "customer-jobs", label: "Customer Jobs", items: ["/jobs"] }],
     };
@@ -162,6 +170,7 @@ describe("role workspace defaults", () => {
 
   it("allows Communication pages to live in a saved General module", () => {
     const savedLayout = {
+      version: CURRENT,
       items: ["/newsfeed", "/messages", "/jobs"],
       modules: [
         { key: "department-general", label: "General", items: ["/newsfeed", "/messages"] },

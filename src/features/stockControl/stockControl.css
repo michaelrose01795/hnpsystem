@@ -1,0 +1,652 @@
+/* src/features/stockControl/stockControl.css
+   Stock control for /tracking - Oil/Stock.
+
+   Emitted as a route-scoped stylesheet by tools/scripts/emit-route-scoped-css.js
+   and injected on the /tracking route only (see src/pages/_app.js and
+   _document.js), exactly like features/tracking/map/trackingMap.css. It is NOT
+   imported by _app directly, so every rule here must be self-sufficient.
+
+   The look is the existing compact tracker card: a --theme card on the page
+   surface, bold truncated title, uppercase caption, coloured status caption,
+   label/value rows and a two-button footer. Everything added (gauge, band
+   strip, compact list, history drawer, forms) is composited from theme tokens
+   and follows the active accent in both modes.
+
+   BORDERS
+   -------
+   None, except the allowed --separating-line between rows in the compact list
+   and the history timeline (CLAUDE.md 3.0a). The gauge's minimum marker is a
+   2px fill, not a border. */
+
+/* ------------------------------------------------------------------------ */
+/* Panel layout                                                              */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .stock-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+/* Filters grow to share the row, so the toolbar runs the full width of the
+   page card with no hole before the view switch. The 150px basis lets all
+   four filters and the end group share one line on a desktop card. */
+html.staff-scope .stock-toolbar__filter {
+  flex: 1 1 150px;
+  min-width: 150px;
+}
+
+/* The same dropdowns portalled into the page header's search row (tracking-ui
+   `stock-header-filters`), narrowed so search, filters, sort and the
+   Stocktake / Add stock item buttons share one line on a desktop card. */
+html.staff-scope .stock-header-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html.staff-scope .stock-header-filters:empty {
+  display: none;
+}
+
+html.staff-scope .stock-header-filters .stock-toolbar__filter {
+  flex: 1 1 120px;
+  min-width: 104px;
+  max-width: 170px;
+}
+
+html.staff-scope .stock-toolbar__end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Summary tiles as filters                                                  */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-summary-tile {
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+html.staff-scope .stock-summary-tile:hover {
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+
+html.staff-scope .stock-summary-tile:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .stock-summary-tile.is-active {
+  background: var(--primary);
+}
+
+html.staff-scope .stock-summary-tile.is-active .app-summary-label,
+html.staff-scope .stock-summary-tile.is-active .app-summary-value {
+  color: var(--onAccentText);
+}
+
+html.staff-scope .stock-summary-tile.is-alert .app-summary-value {
+  color: var(--danger);
+}
+
+html.staff-scope .stock-summary-tile.is-active.is-alert .app-summary-value {
+  color: var(--onAccentText);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Groups and card grid                                                      */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .stock-group__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .stock-group__title {
+  margin: 0;
+  color: var(--accentText);
+  font-size: var(--text-h3);
+  line-height: 1.2;
+}
+
+html.staff-scope .stock-group__count {
+  color: var(--text-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+html.staff-scope .stock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Card                                                                      */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-card {
+  width: 100%;
+  min-width: 0;
+  min-height: 286px;
+  height: 100%;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+html.staff-scope .stock-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.staff-scope .stock-card__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  min-height: 42px;
+  min-width: 0;
+}
+
+html.staff-scope .stock-card__title {
+  display: block;
+  font-size: clamp(0.85rem, 1.3vw, var(--text-h3));
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.staff-scope .stock-card__meta {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--text-1);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.staff-scope .stock-card__status {
+  min-width: 104px;
+  text-align: right;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+html.staff-scope .stock-card__substatus {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+html.staff-scope .stock-card__note {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .stock-card__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin-top: auto;
+}
+
+html.staff-scope .stock-card__actions--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+html.staff-scope .stock-card__actions > * {
+  width: 100%;
+}
+
+/* Status tones - text */
+html.staff-scope .stock-tone--danger { color: var(--danger); }
+html.staff-scope .stock-tone--warning { color: var(--warning); }
+html.staff-scope .stock-tone--success { color: var(--success-dark); }
+html.staff-scope .stock-tone--accent { color: var(--accentText); }
+html.staff-scope .stock-tone--neutral { color: var(--text-1); opacity: 0.8; }
+
+/* ------------------------------------------------------------------------ */
+/* Label / value rows                                                        */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-rows {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  align-content: start;
+}
+
+html.staff-scope .stock-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--text-body-sm);
+  color: var(--text-1);
+  min-width: 0;
+}
+
+html.staff-scope .stock-row > span {
+  flex-shrink: 0;
+}
+
+html.staff-scope .stock-row > strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Stock gauge (quantity against min / target / capacity)                    */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+html.staff-scope .stock-gauge__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  color: var(--text-1);
+}
+
+html.staff-scope .stock-gauge__amount {
+  font-size: var(--text-h3);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+html.staff-scope .stock-gauge__scale {
+  font-size: var(--text-caption);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+html.staff-scope .stock-gauge__track {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text-1) 12%, transparent);
+  overflow: hidden;
+}
+
+html.staff-scope .stock-gauge__fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--success-dark);
+  transition: width 0.3s ease;
+}
+
+html.staff-scope .stock-gauge__fill.stock-fill--danger { background: var(--danger); }
+html.staff-scope .stock-gauge__fill.stock-fill--warning { background: var(--warning); }
+html.staff-scope .stock-gauge__fill.stock-fill--accent { background: var(--accentText); }
+html.staff-scope .stock-gauge__fill.stock-fill--neutral { background: color-mix(in srgb, var(--text-1) 40%, transparent); }
+
+html.staff-scope .stock-gauge__marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: color-mix(in srgb, var(--text-1) 55%, transparent);
+}
+
+/* Five-segment strip for tank levels (Low / 1/4 / 1/2 / 3/4 / Full). */
+html.staff-scope .stock-bands {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+}
+
+html.staff-scope .stock-bands__seg {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text-1) 12%, transparent);
+}
+
+html.staff-scope .stock-bands__seg.is-filled { background: var(--success-dark); }
+html.staff-scope .stock-bands.stock-fill--danger .stock-bands__seg.is-filled { background: var(--danger); }
+html.staff-scope .stock-bands.stock-fill--warning .stock-bands__seg.is-filled { background: var(--warning); }
+html.staff-scope .stock-bands.stock-fill--accent .stock-bands__seg.is-filled { background: var(--accentText); }
+
+/* ------------------------------------------------------------------------ */
+/* Compact list                                                              */
+/* The table itself is the global .app-data-table in DataTableShell — its     */
+/* shell, rows, cells, alignment and scroll all come from staffglobal.css +   */
+/* families/tables.css. Only the CONTENT inside a cell is styled here. Never  */
+/* target the table, tr, th or td from this file (check:design,               */
+/* table-overrides).                                                          */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-compact__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+}
+
+html.staff-scope .stock-compact__name strong {
+  color: var(--text-1);
+}
+
+html.staff-scope .stock-compact__sub {
+  font-size: var(--text-caption);
+  opacity: 0.8;
+}
+
+/* The compact gauge has no intrinsic width, so it holds its own floor rather
+   than the table cell carrying one. */
+html.staff-scope .stock-gauge--compact {
+  min-width: 90px;
+}
+
+html.staff-scope .stock-compact__actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--space-xs);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Popup sizing (PopupModal cardClassName)                                   */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .popup-card.stock-popup {
+  width: min(100%, 560px);
+  padding: var(--section-card-padding);
+}
+
+html.staff-scope .popup-card.stock-popup--wide {
+  width: min(100%, 760px);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Forms (item editor, stock actions, orders, stocktake)                     */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  min-width: 0;
+}
+
+html.staff-scope .stock-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+html.staff-scope .stock-form__section {
+  margin: 4px 0 0;
+  color: var(--accentText);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+
+html.staff-scope .stock-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+html.staff-scope .stock-field__label {
+  font-size: var(--text-label);
+  font-weight: var(--control-label-weight);
+  color: var(--text-1);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+
+html.staff-scope .stock-field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+html.staff-scope .stock-hint {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.8;
+}
+
+html.staff-scope .stock-segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+html.staff-scope .stock-segmented > * {
+  flex: 1 1 96px;
+}
+
+/* A result callout inside a popup (surface) - flips to the theme rung. */
+html.staff-scope .stock-callout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--theme);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .stock-callout strong {
+  font-size: var(--text-h4);
+}
+
+html.staff-scope .stock-calibration {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+html.staff-scope .stock-calibration__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .stock-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+/* ------------------------------------------------------------------------ */
+/* History drawer                                                            */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  min-width: 0;
+}
+
+html.staff-scope .stock-history__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: var(--space-sm);
+}
+
+html.staff-scope .stock-history__day {
+  margin: 8px 0 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--accentText);
+}
+
+html.staff-scope .stock-history__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.staff-scope .stock-history__entry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm) 0;
+  border-bottom: var(--separating-line);
+  color: var(--text-1);
+  font-size: var(--text-body-sm);
+}
+
+html.staff-scope .stock-history__entry-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .stock-history__type {
+  font-weight: 700;
+}
+
+html.staff-scope .stock-history__meta {
+  font-size: var(--text-caption);
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .stock-history__time {
+  font-size: var(--text-caption);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------------ */
+/* QR label                                                                  */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: center;
+  color: var(--text-1);
+}
+
+html.staff-scope .stock-qr svg {
+  width: min(240px, 100%);
+  height: auto;
+}
+
+html.staff-scope .stock-qr__code {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-caption);
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Stocktake                                                                 */
+/* ------------------------------------------------------------------------ */
+html.staff-scope .stock-stocktake__progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+html.staff-scope .stock-stocktake__compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: var(--space-sm);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Responsive                                                                */
+/* ------------------------------------------------------------------------ */
+@media (max-width: 767px) {
+  html.staff-scope .stock-toolbar__filter {
+    flex: 1 1 calc(50% - var(--space-sm));
+    min-width: 0;
+  }
+
+  html.staff-scope .stock-header-filters {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  html.staff-scope .stock-header-filters .stock-toolbar__filter {
+    flex: 1 1 calc(50% - var(--space-sm));
+    min-width: 0;
+    max-width: none;
+  }
+
+  html.staff-scope .stock-toolbar__end {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  html.staff-scope .stock-toolbar__end > * {
+    flex: 1 1 auto;
+  }
+
+  html.staff-scope .stock-card__actions,
+  html.staff-scope .stock-card__actions--three {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.staff-scope .stock-gauge__fill,
+  html.staff-scope .stock-summary-tile,
+  html.staff-scope .stock-card {
+    transition: none;
+  }
+}

@@ -164,7 +164,7 @@ import {
   getInvoiceWorkflowState,
   isCustomerRequestCompleteInWriteUp,
 } from "@/features/jobCards/workflow/selectors";
-import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 // Dynamic import loading state renders a structured skeleton that mirrors the
 // real WriteUpForm shape (tab bar + content grid) so switching tabs never
@@ -5929,8 +5929,10 @@ function SchedulingTab({
           {/* Vehicle selector */}
           <div>
             {customerVehiclesLoading ?
-            <div style={{ fontSize: "13px", color: "var(--text-1)", padding: "8px 0" }}>
-                Loading stored vehicles...
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading stored vehicles" style={{ display: "grid", gap: "8px" }}>
+                <SkeletonKeyframes />
+                <SkeletonBlock width="64px" height="12px" />
+                <SkeletonBlock width="100%" height="var(--control-height)" borderRadius="var(--control-radius)" />
               </div> :
             vehicleOptions.length > 0 ?
             <DropdownField
@@ -6513,9 +6515,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             opacity: canAllocateParts ? 1 : 0.7
           }} />
 
-        {catalogLoading &&
-        <div style={{ fontSize: "0.85rem", color: "var(--info)" }}>Searching stock...</div>
-        }
+        {catalogLoading && <InlineLoading width={160} label="Searching stock" />}
         {!catalogLoading && catalogError &&
         <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>{catalogError}</div>
         }
@@ -7448,11 +7448,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
             {customerEmail ? `Customer: ${customerEmail}` : "Customer email required before messages can be sent."}
           </p>
         </div>
-        {chatLoading &&
-        <span style={{ color: "var(--grey-accent)", fontSize: "0.85rem", fontWeight: 600 }}>
-            Loading...
-          </span>
-        }
+        {chatLoading && <InlineLoading width={80} label="Loading" />}
       </DevLayoutSection>
 
       <DevLayoutSection
@@ -7475,9 +7471,17 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
           background: "var(--theme)"
         }}>
         {chatLoading && chatMessages.length === 0 &&
-        <p style={{ margin: 0, color: "var(--grey-accent)", textAlign: "center" }}>
-            Loading messages...
-          </p>
+        <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading messages" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <SkeletonKeyframes />
+            {[0, 1, 2, 3].map((index) =>
+            <SkeletonBlock
+              key={index}
+              width={index % 2 ? "42%" : "58%"}
+              height={index % 2 ? "48px" : "64px"}
+              borderRadius="var(--radius-md)"
+              style={{ alignSelf: index % 2 ? "flex-end" : "flex-start" }} />
+            )}
+          </div>
         }
         {!chatLoading && chatMessages.length === 0 &&
         <p style={{ margin: 0, color: "var(--grey-accent)", textAlign: "center" }}>
@@ -8850,7 +8854,15 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             null}
 
             {techniciansLoading || techStatusesLoading ?
-            <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading technicians...</div> :
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading technicians" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <SkeletonKeyframes />
+                {[0, 1, 2, 3, 4].map((index) =>
+                <div key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", minHeight: "44px" }}>
+                    <SkeletonBlock width={index % 2 ? "120px" : "160px"} height="14px" />
+                    <SkeletonBlock width="120px" height="22px" borderRadius="999px" />
+                  </div>
+                )}
+              </div> :
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "60vh", overflowY: "auto" }}>
                 {technicianOptions.map((tech) => {

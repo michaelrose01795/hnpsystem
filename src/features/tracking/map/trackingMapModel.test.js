@@ -1,261 +1,304 @@
 // file location: src/features/tracking/map/trackingMapModel.test.js
-// Unit tests for the /tracking site map's vehicle-to-space logic. The map view
-// itself is exercised by e2e/workflows/tracking-map-view.spec.js; everything
-// that decides WHERE a car is drawn, whether it is drawn at all, and whether a
-// space is in conflict lives in these pure functions and is tested here.
+// Unit tests for the /tracking site map's section model: the central section
+// config (labels, anchors, regions, capacities), grouping and counting, the
+// selected-section state, search, and move destinations. The rendered view is
+// exercised by e2e/workflows/tracking-map-view.spec.js.
 
 import { describe, expect, it } from "vitest";
 import {
-  buildMapAssignments,
+  ALL_SECTIONS_ID,
+  INITIAL_SECTION_SELECTION,
+  buildSectionOccupancy,
+  buildSectionStripItems,
   describeMove,
-  findAreaForLocation,
+  filterEntriesForSection,
   getEntryKey,
+  getEntrySection,
   getMarkerStatus,
-  getMoveTargets,
-  parseLocation,
+  getMoveDestinations,
+  groupEntriesBySection,
+  isValidMoveDestination,
+  searchVehicles,
+  sectionSelectionReducer,
+  summariseSectionOccupancy,
 } from "@/features/tracking/map/trackingMapModel";
 import {
-  TRACKING_MAP_AREAS,
-  TRACKING_MAP_SPACE_COUNT,
-  TRACKING_MAP_SPACES,
-} from "@/features/tracking/map/trackingMapSpaces";
-import { MAP_AREAS } from "@/features/tracking/map/trackingMapSite";
+  MAP_PLACEMENT_IDS,
+  PARKING_AREAS,
+  TRACKING_SECTIONS,
+  TRACKING_SECTION_BY_ID,
+  buildSectionGeometry,
+} from "@/features/tracking/map/parkingAreas";
+import { VEHICLE_LOCATION_LABELS } from "@/lib/tracking/vehicleLocations";
 
-// The location vocabulary actually observed in vehicle_tracking_events.
-const OBSERVED_LOCATIONS = [
-  "Service car park",
-  "Workshop bay 1",
-  "MOT bay",
-  "Wash bay",
-  "Collection row",
-  "Sales 1",
-  "Sales 7",
-  "Staff",
-  "Trade",
-  "Valet Lane",
-  "Handover Suite",
-  "Overflow - West Fence",
-];
+const NEW_SECTION_IDS = ["paint", "valet", "workshop", "showroom", "off-site"];
 
-const entry = (overrides) => ({
-  jobId: 1,
-  reg: "AB12 CDE",
-  colour: "Blue",
-  vehicleLocation: "Showroom",
+let nextId = 1;
+const entry = (vehicleLocation, overrides = {}) => ({
+  jobId: nextId++,
+  reg: `AB${nextId} CDE`,
+  jobNumber: `J${1000 + nextId}`,
+  vehicleLocation,
   ...overrides,
 });
 
-const spaceAt = (index) => TRACKING_MAP_SPACES[index];
-
-describe("the calibrated space registry", () => {
-  it("expands every row into a space and reports a computed total", () => {
-    const expected = MAP_AREAS.reduce(
-      (total, area) => total + area.rows.reduce((sum, row) => sum + row.count, 0),
-      0
-    );
-    expect(TRACKING_MAP_SPACES).toHaveLength(expected);
-    expect(TRACKING_MAP_SPACE_COUNT).toBe(expected);
+describe("the central section config", () => {
+  it("covers every canonical vehicle location, in display order", () => {
+    expect(TRACKING_SECTIONS.map((s) => s.label)).toEqual(VEHICLE_LOCATION_LABELS);
   });
 
-  it("gives every space a unique, stable id and a persistable location value", () => {
-    const ids = new Set(TRACKING_MAP_SPACES.map((space) => space.id));
-    expect(ids.size).toBe(TRACKING_MAP_SPACES.length);
-    for (const space of TRACKING_MAP_SPACES) {
-      expect(space.locationValue).toContain(space.id);
-      expect(space.locationValue).toContain(space.location);
+  it("puts Paint, Valet, Workshop, Showroom and Off Site on the map with a label and a region", () => {
+    for (const id of NEW_SECTION_IDS) {
+      const section = TRACKING_SECTION_BY_ID.get(id);
+      expect(section.isOnMap, id).toBe(true);
+      expect(section.labelAnchor, id).toBeTruthy();
+      expect(section.region, id).toBeTruthy();
     }
   });
 
-  it("uses the agreed area prefixes", () => {
-    const codes = Object.fromEntries(MAP_AREAS.map((area) => [area.id, area.code]));
-    expect(codes["stock-compound"]).toBe("SC");
-    expect(codes["front-forecourt"]).toBe("FF");
-    expect(codes["workshop-bays"]).toBe("WB");
-    expect(codes.showroom).toBe("SD");
-    expect(codes["rear-car-park-a"]).toBe("RA");
-    expect(codes["rear-car-park-b"]).toBe("RB");
-    expect(codes["container-storage"]).toBe("CS");
-    expect(codes["collection-row"]).toBe("CR");
+  it("keeps N/A, Sales 9 and Sales 10 off the plan", () => {
+    for (const id of ["na", "sales-9", "sales-10"]) {
+      expect(TRACKING_SECTION_BY_ID.get(id).isOnMap, id).toBe(false);
+    }
+    expect(PARKING_AREAS.some((area) => area.id === "na")).toBe(false);
   });
 
-  it("keeps every space inside the map stage", () => {
-    for (const space of TRACKING_MAP_SPACES) {
-      expect(space.x).toBeGreaterThanOrEqual(0);
-      expect(space.y).toBeGreaterThanOrEqual(0);
-      expect(space.x + space.width).toBeLessThanOrEqual(100);
-      expect(space.y + space.height).toBeLessThanOrEqual(100);
+  it("only places sections that exist in the registry and are physical", () => {
+    for (const id of MAP_PLACEMENT_IDS) {
+      const section = TRACKING_SECTION_BY_ID.get(id);
+      expect(section, id).toBeTruthy();
+      expect(section.isPhysicalMapArea, id).toBe(true);
     }
   });
 
-  it("recognises every location the live data actually contains", () => {
-    for (const location of OBSERVED_LOCATIONS) {
-      expect(findAreaForLocation(location), location).not.toBeNull();
+  it("keeps every anchor and region inside the image, with the label inside its region", () => {
+    for (const area of PARKING_AREAS) {
+      const { labelAnchor: a, region: r } = area;
+      for (const value of [a.x, a.y, r.x0, r.y0, r.x1, r.y1]) {
+        expect(value, area.id).toBeGreaterThanOrEqual(0);
+        expect(value, area.id).toBeLessThanOrEqual(1);
+      }
+      expect(r.x0, area.id).toBeLessThan(r.x1);
+      expect(r.y0, area.id).toBeLessThan(r.y1);
+      expect(a.x >= r.x0 && a.x <= r.x1 && a.y >= r.y0 && a.y <= r.y1, area.id).toBe(true);
+    }
+  });
+
+  it("has no two building regions overlapping", () => {
+    const buildings = PARKING_AREAS.filter((area) => area.type === "building");
+    for (let i = 0; i < buildings.length; i += 1) {
+      for (let j = i + 1; j < buildings.length; j += 1) {
+        const a = buildings[i].region;
+        const b = buildings[j].region;
+        const overlaps = a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+        expect(overlaps, `${buildings[i].id} / ${buildings[j].id}`).toBe(false);
+      }
+    }
+  });
+
+  it("gives every section a capacity field", () => {
+    for (const section of TRACKING_SECTIONS) {
+      expect(Object.prototype.hasOwnProperty.call(section, "capacity"), section.id).toBe(true);
     }
   });
 });
 
-describe("parseLocation", () => {
-  it("resolves an exact bay only from the canonical Area space-id form", () => {
-    const space = spaceAt(30);
-    const parsed = parseLocation(space.locationValue);
-    expect(parsed.area.id).toBe(space.areaId);
-    expect(parsed.space.id).toBe(space.id);
+describe("label geometry", () => {
+  const natural = { width: 1431, height: 1120 };
+  const workshop = TRACKING_SECTION_BY_ID.get("workshop");
+
+  it("scales anchors and regions into natural image pixels", () => {
+    const geometry = buildSectionGeometry(workshop, natural, 0);
+    expect(geometry.region.x).toBeCloseTo(workshop.region.x0 * natural.width);
+    expect(geometry.region.width).toBeCloseTo((workshop.region.x1 - workshop.region.x0) * natural.width);
+    // The pill is centred on the anchor.
+    expect(geometry.pill.x + geometry.pill.width / 2).toBeCloseTo(workshop.labelAnchor.x * natural.width);
   });
 
-  it("treats an area name as an area, never as a bay", () => {
-    // This is the rule that stopped 77 "Workshop bay 1" records becoming 12
-    // invented positions plus a numbered cluster of 65.
-    for (const value of ["Workshop bay 1", "Service car park", "MOT bay", "Sales 3"]) {
-      const parsed = parseLocation(value);
-      expect(parsed.area, value).not.toBeNull();
-      expect(parsed.space, value).toBeNull();
+  it("adds a count to the pill only when the section has vehicles", () => {
+    expect(buildSectionGeometry(workshop, natural, 0).count).toBeNull();
+    const withCount = buildSectionGeometry(workshop, natural, 7);
+    expect(withCount.count.text).toBe("7");
+    expect(withCount.pill.width).toBeGreaterThan(buildSectionGeometry(workshop, natural, 0).pill.width);
+  });
+});
+
+describe("grouping and counting", () => {
+  const entries = [
+    entry("Paint"),
+    entry("Valet"),
+    entry("Wash bay"), // legacy -> Valet
+    entry("Workshop"),
+    entry("Workshop bay 1"), // legacy -> Workshop
+    entry("Showroom"),
+    entry("Off Site"),
+    entry("N/A"),
+    entry(""),
+    entry("Behind the moon"), // unrecognised -> N/A
+    entry("Sales 3"),
+  ];
+
+  it("groups by the new sections, including legacy spellings", () => {
+    const { counts } = groupEntriesBySection(entries);
+    expect(counts.paint).toBe(1);
+    expect(counts.valet).toBe(2);
+    expect(counts.workshop).toBe(2);
+    expect(counts.showroom).toBe(1);
+    expect(counts["off-site"]).toBe(1);
+    expect(counts["sales-3"]).toBe(1);
+  });
+
+  it("keeps Off Site distinct from N/A", () => {
+    const { counts, unrecognised } = groupEntriesBySection(entries);
+    expect(counts.na).toBe(3);
+    expect(counts["off-site"]).toBe(1);
+    expect(unrecognised).toHaveLength(1);
+    expect(getEntrySection(entry("Behind the moon")).isUnrecognised).toBe(true);
+    expect(getEntrySection(entry("N/A")).isUnrecognised).toBe(false);
+  });
+
+  it("has a bucket for every section even when empty, and counts every entry once", () => {
+    const { bySection, total } = groupEntriesBySection(entries);
+    expect([...bySection.keys()]).toEqual(TRACKING_SECTIONS.map((s) => s.id));
+    const sum = [...bySection.values()].reduce((n, list) => n + list.length, 0);
+    expect(sum).toBe(total);
+  });
+
+  it("places a car by its VEHICLE location only, never its key location", () => {
+    const car = entry("Service", { keyLocation: "Workshop" });
+    expect(getEntrySection(car).section.id).toBe("service");
+  });
+
+  it("builds strip items: All first, then every section with its count", () => {
+    const items = buildSectionStripItems(entries);
+    expect(items[0]).toMatchObject({ id: ALL_SECTIONS_ID, label: "All", count: entries.length });
+    expect(items.slice(1).map((i) => i.label)).toEqual(VEHICLE_LOCATION_LABELS);
+    expect(items.find((i) => i.id === "valet").count).toBe(2);
+  });
+
+  it("derives capacity / occupied / available per section", () => {
+    const { counts } = groupEntriesBySection(entries);
+    const occupancy = buildSectionOccupancy(counts);
+    const workshop = TRACKING_SECTION_BY_ID.get("workshop");
+    expect(occupancy.workshop).toMatchObject({
+      capacity: workshop.capacity,
+      occupied: 2,
+      available: workshop.capacity - 2,
+    });
+    expect(occupancy["off-site"].available).toBeNull();
+  });
+
+  it("summarises occupancy over bounded sections only", () => {
+    const summary = summariseSectionOccupancy(entries);
+    const bounded = TRACKING_SECTIONS.filter((s) => Number.isFinite(s.capacity));
+    expect(summary.totalSpaces).toBe(bounded.reduce((n, s) => n + s.capacity, 0));
+    // Paint, Valet x2, Workshop x2, Showroom, Sales 3 = 7. N/A and Off Site excluded.
+    expect(summary.occupiedSpaces).toBe(7);
+    expect(summary.unmapped).toBe(3);
+    expect(summary.offSiteRecorded).toBe(1);
+    expect(summary.mapped).toBe(7);
+  });
+});
+
+describe("filtering and search", () => {
+  const valetCar = entry("Valet", { reg: "VA11 ETT" });
+  const paintCar = entry("Paint", { reg: "PA11 NTT" });
+  const offSiteCar = entry("Off Site", { reg: "OF11 SIT" });
+  const entries = [valetCar, paintCar, offSiteCar];
+
+  it("filters to one section, or all", () => {
+    expect(filterEntriesForSection(entries, "paint")).toEqual([paintCar]);
+    expect(filterEntriesForSection(entries, ALL_SECTIONS_ID)).toHaveLength(3);
+    expect(filterEntriesForSection(entries, "valet", "nothing")).toEqual([]);
+  });
+
+  it("finds a car by reg (spaces ignored) and reports its section", () => {
+    const [result] = searchVehicles(entries, "va11ett");
+    expect(result.entry).toBe(valetCar);
+    expect(result.section.label).toBe("Valet");
+    expect(searchVehicles(entries, "OF11")[0].section.id).toBe("off-site");
+  });
+
+  it("returns nothing for an empty query", () => {
+    expect(searchVehicles(entries, "  ")).toEqual([]);
+  });
+});
+
+describe("selected-section state", () => {
+  const reduce = (actions, state = INITIAL_SECTION_SELECTION) => actions.reduce(sectionSelectionReducer, state);
+
+  it("selecting a label opens that section, for every new section", () => {
+    for (const id of NEW_SECTION_IDS) {
+      expect(reduce([{ type: "select", id }]).selectedId).toBe(id);
     }
   });
 
-  it("refuses placeholders and unknown text", () => {
-    for (const value of ["N/A", "", "Round the back"]) {
-      expect(parseLocation(value).area, value).toBeNull();
+  it("selecting a logical section (N/A) or an off-map one (Sales 9) works too", () => {
+    expect(reduce([{ type: "select", id: "na" }]).selectedId).toBe("na");
+    expect(reduce([{ type: "select", id: "sales-9" }]).selectedId).toBe("sales-9");
+  });
+
+  it("All, an unknown id and clear all return to the overview", () => {
+    const selected = reduce([{ type: "select", id: "paint" }]);
+    expect(reduce([{ type: "select", id: ALL_SECTIONS_ID }], selected).selectedId).toBeNull();
+    expect(reduce([{ type: "select", id: "bay-17" }], selected).selectedId).toBeNull();
+    expect(reduce([{ type: "clear" }], selected).selectedId).toBeNull();
+  });
+
+  it("choosing a search result opens the vehicle's section and highlights it", () => {
+    const state = reduce([{ type: "find", query: "VA11" }, { type: "choose-result", sectionId: "valet", key: "job:9" }]);
+    expect(state).toEqual({ selectedId: "valet", highlightKey: "job:9", findQuery: "" });
+  });
+
+  it("Escape closes the search first, then the selection", () => {
+    let state = reduce([{ type: "select", id: "workshop" }, { type: "find", query: "AB" }]);
+    state = sectionSelectionReducer(state, { type: "escape" });
+    expect(state).toMatchObject({ selectedId: "workshop", findQuery: "" });
+    state = sectionSelectionReducer(state, { type: "escape" });
+    expect(state.selectedId).toBeNull();
+    expect(sectionSelectionReducer(state, { type: "escape" })).toBe(state);
+  });
+
+  it("a new selection clears the previous highlight", () => {
+    const state = reduce([{ type: "choose-result", sectionId: "valet", key: "job:1" }, { type: "select", id: "paint" }]);
+    expect(state.highlightKey).toBeNull();
+  });
+});
+
+describe("moving a vehicle", () => {
+  it("offers every canonical section except the current one, including the new ones", () => {
+    const car = entry("Service");
+    const labels = getMoveDestinations(car).map((s) => s.label);
+    expect(labels).not.toContain("Service");
+    for (const label of ["N/A", "Paint", "Valet", "Workshop", "Showroom", "Off Site", "Sales 10"]) {
+      expect(labels).toContain(label);
     }
+    expect(labels).toHaveLength(VEHICLE_LOCATION_LABELS.length - 1);
   });
 
-  it("ignores a bay id that does not belong to the named area", () => {
-    const parsed = parseLocation("Rear car park A · FF-A01");
-    expect(parsed.area.id).toBe("rear-car-park-a");
-    expect(parsed.space).toBeNull();
-  });
-});
-
-describe("getEntryKey", () => {
-  it("prefers the stable database identity over the registration", () => {
-    expect(getEntryKey({ jobId: 7, id: 3, reg: "AB12 CDE" })).toBe("job:7");
-    expect(getEntryKey({ vehicleId: 9, id: 3, reg: "AB12 CDE" })).toBe("vehicle:9");
-    expect(getEntryKey({ reg: "ab12 cde" })).toBe("reg:AB12 CDE");
-  });
-});
-
-describe("buildMapAssignments", () => {
-  it("draws a vehicle only in the bay its own record names", () => {
-    const space = spaceAt(12);
-    const result = buildMapAssignments([entry({ vehicleLocation: space.locationValue })]);
-    expect(result.markers).toHaveLength(1);
-    expect(result.markers[0].space.id).toBe(space.id);
-    expect(result.counts.occupiedSpaces).toBe(1);
-    expect(result.counts.availableSpaces).toBe(TRACKING_MAP_SPACE_COUNT - 1);
+  it("validates destinations against the canonical list", () => {
+    const car = entry("Workshop");
+    expect(isValidMoveDestination(car, "Valet")).toBe(true);
+    expect(isValidMoveDestination(car, "Workshop")).toBe(false);
+    expect(isValidMoveDestination(car, "Workshop bay 2")).toBe(false);
+    expect(isValidMoveDestination(car, "Front Row – Bay A")).toBe(false);
   });
 
-  it("never invents a position for a vehicle that names only an area", () => {
-    const entries = Array.from({ length: 40 }, (_, index) =>
-      entry({ jobId: index + 1, vehicleLocation: "Workshop bay 1" })
-    );
-    const result = buildMapAssignments(entries);
-    expect(result.markers).toHaveLength(0);
-    expect(result.unmapped).toHaveLength(40);
-    expect(result.counts.occupiedSpaces).toBe(0);
-    // The correction list still knows which area each car is said to be in.
-    expect(result.unmapped[0].area.id).toBe("workshop-bays");
-  });
-
-  it("excludes departed vehicles entirely - they cannot occupy a space", () => {
-    const space = spaceAt(5);
-    const result = buildMapAssignments(
-      [
-        entry({ jobId: 1, vehicleLocation: space.locationValue, status: "Customer Collected" }),
-        entry({ jobId: 2, vehicleLocation: space.locationValue, status: "In Workshop" }),
-      ],
-      { isDeparted: (item) => item.status === "Customer Collected" }
-    );
-    expect(result.departed).toHaveLength(1);
-    expect(result.markers).toHaveLength(1);
-    expect(result.markers[0].entry.jobId).toBe(2);
-    expect(result.unmapped).toHaveLength(0);
-  });
-
-  it("puts ONE conflict marker on a contested bay, never a stack", () => {
-    const space = spaceAt(0);
-    const entries = Array.from({ length: 6 }, (_, index) =>
-      entry({ jobId: index + 1, vehicleLocation: space.locationValue })
-    );
-    const result = buildMapAssignments(entries);
-    expect(result.markers).toHaveLength(1);
-    expect(result.bySpaceId.size).toBe(1);
-    const marker = result.bySpaceId.get(space.id);
-    expect(marker.conflicts).toHaveLength(5);
-    expect(marker.status.id).toBe("conflict");
-    expect(result.counts.conflicts).toBe(5);
-  });
-
-  it("is deterministic - the same data always gives the same bay to the same car", () => {
-    const space = spaceAt(3);
-    const entries = [3, 1, 2].map((jobId) => entry({ jobId, vehicleLocation: space.locationValue }));
-    const first = buildMapAssignments(entries);
-    const second = buildMapAssignments([...entries].reverse());
-    expect(first.markers[0].entry.jobId).toBe(second.markers[0].entry.jobId);
-  });
-
-  it("counts occupancy, unmapped and departed separately", () => {
-    const space = spaceAt(20);
-    const result = buildMapAssignments(
-      [
-        entry({ jobId: 1, vehicleLocation: space.locationValue }),
-        entry({ jobId: 2, vehicleLocation: "Stock compound" }),
-        entry({ jobId: 3, vehicleLocation: "N/A" }),
-        entry({ jobId: 4, vehicleLocation: space.locationValue, status: "Customer Collected" }),
-      ],
-      { isDeparted: (item) => item.status === "Customer Collected" }
-    );
-    expect(result.counts.mapped).toBe(1);
-    expect(result.counts.unmapped).toBe(2);
-    expect(result.counts.departed).toBe(1);
+  it("describes a move with canonical names on both sides", () => {
+    const car = entry("Wash bay", { reg: "ab12 cde" });
+    const move = describeMove({ entry: car, toSection: TRACKING_SECTION_BY_ID.get("off-site") });
+    expect(move).toEqual({ reg: "AB12 CDE", from: "Valet", to: "Off Site", destinationLocation: "Off Site" });
   });
 });
 
-describe("getMarkerStatus", () => {
-  it("ranks overdue first and always supplies a non-colour cue", () => {
-    expect(getMarkerStatus({ isOverdue: true, isCollection: true }).id).toBe("attention");
-    expect(getMarkerStatus({ isCustomerWaiting: true }).id).toBe("waiting");
-    expect(getMarkerStatus({ isCollection: true }).id).toBe("collection");
-    expect(getMarkerStatus({ isWorkshop: true }).id).toBe("workshop");
-    expect(getMarkerStatus({}).glyph).toBeTruthy();
-  });
-});
-
-describe("getMoveTargets", () => {
-  it("offers only empty registry bays, so a car cannot land on a building or road", () => {
-    const space = spaceAt(0);
-    const result = buildMapAssignments([entry({ vehicleLocation: space.locationValue })]);
-    const targets = getMoveTargets({ bySpaceId: result.bySpaceId, currentSpaceId: space.id });
-    expect(targets.has(space.id)).toBe(false);
-    expect(targets.size).toBe(TRACKING_MAP_SPACE_COUNT - 1);
-    for (const id of targets) {
-      expect(TRACKING_MAP_SPACES.some((candidate) => candidate.id === id)).toBe(true);
-    }
+describe("helpers kept from the previous model", () => {
+  it("keys entries by job first", () => {
+    expect(getEntryKey({ jobId: 4, reg: "X" })).toBe("job:4");
+    expect(getEntryKey({ reg: " ab1 " })).toBe("reg:AB1");
   });
 
-  it("never offers a space another vehicle already holds", () => {
-    const [a, b] = [spaceAt(0), spaceAt(1)];
-    const result = buildMapAssignments([
-      entry({ jobId: 1, vehicleLocation: a.locationValue }),
-      entry({ jobId: 2, vehicleLocation: b.locationValue }),
-    ]);
-    const targets = getMoveTargets({ bySpaceId: result.bySpaceId, currentSpaceId: a.id });
-    expect(targets.has(b.id)).toBe(false);
-  });
-
-  it("can be limited to one area", () => {
-    const area = TRACKING_MAP_AREAS[0];
-    const targets = getMoveTargets({ areaId: area.id });
-    expect(targets.size).toBe(area.capacity);
-  });
-});
-
-describe("describeMove", () => {
-  it("writes back the exact bay, so a placement round-trips", () => {
-    const space = spaceAt(40);
-    const described = describeMove({ entry: entry({ reg: "ab12 cde" }), toSpace: space });
-    expect(described.reg).toBe("AB12 CDE");
-    expect(described.destinationLocation).toBe(space.locationValue);
-
-    const result = buildMapAssignments([entry({ jobId: 99, vehicleLocation: described.destinationLocation })]);
-    expect(result.markers[0].space.id).toBe(space.id);
+  it("derives a marker status from the tracker flags", () => {
+    expect(getMarkerStatus({ isOverdue: true }).id).toBe("attention");
+    expect(getMarkerStatus({}).id).toBe("occupied");
   });
 });

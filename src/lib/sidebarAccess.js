@@ -14,10 +14,14 @@ import {
   getWorkspaceGroupRoles,
   getWorkspaceGroups,
   getWorkspacePageCatalog,
+  migrateSidebarLayout,
   normalizeWorkspaceRole,
+  SIDEBAR_LAYOUT_MIGRATION,
 } from "@/config/workspace/manifest";
 
-export const SIDEBAR_ACCESS_VERSION = 5;
+// Owned by the saved-layout migration in departments.js: bumping it there is
+// what marks every older stored layout for upgrade.
+export const SIDEBAR_ACCESS_VERSION = SIDEBAR_LAYOUT_MIGRATION.version;
 export const SIDEBAR_ACCESS_UPDATED_EVENT = "hnp:sidebar-access-updated";
 const RETIRED_SIDEBAR_MODULE_KEYS = new Set(["department-account"]);
 const STANDALONE_SIDEBAR_HREFS = new Set(["/profile"]);
@@ -29,7 +33,7 @@ const DASHBOARD_ROUTE_MOVES = new Map([
 ]);
 const normalizeSidebarHref = (value) => {
   const href = String(value || "").trim();
-  return DASHBOARD_ROUTE_MOVES.get(href) || href;
+  return DASHBOARD_ROUTE_MOVES.get(href) || SIDEBAR_LAYOUT_MIGRATION.hrefMoves[href] || href;
 };
 
 const managedGroups = () =>
@@ -235,7 +239,18 @@ export function normalizeSidebarAccess(raw) {
 }
 
 export function materializeSidebarAccess(role, currentValue) {
-  const normalized = normalizeSidebarAccess(currentValue);
+  // Upgrade an older saved layout for this user's role first (new pages joined
+  // to the modules they hold), exactly as the live sidebar renders it, so the
+  // editor never shows — or re-saves — a layout the user no longer sees.
+  let parsed = currentValue;
+  if (typeof currentValue === "string") {
+    try {
+      parsed = JSON.parse(currentValue);
+    } catch {
+      parsed = currentValue; // normalizeSidebarAccess rejects it below
+    }
+  }
+  const normalized = normalizeSidebarAccess(migrateSidebarLayout(parsed, [role].filter(Boolean)));
   if (normalized?.modules?.length > 0) return normalized;
 
   const defaults = getRoleDefaultSidebarAccess(role);

@@ -13,6 +13,7 @@ import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
 import EmptyState from "@/components/ui/EmptyState";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import SectionEditor from "../editors/SectionEditor";
@@ -152,7 +153,11 @@ function ProductsTab() {
         />
       )}
 
-      {loading && <p className="website-manager__meta">Loading…</p>}
+      {loading && (
+        <div className="website-manager__table-scroll">
+          <TableSkeleton columns={["Name", "SKU", "Price", "Stock", "Status", "Actions"]} rows={5} label="Loading products" />
+        </div>
+      )}
 
       {!loading && rows.length === 0 && (
         <EmptyState
@@ -257,7 +262,11 @@ function CategoriesTab() {
         />
       )}
 
-      {loading && <p className="website-manager__meta">Loading…</p>}
+      {loading && (
+        <div className="website-manager__table-scroll">
+          <TableSkeleton columns={["Name", "Slug", "Status", "Actions"]} rows={5} label="Loading categories" />
+        </div>
+      )}
 
       {!loading && rows.length === 0 && (
         <EmptyState
@@ -335,7 +344,11 @@ function OrdersTab() {
     <Section title="Orders">
       <PanelError message={error} />
 
-      {loading && <p className="website-manager__meta">Loading…</p>}
+      {loading && (
+        <div className="website-manager__table-scroll">
+          <TableSkeleton columns={["Order #", "Date", "Email", "Total", "Status", "Actions"]} rows={5} label="Loading orders" />
+        </div>
+      )}
 
       {!loading && orders.length === 0 && (
         <EmptyState

@@ -6,6 +6,7 @@ import { useUser } from "@/context/UserContext";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import SymbolButton from "@/components/ui/SymbolButton";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { SectionSkeleton } from "@/components/ui/LoadingSkeleton";
 import { logFailure } from "@/lib/utils/logFailure";
 
 export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, onDeliveryLogged }) {
@@ -192,8 +193,8 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           }}
         >
           {loading && (
-            <div style={{ padding: "20px", textAlign: "center", color: "var(--text-1)", opacity: 0.72 }}>
-              Loading previous delivery information...
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading previous delivery information">
+              <SectionSkeleton titleWidth="180px" subtitleWidth="140px" rows={4} />
             </div>
           )}
 

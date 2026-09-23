@@ -2,6 +2,7 @@
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { SectionSkeleton, SkeletonBlock, SkeletonKeyframes, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function PartsDeliveryPlannerPageUi(props) {
   const {
@@ -200,10 +201,14 @@ export default function PartsDeliveryPlannerPageUi(props) {
           flexDirection: "column",
           gap: "14px"
         }}>
-                {jobsLoading ? <p style={{
-            color: "var(--info)",
-            margin: 0
-          }}>Loading scheduled deliveries…</p> : jobsError ? <p style={{
+                {jobsLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading scheduled deliveries" style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "14px"
+          }}>
+                    <SectionSkeleton titleWidth="140px" subtitleWidth="60px" rows={2} />
+                    <SectionSkeleton titleWidth="120px" subtitleWidth="60px" rows={3} />
+                  </div> : jobsError ? <p style={{
             color: "var(--danger)",
             margin: 0
           }}>{jobsError}</p> : jobQueueByDate.length === 0 ? <p style={{
@@ -341,10 +346,14 @@ export default function PartsDeliveryPlannerPageUi(props) {
                     Clear day filter
                   </button>}
               </div>
-              {loading ? <p style={{
-          color: "var(--info)",
-          margin: 0
-        }}>Loading delivery runs…</p> : error ? <p style={{
+              {loading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading delivery runs" style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px"
+        }}>
+                  <SectionSkeleton titleWidth="160px" subtitleWidth="260px" rows={2} />
+                  <SectionSkeleton titleWidth="140px" subtitleWidth="220px" rows={2} />
+                </div> : error ? <p style={{
           color: "var(--primary)",
           margin: 0
         }}>{error}</p> : filteredRunsByDate.length === 0 ? <p style={{
@@ -510,9 +519,11 @@ export default function PartsDeliveryPlannerPageUi(props) {
           padding: "18px",
           color: "var(--danger)"
         }}>{collectionError}</div> : collectionLoading ? <div style={{
-          padding: "18px",
-          color: "var(--info)"
-        }}>Loading collection schedule…</div> : <div style={{
+          ...collectionTableScrollStyle,
+          overflowX: "auto"
+        }}>
+                  <TableSkeleton columns={["Day / Date", "Collections", "Total parts", "Earliest slot", "Load"]} rows={5} label="Loading collection schedule" style={{ minWidth: "640px" }} />
+                </div> : <div style={{
           ...collectionTableScrollStyle,
           overflowX: "auto"
         }}>
@@ -684,10 +695,17 @@ export default function PartsDeliveryPlannerPageUi(props) {
                   </strong>
                 </div>
               </div>
-              {collectionLoading ? <p style={{
-          margin: 0,
-          color: "var(--info)"
-        }}>Loading collection jobs…</p> : <div style={collectionListScrollStyle}>
+              {collectionLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading collection jobs" style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px"
+        }}>
+                  <SkeletonKeyframes />
+                  {["55%", "45%", "60%"].map((width, index) => <LayerSurface key={index} radius="var(--radius-md)" padding="14px" gap="6px">
+                      <SkeletonBlock width={width} height="16px" />
+                      <SkeletonBlock width="75%" height="12px" />
+                    </LayerSurface>)}
+                </div> : <div style={collectionListScrollStyle}>
                   {selectedCollectionJobs.length === 0 ? <p style={{
             margin: 0,
             color: "var(--info-dark)"

@@ -10,6 +10,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 const PASSWORD_MIN_LENGTH = 12;
 const SECURITY_PAGE_KEY = "account-security-page-card";
@@ -215,7 +216,11 @@ function RecentActivity() {
   }, []);
 
   if (events === null) {
-    return <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>Loading recent activity...</p>;
+    return (
+      <div style={{ overflowX: "auto" }}>
+        <TableSkeleton columns={["When", "Event", "IP", "Device"]} rows={5} label="Loading recent activity" />
+      </div>
+    );
   }
   if (error) {
     return <p style={{ margin: 0, color: "var(--danger-base)" }}>{error}</p>;

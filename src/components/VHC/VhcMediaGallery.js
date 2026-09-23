@@ -15,6 +15,8 @@ import React, { useEffect, useMemo, useState } from "react";
 // getJobFiles runs inside an async loader effect, never during render.
 const loadJobsDb = () => import("@/lib/database/jobs");
 import { buildVhcMediaLibrary } from "@/lib/vhc/buildVhcMediaLibrary";
+import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const THUMB_SIZE = 88;
 
@@ -265,7 +267,32 @@ export default function VhcMediaGallery({ jobId, reloadToken = 0 }) {
       {error ? (
         <div role="alert" style={{ fontSize: "13px", fontWeight: 600, color: "var(--danger)" }}>{error}</div>
       ) : loading && !hasAnyMedia ? (
-        <div style={{ fontSize: "13px", color: "var(--text-1)", opacity: 0.7 }}>Loading media…</div>
+        <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading media" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <SkeletonKeyframes />
+          {/* Mirrors RequestRow: concern details on the left, thumbnail strip on the right. */}
+          {[3, 2].map((thumbCount, rowIndex) => (
+            <LayerTheme
+              key={rowIndex}
+              padding="20px"
+              gap="24px"
+              style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start" }}
+            >
+              <div style={{ flex: "0 0 200px", minWidth: "180px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <SkeletonBlock width="75%" height="16px" />
+                <SkeletonBlock width="45%" height="12px" />
+                <SkeletonBlock width="90px" height="20px" borderRadius="var(--radius-pill)" />
+              </div>
+              <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", flexWrap: "wrap", gap: "14px" }}>
+                {Array.from({ length: thumbCount }, (_, thumbIndex) => (
+                  <div key={thumbIndex} style={{ width: `${THUMB_SIZE}px`, display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <SkeletonBlock width={`${THUMB_SIZE}px`} height={`${THUMB_SIZE}px`} borderRadius="var(--radius-sm)" />
+                    <SkeletonBlock width="70%" height="10px" />
+                  </div>
+                ))}
+              </div>
+            </LayerTheme>
+          ))}
+        </div>
       ) : !hasAnyMedia ? (
         <div
           style={{

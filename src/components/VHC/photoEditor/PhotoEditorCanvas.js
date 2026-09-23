@@ -17,6 +17,7 @@ import React, {
   useState,
 } from "react";
 import ShapeToolbar, { PALETTE } from "./ShapeToolbar";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import {
   renderScene,
   hitTestHandle,
@@ -375,14 +376,14 @@ export default function PhotoEditorCanvas({
     <div ref={stageRef} className={className} style={{ ...STAGE_STYLE, ...style }}>
       {!imageReady ? (
         <div
-          style={{
-            textAlign: "center",
-            color: "var(--text-1)",
-            fontFamily: "var(--font-family)",
-            fontSize: "var(--text-body-sm)",
-          }}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label="Loading image"
+          style={{ width: "100%", height: "100%", display: "flex" }}
         >
-          Loading image…
+          <SkeletonKeyframes />
+          <SkeletonBlock width="100%" height="100%" borderRadius="0" />
         </div>
       ) : (
         <>

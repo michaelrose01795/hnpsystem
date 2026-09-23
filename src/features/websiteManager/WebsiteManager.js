@@ -13,6 +13,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import Button from "@/components/ui/Button";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import StaffPageHeader from "@/components/ui/StaffPageHeader";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { WEBSITE_PAGES, MEDIA_ASSETS, SEO_ENTRIES, INITIAL_ACTIVITY } from "./websiteData";
@@ -339,13 +340,12 @@ export default function WebsiteManager() {
           />
         </div>
 
-        {(loading || loadError) && (
-          <div
-            className={`website-manager__notice${loadError ? " website-manager__notice--warning" : ""}`}
-            role={loadError ? "alert" : "status"}
-          >
-            {loadError || "Loading live website data…"}
+        {loadError ? (
+          <div className="website-manager__notice website-manager__notice--warning" role="alert">
+            {loadError}
           </div>
+        ) : (
+          loading && <InlineLoading width={220} label="Loading live website data" />
         )}
 
         {activeTab === "overview" && (

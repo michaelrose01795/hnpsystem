@@ -4,10 +4,10 @@ import WarrantyTab from "@/components/page-ui/job-cards/WarrantyTab"; // redesig
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import Button from "@/components/ui/Button";
+import { formatVehicleLocation } from "@/lib/tracking/vehicleLocations"; // canonical vehicle-location display
 
 export default function JobCardDetailPageUi(props) {
   const {
-    CAR_LOCATIONS,
     ClockingTab,
     ContactTab,
     CustomerRequestsTab,
@@ -588,7 +588,7 @@ export default function JobCardDetailPageUi(props) {
               textOverflow: "ellipsis",
               whiteSpace: "nowrap"
             }}>
-                {trackerEntry?.vehicleLocation || CAR_LOCATIONS[0].label}
+                {formatVehicleLocation(trackerEntry?.vehicleLocation)}
               </div>
             </div>
           </div>

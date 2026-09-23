@@ -1,5 +1,6 @@
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical theme layer around data tables (CLAUDE.md §3.0)
 import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
+import { SectionSkeleton, SkeletonBlock, SkeletonKeyframes, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 // file location: src/components/page-ui/hr/employees/hr-employees-ui.js
 
 export default function EmployeeManagementUi(props) {
@@ -44,9 +45,27 @@ export default function EmployeeManagementUi(props) {
         <Button variant="secondary">Add Employee</Button>
       </header>
 
-      {isLoading && <SectionCard title="Loading directory…" subtitle="Fetching employee listing.">
-          <StatusMessage tone="info">Please wait while we load the placeholder directory data.</StatusMessage>
-        </SectionCard>}
+      {isLoading && <section role="status" aria-live="polite" aria-busy="true" aria-label="Loading directory" style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gap: "var(--layout-card-gap)"
+  }}>
+          <SkeletonKeyframes />
+          {/* Mirrors the Employee Directory card (header + table) and the profile panel. */}
+          <SectionCard>
+            <div style={{
+        display: "grid",
+        gap: "var(--space-sm)"
+      }}>
+              <SkeletonBlock width="180px" height="18px" />
+              <SkeletonBlock width="140px" height="12px" />
+            </div>
+            <LayerTheme padding="var(--space-3)" gap="0">
+              <TableSkeleton columns={["Employee", "Department", "Type", "Status"]} rows={6} label="Loading employee directory" />
+            </LayerTheme>
+          </SectionCard>
+          <SectionSkeleton layer="surface" rows={5} />
+        </section>}
 
       {error && <SectionCard title="Failed to load employee directory" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>

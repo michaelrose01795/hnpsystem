@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
@@ -87,7 +88,9 @@ export default function SarsPage() {
           </p>
         )}
         {rows === null ? (
-          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          <div style={{ overflowX: "auto" }}>
+            <TableSkeleton columns={["Type", "Subject", "Status", "Received", "Due", "Action"]} rows={5} label="Loading subject requests" />
+          </div>
         ) : rows.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No subject requests on record.</p>
         ) : (

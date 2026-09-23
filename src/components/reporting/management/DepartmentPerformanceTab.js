@@ -11,6 +11,7 @@
 import React from "react";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import ReportSection from "../ReportSection";
 import ExecutiveTrendCard from "./ExecutiveTrendCard";
 import ProvenanceFooter from "../ProvenanceFooter";
@@ -43,7 +44,11 @@ export default function DepartmentPerformanceTab({ filter }) {
       >
         <LayerSurface radius="var(--radius-sm)" padding="16px" gap="12px" sectionKey="report-department-comparison-table-card" data-dev-text-preview="Department comparison table card">
           {error && <div style={{ color: "var(--danger-base)", fontSize: "0.82rem" }}>{error}</div>}
-          {loading && <div style={{ color: "var(--surfaceTextMuted)", fontSize: "0.85rem" }}>Loading department KPIs…</div>}
+          {loading && (
+            <div className="app-table-shell-scroll" style={{ overflowX: "auto" }}>
+              <TableSkeleton columns={["Department", "Throughput KPI", "Value", "Quality KPI", "Value", "Health"]} rows={5} label="Loading department KPIs" />
+            </div>
+          )}
           {!loading && departments.length > 0 && (
             <DevLayoutSection
               as="div"

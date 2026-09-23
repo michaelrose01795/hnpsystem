@@ -1291,7 +1291,9 @@ export const API_ROUTE_TABLE = [
   // Tracking / clocking / appointments / activity
   { pattern: /^\/api\/tracking\/equipment\/?$/, table: "tracking_events", transform: passthroughList() },
   { pattern: /^\/api\/tracking\/next-action\/?$/, table: "tracking_events", transform: passthroughSingle() },
-  { pattern: /^\/api\/tracking\/oil-stock\/?$/, table: "consumables", transform: passthroughList() },
+  // Stock control (/tracking -> Oil/Stock): an empty, read-only tracker in presentation mode.
+  { pattern: /^\/api\/tracking\/stock\/?$/, table: "consumables", transform: () => ({ success: true, data: { items: [], orders: [], categories: [], locations: [], suppliers: [], capabilities: { view: true }, migrationPending: false } }) },
+  { pattern: /^\/api\/tracking\/stock\/.+/, table: "consumables", transform: () => ({ success: true, data: { movements: [], orders: [], purchaseHistory: [] } }) },
   { pattern: /^\/api\/tracking\/snapshot\/?$/, table: "tracking_events", transform: passthroughList() },
   { pattern: /^\/api\/tracking\/?/, table: "tracking_events", transform: passthroughList() },
   { pattern: /^\/api\/clocking\/?/, table: "clocking", transform: passthroughList() },

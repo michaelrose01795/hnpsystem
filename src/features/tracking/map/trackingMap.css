@@ -7,25 +7,40 @@
 
    THE IMAGE IS THE MAP. The supplied site plan is the base layer and is never
    redrawn, recoloured or filtered - there is deliberately no theme treatment
-   on it, in either mode. Everything here styles the frame around it and the
-   SVG overlay on top of it.
+   on it, in either mode. Everything here styles the frame around it, the SVG
+   overlay on top of it, and the section panel beside it.
 
    COLOUR
    ------
-   The chrome - frame, label pills, toolbar, footnote - is composited from
+   The chrome - frame, label pills, regions, panel - is composited from
    theme tokens, so it follows the active accent and flips with the theme. The
    plan does not.
 
    BORDERS
    -------
-   There are none. The frame is a fill with a radius; the label pills are
-   fills. */
+   There are none on surfaces. The frame is a fill with a radius; the label
+   pills and regions are fills. The only lines are --separating-line between
+   rows of the section panel's vehicle list (the one allowed list rule); the
+   overview table is the global .app-data-table and is not styled here.
+   Map focus and selection use an SVG stroke, which is not a border.
+
+   SECTIONS
+   --------
+   Every section on the plan is one focusable <g role="button"> holding a
+   region (transparent until hover / selection) and a label pill. Hover is a
+   faint accent wash; selected is a stronger wash plus an accent outline and an
+   accent-filled pill, so the selection reads at a glance without covering the
+   plan in bright overlays. */
 
 html.staff-scope .tracking-map {
   /* The letterbox behind the plan, and the label pills over it. */
   --pmap-frame-bg: color-mix(in srgb, var(--text-1) 6%, var(--surface));
   --pmap-label-bg: color-mix(in srgb, var(--surface) 90%, transparent);
   --pmap-label-text: var(--text-1);
+  --pmap-region-hover: color-mix(in srgb, var(--primary) 14%, transparent);
+  --pmap-region-selected: color-mix(in srgb, var(--primary) 22%, transparent);
+  --pmap-accent: var(--primary);
+  --pmap-accent-text: var(--onAccentText);
 
   width: 100%;
   max-width: 100%;
@@ -47,20 +62,68 @@ html.staff-scope .tracking-map__toolbar {
   min-width: 0;
 }
 
-html.staff-scope .tracking-map__toolbar-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-  margin-left: auto;
+/* ------------------------------------------------------- find a vehicle */
+
+html.staff-scope .tracking-map__find {
+  position: relative;
+  flex: 1 1 260px;
   min-width: 0;
+  max-width: 420px;
 }
 
-html.staff-scope .tracking-map__caption {
+html.staff-scope .tracking-map__find-results {
+  position: absolute;
+  z-index: 5;
+  inset-inline: 0;
+  top: calc(100% + var(--space-xs));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
   margin: 0;
-  font-size: var(--text-label);
+  padding: var(--space-xs);
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+html.staff-scope .tracking-map__find-result {
+  width: 100%;
+  justify-content: flex-start;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .tracking-map__find-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  font-size: var(--text-caption);
+}
+
+html.staff-scope .tracking-map__find-section {
   font-weight: 700;
+}
+
+html.staff-scope .tracking-map__find-empty {
+  padding: var(--space-sm);
+  font-size: var(--text-body-sm);
   color: var(--text-1);
+}
+
+/* ------------------------------------------------- map + panel layout */
+
+html.staff-scope .tracking-map__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: var(--space-sm);
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
 }
 
 /* ------------------------------------------------------- frame and plan */
@@ -76,14 +139,24 @@ html.staff-scope .tracking-map__frame {
   overflow: hidden;
   border-radius: var(--radius-sm);
   background: var(--pmap-frame-bg);
-  /* Touch drags pan the plan. The page still scrolls everywhere outside the
-     frame, so this does not trap a phone user on the map. */
+}
+
+/* Phones only (TrackingSiteMap sets .is-zoomable at tablet width and below).
+   Touch drags pan the plan and a pinch zooms it. The page still scrolls
+   everywhere outside the frame, so this does not trap a phone user on the
+   map. On larger screens the plan is fixed and the page scrolls over it. */
+html.staff-scope .tracking-map__frame.is-zoomable {
   touch-action: none;
   cursor: grab;
 }
 
-html.staff-scope .tracking-map__frame:active {
+html.staff-scope .tracking-map__frame.is-zoomable:active {
   cursor: grabbing;
+}
+
+/* The stage tracks a live drag / pinch directly rather than easing behind it. */
+html.staff-scope .tracking-map__frame.is-gesturing .tracking-map__stage {
+  transition: none;
 }
 
 html.staff-scope .tracking-map__stage {
@@ -120,7 +193,8 @@ html.staff-scope .parking-map__image {
 
 html.staff-scope .parking-map__overlay {
   overflow: visible;
-  /* The plan underneath keeps the pointer for panning. */
+  /* The plan underneath keeps the pointer for panning; only the sections
+     themselves take it back (below). */
   pointer-events: none;
 }
 
@@ -136,13 +210,41 @@ html.staff-scope .parking-map__missing {
   color: var(--text-1);
 }
 
-/* --------------------------------------------------------- area labels */
+/* ------------------------------------------------ selectable sections */
+
+html.staff-scope .parking-map__section {
+  pointer-events: auto;
+  cursor: pointer;
+  outline: none;
+}
+
+html.staff-scope .parking-map__region {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  transition: fill 140ms ease, stroke 140ms ease;
+}
+
+html.staff-scope .parking-map__section:hover .parking-map__region {
+  fill: var(--pmap-region-hover);
+}
+
+html.staff-scope .parking-map__section.is-selected .parking-map__region {
+  fill: var(--pmap-region-selected);
+  stroke: var(--pmap-accent);
+}
 
 html.staff-scope .parking-map__label-pill {
   fill: var(--pmap-label-bg);
+  stroke: transparent;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  transition: fill 140ms ease;
 }
 
-html.staff-scope .parking-map__label-text {
+html.staff-scope .parking-map__label-text,
+html.staff-scope .parking-map__label-count {
   fill: var(--pmap-label-text);
   font-family: var(--font-family);
   font-weight: 700;
@@ -151,43 +253,222 @@ html.staff-scope .parking-map__label-text {
   dominant-baseline: central;
 }
 
-/* --------------------------------------------- reserved interaction layer */
-/* Nothing is interactive yet; the group exists so the clickable-area work has
-   a home that does not touch the drawing above it. */
-
-html.staff-scope .parking-map__interaction-layer {
-  pointer-events: none;
+html.staff-scope .parking-map__label-count {
+  fill: var(--pmap-accent);
 }
 
-html.staff-scope .parking-map__area {
-  fill: transparent;
+html.staff-scope .parking-map__section.is-selected .parking-map__label-pill {
+  fill: var(--pmap-accent);
 }
 
-/* ---------------------------------------------------------------- footer */
+html.staff-scope .parking-map__section.is-selected .parking-map__label-text,
+html.staff-scope .parking-map__section.is-selected .parking-map__label-count {
+  fill: var(--pmap-accent-text);
+}
 
-html.staff-scope .tracking-map__footnote {
+/* Keyboard focus: an accent outline on the pill (and the region, when the
+   section has one). SVG cannot take the box-shadow focus ring, so a stroke
+   carries it. */
+html.staff-scope .parking-map__section:focus-visible .parking-map__label-pill,
+html.staff-scope .parking-map__section:focus-visible .parking-map__region {
+  stroke: var(--pmap-accent);
+}
+
+/* ------------------------------------------------------ section panel */
+
+html.staff-scope .tracking-panel {
+  min-width: 0;
+  /* Exactly the frame's height, so the two read as one tool, and the list
+     scrolls inside the panel instead of lengthening the page. Reaching the end
+     of the list does not hand the scroll on to the page. */
+  height: min(78vh, 900px);
+  min-height: 420px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+html.staff-scope .tracking-panel__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+html.staff-scope .tracking-panel__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+html.staff-scope .tracking-panel__title {
+  margin: 0;
+  font-size: var(--text-h4);
+  color: var(--accentText);
+}
+
+html.staff-scope .tracking-panel__caption {
   margin: 0;
   font-size: var(--text-caption);
   color: var(--text-1);
-  opacity: 0.66;
+  opacity: 0.72;
+}
+
+html.staff-scope .tracking-panel__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xs);
+  margin: 0;
+}
+
+html.staff-scope .tracking-panel__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--theme);
+}
+
+html.staff-scope .tracking-panel__stat dt {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--text-1);
+  opacity: 0.72;
+}
+
+html.staff-scope .tracking-panel__stat dd {
+  margin: 0;
+  font-size: var(--text-h4);
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+html.staff-scope .tracking-panel__stat.is-over dd,
+html.staff-scope .tracking-panel__over {
+  color: var(--danger-base);
+}
+
+html.staff-scope .tracking-panel__row-button {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+html.staff-scope .tracking-panel__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.staff-scope .tracking-panel__vehicle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-xs);
+  border-bottom: var(--separating-line);
+  transition: background 200ms ease;
+}
+
+html.staff-scope .tracking-panel__vehicle.is-highlighted {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+html.staff-scope .tracking-panel__vehicle-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+html.staff-scope .tracking-panel__vehicle-head > :last-child {
+  margin-left: auto;
+}
+
+html.staff-scope .tracking-panel__vehicle-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--theme);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+html.staff-scope .tracking-panel__vehicle-meta {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--text-1);
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+html.staff-scope .tracking-panel__move {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+html.staff-scope .tracking-panel__empty {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--text-1);
+  opacity: 0.72;
+}
+
+html.staff-scope .tracking-panel__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* -------------------------------------------------------------- responsive */
 
-@media (max-width: 767px) {
-  html.staff-scope .tracking-map__frame {
-    min-height: 300px;
-    height: 62vh;
+/* The panel drops under the map before the map gets too narrow to read. */
+@media (max-width: 1100px) {
+  html.staff-scope .tracking-map__body {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  html.staff-scope .tracking-map__toolbar-group {
-    margin-left: 0;
-    width: 100%;
+  /* Stacked under the map it keeps its own scroll, capped so the map above
+     stays in reach. */
+  html.staff-scope .tracking-panel {
+    height: auto;
+    min-height: 0;
+    max-height: min(70vh, 640px);
+  }
+}
+
+/* Phones and tablet portrait: the frame takes the plan's own proportions
+   (the supplied plan is 1433 x 1098), so it fills the width with no empty
+   letterbox above and below. Zoom and pinch take it from there. */
+@media (max-width: 768px) {
+  html.staff-scope .tracking-map__frame {
+    min-height: 0;
+    height: auto;
+    aspect-ratio: 1433 / 1098;
+  }
+}
+
+@media (max-width: 767px) {
+  html.staff-scope .tracking-map__find {
+    flex-basis: 100%;
+    max-width: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.staff-scope .tracking-map__stage {
+  html.staff-scope .tracking-map__stage,
+  html.staff-scope .parking-map__region,
+  html.staff-scope .parking-map__label-pill,
+  html.staff-scope .tracking-panel__vehicle {
     transition: none;
   }
 }

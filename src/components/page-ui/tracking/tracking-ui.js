@@ -1,4 +1,11 @@
 // file location: src/components/page-ui/tracking/tracking-ui.js
+//
+// The shared header row (search, filters, page actions) and body slot of the
+// four tracker pages: /tracking/Key-Parking, /tracking/Loan-car,
+// /tracking/Equipment-Tools and /tracking/Oil-Stock. `activeTab` names the page
+// ("tracker" | "loan-cars" | "equipment" | "oil-stock"). There is no tab strip —
+// each page is reached from its own sidebar button. The location modals and the
+// route skeleton belong to Key/Parking and are only rendered when supplied.
 
 export default function TrackingDashboardUi(props) {
   const {
@@ -6,61 +13,42 @@ export default function TrackingDashboardUi(props) {
     CAR_LOCATIONS,
     DevLayoutSection,
     DropdownField,
-    EquipmentToolsModal,
-    EquipmentHistoryModal,
     KEY_LOCATIONS,
     LocationEntryModal,
     LocationSearchModal,
-    OilStockModal,
-    OilStockHistoryModal,
     SearchBar,
     SimplifiedTrackingModal,
     StatusMessage,
-    TabGroup,
     activeTab,
     closeEntryModal,
     closeSearchModal,
     entries,
     entryModal,
-    equipmentModal,
-    equipmentHistoryModal,
+    canManageEquipment,
     equipmentTypeFilter,
     equipmentTypeFilters,
     error,
-    handleDeleteEquipment,
-    handleDeleteOilStock,
     handleLocationSelect,
     handleSave,
-    handleSaveEquipment,
-    handleSaveOilStock,
     isMobileView,
     loading,
-    loanCarFleetManagerOpen,
-    loanCarMonth,
-    setLoanCarMonth,
-    MonthPickerField,
-    oilCategoryFilter,
-    oilCategoryFilters,
-    oilStockModal,
-    oilStockHistoryModal,
+    loanCarCapabilities,
+    loanCarMonthPicker,
+    requestLoanCarView,
+    onStockCommand,
     openEntryModal,
     renderActiveTabContent,
     searchModal,
-    setActiveTab,
-    setEquipmentModal,
-    setEquipmentHistoryModal,
+    onAddEquipment,
     setEquipmentTypeFilter,
-    setLoanCarFleetManagerOpen,
-    setOilCategoryFilter,
-    setOilStockModal,
-    setOilStockHistoryModal,
+    stockCapabilities,
+    stockFilterSlotRef,
     setSimplifiedModal,
     setSharedSearchValue,
     setTrackerLocationFilter,
     simplifiedModal,
     sharedSearchPlaceholder,
     sharedSearchValue,
-    tabs,
     trackerLocationFilter,
     trackerLocationFilters,
     trackerQuickFilter,
@@ -108,22 +96,6 @@ export default function TrackingDashboardUi(props) {
         overflowY: "visible",
         scrollbarWidth: "thin"
       }}>
-              {tabs.length > 1 && (
-              <DevLayoutSection sectionKey="tracking-page-tabs" parentKey="tracking-page-body" sectionType="toolbar" style={{
-          display: "inline-flex",
-          flex: shouldStackHeaderControls ? "1 1 100%" : "0 0 auto",
-          width: shouldStackHeaderControls ? "100%" : "fit-content",
-          maxWidth: "100%",
-          minWidth: 0,
-          background: "transparent",
-          padding: 0
-        }}>
-                <TabGroup items={tabs.map(tab => ({
-            label: tab.label,
-            value: tab.id
-          }))} value={activeTab} onChange={setActiveTab} ariaLabel="Tracker tabs" className="tab-api--wrap" />
-              </DevLayoutSection>
-              )}
               <DevLayoutSection sectionKey="tracking-page-shared-search" parentKey="tracking-page-body" sectionType="toolbar" style={{
           display: "flex",
           gap: "var(--space-sm)",
@@ -132,7 +104,8 @@ export default function TrackingDashboardUi(props) {
           flex: shouldStackHeaderControls ? "1 1 100%" : "1 1 auto",
           minWidth: 0,
           maxWidth: "100%",
-          justifyContent: shouldStackHeaderControls ? "stretch" : "center"
+          // Leads the row now that there is no tab strip before it.
+          justifyContent: shouldStackHeaderControls ? "stretch" : "flex-start"
         }}>
                   <SearchBar
             value={sharedSearchValue}
@@ -187,31 +160,9 @@ export default function TrackingDashboardUi(props) {
                 maxWidth: shouldStackHeaderControls ? "100%" : "210px"
               }} />
                   )}
-                  {activeTab === "oil-stock" && DropdownField && (
-                  <DropdownField
-              value={oilCategoryFilter}
-              onValueChange={setOilCategoryFilter}
-              options={oilCategoryFilters}
-              ariaLabel="Filter oil and stock by category"
-              placeholder="All categories"
-              size="sm"
-              style={{
-                flex: shouldStackHeaderControls ? "1 1 100%" : "0 1 190px",
-                minWidth: shouldStackHeaderControls ? "100%" : "160px",
-                maxWidth: shouldStackHeaderControls ? "100%" : "210px"
-              }} />
-                  )}
-                  {activeTab === "loan-cars" && MonthPickerField && (
-                  <div style={{
-              flex: shouldStackHeaderControls ? "1 1 100%" : "0 0 auto",
-              minWidth: shouldStackHeaderControls ? "100%" : "max-content"
-            }}>
-                  <MonthPickerField
-              value={loanCarMonth}
-              onValueChange={(nextValue) => setLoanCarMonth(nextValue)}
-              aria-label={`Select loan car month, currently ${loanCarMonth}`} />
-                  </div>
-                  )}
+                  {/* Oil/Stock portals its filter and sort dropdowns in here
+                      (StockControlPanel `filterSlot`), keeping them on this row. */}
+                  {activeTab === "oil-stock" && stockFilterSlotRef && <div ref={stockFilterSlotRef} className="stock-header-filters" />}
               </DevLayoutSection>
               <div style={{
           display: "flex",
@@ -247,25 +198,37 @@ export default function TrackingDashboardUi(props) {
                     Add location
                   </Button>
                   )}
-                  {activeTab === "loan-cars" && (
-                  <Button variant="primary" size="sm" onClick={() => setLoanCarFleetManagerOpen(!loanCarFleetManagerOpen)}>
-                    {loanCarFleetManagerOpen ? "Hide loan car" : "Add loan car"}
+                  {activeTab === "loan-cars" && loanCarMonthPicker}
+                  {activeTab === "loan-cars" && requestLoanCarView && loanCarCapabilities?.manageFleet && (
+                  <Button variant="secondary" size="sm" onClick={() => requestLoanCarView("fleet")}>
+                    Manage fleet
                   </Button>
                   )}
-                  {activeTab === "equipment" && (
-                  <Button variant="primary" size="sm" onClick={() => setEquipmentModal({
-            open: true,
-            item: null
-          })}>
+                  {activeTab === "loan-cars" && requestLoanCarView && loanCarCapabilities?.book && (
+                  <Button variant="secondary" size="sm" onClick={() => requestLoanCarView("quick")}>
+                    Quick add
+                  </Button>
+                  )}
+                  {activeTab === "loan-cars" && requestLoanCarView && loanCarCapabilities?.book && (
+                  <Button variant="primary" size="sm" onClick={() => requestLoanCarView("new")}>
+                    New loan booking
+                  </Button>
+                  )}
+                  {activeTab === "equipment" && canManageEquipment && (
+                  <Button variant="primary" size="sm" onClick={onAddEquipment}>
                     Add Equipment/tools
                   </Button>
                   )}
-                  {activeTab === "oil-stock" && (
-                  <Button variant="primary" size="sm" onClick={() => setOilStockModal({
-            open: true,
-            item: null
-          })}>
-                    Add Oil / Stock
+                  {/* Oil/Stock filters, sort and view live in the stock panel toolbar;
+                      the header keeps the whole-tab actions. */}
+                  {activeTab === "oil-stock" && onStockCommand && stockCapabilities?.stocktake && (
+                  <Button variant="secondary" size="sm" symbol={false} onClick={() => onStockCommand("stocktake")}>
+                    Stocktake
+                  </Button>
+                  )}
+                  {activeTab === "oil-stock" && onStockCommand && stockCapabilities?.manage && (
+                  <Button variant="primary" size="sm" symbol={false} onClick={() => onStockCommand("create")}>
+                    Add stock item
                   </Button>
                   )}
                 </div>
@@ -273,38 +236,21 @@ export default function TrackingDashboardUi(props) {
           {error && <DevLayoutSection sectionKey="tracking-page-error" parentKey="tracking-page-body" sectionType="banner">
               <StatusMessage tone="danger">{error}</StatusMessage>
             </DevLayoutSection>}
-          {loading && entries.length === 0 && TrackingRouteSkeleton ? <TrackingRouteSkeleton /> : renderActiveTabContent()}
+          {/* The skeleton waits on the Key/Parking snapshot only; the other
+              pages' panels load their own data behind their own skeletons. */}
+          {activeTab === "tracker" && loading && entries?.length === 0 && TrackingRouteSkeleton ? <TrackingRouteSkeleton /> : renderActiveTabContent()}
         </DevLayoutSection>
       </DevLayoutSection>
 
-      {searchModal.open && <LocationSearchModal type={searchModal.type} options={searchModal.type === "car" ? CAR_LOCATIONS : KEY_LOCATIONS} onClose={closeSearchModal} onSelect={handleLocationSelect} />}
+      {searchModal?.open && LocationSearchModal && <LocationSearchModal type={searchModal.type} options={searchModal.type === "car" ? CAR_LOCATIONS : KEY_LOCATIONS} onClose={closeSearchModal} onSelect={handleLocationSelect} />}
 
-      {entryModal.open && <LocationEntryModal context={entryModal.type} entry={entryModal.entry} onClose={closeEntryModal} onSave={handleSave} existingEntries={entries} />}
+      {entryModal?.open && LocationEntryModal && <LocationEntryModal context={entryModal.type} entry={entryModal.entry} onClose={closeEntryModal} onSave={handleSave} existingEntries={entries} />}
 
-      {simplifiedModal.open && <SimplifiedTrackingModal initialData={simplifiedModal.initialData} onClose={() => setSimplifiedModal({
+      {simplifiedModal?.open && SimplifiedTrackingModal && <SimplifiedTrackingModal initialData={simplifiedModal.initialData} onClose={() => setSimplifiedModal({
     open: false,
     initialData: null
   })} onSave={handleSave} />}
 
-      {equipmentModal.open && <EquipmentToolsModal initialData={equipmentModal.item} onClose={() => setEquipmentModal({
-    open: false,
-    item: null
-  })} onSave={handleSaveEquipment} onDelete={handleDeleteEquipment} />}
-
-      {equipmentHistoryModal?.open && EquipmentHistoryModal && <EquipmentHistoryModal item={equipmentHistoryModal.item} onClose={() => setEquipmentHistoryModal({
-    open: false,
-    item: null
-  })} />}
-
-      {oilStockModal.open && <OilStockModal initialData={oilStockModal.item} onClose={() => setOilStockModal({
-    open: false,
-    item: null
-  })} onSave={handleSaveOilStock} onDelete={handleDeleteOilStock} />}
-
-      {oilStockHistoryModal?.open && OilStockHistoryModal && <OilStockHistoryModal item={oilStockHistoryModal.item} onClose={() => setOilStockHistoryModal({
-    open: false,
-    item: null
-  })} />}
 
     </>; // render extracted page section.
     default:

@@ -4,6 +4,7 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 import Button from "@/components/ui/Button";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -888,7 +889,10 @@ export default function GoodsInPageUi(props) {
               placeholder="Search recent receiving history"
               ariaLabel="Search recent goods in and drafts"
             />
-            {recentLoading ? <div style={{ color: "var(--text-1)" }}>Loading recent records…</div> : recentError ? <div className="app-status-message app-status-message--warning">Recent records unavailable. {recentError}</div> : recentGoodsIn.length === 0 ? <div style={{ color: "var(--text-1)" }}>No recent goods-in records.</div> : <div style={{ display: "grid", gap: 8, overflowY: "auto" }}>
+            {recentLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading recent records" style={{ display: "grid", gap: 8 }}>
+              <SkeletonKeyframes />
+              {[0, 1, 2, 3].map(index => <SkeletonBlock key={index} height="var(--control-height)" />)}
+            </div> :recentError ? <div className="app-status-message app-status-message--warning">Recent records unavailable. {recentError}</div> : recentGoodsIn.length === 0 ? <div style={{ color: "var(--text-1)" }}>No recent goods-in records.</div> : <div style={{ display: "grid", gap: 8, overflowY: "auto" }}>
               {recentGoodsIn.filter(record => {
                 const query = historySearch.trim().toLowerCase();
                 if (!query) return true;

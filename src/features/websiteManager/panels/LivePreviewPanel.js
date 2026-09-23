@@ -44,6 +44,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { PREVIEW_MESSAGE_TYPES } from "@/features/website/hooks/useWebsitePreviewMode";
 import {
@@ -259,6 +261,7 @@ export default function LivePreviewPanel() {
           className={`ws-section-view ws-section-view--${device}${
             activeTab.whole ? " ws-section-view--whole" : ""
           }`}
+          style={{ position: "relative" }}
         >
           <iframe
             ref={iframeRef}
@@ -272,12 +275,21 @@ export default function LivePreviewPanel() {
             style={activeTab.whole ? undefined : { height: `${height}px` }}
             scrolling={activeTab.whole ? undefined : "no"}
           />
+          {/* Covers the frame until the embed reports ready, so the preview
+              area holds its size instead of showing a blank frame. */}
+          {!ready && (
+            <div
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+              aria-label={activeTab.whole ? "Loading website" : "Loading section"}
+              style={{ position: "absolute", inset: 0 }}
+            >
+              <SkeletonKeyframes />
+              <SkeletonBlock height="100%" borderRadius="var(--radius-sm)" />
+            </div>
+          )}
         </div>
-        {!ready && (
-          <p className="website-manager__meta">
-            {activeTab.whole ? "Loading website…" : "Loading section…"}
-          </p>
-        )}
       </Section>
 
       {/* The sections this tab draws that are owned by code — named, with the
@@ -397,7 +409,21 @@ function LiveSingletonEditor({ sectionKey, schema, onDraftChange, onSaved }) {
           {error}
         </div>
       )}
-      {loading && <p className="website-manager__meta">Loading…</p>}
+      {loading && (
+        <LayerTheme className="website-manager__editor" gap="var(--space-3)" role="status" aria-live="polite" aria-busy="true" aria-label={`Loading ${schema.label.toLowerCase()}`}>
+          <SkeletonKeyframes />
+          <SkeletonBlock width="160px" height="16px" />
+          {["38%", "52%", "30%", "46%"].map((width) => (
+            <div key={width} className="website-manager__field">
+              <SkeletonBlock width={width} height="12px" />
+              <SkeletonBlock height="var(--control-height)" />
+            </div>
+          ))}
+          <div className="website-manager__actions">
+            <SkeletonBlock width="120px" height="36px" />
+          </div>
+        </LayerTheme>
+      )}
       {!loading && !error && (
         <SectionEditor
           schema={schema}

@@ -76,6 +76,30 @@ export const WORKSHOP_CAPACITY_VIEW_ROLES = Array.from(new Set([
   "service",
   "mobile technician",
 ]));
+export const VALET_ROLES = ["valet service", "valet sales"];
+
+/* ------------------------------------------------------------------------ */
+/* Equipment / tools tracker (/tracking → Equipment/Tools).                  */
+/* Composed from the groups above so the tracker introduces no role strings  */
+/* of its own. Capability mapping lives in                                   */
+/* src/features/tracking/equipment/equipmentPermissions.js and is shared by  */
+/* the page and every /api/tracking/equipment route.                         */
+/* ------------------------------------------------------------------------ */
+// Maintain the register: add/edit assets, change status, resolve faults,
+// manage documents and checklists, bulk-log checks, retire and reinstate.
+export const EQUIPMENT_MANAGER_ROLES = Array.from(new Set([
+  ...WORKSHOP_CONTROLLER_ROLES,
+  ...WORKSHOP_CAPACITY_MANAGER_ROLES,
+]));
+// Use the equipment: view the register, log checks, report faults, add photos.
+export const EQUIPMENT_USER_ROLES = Array.from(new Set([
+  ...EQUIPMENT_MANAGER_ROLES,
+  ...WORKSHOP_FLOOR_ROLES,
+  ...TECHNICIAN_ROLES.map((role) => role.toLowerCase()),
+  ...PARTS_DEPARTMENT_ROLES,
+  ...VALET_ROLES,
+]));
+
 export const EFFICIENCY_VIEW_ROLES = Array.from(new Set([
   ...WORKSHOP_CAPACITY_VIEW_ROLES,
   ...MANAGER_SCOPED_ROLES,

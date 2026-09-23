@@ -18,6 +18,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import SectionEditor from "../editors/SectionEditor";
 import CollectionManager from "./CollectionManager";
@@ -211,7 +213,27 @@ function StyleTab() {
         </div>
       )}
       {loading ? (
-        <p className="website-manager__meta">Loading…</p>
+        <div className="website-manager__design-split" role="status" aria-live="polite" aria-busy="true" aria-label="Loading">
+          <SkeletonKeyframes />
+          <LayerTheme className="website-manager__editor" gap="var(--space-3)">
+            <SkeletonBlock width="120px" height="16px" />
+            {["36%", "50%", "42%", "30%", "46%"].map((width) => (
+              <div key={width} className="website-manager__field">
+                <SkeletonBlock width={width} height="12px" />
+                <SkeletonBlock height="var(--control-height)" />
+              </div>
+            ))}
+            <div className="website-manager__actions">
+              <SkeletonBlock width="120px" height="36px" />
+            </div>
+          </LayerTheme>
+          <div className="website-manager__design-preview">
+            <div className="website-manager__actions">
+              <SkeletonBlock width="132px" height="36px" />
+            </div>
+            <SkeletonBlock height="min(64dvh, 44rem)" borderRadius="var(--radius-sm)" style={{ minHeight: "28rem" }} />
+          </div>
+        </div>
       ) : (
         <div className="website-manager__design-split">
           <SectionEditor

@@ -104,7 +104,9 @@ vi.mock("@/lib/database/client", () => ({
   getDatabaseClient: () => ({ from: (table) => makeBuilder(table) }),
 }));
 
-const { fetchTrackingSnapshot, updateTrackingLocations } = await import("@/lib/database/tracking");
+const { fetchTrackingSnapshot, recordAutomaticMovementForStatus, updateTrackingLocations } = await import(
+  "@/lib/database/tracking"
+);
 
 const resetState = (tables = {}) => {
   state.calls = [];
@@ -216,7 +218,39 @@ describe("updateTrackingLocations", () => {
     // Not "Ready For Collection" — moving a car is not completing the job.
     expect(result.success).toBe(true);
     expect(result.data.vehicleEvent.status).toBe("In Progress");
-    expect(result.data.vehicleEvent.location).toBe("Workshop bay 3");
+    // A recognised legacy spelling is written as the canonical section.
+    expect(result.data.vehicleEvent.location).toBe("Workshop");
+  });
+
+  it("writes each new section exactly as its canonical label", async () => {
+    for (const location of ["Paint", "Valet", "Workshop", "Showroom", "Off Site"]) {
+      resetState();
+      const result = await updateTrackingLocations({ actionType: "location_update", jobId: 7, vehicleLocation: location });
+      expect(result.success, location).toBe(true);
+      expect(result.data.vehicleEvent.location, location).toBe(location);
+    }
+  });
+
+  it("refuses a free-text vehicle location and writes nothing — not even the key half", async () => {
+    resetState();
+    const result = await updateTrackingLocations({
+      actionType: "location_update",
+      jobId: 7,
+      keyLocation: "Workshop board",
+      vehicleLocation: "Behind the bins",
+    });
+    expect(result.success).toBe(false);
+    expect(result.error.code).toBe("INVALID_VEHICLE_LOCATION");
+    expect(state.tables.key_tracking_events).toBeUndefined();
+    expect(state.tables.vehicle_tracking_events).toBeUndefined();
+  });
+
+  it("keeps Off Site and N/A as different stored values", async () => {
+    resetState();
+    const offSite = await updateTrackingLocations({ actionType: "location_update", jobId: 7, vehicleLocation: "Off Site" });
+    const na = await updateTrackingLocations({ actionType: "location_update", jobId: 7, vehicleLocation: "N/A" });
+    expect(offSite.data.vehicleEvent.location).toBe("Off Site");
+    expect(na.data.vehicleEvent.location).toBe("N/A");
   });
 
   it("uses an explicit vehicleStatus when the caller supplies one", async () => {
@@ -370,5 +404,50 @@ describe("fetchTrackingSnapshot", () => {
       "Workshop bay 3",
       "Front car park",
     ]);
+  });
+});
+
+describe("recordAutomaticMovementForStatus", () => {
+  const job = { id: 7, job_number: "J7", vehicle_id: 70, vehicle_reg: "AB12CDE" };
+
+  it("moves an In Progress job's car to Workshop and does NOT write a key event", async () => {
+    resetState();
+    const result = await recordAutomaticMovementForStatus({ jobId: 7, status: "In Progress", job });
+    expect(result.success).toBe(true);
+    expect(state.tables.vehicle_tracking_events).toHaveLength(1);
+    expect(state.tables.vehicle_tracking_events[0].location).toBe("Workshop");
+    expect(state.tables.key_tracking_events).toBeUndefined();
+  });
+
+  it("is idempotent: a car already in Workshop is not moved again", async () => {
+    resetState({
+      vehicle_tracking_events: [
+        { event_id: 1, job_id: 7, status: "In Workshop", location: "Workshop bay 2", occurred_at: "2026-08-02T09:00:00.000Z" },
+      ],
+    });
+    const result = await recordAutomaticMovementForStatus({ jobId: 7, status: "in_progress", job });
+    expect(result.data).toMatchObject({ skipped: true });
+    expect(state.tables.vehicle_tracking_events).toHaveLength(1);
+  });
+
+  it("moves a washing car to Valet and still records the keys, as before", async () => {
+    resetState();
+    await recordAutomaticMovementForStatus({ jobId: 7, status: "wash", job });
+    expect(state.tables.vehicle_tracking_events[0].location).toBe("Valet");
+    expect(state.tables.key_tracking_events[0].action).toContain("Workshop Cupboard – Wash");
+  });
+
+  it("writes the canonical Service section for a completed job, not free text", async () => {
+    resetState();
+    await recordAutomaticMovementForStatus({ jobId: 7, status: "complete", job });
+    expect(state.tables.vehicle_tracking_events[0].location).toBe("Service");
+    expect(state.tables.vehicle_tracking_events[0].status).toBe("Ready for Release");
+  });
+
+  it("does nothing for a status without a rule", async () => {
+    resetState();
+    const result = await recordAutomaticMovementForStatus({ jobId: 7, status: "Booked", job });
+    expect(result.data).toMatchObject({ skipped: true });
+    expect(state.calls).toHaveLength(0);
   });
 });

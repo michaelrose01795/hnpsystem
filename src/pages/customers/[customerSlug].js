@@ -26,7 +26,7 @@ import { normalizeContactPreference } from "@/lib/customers/contactPreference";
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 import { isValidUuid } from "@/lib/utils/ids";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
-import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
+import { PageSkeleton, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import {
   connectCustomerToThread,
@@ -199,7 +199,6 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
   return (
     <>
 
-      {loading && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading messages...</p>}
       {error && <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p>}
       <div
         data-dev-section="1"
@@ -209,6 +208,19 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         data-dev-background-token="surface"
         style={{ minHeight: "260px", maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "12px" }}>
 
+        {loading && !messages.length &&
+        <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading messages" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <SkeletonKeyframes />
+            {[0, 1, 2, 3].map((index) =>
+          <SkeletonBlock
+            key={index}
+            width={index % 2 ? "44%" : "62%"}
+            height={index % 2 ? "48px" : "60px"}
+            borderRadius="var(--radius-md)"
+            style={{ alignSelf: index % 2 ? "flex-end" : "flex-start" }} />
+          )}
+          </div>
+        }
         {!loading && !messages.length && <p style={{ margin: 0, color: "var(--text-1)" }}>No messages yet.</p>}
         {messages.map((message) => {
           const mine = Number(message.senderId) === Number(dbUserId);

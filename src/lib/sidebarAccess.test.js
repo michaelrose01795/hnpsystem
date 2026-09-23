@@ -56,7 +56,7 @@ describe("sidebar access snapshots", () => {
     ]);
 
     expect(synced.find((module) => module.key === "department-general")?.items)
-      .toEqual(["/newsfeed", "/messages", "/tracking"]);
+      .toEqual(["/newsfeed", "/messages", "/tracking/Key-Parking"]);
     expect(syncAssignedStandardModules([
       { key: "department-management", label: "Admin", items: ["/dashboard/admin"] },
     ])[0].items).toContain("/archive");

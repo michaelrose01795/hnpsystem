@@ -48,6 +48,8 @@ import {
   resolveHome,
   isWorkspaceNavEnabled,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
+  SIDEBAR_LAYOUT_MIGRATION,
+  migrateSidebarLayout,
   WORKSPACE_DEPARTMENTS,
   WORKSPACE_NAV_SECTIONS,
   DEVELOPER_GROUP_LOCK,
@@ -60,7 +62,9 @@ import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { roleCategories } from "@/config/users";
 import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
-import { ALL_ACCESS_ROLE } from "@/lib/auth/roles";
+import { ALL_ACCESS_ROLE, EQUIPMENT_USER_ROLES } from "@/lib/auth/roles";
+import { LOAN_CAR_ROLES } from "@/features/loanCars/loanCarAccess";
+import { STOCK_ROLES } from "@/features/stockControl/stockAccess";
 import { ROLE_DEPARTMENT_MAP } from "@/lib/reporting/config/departments";
 import { EXECUTIVE_ROLES } from "@/lib/reporting/permissionScope";
 import { getReportingFlag } from "@/lib/reporting/config/flags";
@@ -118,8 +122,10 @@ function buildGoldenSidebarSections() {
         { label: "News Feed", href: "/newsfeed", roles: [] },
         { label: "Messages", href: "/messages", roles: [] },
         {
-          label: "Tracker",
-          href: "/tracking",
+          // 2026-09-22 tracker split: /tracking's Key/Parking tab became this
+          // page; the other three tabs are workspace pages (see below).
+          label: "Key/Parking",
+          href: "/tracking/Key-Parking",
           roles: ["techs", "service", "service manager", "workshop manager", "valet service", "admin"],
         },
         { label: "Archive Job", href: "/archive", roles: [] },
@@ -358,8 +364,15 @@ function legacyFullLandablePaths(golden, roles) {
       .map(([role]) => role.toLowerCase())
   );
   const legacyServiceLinks = [{ href: "/customers", roles: legacyServiceRoles }];
+  // The tracker pages split out of /tracking are landable for exactly the roles
+  // their APIs answer — the capability modules' own role lists.
+  const trackerPageLinks = [
+    { href: "/tracking/Loan-car", roles: LOAN_CAR_ROLES },
+    { href: "/tracking/Equipment-Tools", roles: EQUIPMENT_USER_ROLES },
+    { href: "/tracking/Oil-Stock", roles: STOCK_ROLES },
+  ];
 
-  for (const link of [...legacyTopbarLinks, ...legacyAccountsLinks, ...legacyServiceLinks]) {
+  for (const link of [...legacyTopbarLinks, ...legacyAccountsLinks, ...legacyServiceLinks, ...trackerPageLinks]) {
     if (matches(Array.from(link.roles))) accessible.add(link.href);
   }
 
@@ -540,16 +553,16 @@ describe("workspace manifest - module bundle placement", () => {
         hrefs: module.items.map((item) => item.href),
       }))
     ).toEqual([
-      { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking"] },
-      { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers"] },
+      { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking/Key-Parking"] },
+      { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers", "/tracking/Loan-car"] },
       { key: "department-workshop", hrefs: [
-        "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs",
+        "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools",
       ] },
       { key: "department-tech", hrefs: [
         "/dashboard/tech", "/tech", "/consumables-request", "/tech/efficiency", "/dashboard/mobile",
       ] },
       // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Service.
-      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in"] },
+      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock"] },
       { key: "department-management", hrefs: [
         "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
         "/hr/manager", "/website-manager", "/archive",
@@ -642,10 +655,16 @@ describe("workspace manifest - module bundle placement", () => {
       "department-service",
       "department-general",
     ]);
+    // A pre-split layout: the old /tracking button becomes Key/Parking, and
+    // the Service module it already holds gains Loan Cars.
+    expect(modules[0].items.map((item) => item.href)).toEqual([
+      "/appointments",
+      "/tracking/Loan-car",
+    ]);
     expect(modules[1].items.map((item) => item.href)).toEqual([
       "/newsfeed",
       "/messages",
-      "/tracking",
+      "/tracking/Key-Parking",
     ]);
     expect(sidebarAccess.modules[1].items).toEqual([
       "/tracking",
@@ -670,7 +689,7 @@ describe("workspace manifest - module bundle placement", () => {
       "/newsfeed",
       "/appointments",
       "/messages",
-      "/tracking",
+      "/tracking/Key-Parking",
     ]);
   });
 
@@ -1262,9 +1281,9 @@ describe("workspace group permission model", () => {
     expect(generalRoleless).toContain("/newsfeed");
     expect(generalRoleless).toContain("/messages");
     expect(generalRoleless).toContain("/archive");
-    // ...but a page carrying its own roles (Tracker) stays restricted.
-    expect(generalRoleless).not.toContain("/tracking");
-    expect(getContextNav("general", ["techs"]).items.map((i) => i.href)).toContain("/tracking");
+    // ...but a page carrying its own roles (Key/Parking) stays restricted.
+    expect(generalRoleless).not.toContain("/tracking/Key-Parking");
+    expect(getContextNav("general", ["techs"]).items.map((i) => i.href)).toContain("/tracking/Key-Parking");
   });
 
   it("individual page grants work across groups (Sales sees the Admin group's Website Manager)", () => {
@@ -1354,5 +1373,82 @@ describe("workspace group inheritance (Phase 8 — default permission model)", (
 describe("workspace manifest — feature flag", () => {
   it("workspace_nav_enabled is ON by default and remains env-roll-backable", () => {
     expect(isWorkspaceNavEnabled()).toBe(true);
+  });
+});
+
+describe("workspace manifest — tracker split saved-layout migration", () => {
+  const hrefsOf = (modules, key) =>
+    modules.find((navigationModule) => navigationModule.key === key)?.items.map((item) => item.href);
+
+  it("moves the old /tracking button to Key/Parking in whatever slot it held", () => {
+    const modules = getRoleWorkspaceModules(["techs"], {
+      modules: [{ key: "my-day", label: "My Day", items: ["/tracking", "/newsfeed"] }],
+    });
+    expect(hrefsOf(modules, "my-day")).toEqual(["/tracking/Key-Parking", "/newsfeed"]);
+    expect(resolveAccessiblePaths(["techs"], {
+      modules: [{ key: "my-day", label: "My Day", items: ["/tracking"] }],
+    }).has("/tracking/Key-Parking")).toBe(true);
+  });
+
+  it("adds each new page to the saved module that now owns it", () => {
+    const layout = {
+      version: 5,
+      items: ["/newsfeed", "/tracking", "/jobs", "/clocking", "/goods-in"],
+      modules: [
+        { key: "department-general", label: "General", items: ["/newsfeed", "/tracking"] },
+        { key: "department-service", label: "Service", items: ["/jobs"] },
+        { key: "department-workshop", label: "Workshop", items: ["/clocking"] },
+        { key: "department-parts", label: "Parts", items: ["/goods-in"] },
+      ],
+    };
+    const modules = getRoleWorkspaceModules([ALL_ACCESS_ROLE], layout);
+    expect(hrefsOf(modules, "department-general")).toEqual(["/newsfeed", "/tracking/Key-Parking"]);
+    expect(hrefsOf(modules, "department-service")).toEqual(["/jobs", "/tracking/Loan-car"]);
+    expect(hrefsOf(modules, "department-workshop")).toEqual(["/clocking", "/tracking/Equipment-Tools"]);
+    expect(hrefsOf(modules, "department-parts")).toEqual(["/goods-in", "/tracking/Oil-Stock"]);
+    // The stored row is read, never rewritten.
+    expect(layout.modules[1].items).toEqual(["/jobs"]);
+  });
+
+  it("never adds a page to a module the user does not hold", () => {
+    const modules = getRoleWorkspaceModules(["workshop manager"], {
+      items: ["/newsfeed", "/clocking"],
+      modules: [
+        { key: "department-general", label: "General", items: ["/newsfeed"] },
+        { key: "department-workshop", label: "Workshop", items: ["/clocking"] },
+      ],
+    });
+    // Workshop manager may open Loan Cars and Oil/Stock, but holds neither the
+    // Service nor the Parts module in this saved layout.
+    expect(modules.map((navigationModule) => navigationModule.key)).toEqual([
+      "department-general",
+      "department-workshop",
+    ]);
+    expect(hrefsOf(modules, "department-workshop")).toEqual(["/clocking", "/tracking/Equipment-Tools"]);
+  });
+
+  it("never adds a page the user's roles may not open", () => {
+    // Parts staff are not in the loan car role list.
+    const modules = getRoleWorkspaceModules(["parts"], {
+      modules: [{ key: "department-service", label: "Service", items: ["/jobs"] }],
+    });
+    expect(hrefsOf(modules, "department-service")).toEqual(["/jobs"]);
+  });
+
+  it("leaves a current-version layout exactly as saved", () => {
+    const layout = {
+      version: SIDEBAR_LAYOUT_MIGRATION.version,
+      modules: [{ key: "department-service", label: "Service", items: ["/jobs"] }],
+    };
+    expect(migrateSidebarLayout(layout, ["service"])).toBe(layout);
+    expect(hrefsOf(getRoleWorkspaceModules(["service"], layout), "department-service")).toEqual(["/jobs"]);
+  });
+
+  it("approves a new page in an items-only snapshot only where the role default holds it", () => {
+    const serviceMigrated = migrateSidebarLayout({ items: ["/jobs", "/tracking"] }, ["service"]);
+    expect(serviceMigrated.items).toEqual(["/jobs", "/tracking/Key-Parking", "/tracking/Loan-car"]);
+    // Techs may view loan cars but their default has no Service module.
+    const techsMigrated = migrateSidebarLayout({ items: ["/tracking"] }, ["techs"]);
+    expect(techsMigrated.items).toEqual(["/tracking/Key-Parking", "/tracking/Equipment-Tools"]);
   });
 });

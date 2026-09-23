@@ -2,9 +2,11 @@
 import { useRef, useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import { SectionSkeleton } from "@/components/ui/LoadingSkeleton";
 import useIsMobile from "@/hooks/useIsMobile";
 import VhcMediaGallery from "@/components/VHC/VhcMediaGallery"; // read-only viewer for media captured during the health check
 import PopupModal from "@/components/popups/popupStyleApi";
+import { formatVehicleLocation } from "@/lib/tracking/vehicleLocations"; // canonical vehicle-location display
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations"; // Pre-pick single source of truth = parts_job_items (see project_pre_pick_location).
 import {
   TECHNICIAN_JOB_TAB_LABELS,
@@ -441,7 +443,7 @@ export default function TechJobDetailPageUi(props) {
     .trim()
     .replace(/^Keys (received|hung|updated)\s*[-–]\s*/i, "")
     .replace(/^Key locations?\s*[-:–]\s*/i, "") || "N/A";
-  const vehicleLocationDisplay = trackerEntry?.vehicleLocation || "N/A";
+  const vehicleLocationDisplay = formatVehicleLocation(trackerEntry?.vehicleLocation);
 
   // Pre-pick location resolves from the allocated/linked part(s) — the single
   // source of truth on parts_job_items — with the legacy job_requests value kept
@@ -1651,7 +1653,9 @@ export default function TechJobDetailPageUi(props) {
                     {partsRequests.length} request{partsRequests.length === 1 ? "" : "s"} · {bookedJobParts.length} booked part{bookedJobParts.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                {partsRequestsLoading ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>Loading requests and booked parts...</p> : partsRequests.length === 0 && bookedJobParts.length === 0 ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>
+                {partsRequestsLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading requests and booked parts" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {[0, 1, 2].map((index) => <SectionSkeleton key={index} titleWidth={index % 2 ? "160px" : "220px"} subtitleWidth={index % 2 ? "120px" : "180px"} rows={1} />)}
+                </div> : partsRequests.length === 0 && bookedJobParts.length === 0 ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>
                   No part requests or booked parts for this job yet.
                 </p> : partsRequests.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {partsRequests.map((request) => {
@@ -1754,7 +1758,9 @@ export default function TechJobDetailPageUi(props) {
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--text-1)" }}>Ready or Approved Parts</h3>
                   <span style={{ fontSize: "12px", color: "var(--text-1)" }}>{authorizedParts.length} item{authorizedParts.length === 1 ? "" : "s"}</span>
                 </div>
-                {authorizedPartsLoading ? <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>Loading approved parts...</p> : <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {authorizedPartsLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading approved parts" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {[0, 1, 2].map((index) => <SectionSkeleton key={index} titleWidth={index % 2 ? "160px" : "220px"} subtitleWidth={index % 2 ? "140px" : "200px"} rows={0} />)}
+                </div> : <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {authorizedParts.map((part) => {
                     const statusLabel = formatRequestStatusLabel(part.status);
                     const badgeTone = getPartsStatusTone(part.status);
@@ -1968,12 +1974,12 @@ export default function TechJobDetailPageUi(props) {
                   </div>
                 </DevLayoutSection>}
 
-              {notesLoading ? <DevLayoutSection as="div" sectionKey="myjob-notes-loading" sectionType="content-card" parentKey="myjob-tab-notes" backgroundToken="none" style={{
-            padding: "32px",
-            textAlign: "center",
-            color: "var(--text-1)"
+              {notesLoading ? <DevLayoutSection as="div" sectionKey="myjob-notes-loading" sectionType="content-card" parentKey="myjob-tab-notes" backgroundToken="none" role="status" aria-live="polite" aria-busy="true" aria-label="Loading notes" style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px"
           }}>
-                  Loading notes…
+                  {[0, 1, 2].map((index) => <SectionSkeleton key={index} titleWidth={index % 2 ? "140px" : "180px"} subtitleWidth={index % 2 ? "110px" : "150px"} rows={2} />)}
                 </DevLayoutSection> : notes.length === 0 ? <DevLayoutSection as="div" sectionKey="myjob-notes-empty" sectionType="content-card" parentKey="myjob-tab-notes" backgroundToken="layer-section-level-3" style={{
             textAlign: "center",
             padding: "40px",

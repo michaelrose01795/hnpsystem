@@ -16,7 +16,7 @@ import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role ch
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
-import { SkeletonBlock, SkeletonMetricCard, SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
+import { SkeletonBlock, SkeletonKeyframes, SkeletonMetricCard, SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { calculateLeaveRequestDayTotals, normaliseLeaveDayType } from "@/lib/hr/leaveRequests";
 import {
@@ -1283,7 +1283,13 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
 
         {/* Grouped rules list — click-to-edit, no Edit button */}
         {isLoading ? (
-          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-1)" }}>Loading rules…</div>
+          <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading rules" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {/* Mirrors the grouped rule rows (day list, hours, pattern) at their real height. */}
+            <SkeletonKeyframes />
+            {Array.from({ length: 3 }, (_, index) => (
+              <SkeletonBlock key={index} height="40px" borderRadius="var(--radius-sm)" />
+            ))}
+          </div>
         ) : grouped.length === 0 && !formMode ? (
           <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-1)", fontSize: "0.85rem" }}>
             <div style={{ marginBottom: "4px" }}>No recurring overtime rules set yet.</div>

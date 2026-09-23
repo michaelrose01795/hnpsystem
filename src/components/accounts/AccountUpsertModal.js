@@ -4,6 +4,8 @@ import PropTypes from "prop-types";
 import { useRouter } from "next/router";
 import PopupModal from "@/components/popups/popupStyleApi";
 import AccountForm from "@/components/accounts/AccountForm";
+import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { DEFAULT_ACCOUNT_FORM_VALUES } from "@/config/accounts";
 import { logFailure } from "@/lib/utils/logFailure";
 
@@ -103,7 +105,28 @@ export default function AccountUpsertModal({ isOpen, mode, accountId, onClose, o
             </div>
           )}
           {loading ? (
-            <p style={{ margin: 0, color: "var(--text-1)" }}>Loading account…</p>
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading account" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <SkeletonKeyframes />
+              {[{ fields: 6, notes: true }, { fields: 8, notes: false }].map((group, groupIndex) => (
+                <LayerTheme key={groupIndex} radius="var(--section-card-radius)" gap="var(--space-md)" style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                  <div style={{ flexBasis: "100%" }}>
+                    <SkeletonBlock width={groupIndex === 0 ? "220px" : "160px"} height="22px" />
+                  </div>
+                  {Array.from({ length: group.fields }, (_, index) => (
+                    <div key={index} style={{ flex: "1 1 220px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <SkeletonBlock width={index % 2 ? "45%" : "60%"} height="12px" />
+                      <SkeletonBlock height="44px" />
+                    </div>
+                  ))}
+                  {group.notes && (
+                    <div style={{ flexBasis: "100%", display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <SkeletonBlock width="110px" height="12px" />
+                      <SkeletonBlock height="72px" />
+                    </div>
+                  )}
+                </LayerTheme>
+              ))}
+            </div>
           ) : (
             <AccountForm
               initialValues={account}

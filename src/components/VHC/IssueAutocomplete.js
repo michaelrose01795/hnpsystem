@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getIssueSectionHint, getIssueSuggestions, resolveIssueSectionKey } from "@/lib/vhc/issueSuggestions";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const DEBOUNCE_MS = 150;
 const DISPLAY_LIMIT = 12;
@@ -245,7 +246,14 @@ export default function IssueAutocomplete({
       {isDropdownVisible ? (
         <div style={dropdownStyle}>
           {loading ? (
-            <div style={mutedRowStyle}>Loading suggestions...</div>
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading suggestions">
+              <SkeletonKeyframes />
+              {["72%", "54%", "63%"].map((width) => (
+                <div key={width} style={mutedRowStyle}>
+                  <SkeletonBlock width={width} height="14px" />
+                </div>
+              ))}
+            </div>
           ) : (
             results.map((suggestion, index) => {
               const isActive = index === activeIndex;

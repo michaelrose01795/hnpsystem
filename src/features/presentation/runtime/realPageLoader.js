@@ -110,7 +110,11 @@ const ROUTE_TO_MODULE = {
   // Clocking / tracking / appointments
   "/clocking": () => import("@/pages/clocking/index"),
   "/clocking/[technicianSlug]": () => import("@/pages/clocking/[technicianSlug]"),
-  "/tracking": () => import("@/pages/tracking/index"),
+  "/tracking": () => import("@/pages/tracking/Key-Parking"),
+  "/tracking/Key-Parking": () => import("@/pages/tracking/Key-Parking"),
+  "/tracking/Loan-car": () => import("@/pages/tracking/Loan-car"),
+  "/tracking/Equipment-Tools": () => import("@/pages/tracking/Equipment-Tools"),
+  "/tracking/Oil-Stock": () => import("@/pages/tracking/Oil-Stock"),
   "/appointments": () => import("@/pages/appointments/index"),
 
   // Shared

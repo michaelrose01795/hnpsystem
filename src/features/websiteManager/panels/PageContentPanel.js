@@ -18,6 +18,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { SECTION_SCHEMAS, SECTIONS_BY_PAGE } from "../editors/sectionSchemas";
 import SectionEditor from "../editors/SectionEditor";
@@ -163,7 +164,17 @@ function SingletonPanel({ sectionKey, schema }) {
           {error}
         </div>
       )}
-      {loading && <p className="website-manager__meta">Loading…</p>}
+      {loading && (
+        <div className="website-manager__table-scroll">
+          <TableSkeleton
+            className="app-data-table--compact"
+            columns={2}
+            rows={Math.max(1, Math.min(4, schema.fields.length))}
+            withHeadings={false}
+            label={`Loading ${schema.label.toLowerCase()}`}
+          />
+        </div>
+      )}
       {!loading && !editing && (
         <>
           <Summary data={data || {}} fields={schema.fields} />

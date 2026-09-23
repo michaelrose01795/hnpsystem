@@ -4,6 +4,7 @@ import Button from "@/components/ui/Button"; // shared button primitive (CLAUDE.
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import PopupModal from "@/components/popups/popupStyleApi"; // shared popup shell
+import { InlineLoading, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function PartsOrderDetailUi(props) {
   const {
@@ -51,7 +52,7 @@ export default function PartsOrderDetailUi(props) {
         <LayerTheme style={sectionCard}>
           <div className="app-page-header">
             <div className="app-job-summary-panel__identity">
-              <h1 className="app-job-summary-panel__title">{order?.order_number || resolvedOrderNumber || "Loading..."}</h1>
+              <h1 className="app-job-summary-panel__title">{order?.order_number || resolvedOrderNumber || (loading ? <InlineLoading width={200} height={28} label="Loading" /> : "Loading...")}</h1>
               <p className="app-job-summary-panel__subtitle">
                 {order?.customer_name || "Customer"} &middot; {order?.vehicle_reg || "No registration"}
               </p>
@@ -145,9 +146,7 @@ export default function PartsOrderDetailUi(props) {
             )}
           </div>
 
-          {loading ? <p style={{
-        color: "var(--info)"
-      }}>Loading…</p> : error ? <p style={{
+          {loading ? <TableSkeleton columns={["Part number", "Description", "Quantity", "Unit price", "Line total", "Notes"]} rows={4} label="Loading" /> : error ? <p style={{
         color: "var(--danger)"
       }}>{error}</p> : !order ? <p style={{
         color: "var(--info)"

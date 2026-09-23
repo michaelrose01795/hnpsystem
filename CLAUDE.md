@@ -114,6 +114,7 @@ existing pages:
    styles (`display`, `flex`, `gap`, `grid`, `width`, `position`, …) are fine.
 4. No raw hex colours. No `var()` pointing at a token that is not defined.
 5. No new `!important`.
+5a. **Tables are the global table, untouched.** `<DataTableShell><table className="app-data-table …">` only — no wrapping card, no width/min-width, no feature CSS targeting `table`/`tr`/`th`/`td`/`.app-data-table`, and no feature class on the table, a row or a cell. Style the content *inside* a cell; use `data-table-cell="nowrap"` and the `--clickable` / `--workflow` / `--rounded` variants. Enforced by the `table-overrides` ratchet in `npm run check:design`.
 6. `/website` and `custglobal.css` stay isolated — staff CSS must never style
    `html.website-scope`, and vice versa. This is a hard check.
 

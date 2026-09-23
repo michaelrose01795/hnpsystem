@@ -84,6 +84,7 @@
     "nodemailer-v9": "npm:nodemailer@^9.0.3",
     "nspell": "^2.1.5",
     "postcss": "^8.5.25",
+    "qrcode-generator": "^2.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "stripe": "^17.5.0",

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { logFailure } from "@/lib/utils/logFailure";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 // file location: src/components/Timeline/JobTimeline.js
 // Component: JobTimeline
@@ -34,7 +35,28 @@ export default function JobTimeline({ jobNumber }) {
   }, [jobNumber]);
 
   if (loading) {
-    return <p style={{ color: "var(--primary-border)", padding: "10px" }}>Loading job timeline...</p>;
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        aria-label="Loading job timeline"
+        style={{ display: "grid", gap: "14px" }}
+      >
+        <SkeletonKeyframes />
+        <SkeletonBlock width="180px" height="18px" />
+        {[0, 1, 2, 3].map((index) => (
+          <div key={index} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+            <SkeletonBlock width="12px" height="12px" borderRadius="999px" />
+            <div style={{ display: "grid", gap: "6px", flex: 1, minWidth: 0 }}>
+              <SkeletonBlock width={index % 2 ? "120px" : "160px"} height="14px" />
+              <SkeletonBlock width={index % 2 ? "60%" : "80%"} height="12px" />
+              <SkeletonBlock width="220px" height="10px" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (error) {

@@ -8,6 +8,8 @@
 import React, { useMemo, useState } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import LayerSurface from "@/components/ui/LayerSurface";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import {
   formatCurrency,
@@ -180,8 +182,28 @@ export default function PayslipsListPopup({
         {/* List */}
         <div style={{ overflowY: "auto", padding: "12px 16px 20px" }}>
           {loading ? (
-            <div style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>
-              Loading payslips…
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading payslips" style={{ display: "grid", gap: "8px" }}>
+              <SkeletonKeyframes />
+              {/* Mirrors a payslip row: paid date, period, net pay, reference, status pill. */}
+              {["70%", "58%", "64%", "52%"].map((periodWidth, index) => (
+                <LayerSurface
+                  key={index}
+                  radius="var(--radius-md, 12px)"
+                  padding="12px 14px"
+                  gap="10px"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(110px, 0.8fr) minmax(0, 1.4fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) auto",
+                    alignItems: "center",
+                  }}
+                >
+                  <SkeletonBlock width="80%" height="14px" />
+                  <SkeletonBlock width={periodWidth} height="12px" />
+                  <SkeletonBlock width="60%" height="14px" style={{ justifySelf: "end" }} />
+                  <SkeletonBlock width="70%" height="12px" style={{ justifySelf: "end" }} />
+                  <SkeletonBlock width="64px" height="20px" borderRadius="var(--radius-pill)" />
+                </LayerSurface>
+              ))}
             </div>
           ) : error ? (
             <div

@@ -627,7 +627,7 @@ const USAGE_REGISTRY = {
   { label: "CalendarField primitive", file: "src/components/ui/calendarAPI/CalendarField.js" },
   { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
   { label: "Job cards myjobs", file: "src/pages/tech/index.js", route: "/tech" },
-  { label: "Tracking page", file: "src/pages/tracking/index.js", route: "/tracking" }],
+  { label: "Tracking page", file: "src/pages/tracking/Key-Parking.js", route: "/tracking/Key-Parking" }],
 
   "monthpicker-api": [
   { label: "MonthPickerField primitive", file: "src/components/ui/monthPickerAPI/MonthPickerField.js" },

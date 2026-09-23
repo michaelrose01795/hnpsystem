@@ -15,6 +15,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { SectionSkeleton } from "@/components/ui/LoadingSkeleton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 // Loaded on demand - 213 KB of @supabase/supabase-js.
 //
@@ -1150,9 +1151,23 @@ function WarrantyNotesPanel({
       )}
 
       {loading ? (
-        <span style={{ fontSize: "13px", color: "var(--text-1)", opacity: 0.7 }}>
-          Loading notes…
-        </span>
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label="Loading notes"
+          style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+        >
+          {[0, 1, 2].map((index) => (
+            <SectionSkeleton
+              key={index}
+              layer="surface"
+              titleWidth={index % 2 ? "65%" : "85%"}
+              subtitleWidth="140px"
+              rows={0}
+            />
+          ))}
+        </div>
       ) : notes.length === 0 ? (
         <div className="app-status-message app-status-message--info">
           No warranty notes yet.

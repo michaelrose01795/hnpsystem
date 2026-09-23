@@ -3,6 +3,7 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 import LayerSurface from "@/components/ui/LayerSurface";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import PopupModal from "@/components/popups/popupStyleApi";
 
 const formatQuickNoteDate = (value) => {
@@ -552,7 +553,17 @@ export default function ViewJobCardsUi(props) {
             <div className="app-job-quick-note__section-heading">
               <h3>Recent notes</h3>
             </div>
-            {quickNoteLoading ? <p className="app-job-quick-note__empty">Loading notes...</p> : quickNoteNotes.length === 0 ? <p className="app-job-quick-note__empty">No notes have been added to this job.</p> : <ol>
+            {quickNoteLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading notes" style={{ display: "grid", gap: "var(--layout-card-gap)" }}>
+              <SkeletonKeyframes />
+              {[0, 1, 2].map((index) => <div key={index} style={{ display: "grid", gap: "8px" }}>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                  <SkeletonBlock width="110px" height="14px" />
+                  <SkeletonBlock width="90px" height="12px" />
+                  <SkeletonBlock width="96px" height="20px" borderRadius="999px" />
+                </div>
+                <SkeletonBlock width={index % 2 ? "72%" : "92%"} height="12px" />
+              </div>)}
+            </div> : quickNoteNotes.length === 0 ? <p className="app-job-quick-note__empty">No notes have been added to this job.</p> : <ol>
               {quickNoteNotes.slice(0, 4).map((note) => <li key={note.noteId}>
                 <div className="app-job-quick-note__note-meta">
                   <strong>{note.createdBy || "Unknown"}</strong>

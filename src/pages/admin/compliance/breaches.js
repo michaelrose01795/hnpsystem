@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
@@ -186,7 +187,9 @@ export default function BreachesPage() {
           </p>
         )}
         {rows === null ? (
-          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          <div style={{ overflowX: "auto" }}>
+            <TableSkeleton columns={["Detected", "Hours elapsed", "Category", "Severity", "Status", "ICO ref", "Action"]} rows={5} label="Loading breaches" />
+          </div>
         ) : rows.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No breaches on record.</p>
         ) : (

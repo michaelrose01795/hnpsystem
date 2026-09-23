@@ -91,6 +91,7 @@ against the current tree.
 | `undefined-tokens` | 187 | **0** | `var(--x)` where `--x` is defined nowhere |
 | `raw-colours` | 423 | **63** | Hex literals in staff UI code |
 | `one-off-styling` | 11,950 | 11,843 | Inline styles setting a governed visual property |
+| `table-overrides` | — | 61 (added 2026-09-22) | Feature CSS targeting table structure, or feature classes on `table`/`tr`/`th`/`td` |
 
 §7 records what migration pass 1 changed and what it deliberately left.
 
@@ -126,7 +127,7 @@ npm run check:design:list     # full hit list, grouped by rule and file
 npm run check:design:update   # lock in an improvement
 ```
 
-Three hard rules and five ratchets:
+Three hard rules and six ratchets:
 
 | Rule | Kind | Catches |
 |---|---|---|
@@ -138,11 +139,33 @@ Three hard rules and five ratchets:
 | `undefined-tokens` | ratchet | New reference to a token that does not exist |
 | `raw-colours` | ratchet | New hex literal |
 | `one-off-styling` | ratchet | New inline visual styling |
+| `table-overrides` | ratchet | A feature restyling its own table — see below |
 
 **A file with no baseline entry is held to zero.** A new file that ships a hex
 colour or an inline `background` fails immediately, while every existing file
 keeps exactly the styling it has. `--update` refuses to raise a count or add an
 entry; `--accept-new` is required for a deliberate re-baseline.
+
+### On `table-overrides`
+
+Every staff table takes its look from one place: `.app-data-table` in
+`staffglobal.css` + `families/tables.css`, wrapped in `DataTableShell`. The
+Stock tab on `/tracking` shipped a compact list that forked it: a `--theme`
+card inset around the table, a `min-width: 860px` that forced sideways scroll,
+right-aligned column classes, and its own row cursor/focus rules.
+`family-ownership` could not see any of that — the rules were layout-only or
+never named `.app-data-table`. This ratchet counts, per file:
+
+- **CSS** — any rule outside `staffglobal.css` / `families/` whose selector
+  targets table structure (`.app-data-table`, `.app-table-scroll`,
+  `.app-table-shell`, or a `table`/`thead`/`tbody`/`tfoot`/`tr`/`th`/`td`
+  element), whatever it declares.
+- **JSX** — any `className` on a `table`/`thead`/`tbody`/`tfoot`/`tr`/`th`/`td`
+  other than the canonical `app-data-table*` / `app-table-*` classes.
+
+Style the **content** inside a cell with a feature class instead. Use
+`data-table-cell="nowrap"` for numeric columns, and the `--clickable` /
+`--workflow` / `--rounded` variants for row behaviour and shape.
 
 ### Coverage widened
 
@@ -175,6 +198,9 @@ These apply to **new** code. They do not require touching existing pages.
    pointing at a token that is not defined.
 5. No inline `style={{ background / color / padding / border / font … }}`.
    Layout-only inline styles are fine.
+5a. Tables are `<DataTableShell><table className="app-data-table …">` and
+   nothing else. Never wrap one in a card, give it a width, or put a feature
+   class on the table, a row or a cell — style the content inside the cell.
 6. Do not add `!important`. The budget only goes down.
 7. Do not restyle an existing page while doing unrelated work.
 8. HNPSystem branding and the existing spacing / radius / density scales stay as

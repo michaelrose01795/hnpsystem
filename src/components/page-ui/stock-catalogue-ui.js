@@ -8,6 +8,7 @@ import SymbolButton from "@/components/ui/SymbolButton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
 import DataTableShell from "@/components/ui/DataTableShell";
+import { InlineLoading, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 const QUICK_FILTERS = [
   { id: "all", label: "All parts" },
@@ -278,7 +279,7 @@ export default function StockCataloguePageUi(props) {
             >
               <span className="app-summary-label">{label}</span>
               <strong className="app-summary-value">
-                {stockSummaryLoading ? "…" : value ?? 0}
+                {stockSummaryLoading ? <InlineLoading width={32} height={14} label="Loading" /> : value ?? 0}
               </strong>
               </LayerSurface>)}
             </div>
@@ -896,9 +897,9 @@ export default function StockCataloguePageUi(props) {
               {inventoryError}
             </div>}
 
-          {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory loading state" style={{
-          color: "var(--surfaceTextMuted)"
-        }}>Loading inventory...</div> : inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory empty state" style={{
+          {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory loading state" aria-busy="true">
+              <TableSkeleton columns={["Part Number", "Part details", "Category / supplier", "Bin", "Stock", "Unit cost", "Reorder", "Status", "Actions"]} rows={6} label="Loading inventory" />
+            </div> :inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory empty state" style={{
           color: "var(--surfaceTextMuted)"
         }}>No parts found. Refine your search.</div> : <>
               {/* Canonical table shell: no horizontal scroll, vertical scroll past 10 rows. */}

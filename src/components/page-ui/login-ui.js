@@ -1,5 +1,6 @@
 // file location: src/components/page-ui/login-ui.js
 import LayerSurface from "@/components/ui/LayerSurface";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 
 export default function LoginPageUi(props) {
   const {
@@ -120,8 +121,8 @@ export default function LoginPageUi(props) {
                 <div className="login-dev-content">
                   <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} onSingleUserDepartmentLogin={handleDevLogin} onPresentationSelect={handlePresentationSelect} onDevPlatformSelect={handleDevPlatformSelect} />
 
-                  <p className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")}>
-                    Loading database users for dev login...
+                  <p className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")} aria-busy={loadingDevUsers || rosterLoading ? "true" : undefined}>
+                    <InlineLoading width={220} height={10} label="Loading database users for dev login" />
                   </p>
 
 

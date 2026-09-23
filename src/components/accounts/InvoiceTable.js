@@ -10,6 +10,7 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ToolbarRow from "@/components/ui/ToolbarRow";
+import { SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
@@ -203,11 +204,9 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
               <th>Due</th>
             </tr>
             </thead>
-            <tbody data-dev-section-key="accounts-invoices-data-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="accounts-invoices-data-table">
+            <tbody data-dev-section-key="accounts-invoices-data-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="accounts-invoices-data-table" aria-busy={loading ? "true" : undefined} aria-label={loading ? "Loading invoices" : undefined}>
             {loading &&
-              <tr>
-                <td colSpan={7} style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>Loading invoices…</td>
-              </tr>
+              Array.from({ length: 6 }, (_, index) => <SkeletonTableRow key={`invoice-skeleton-${index}`} cols={7} />)
               }
             {!loading && filteredInvoices.length === 0 &&
               <tr>

@@ -13,6 +13,7 @@ import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import SymbolButton from "@/components/ui/SymbolButton";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import StockCataloguePageUi from "@/components/page-ui/stock-catalogue-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
 
@@ -1163,7 +1164,7 @@ function StockCataloguePage() {
               
                 {filteredDeliveryParts.length === 0 ?
               <div style={{ padding: "12px", color: "var(--info)" }}>
-                    {inventoryLoading ? "Loading inventory…" : "No matching parts"}
+                    {inventoryLoading ? <InlineLoading width={160} label="Loading inventory" /> : "No matching parts"}
                   </div> :
 
               filteredDeliveryParts.map((part) => {

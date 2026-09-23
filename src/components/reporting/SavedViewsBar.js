@@ -8,6 +8,7 @@
 import React, { useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
 import SymbolButton from "@/components/ui/SymbolButton";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useSavedViews } from "@/hooks/reporting/useReporting";
 import { reportDevKey } from "./reportDevOverlay";
 
@@ -43,7 +44,7 @@ export default function SavedViewsBar({ targetRef, currentFilter, onApply }) {
       <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--accentText)" }}>Saved views</div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {loading && <span style={{ fontSize: "0.78rem", color: "var(--surfaceTextMuted)" }}>Loading…</span>}
+        {loading && <InlineLoading width={120} height={24} label="Loading saved views" />}
         {!loading && views.length === 0 && (
           <span style={{ fontSize: "0.78rem", color: "var(--surfaceTextMuted)" }}>No saved views yet — save the current filter below.</span>
         )}

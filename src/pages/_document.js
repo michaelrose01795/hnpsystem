@@ -253,10 +253,23 @@ function buildClientRuntimeExpression() {
 // them. They are emitted as static assets instead and linked only here (initial
 // HTML) and from _app's scope effect (client-side navigation). Keep the two
 // predicates in step with isWebsitePath / isTrackingPath in _app.js.
+// Each tracker page links only its own feature sheet (Loan car needs none);
+// any other /tracking address keeps all three. Keep in step with
+// TRACKING_ROUTE_CSS in _app.js.
+const ALL_TRACKING_CSS = ["trackingMap", "trackingStock", "trackingEquipment"];
+const TRACKING_ROUTE_CSS = {
+  "/tracking/key-parking": ["trackingMap"],
+  "/tracking/loan-car": [],
+  "/tracking/oil-stock": ["trackingStock"],
+  "/tracking/equipment-tools": ["trackingEquipment"],
+};
+
 const routeScopedCssFor = (pathname = "") => {
   const keys = [];
   if (pathname === "/website" || pathname.startsWith("/website/")) keys.push("website");
-  if (pathname === "/tracking" || pathname.startsWith("/tracking/")) keys.push("trackingMap");
+  if (pathname === "/tracking" || pathname.startsWith("/tracking/")) {
+    keys.push(...(TRACKING_ROUTE_CSS[pathname.replace(/\/$/, "").toLowerCase()] || ALL_TRACKING_CSS));
+  }
   return keys
     .map((key) => ({ key, href: ROUTE_SCOPED_CSS[key] }))
     .filter((entry) => Boolean(entry.href));

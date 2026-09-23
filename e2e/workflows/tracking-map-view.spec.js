@@ -1,8 +1,8 @@
 // file location: e2e/workflows/tracking-map-view.spec.js
-// The Key/Parking Grid ⇄ Map switch on /tracking.
+// The Grid ⇄ Map switch on /tracking/Key-Parking.
 //
 // The behaviour this pins down is the whole point of the feature: Map is an
-// INLINE view of the Key/Parking tab, rendered in the same content slot as the
+// INLINE view of the Key/Parking page, rendered in the same content slot as the
 // card grid inside app-layout-page-card. It must never open a popup, never
 // navigate, and never reset the search or the filters.
 //
@@ -13,7 +13,7 @@ const gridButton = (page) => page.getByRole("button", { name: "Grid", exact: tru
 const mapButton = (page) => page.getByRole("button", { name: "Map", exact: true });
 
 const gotoTracking = async (page) => {
-  await page.goto("/tracking");
+  await page.goto("/tracking/Key-Parking");
   await expect(gridButton(page)).toBeVisible();
 };
 
@@ -28,9 +28,9 @@ const openMapView = async (page) => {
 };
 
 test.describe("tracking Key/Parking map view", () => {
-  // The shared auth.setup account is an Admin Manager, and /tracking is not a
-  // route that role owns: WORKSPACE_NAV_SECTIONS in
-  // src/config/workspace/departments.js lists the Tracker under techs /
+  // The shared auth.setup account is an Admin Manager, and /tracking/Key-Parking
+  // is not a route that role owns: WORKSPACE_NAV_SECTIONS in
+  // src/config/workspace/departments.js lists Key/Parking under techs /
   // service / service manager / workshop manager / valet / admin, so the guard
   // in src/pages/_app.js correctly replaces the route with /newsfeed once
   // UserContext resolves — a second or two in, right in the middle of a test.
@@ -64,7 +64,7 @@ test.describe("tracking Key/Parking map view", () => {
     await expect(mapButton(page)).toHaveAttribute("aria-pressed", "true");
     // Inline, not a popup, and still on the same route.
     await expect(page.locator(".popup-backdrop")).toHaveCount(0);
-    expect(new URL(page.url()).pathname).toBe("/tracking");
+    expect(new URL(page.url()).pathname).toBe("/tracking/Key-Parking");
     // Still inside the global page card, under the tracking page's own child.
     await expect(
       page.locator('[data-dev-section-key="app-layout-page-card"] .tracking-map')
@@ -102,80 +102,99 @@ test.describe("tracking Key/Parking map view", () => {
     await expect(search).toHaveValue("ZZ99 ZZZ");
   });
 
-  test("the map reports a computed registry total and keeps unmapped vehicles listed", async ({ page }) => {
+  // The overlay is drawn once the plan image has loaded and reported its size.
+  const section = (page, id) => page.locator(`.parking-map__section[data-area-id="${id}"]`);
+  const panel = (page) => page.locator(".tracking-panel");
+
+  test("every physical section, including the new buildings and Off Site, is labelled on the plan", async ({ page }) => {
     await gotoTracking(page);
     await openMapView(page);
 
-    // The footnote total is derived from the registry, never typed.
-    await expect(page.locator(".tracking-map__footnote")).toContainText(
-      /Calibrated site registry: \d+ vehicle-holding spaces/
-    );
-
-    // Every bay that is drawn is a real bay from the registry.
-    expect(await page.locator(".tracking-map__space, .tracking-map__marker").count()).toBeGreaterThan(0);
-
-    // If anything is unmapped it must still be reachable and correctable.
-    const unmapped = page.locator(".tracking-map__unmapped");
-    if (await unmapped.count()) {
-      await unmapped.getByRole("button", { name: /Show list/i }).click();
-      await expect(unmapped.getByRole("button", { name: "Assign space" }).first()).toBeVisible();
+    for (const id of ["service", "sales-1", "staff", "trade", "paint", "valet", "workshop", "showroom", "off-site"]) {
+      await expect(section(page, id), id).toHaveCount(1, { timeout: MAP_READY_TIMEOUT });
     }
+    // N/A is logical, never a place on the plan.
+    await expect(section(page, "na")).toHaveCount(0);
   });
 
-  test("no vehicle is drawn as a numbered cluster, and none is invented into a bay", async ({ page }) => {
+  test("clicking a map label opens that section, and Escape closes it", async ({ page }) => {
     await gotoTracking(page);
     await openMapView(page);
-    await page.waitForTimeout(1500);
 
-    // Regression: markers used to carry counts like 54 / 65 / 72 / 73 where a
-    // whole area had been collapsed onto one bay.
-    const markers = page.locator(".tracking-map__marker");
-    for (let index = 0; index < (await markers.count()); index += 1) {
-      const text = ((await markers.nth(index).innerText()) || "").trim();
-      expect(text, `marker ${index}`).not.toMatch(/^\d+$/);
-    }
+    const paint = section(page, "paint");
+    await paint.locator(".parking-map__label-pill").click();
+    await expect(paint).toHaveAttribute("aria-pressed", "true");
+    await expect(panel(page)).toHaveAttribute("data-section-id", "paint");
+    await expect(panel(page).locator(".tracking-panel__title")).toHaveText("Paint");
+    await expect(panel(page)).toContainText("Capacity");
+    await expect(panel(page)).toContainText("Occupied");
+    await expect(panel(page)).toContainText("Available");
 
-    // Every drawn marker occupies its own bay: no two share one.
-    const bays = await markers.evaluateAll((nodes) => nodes.map((n) => n.style.left + "|" + n.style.top));
-    expect(new Set(bays).size).toBe(bays.length);
+    await page.keyboard.press("Escape");
+    await expect(paint).toHaveAttribute("aria-pressed", "false");
+    await expect(panel(page)).not.toHaveAttribute("data-section-id", "paint");
   });
 
-  test("a vehicle marker can be selected by keyboard and shows its own record", async ({ page }) => {
+  test("a section can be selected by keyboard", async ({ page }) => {
     await gotoTracking(page);
     await openMapView(page);
 
-    // Markers are derived from the snapshot, which lands after the frame does.
-    const marker = page.locator(".tracking-map__marker").first();
-    await marker.waitFor({ timeout: 15000 }).catch(() => {});
-    test.skip(
-      (await page.locator(".tracking-map__marker").count()) === 0,
-      "No tracked vehicle is currently placed on the site map."
-    );
-
-    const name = await marker.getAttribute("aria-label") || (await marker.innerText());
-    await marker.focus();
+    const workshop = section(page, "workshop");
+    await workshop.focus();
     await page.keyboard.press("Enter");
+    await expect(workshop).toHaveAttribute("aria-pressed", "true");
+    await expect(panel(page).locator(".tracking-panel__title")).toHaveText("Workshop");
+  });
 
-    const panel = page.locator(".tracking-map__panel");
-    await expect(panel).toBeVisible();
-    await expect(marker).toHaveAttribute("aria-pressed", "true");
+  test("the overview reaches every section, including N/A and Off Site, and they are different", async ({ page }) => {
+    await gotoTracking(page);
+    await openMapView(page);
 
-    const reg = (await panel.locator(".tracking-map__panel-title").innerText()).trim();
-    expect(name.toUpperCase()).toContain(reg);
+    const rows = panel(page).locator(".tracking-panel__row-button");
+    const labels = (await rows.allInnerTexts()).map((text) => text.trim());
+    expect(labels).toEqual([
+      "N/A", "Service", "Sales 1", "Sales 2", "Sales 3", "Sales 4", "Sales 5", "Sales 6", "Sales 7",
+      "Sales 8", "Sales 9", "Sales 10", "Staff", "Trade", "Paint", "Valet", "Workshop", "Showroom", "Off Site",
+    ]);
 
-    // Move mode only ever offers free bays, and Escape leaves it without
-    // closing the record.
-    await panel.getByRole("button", { name: /move vehicle/i }).click();
-    await expect(page.locator(".tracking-map__space--target").first()).toBeVisible();
-    await expect(page.locator(".tracking-map__marker.is-selected")).toHaveCount(1);
+    await panel(page).locator('tr[data-section-id="na"] .tracking-panel__row-button').click();
+    await expect(panel(page).locator(".tracking-panel__title")).toHaveText("N/A");
+    await panel(page).getByRole("button", { name: "Close section" }).click();
+    await panel(page).locator('tr[data-section-id="off-site"] .tracking-panel__row-button').click();
+    await expect(panel(page).locator(".tracking-panel__title")).toHaveText("Off Site");
+    await expect(section(page, "off-site")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("panning across a section does not select it", async ({ page }) => {
+    await gotoTracking(page);
+    await openMapView(page);
+
+    const box = await section(page, "workshop").locator(".parking-map__region").boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 30, { steps: 5 });
+    await page.mouse.up();
+    await expect(section(page, "workshop")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("the move destinations are the full canonical list", async ({ page }) => {
+    await gotoTracking(page);
+    await openMapView(page);
+
+    // Pick the busiest section so there is a vehicle to move, if any exist.
+    const counts = await panel(page).locator("tr[data-section-id]").evaluateAll((nodes) =>
+      nodes.map((node) => ({ id: node.dataset.sectionId, count: Number(node.cells[1]?.textContent || 0) }))
+    );
+    const busiest = counts.sort((a, b) => b.count - a.count)[0];
+    test.skip(!busiest || busiest.count === 0, "No live tracked vehicle to move.");
+
+    await panel(page).locator(`tr[data-section-id="${busiest.id}"] .tracking-panel__row-button`).click();
+    const row = panel(page).locator(".tracking-panel__vehicle").first();
+    await row.locator('[aria-haspopup="listbox"]').click();
+    for (const label of ["Paint", "Valet", "Workshop", "Showroom", "Off Site"]) {
+      await expect(page.getByRole("option", { name: label, exact: true })).toBeVisible();
+    }
     await page.keyboard.press("Escape");
-    await expect(page.locator(".tracking-map__space--target")).toHaveCount(0);
-    await expect(panel).toBeVisible();
-
-    // Escape again closes the record and returns focus to the marker.
-    await page.keyboard.press("Escape");
-    await expect(panel).toHaveCount(0);
-    await expect(marker).toBeFocused();
   });
 
   test("the map view has no horizontal overflow on a phone", async ({ page }) => {

@@ -44,6 +44,8 @@ const MANIFEST = path.join(ROOT, "src", "config", "routeScopedCss.generated.json
 const SHEETS = {
   website: "src/styles/custglobal.css",
   trackingMap: "src/features/tracking/map/trackingMap.css",
+  trackingStock: "src/features/stockControl/stockControl.css",
+  trackingEquipment: "src/features/tracking/equipment/equipmentTracker.css",
 };
 
 let transform = null;

@@ -9,7 +9,9 @@
 //
 //   viewport
 //     |- <img>  the site plan, object-fit: contain
-//     `- <svg>  the overlay: area labels, and the reserved interaction layer
+//     `- <svg>  the overlay: one selectable group per section
+//                 |- region  the clickable area (transparent until hover/selection)
+//                 `- label   the section's name pill, with its vehicle count
 //
 // ALIGNMENT
 // ---------
@@ -20,25 +22,31 @@
 // ratios, identical box, so a point in the overlay sits exactly over the same
 // point of the plan at every size. Both live inside the pan/zoom stage, so
 // zooming, panning and Fit site move them together.
+//
+// SELECTION
+// ---------
+// Each section is ONE focusable button (role="button", aria-pressed), and the
+// label and region inside it are two hit areas for the same control — so a
+// click on the pill, a click on the building and Enter/Space on the focused
+// section all do the same thing. A click that ends a pan drag is ignored via
+// `shouldIgnoreClick`, so panning over a section never selects it.
 
 import React, { useState } from "react";
-import { PARKING_AREAS } from "@/features/tracking/map/parkingAreas";
+import { PARKING_AREAS, buildSectionGeometry } from "@/features/tracking/map/parkingAreas";
 import {
   PARKING_SITE_MAP_ALT,
   PARKING_SITE_MAP_MISSING_MESSAGE,
   PARKING_SITE_MAP_SOURCES,
 } from "@/features/tracking/map/parkingSiteMapImage";
 
-// Label pills are sized from their text rather than measured at runtime: an
-// SVG text node cannot report its width before it paints, and a re-measure
-// pass would cost a layout on every resize for no visual gain. The numbers are
-// a share of the image's smaller dimension, so a label keeps its size relative
-// to the plan whatever resolution the asset is exported at.
-const LABEL_HEIGHT_RATIO = 0.032;
-const LABEL_CHAR_RATIO = 0.0098;
-const LABEL_PADDING_RATIO = 0.017;
+const describeCount = (count) => (count === 1 ? "1 vehicle" : `${count} vehicles`);
 
-export default function ParkingSiteMap() {
+export default function ParkingSiteMap({
+  selectedId = null,
+  counts = {},
+  onSelect,
+  shouldIgnoreClick,
+}) {
   // The image's natural size, and therefore the overlay's coordinate system.
   const [natural, setNatural] = useState(null);
   // Which candidate filename is being tried; past the end means none loaded.
@@ -55,35 +63,26 @@ export default function ParkingSiteMap() {
     );
   };
 
-  // Area labels, placed from the fractional anchors in parkingAreas.js. These
-  // are provisional positions; the exact ones arrive with the clickable areas.
-  const labels = natural
-    ? PARKING_AREAS.map((area) => {
-        const scale = Math.min(natural.width, natural.height);
-        const height = scale * LABEL_HEIGHT_RATIO;
-        const width = area.label.length * scale * LABEL_CHAR_RATIO + scale * LABEL_PADDING_RATIO * 2;
-        const centreX = area.anchor.x * natural.width;
-        const centreY = area.anchor.y * natural.height;
-        return {
-          id: area.id,
-          label: area.label,
-          type: area.type,
-          x: centreX - width / 2,
-          y: centreY - height / 2,
-          width,
-          height,
-          centreX,
-          centreY,
-          fontSize: height * 0.56,
-        };
-      })
-    : [];
+  const select = (id) => {
+    if (typeof shouldIgnoreClick === "function" && shouldIgnoreClick()) return;
+    if (typeof onSelect === "function") onSelect(id);
+  };
 
-  const interactiveAreas = PARKING_AREAS.filter((area) => area.shape);
+  const handleKeyDown = (event, id) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (typeof onSelect === "function") onSelect(id);
+    }
+  };
 
   if (!source) {
     return <p className="parking-map__missing">{PARKING_SITE_MAP_MISSING_MESSAGE}</p>;
   }
+
+  // Draw the selected section last so its highlight is never under a neighbour.
+  const ordered = selectedId
+    ? [...PARKING_AREAS.filter((area) => area.id !== selectedId), ...PARKING_AREAS.filter((area) => area.id === selectedId)]
+    : PARKING_AREAS;
 
   return (
     <div className="parking-map__viewport">
@@ -99,51 +98,72 @@ export default function ParkingSiteMap() {
         draggable={false}
       />
 
-      {/* The overlay. Decorative for now: every label it carries is also in
-          the image's alt text and in the tracking lists, so announcing it
-          again would only repeat the same information. It becomes meaningful,
-          and focusable, when the areas become selectable. */}
       {natural && (
         <svg
           className="parking-map__overlay"
           viewBox={`0 0 ${natural.width} ${natural.height}`}
           preserveAspectRatio="xMidYMid meet"
-          aria-hidden="true"
-          focusable="false"
+          role="group"
+          aria-label="Site sections"
         >
-          {/* Parking area names. */}
-          <g className="parking-map__labels" id="site-labels">
-            {labels.map((label) => (
-              <g key={label.id} className="parking-map__label" data-area-id={label.id} data-area-type={label.type}>
-                <rect
-                  className="parking-map__label-pill"
-                  x={label.x}
-                  y={label.y}
-                  width={label.width}
-                  height={label.height}
-                  rx={label.height / 2}
-                />
-                <text
-                  className="parking-map__label-text"
-                  x={label.centreX}
-                  y={label.centreY}
-                  fontSize={label.fontSize}
-                >
-                  {label.label}
-                </text>
+          {ordered.map((area) => {
+            const count = counts[area.id] || 0;
+            const geometry = buildSectionGeometry(area, natural, count);
+            const isSelected = area.id === selectedId;
+            return (
+              <g
+                key={area.id}
+                className={`parking-map__section${isSelected ? " is-selected" : ""}`}
+                data-area-id={area.id}
+                data-area-type={area.type}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                aria-label={`${area.label}, ${describeCount(count)}`}
+                onClick={() => select(area.id)}
+                onKeyDown={(event) => handleKeyDown(event, area.id)}
+              >
+                {geometry.region && (
+                  <rect
+                    className="parking-map__region"
+                    x={geometry.region.x}
+                    y={geometry.region.y}
+                    width={geometry.region.width}
+                    height={geometry.region.height}
+                    rx={geometry.regionRadius}
+                  />
+                )}
+                <g className="parking-map__label">
+                  <rect
+                    className="parking-map__label-pill"
+                    x={geometry.pill.x}
+                    y={geometry.pill.y}
+                    width={geometry.pill.width}
+                    height={geometry.pill.height}
+                    rx={geometry.pill.radius}
+                  />
+                  <text
+                    className="parking-map__label-text"
+                    x={geometry.text.x}
+                    y={geometry.text.y}
+                    fontSize={geometry.text.fontSize}
+                  >
+                    {area.label}
+                  </text>
+                  {geometry.count && (
+                    <text
+                      className="parking-map__label-count"
+                      x={geometry.count.x}
+                      y={geometry.count.y}
+                      fontSize={geometry.count.fontSize}
+                    >
+                      {geometry.count.text}
+                    </text>
+                  )}
+                </g>
               </g>
-            ))}
-          </g>
-
-          {/* Reserved for the clickable parking areas: one
-              <path data-area-id="…"/> per area, fed by the `shape` field in
-              parkingAreas.js. Empty, and non-interactive, until those
-              boundaries are agreed. */}
-          <g className="parking-map__interaction-layer" id="site-interaction">
-            {interactiveAreas.map((area) => (
-              <path key={area.id} className="parking-map__area" data-area-id={area.id} d={area.shape} />
-            ))}
-          </g>
+            );
+          })}
         </svg>
       )}
     </div>

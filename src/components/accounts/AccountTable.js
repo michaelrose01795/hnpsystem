@@ -1,6 +1,7 @@
 // file location: src/components/accounts/AccountTable.js // file path header
 import React from "react"; // import React to define component
 import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import PropTypes from "prop-types";
 
 const columnDefinitions = [
@@ -87,20 +88,11 @@ export default function AccountTable({
             </th>
           </tr>
           </thead>
-          <tbody>
+          <tbody aria-busy={loading ? "true" : undefined} aria-label={loading ? "Loading accounts" : undefined}>
             {loading &&
-            <tr>
-                <td
-                colSpan={columnDefinitions.length + 1}
-                style={{
-                  padding: "28px",
-                  textAlign: "center",
-                  color: "var(--text-1)"
-                }}>
-
-                  Loading accounts…
-                </td>
-              </tr>
+            Array.from({ length: 6 }, (_, index) =>
+            <SkeletonTableRow key={`account-skeleton-${index}`} cols={columnDefinitions.length + 1} />
+            )
             }
             {!loading && accounts.length === 0 &&
             <tr>

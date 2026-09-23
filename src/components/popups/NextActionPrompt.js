@@ -7,6 +7,7 @@ import { useNextAction } from "@/context/NextActionContext"; // import next acti
 import { useUser } from "@/context/UserContext"; // import user context to capture performer id
 import PopupModal from "@/components/popups/popupStyleApi";
 import { logFailure } from "@/lib/utils/logFailure";
+import { NA_VEHICLE_LOCATION_LABEL, VEHICLE_LOCATION_OPTIONS } from "@/lib/tracking/vehicleLocations"; // canonical vehicle sections
 
 const KEY_LOCATIONS = [
   "Completed Hooks – Row A",
@@ -16,13 +17,10 @@ const KEY_LOCATIONS = [
   "Sales Desk Key Safe",
 ];
 
-const VEHICLE_LOCATIONS = [
-  "Front Row – Bay A",
-  "Front Row – Bay B",
-  "Workshop Holding Lane",
-  "Valet Lane",
-  "Customer Collection Bays",
-];
+// Vehicle locations are the canonical sections — this prompt used to carry its
+// own list of invented bay names ("Front Row – Bay A", "Valet Lane", …) that
+// nothing else recognised. The key hooks above are a separate domain.
+const VEHICLE_LOCATIONS = VEHICLE_LOCATION_OPTIONS;
 
 const statusLabelForAction = (actionType, fallback) => {
   if (actionType === "job_checked_in") return "Awaiting Workshop";
@@ -37,7 +35,7 @@ export default function NextActionPrompt() {
   const closeButtonColor = "var(--text-1)";
   const [isOpen, setIsOpen] = useState(false); // track modal visibility
   const [keyLocation, setKeyLocation] = useState(KEY_LOCATIONS[0]); // selected key hook
-  const [vehicleLocation, setVehicleLocation] = useState(VEHICLE_LOCATIONS[0]); // selected bay
+  const [vehicleLocation, setVehicleLocation] = useState(NA_VEHICLE_LOCATION_LABEL); // selected section
   const [notes, setNotes] = useState(""); // additional notes
   const [isSubmitting, setIsSubmitting] = useState(false); // submission flag
   const [feedback, setFeedback] = useState(null); // store success or error message
@@ -59,7 +57,7 @@ export default function NextActionPrompt() {
     setIsOpen(true);
     setFeedback(null);
     setKeyLocation(KEY_LOCATIONS[0]);
-    setVehicleLocation(VEHICLE_LOCATIONS[0]);
+    setVehicleLocation(NA_VEHICLE_LOCATION_LABEL);
     setNotes("");
   };
 

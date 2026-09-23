@@ -22,7 +22,7 @@ import {
   groupVhcMedia,
   prioritiseRowsWithMedia,
 } from "@/lib/vhc/buildVhcMediaLibrary";
-import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { InlineLoading, SkeletonBlock, SkeletonKeyframes, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -5943,7 +5943,9 @@ export default function VhcDetailsPanel({
                             }}
                           >
                             {labourSuggestionsLoading ? (
-                              <div>Loading suggestions…</div>
+                              <div aria-busy="true">
+                                <InlineLoading width={120} label="Loading suggestions" />
+                              </div>
                             ) : labourSuggestions.length === 0 ? (
                               <div>Suggested labour time</div>
                             ) : (
@@ -9983,7 +9985,7 @@ export default function VhcDetailsPanel({
                     colour: job?.vehicle?.colour || "",
                     openPopup: "true"
                   });
-                  router.push(`/tracking?${params.toString()}`);
+                  router.push(`/tracking/Key-Parking?${params.toString()}`);
                 }}
                 disabled={!job?.job_number}
               >
@@ -11429,13 +11431,26 @@ export default function VhcDetailsPanel({
                   ))}
                 </div>
               )}
-              {partsSearchSuggestionsLoading && <small role="status">Loading suggestions…</small>}
+              {partsSearchSuggestionsLoading && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  aria-busy="true"
+                  aria-label="Loading suggestions"
+                  style={{ display: "flex", flexWrap: "wrap", gap: "var(--control-gap)", alignItems: "center" }}
+                >
+                  <SkeletonKeyframes />
+                  {["96px", "72px", "110px"].map((width) => (
+                    <SkeletonBlock key={width} width={width} height="28px" borderRadius="var(--radius-pill)" />
+                  ))}
+                </div>
+              )}
               {partsLearningSavedAt && Date.now() - partsLearningSavedAt < 2500 && (
                 <div className="app-status-message app-status-message--success" role="status">
                   Search preference saved.
                 </div>
               )}
-              {addPartsLoading && <small role="status">Searching…</small>}
+              {addPartsLoading && <InlineLoading width={120} label="Searching" />}
               {addPartsError && !addPartsLoading && (
                 <div className="app-status-message app-status-message--danger" role="alert">
                   {addPartsError}
@@ -11563,7 +11578,19 @@ export default function VhcDetailsPanel({
             >
               <h3 style={{ margin: 0 }}>Search results</h3>
               {addPartsResults.length === 0 ? (
-                <p style={{ margin: 0 }}>{addPartsLoading ? "Loading results…" : "No parts to show yet."}</p>
+                addPartsLoading ? (
+                  <div style={{ maxHeight: "200px", overflow: "auto" }} aria-busy="true">
+                    <TableSkeleton
+                      columns={["Part", "Number", "Location", "Stock", "Action"]}
+                      rows={4}
+                      label="Loading results"
+                      className="app-data-table--compact app-data-table--rounded"
+                      style={{ minWidth: "560px" }}
+                    />
+                  </div>
+                ) : (
+                  <p style={{ margin: 0 }}>No parts to show yet.</p>
+                )
               ) : (
                 <div style={{ maxHeight: "200px", overflow: "auto" }}>
                   <table className="app-data-table app-data-table--compact app-data-table--rounded" style={{ minWidth: "560px" }}>

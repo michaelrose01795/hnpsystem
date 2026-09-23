@@ -119,6 +119,23 @@ const defaultGetLayout = (page) => <Layout>{page}</Layout>;
 const isWebsitePath = (path = "") => path === "/website" || path.startsWith("/website/");
 const isTrackingPath = (path = "") => path === "/tracking" || path.startsWith("/tracking/");
 
+// Which route-scoped stylesheets a /tracking page needs. Each tracker page
+// uses exactly one feature sheet (Loan car uses none — its styles are global),
+// and every sheet is render-blocking on a first paint, so a page links only its
+// own. Any other /tracking address keeps all three. Keep in step with
+// TRACKING_ROUTE_CSS in _document.js.
+const ALL_TRACKING_CSS = ["trackingMap", "trackingStock", "trackingEquipment"];
+const TRACKING_ROUTE_CSS = {
+  "/tracking/key-parking": ["trackingMap"],
+  "/tracking/loan-car": [],
+  "/tracking/oil-stock": ["trackingStock"],
+  "/tracking/equipment-tools": ["trackingEquipment"],
+};
+const trackingCssFor = (path = "") => {
+  if (!isTrackingPath(path)) return [];
+  return TRACKING_ROUTE_CSS[path.replace(/\/$/, "").toLowerCase()] || ALL_TRACKING_CSS;
+};
+
 // Add a route-scoped stylesheet once, if it is not already in the document.
 //
 // _document.js emits the same <link> (same href) server-side for a direct hit on
@@ -184,7 +201,7 @@ function AppWrapper({ Component, pageProps }) {
   }, [onFrameworkErrorRoute, asPath]);
   const isWebsiteRoute =
     isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery) || isWebsitePath(errorRouteBrowserPath);
-  const isTrackingRoute = isTrackingPath(pathname) || isTrackingPath(asPathWithoutQuery);
+  const trackingCssKeys = (isTrackingPath(pathname) ? trackingCssFor(pathname) : trackingCssFor(asPathWithoutQuery)).join(",");
   // /website-manager embeds website pages in an iframe with ?preview=…; the help
   // chat stays off those previews.
   const isWebsitePreviewEmbed = isWebsiteRoute && /[?&]preview=/.test(asPath);
@@ -234,7 +251,7 @@ function AppWrapper({ Component, pageProps }) {
     // Attach the route's own stylesheet before flipping its scope class, so the
     // rules exist by the time the selector they hang off starts matching.
     if (isWebsiteRoute) ensureRouteScopedStylesheet("website");
-    if (isTrackingRoute) ensureRouteScopedStylesheet("trackingMap");
+    if (trackingCssKeys) trackingCssKeys.split(",").forEach(ensureRouteScopedStylesheet);
     const root = document.documentElement;
     const body = document.body;
     root.classList.toggle("website-scope", isWebsiteRoute);
@@ -245,7 +262,7 @@ function AppWrapper({ Component, pageProps }) {
     body?.classList.toggle("dev-scope", isDevRoute);
     body?.classList.toggle("login-scope", isLoginRoute);
     return undefined;
-  }, [isWebsiteRoute, isTrackingRoute, isDevRoute, isLoginRoute]);
+  }, [isWebsiteRoute, trackingCssKeys, isDevRoute, isLoginRoute]);
 
   // Install / restore the /api/* fetch interceptor based on whether we're on a
   // /presentation/* route. Real routes always get the original window.fetch.

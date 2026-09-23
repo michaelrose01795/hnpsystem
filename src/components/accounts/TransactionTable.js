@@ -8,6 +8,7 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import ToolbarRow from "@/components/ui/ToolbarRow";
+import { SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import Button from "@/components/ui/Button";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
@@ -106,11 +107,9 @@ export default function TransactionTable({ transactions, loading, filters, onFil
               <th style={{ textAlign: "left", padding: "12px" }}>Created By</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody aria-busy={loading ? "true" : undefined} aria-label={loading ? "Loading transactions" : undefined}>
             {loading &&
-            <tr>
-                <td colSpan={7} style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>Loading transactions…</td>
-              </tr>
+            Array.from({ length: 6 }, (_, index) => <SkeletonTableRow key={`transaction-skeleton-${index}`} cols={7} />)
             }
             {!loading && filteredTransactions.length === 0 &&
             <tr>

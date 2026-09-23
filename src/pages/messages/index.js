@@ -286,7 +286,7 @@ const renderMessageContent = (content, userRoles = []) => {
       href = '/stock-catalogue';
       title = 'Parts Management';
     } else if (standalone === 'tracking') {
-      href = '/tracking';
+      href = '/tracking/Key-Parking';
       title = 'Vehicle Tracking';
     } else if (standalone === 'valet') {
       href = '/valet';
@@ -901,7 +901,7 @@ const getAvailableCommands = (userRoles = []) => {
     pattern: "tracking",
     hasInput: false,
     roles: ['service advisor', 'service manager', 'workshop manager', 'valet', 'admin'],
-    getLink: () => '/tracking'
+    getLink: () => '/tracking/Key-Parking'
   },
   {
     command: "/valet",

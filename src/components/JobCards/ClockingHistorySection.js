@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 // Loaded on demand - the queries and the realtime channel below all run after
 // mount, so the 213 KB client does not belong in this component's first load.
 import { loadSupabaseClient, subscribeWithDeferredClient } from "@/lib/database/realtimeClient";
@@ -431,13 +432,13 @@ export default function ClockingHistorySection({
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody
+                {...(loading && derivedRows.length === 0
+                  ? { role: "status", "aria-live": "polite", "aria-busy": "true", "aria-label": "Loading clocking entries" }
+                  : {})}
+              >
                 {loading && derivedRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} style={{ padding: "16px", textAlign: "center", color: "var(--grey-accent)" }}>
-                      Loading clocking entries…
-                    </td>
-                  </tr>
+                  [0, 1, 2, 3].map((index) => <SkeletonTableRow key={index} cols={8} />)
                 ) : derivedRows.length === 0 ? (
                   <tr>
                     <td colSpan={8} style={{ padding: "16px", textAlign: "center", color: "var(--grey-accent)" }}>

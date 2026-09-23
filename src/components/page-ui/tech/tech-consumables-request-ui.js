@@ -3,6 +3,7 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { InlineLoading, SkeletonBlock, SkeletonKeyframes, SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 
 // Request status -> canonical badge tone (families/badges.css). Keeps the
@@ -151,7 +152,7 @@ export default function TechConsumableRequestPageUi(props) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
                 <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>Stock Check</h2>
                 <span style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
-                  {stockLoading ? "Loading…" : `${stockItems.length} items`}
+                  {stockLoading ? <InlineLoading width={70} label="Loading" /> : `${stockItems.length} items`}
                 </span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
@@ -185,10 +186,7 @@ export default function TechConsumableRequestPageUi(props) {
             flexDirection: "column",
             gap: "6px"
           }}>
-                  {stockLoading ? <span style={{
-              color: "var(--grey-accent-dark)",
-              fontSize: "0.85rem"
-            }}>Searching stock…</span> : stockMatches.length > 0 ? <>
+                  {stockLoading ? <InlineLoading width={160} label="Searching stock" /> :stockMatches.length > 0 ? <>
                       <span style={{
                 color: "var(--grey-accent-dark)",
                 fontSize: "0.8rem"
@@ -323,13 +321,24 @@ export default function TechConsumableRequestPageUi(props) {
         flexDirection: "column",
         gap: "12px"
       }}>
-              {loadingRequests ? <LayerSurface padding="14px" gap="12px" style={{
-          ...requestCardStyle,
-          textAlign: "center",
-          color: "var(--text-1)"
+              {loadingRequests ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading requests" style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px"
         }}>
-                  Loading requests…
-                </LayerSurface> : filteredRequests.length > 0 ? filteredRequests.map(request => <LayerSurface key={request.id} as="article" sectionKey={`tech-consumables-request-mobile-card-${request.id}`} sectionType="content-card" parentKey="tech-consumables-request-mobile-list" padding="14px" gap="12px" style={requestCardStyle}>
+                  <SkeletonKeyframes />
+                  {["60%", "48%", "70%"].map((width, index) => <LayerSurface key={index} padding="14px" gap="12px" style={requestCardStyle}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                        <SkeletonBlock width={width} height="16px" />
+                        <SkeletonBlock width="80px" height="22px" borderRadius="var(--radius-pill)" />
+                      </div>
+                      <div style={requestCardMetaGridStyle}>
+                        <SkeletonBlock width="70%" height="12px" />
+                        <SkeletonBlock width="70%" height="12px" />
+                        <SkeletonBlock width="50%" height="12px" />
+                      </div>
+                    </LayerSurface>)}
+                </div> :filteredRequests.length > 0 ? filteredRequests.map(request => <LayerSurface key={request.id} as="article" sectionKey={`tech-consumables-request-mobile-card-${request.id}`} sectionType="content-card" parentKey="tech-consumables-request-mobile-list" padding="14px" gap="12px" style={requestCardStyle}>
                     <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -422,12 +431,8 @@ export default function TechConsumableRequestPageUi(props) {
                     <th>Requested By</th>
                   </tr>
                 </thead>
-                <tbody data-dev-section="1" data-dev-section-key="tech-consumables-request-auto-data-table-1-rows" data-dev-section-type="table-rows" data-dev-section-parent="tech-consumables-request-auto-data-table-1">
-                  {loadingRequests ? <tr data-dev-section="1" data-dev-section-key="tech-consumables-requests-loading-row" data-dev-section-type="state-banner" data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows">
-                      <td colSpan={5} style={{ textAlign: "center" }}>
-                        Loading requests…
-                      </td>
-                    </tr> : filteredRequests.length > 0 ? filteredRequests.map(request => <tr key={request.id} data-dev-section="1" data-dev-section-key={`tech-consumables-request-auto-data-table-1-row-${request.id}`} data-dev-section-type="table-row" data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows">
+                <tbody data-dev-section="1" data-dev-section-key="tech-consumables-request-auto-data-table-1-rows" data-dev-section-type="table-rows" data-dev-section-parent="tech-consumables-request-auto-data-table-1" aria-busy={loadingRequests || undefined} aria-label={loadingRequests ? "Loading requests" : undefined}>
+                  {loadingRequests ? [0, 1, 2, 3].map(index => <SkeletonTableRow key={index} cols={5} />) :filteredRequests.length > 0 ? filteredRequests.map(request => <tr key={request.id} data-dev-section="1" data-dev-section-key={`tech-consumables-request-auto-data-table-1-row-${request.id}`} data-dev-section-type="table-row" data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows">
                         <td data-table-cell="nowrap">
                           <span className={`app-badge ${requestBadgeTone(request.status)}`}>
                             {requestStatusIcon(request.status)}

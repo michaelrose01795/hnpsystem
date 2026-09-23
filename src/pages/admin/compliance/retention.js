@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
 import Section from "@/components/compliance/ComplianceSection";
 
@@ -77,7 +78,9 @@ export default function RetentionPage() {
         </p>
         {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>{error}</p>}
         {policies === null ? (
-          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          <div style={{ overflowX: "auto" }}>
+            <TableSkeleton columns={["Entity type", "Retention", "Action", "Legal basis", "Notes", "Run (log only)"]} rows={5} label="Loading retention policies" />
+          </div>
         ) : policies.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No policies configured.</p>
         ) : (

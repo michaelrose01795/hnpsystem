@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import { TableSkeleton } from "@/components/ui/LoadingSkeleton";
 import SectionEditor from "../editors/SectionEditor";
 import {
   fetchSection,
@@ -191,7 +192,15 @@ export default function CollectionManager({
         />
       )}
 
-      {loading && <p className="website-manager__meta">Loading…</p>}
+      {loading && (
+        <div className="website-manager__table-scroll">
+          <TableSkeleton
+            columns={["#", "Item", ...columns.map((col) => col.label), ...(hasStatus ? ["Status"] : []), "Actions"]}
+            rows={4}
+            label="Loading items"
+          />
+        </div>
+      )}
 
       {!loading && visibleRows.length === 0 && (
         <EmptyState

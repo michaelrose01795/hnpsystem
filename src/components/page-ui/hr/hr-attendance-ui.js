@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/hr/hr-attendance-ui.js
 import { LayerTheme } from "@/components/ui"; // canonical layer primitive (see CLAUDE.md §3.0)
 import DataTableShell from "@/components/ui/DataTableShell"; // canonical table scroll shell (CLAUDE.md §3.4)
+import { SkeletonBlock, SkeletonKeyframes, TableSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function HrAttendanceUi(props) {
   const {
@@ -33,9 +34,72 @@ export default function HrAttendanceUi(props) {
         </p>
       </header>
 
-      {isLoading && <SectionCard title="Loading attendance" subtitle="Fetching clocking data.">
-          <StatusMessage tone="info">Pulling attendance data from Supabase.</StatusMessage>
-        </SectionCard>}
+      {isLoading && <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading attendance" style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--page-stack-gap)"
+  }}>
+          <SkeletonKeyframes />
+          {/* Mirrors the loaded layout: time logs + overtime summary side by side, absence table below. */}
+          <section style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+      gap: "var(--layout-card-gap)"
+    }}>
+            <SectionCard>
+              <div style={{
+          display: "grid",
+          gap: "var(--space-sm)"
+        }}>
+                <SkeletonBlock width="160px" height="18px" />
+                <SkeletonBlock width="240px" height="12px" />
+              </div>
+              <LayerTheme padding="var(--space-3)" gap="0">
+                <TableSkeleton columns={["Employee", "Date", "Clock In", "Clock Out", "Total Hours", "Status"]} rows={5} label="Loading daily time logs" />
+              </LayerTheme>
+            </SectionCard>
+            <SectionCard>
+              <div style={{
+          display: "grid",
+          gap: "var(--space-sm)"
+        }}>
+                <SkeletonBlock width="170px" height="18px" />
+                <SkeletonBlock width="220px" height="12px" />
+              </div>
+              <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-3)"
+        }}>
+                {["62%", "48%", "55%"].map(width => <LayerTheme key={width} radius="var(--radius-sm)" padding="var(--space-3)" gap="var(--space-1)">
+                    <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "var(--space-3)"
+            }}>
+                      <SkeletonBlock width={width} height="16px" />
+                      <SkeletonBlock width="64px" height="20px" borderRadius="var(--radius-pill)" />
+                    </div>
+                    <SkeletonBlock width="40%" height="12px" />
+                    <SkeletonBlock width="70%" height="12px" />
+                  </LayerTheme>)}
+              </div>
+            </SectionCard>
+          </section>
+          <SectionCard>
+            <div style={{
+        display: "grid",
+        gap: "var(--space-sm)"
+      }}>
+              <SkeletonBlock width="160px" height="18px" />
+              <SkeletonBlock width="300px" height="12px" />
+            </div>
+            <LayerTheme padding="var(--space-3)" gap="0">
+              <TableSkeleton columns={["Employee", "Type", "Start", "End", "Status"]} rows={4} label="Loading absence records" />
+            </LayerTheme>
+          </SectionCard>
+        </div>}
 
       {error && <SectionCard title="Unable to load attendance" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>

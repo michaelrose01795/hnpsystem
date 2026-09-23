@@ -4,6 +4,7 @@ import PopupModal from "@/components/popups/popupStyleApi";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import Button from "@/components/ui/Button";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { logFailure } from "@/lib/utils/logFailure";
 
 const consumableNameCollator = new Intl.Collator(undefined, {
@@ -1020,7 +1021,7 @@ function StockCheckPopup({
                   <h3 style={sectionHeadingStyle}>Consumable stock</h3>
                 </div>
                 <span style={{ ...mutedTextStyle, fontSize: "0.9rem" }}>
-                  {loading ? "Loading…" : `${visibleItems} of ${totalItems} items`}
+                  {loading ? <InlineLoading width={90} label="Loading" /> : `${visibleItems} of ${totalItems} items`}
                 </span>
               </div>
               <div
@@ -1115,7 +1116,15 @@ function StockCheckPopup({
                 </div>
               )}
               {!shouldShowStockList ? null : loading ? (
-                <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.72 }}>Loading stock...</p>
+                <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading stock" style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px" }}>
+                  <SkeletonKeyframes />
+                  {["72%", "58%", "66%", "48%", "62%"].map((width, index) => (
+                    <div key={index} style={{ display: "flex", alignItems: "center", gap: "12px", height: "44px" }}>
+                      <SkeletonBlock width="20px" height="20px" borderRadius="var(--radius-xs)" />
+                      <SkeletonBlock width={width} height="14px" />
+                    </div>
+                  ))}
+                </div>
               ) : visibleItems === 0 ? (
                 <p style={{ margin: 0, ...mutedTextStyle }}>
                   {totalItems === 0 ? "No consumables recorded yet." : "No consumables match your search."}
