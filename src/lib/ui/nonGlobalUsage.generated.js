@@ -12,8 +12,8 @@
 export const NON_GLOBAL_AUDIT = {
   "non-global-buttons": {
     title: "buttons carrying their own fill / radius / type instead of .app-btn",
-    total: 198,
-    files: 60,
+    total: 195,
+    files: 59,
     usage: [
       { label: "VhcDetailsPanel (VHC) — 21", file: "src/components/VHC/VhcDetailsPanel.js" },
       { label: "[jobNumber] (job-cards) — 15", file: "src/pages/job-cards/[jobNumber].js" },
@@ -71,8 +71,8 @@ export const NON_GLOBAL_AUDIT = {
   },
   "non-global-tables": {
     title: "tables that do not carry .app-data-table",
-    total: 9,
-    files: 8,
+    total: 8,
+    files: 7,
     usage: [
       { label: "VhcDetailsPanel (VHC) — 2", file: "src/components/VHC/VhcDetailsPanel.js" },
       { label: "LoanCarCalendar (LoanCars) — 1", file: "src/components/LoanCars/LoanCarCalendar.js" },
@@ -81,7 +81,6 @@ export const NON_GLOBAL_AUDIT = {
       { label: "stock-catalogue-ui (page-ui) — 1", file: "src/components/page-ui/stock-catalogue-ui.js" },
       { label: "ProfileWorkTab (profile) — 1", file: "src/components/profile/ProfileWorkTab.js" },
       { label: "JobClockingCard (Workshop) — 1", file: "src/components/Workshop/JobClockingCard.js" },
-      { label: "SectionPanel (map) — 1", file: "src/features/tracking/map/SectionPanel.js" },
     ],
   },
   "non-global-badges": {
@@ -127,7 +126,7 @@ export const NON_GLOBAL_AUDIT = {
     total: 3,
     files: 3,
     usage: [
-      { label: "TabGroup / .tab-api — dominant (38 files)", file: "src/components/ui/tabAPI/TabGroup.js" },
+      { label: "TabGroup / .tab-api — dominant (39 files)", file: "src/components/ui/tabAPI/TabGroup.js" },
       { label: ".app-tab--* — second base (3 files)", file: "src/styles/families/tabs.css" },
       { label: "StaffTabs / .app-staff-tabs — third (2 files)", file: "src/styles/staffglobal.css" },
     ],

@@ -213,7 +213,33 @@ const SELECT_TAG_RE = /<select\b/;
 const VISUAL_STYLE_RE = /\b(background|backgroundColor|color|padding|border|borderRadius|font|fontSize|fontWeight|boxShadow|minHeight|height)\b/;
 const APP_INPUT_RE = /className=(?:"[^"]*\bapp-input\b[^"]*"|'[^']*\bapp-input\b[^']*'|{`[^`]*\bapp-input\b[^`]*`}|{[^}]*app-input[^}]*})/;
 const APP_TOGGLE_RE = /className=(?:"[^"]*\bapp-toggle--(?:checkbox|radio)\b[^"]*"|'[^']*\bapp-toggle--(?:checkbox|radio)\b[^']*'|{`[^`]*\bapp-toggle--(?:checkbox|radio)\b[^`]*`}|{[^}]*app-toggle--(?:checkbox|radio)[^}]*})/;
-const APP_BUTTON_RE = /className=(?:"[^"]*\b(app-btn|tab-api__item|vhc-btn)\b[^"]*"|'[^']*\b(app-btn|tab-api__item|vhc-btn)\b[^']*'|{`[^`]*\b(app-btn|tab-api__item|vhc-btn)\b[^`]*`}|{[^}]*(app-btn|tab-api__item|vhc-btn)[^}]*})/;
+// Canonical staff button contracts. `.app-btn` is the general one; the rest
+// are feature-owned interactive surfaces whose entire appearance is declared
+// in staffglobal.css as `button.<class>`. Those cannot carry `.app-btn` as
+// well: the base rule sets `background: var(--btn-bg) !important`, which
+// would erase the feature fill (a booking block status colour, a calendar
+// slot hover). For them the class itself IS the contract - the long-standing
+// arrangement for tab-api__item and vhc-btn.
+const CANONICAL_BUTTON_CLASSES = [
+  "app-btn",
+  "tab-api__item",
+  "vhc-btn",
+  // Loan car calendar / fleet (staffglobal.css `button.loan-car-*` block).
+  "loan-car-block",
+  "loan-car-calendar__slot",
+  "loan-car-calendar__car-button",
+  "loan-car-calendar__corner-button",
+  "loan-car-lookup__result",
+  "loan-car-fleet-list__row",
+];
+const CANONICAL_BUTTON_ALT = CANONICAL_BUTTON_CLASSES.join("|");
+const BACKTICK = String.fromCharCode(96);
+const APP_BUTTON_RE = new RegExp(
+  'className=(?:"[^"]*\\b(?:' + CANONICAL_BUTTON_ALT + ')\\b[^"]*"' +
+    "|'[^']*\\b(?:" + CANONICAL_BUTTON_ALT + ")\\b[^']*'" +
+    "|\\{" + BACKTICK + "[^" + BACKTICK + "]*\\b(?:" + CANONICAL_BUTTON_ALT + ")\\b[^" + BACKTICK + "]*" + BACKTICK + "\\}" +
+    "|\\{[^}]*(?:" + CANONICAL_BUTTON_ALT + ")[^}]*\\})"
+);
 const HIDDEN_FILE_RE = /type=(?:"file"|'file'|{"file"}).*style=\{\{\s*display:\s*["']none["']\s*\}\}/;
 const HIDDEN_INPUT_RE = /type=(?:"hidden"|'hidden'|{"hidden"})/;
 

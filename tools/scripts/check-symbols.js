@@ -48,6 +48,7 @@ const ALLOWED_EXCEPTIONS = new Map([
   ["src/components/NotesTab.js", "Viewer-chip remove sits inside an .app-badge beside the name — a 44px circle would break the chip."],
   ["src/components/Consumables/StockCheckPopup.js", "Quantity steppers are part of the number field, not standalone actions."],
   ["src/components/page-ui/tech/tech-consumables-request-ui.js", "Quantity steppers are part of the number field, not standalone actions."],
+  ["src/components/LoanCars/LoanCarCalendar.js", "The empty-day booking slot fills the whole calendar cell it sits in — a 44px circle would break the day/car grid."],
 ]);
 
 // Transitional ceiling for hand-rolled icon buttons outside the exception list.

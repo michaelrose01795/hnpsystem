@@ -145,8 +145,7 @@ function BookingBlock({ entry, car, now, dayKey, compact, dimmed, highlighted, c
   const continuesAfterOnTitleRow = showTitle && entry.continuesAfter;
 
   const canDrag = canAdjust && booking.status !== BOOKING_STATUS.RETURNED;
-  const className = [
-    "loan-car-block",
+  const modifierClass = [
     `loan-car-block--${tone}`,
     isOverrun ? "is-overrun" : "",
     entry.isStart ? "is-start" : "",
@@ -165,7 +164,7 @@ function BookingBlock({ entry, car, now, dayKey, compact, dimmed, highlighted, c
   return (
     <button
       type="button"
-      className={className}
+      className={`loan-car-block ${modifierClass}`}
       data-tooltip={bookingHoverText(booking, car, now)}
       aria-label={`${car.reg}: ${booking.customerName || "booking"}${booking.jobNumber ? `, job ${booking.jobNumber}` : ""}, ${formatBookingWindow(booking)}. Open details.`}
       onClick={() => onOpen(booking)}>
@@ -203,8 +202,7 @@ function BookingBlock({ entry, car, now, dayKey, compact, dimmed, highlighted, c
 function PeriodBlock({ entry, car, compact, onOpen }) {
   const period = entry.item;
   const reason = unavailableReasonLabel(period.reason);
-  const className = [
-    "loan-car-block",
+  const modifierClass = [
     "loan-car-block--unavailable",
     entry.isStart ? "is-start" : "",
     entry.isEnd ? "is-end" : "",
@@ -222,7 +220,7 @@ function PeriodBlock({ entry, car, compact, onOpen }) {
     .filter(Boolean)
     .join(" · ");
   return (
-    <button type="button" className={className} data-tooltip={hover} aria-label={`${hover}. Open vehicle.`} onClick={() => onOpen(car)}>
+    <button type="button" className={`loan-car-block ${modifierClass}`} data-tooltip={hover} aria-label={`${hover}. Open vehicle.`} onClick={() => onOpen(car)}>
       {entry.isFirstVisible ? <span className="loan-car-block__title">{reason}</span> : null}
       {entry.isFirstVisible && !compact && period.notes ? <span className="loan-car-block__meta">{period.notes}</span> : null}
     </button>

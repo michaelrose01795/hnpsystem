@@ -474,10 +474,10 @@ export default function LoanCarBookingDrawer({
               <span className="app-record-note">Due back {formatDayLabel(booking.endDate)}{booking.endTime ? ` ${booking.endTime}` : ""}</span>
               <div className="app-record-actions">
                 <Button type="button" size="xs" variant="secondary" onClick={() => shiftEnd(-1)} disabled={busy || booking.endDate <= booking.startDate} symbol={false}>
-                  − 1 day
+                  Shorten 1 day
                 </Button>
                 <Button type="button" size="xs" variant="secondary" onClick={() => shiftEnd(1)} disabled={busy} symbol={false}>
-                  + 1 day
+                  Extend 1 day
                 </Button>
               </div>
             </div>

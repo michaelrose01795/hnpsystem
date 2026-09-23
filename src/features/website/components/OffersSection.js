@@ -114,7 +114,7 @@ export default function OffersSection({ offers, initialFilter = "all" }) {
       )}
       {visibleCount < shown.length ? (
         <div className="ws-section-more">
-          <button type="button" className="ws-btn ws-btn--secondary" onClick={() => setVisibleCount((count) => count + 5)}>
+          <button type="button" className="ws-btn ws-btn--ghost" onClick={() => setVisibleCount((count) => count + 5)}>
             Show more
           </button>
         </div>

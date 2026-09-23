@@ -817,7 +817,7 @@ export default function WebsitePage() {
                   <div className="ws-section-more">
                     <button
                       type="button"
-                      className="ws-btn ws-btn--secondary"
+                      className="ws-btn ws-btn--ghost"
                       onClick={() => setVisibleMotabilityCount((count) => count + 5)}
                     >
                       Show more
@@ -1038,7 +1038,7 @@ export default function WebsitePage() {
             </div>
             {visibleGuideCount < asList(blogPosts).length ? (
               <div className="ws-section-more">
-                <button type="button" className="ws-btn ws-btn--secondary" onClick={() => setVisibleGuideCount((count) => count + 5)}>
+                <button type="button" className="ws-btn ws-btn--ghost" onClick={() => setVisibleGuideCount((count) => count + 5)}>
                   Show more
                 </button>
               </div>
