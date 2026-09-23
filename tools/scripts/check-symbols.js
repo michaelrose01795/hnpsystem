@@ -132,8 +132,16 @@ const isIconOnly = ({ open, body }) => {
   const hasSvg = /<svg\b/.test(inner);
   // <Symbol …/> is the registry's own mark, so it does not count as hand-rolled.
   const withoutSymbol = inner.replace(/<Symbol\b[^>]*\/>/g, "");
-  // Drop any "<" left by a malformed tag so nothing tag-like survives the strip.
-  const textNodes = withoutSymbol.replace(/<[^>]*>/g, "").replace(/</g, "");
+  // Strip tag-like spans to a fixed point so malformed/overlapping sequences
+  // cannot re-form a tag after a single replacement pass.
+  let stripped = withoutSymbol;
+  let prev;
+  do {
+    prev = stripped;
+    stripped = stripped.replace(/<[^>]*>/g, "");
+  } while (stripped !== prev);
+  // Drop any "<" left by malformed fragments so nothing tag-like survives.
+  const textNodes = stripped.replace(/</g, "");
   // A {expression} child may render words, so the button is not icon-only.
   if (textNodes.includes("{")) return false;
   const words = textNodes.trim();
