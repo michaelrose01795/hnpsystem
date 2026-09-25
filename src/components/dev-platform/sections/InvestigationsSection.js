@@ -216,7 +216,7 @@ export default function InvestigationsSection() {
 
       {selectedIds.length > 0 && (
         <Panel title={`Bulk triage — ${selectedIds.length} report(s) in ${selected.size} cluster(s)`}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-sm)", alignItems: "end" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "var(--space-sm)", alignItems: "end" }}>
             <DropdownField
               label="Set status"
               options={[{ value: "", label: "Leave unchanged" }, ...STATUS_OPTIONS]}

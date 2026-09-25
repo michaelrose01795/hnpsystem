@@ -24,6 +24,7 @@ import GlobalSearch from "@/components/GlobalSearch";
 import { hasAllAccessRole } from "@/lib/auth/roles";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import SupportControl from "@/components/support/SupportControl";
+import SymbolButton from "@/components/ui/SymbolButton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useRotatingViews } from "@/hooks/useRotatingViews";
@@ -109,6 +110,13 @@ export default function StaffTopbar({
   barRef = null,
   wrapperStyle = undefined,
   barStyle = undefined,
+  // Portrait-phone compact bar. When set, the bar is one row of symbol buttons —
+  // Menu, Status and Search on the left, Help on the far right — and everything
+  // else (KPIs, insight, technician controls, pages) is hidden to save height.
+  // Shape: { onOpenMenu, onOpenStatus, onOpenSearch, menuOpen, statusOpen,
+  // searchOpen, menuButtonRef, statusButtonRef, showStatus }. The refs let
+  // StaffLayout drop the Menu / Status panels from the buttons' positions.
+  compact = null,
 }) {
   const resolvedKpis = Array.isArray(kpis) ? kpis : [];
 
@@ -185,6 +193,41 @@ export default function StaffTopbar({
         ...(barStyle || {}),
       }}
     >
+      {compact ? (
+        <div className="app-topbar-compact" aria-label="Top bar">
+          <SymbolButton
+            ref={compact.menuButtonRef}
+            symbol="menu"
+            label="Open navigation menu"
+            onClick={compact.onOpenMenu}
+            aria-expanded={Boolean(compact.menuOpen)}
+            aria-controls="compact-navigation-sidebar"
+          />
+          {compact.showStatus && (
+            <SymbolButton
+              ref={compact.statusButtonRef}
+              symbol="status"
+              label="Open job status"
+              onClick={compact.onOpenStatus}
+              aria-expanded={Boolean(compact.statusOpen)}
+              aria-controls="compact-status-sidebar"
+            />
+          )}
+          <SymbolButton
+            symbol="search"
+            label="Open global search"
+            onClick={compact.onOpenSearch}
+            aria-expanded={Boolean(compact.searchOpen)}
+            aria-haspopup="dialog"
+          />
+          {/* Help & Diagnostics — pinned to the far right of the row. */}
+          {!presentationShell && (
+            <div className="app-topbar-compact__end">
+              <SupportControl />
+            </div>
+          )}
+        </div>
+      ) : (
       <div
         className="app-topbar-content-scroll"
         style={{
@@ -456,6 +499,7 @@ export default function StaffTopbar({
           </div>
         )}
       </div>
+      )}
     </DevLayoutSection>
     </div>
   );

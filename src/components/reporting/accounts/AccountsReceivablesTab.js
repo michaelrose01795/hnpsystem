@@ -17,7 +17,7 @@ export default function AccountsReceivablesTab({ filter }) {
       title="Payments & receivables"
       subtitle="Cash collected (trended), and the point-in-time receivables book: net AR, active-account balances and credit exposure (≥80% of limit). Each links to its contributing records."
     >
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
         {RECEIVABLES_KPIS.map((kpi) => (
           <KpiPanel
             key={kpi.id}

@@ -171,10 +171,13 @@ export default function SupportReportModal() {
         }),
       });
 
+      const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
         throw new Error(payload?.message || "Could not send your report.");
       }
+      // Every report now gets a reference: the error code the user already saw,
+      // or one the server minted. Show whichever the server confirmed.
+      const confirmedReference = payload?.data?.referenceCode || referenceCode;
 
       clearDraft(getStorage());
       // Record the created report (origin + reference + alert id) so the toast
@@ -187,8 +190,8 @@ export default function SupportReportModal() {
         alertId: trigger?.alertId,
       });
       pushAlert(
-        referenceCode
-          ? `✅ Thanks — your report has been sent to the team. Reference: ${referenceCode}`
+        confirmedReference
+          ? `✅ Thanks — your report has been sent to the team. Reference: ${confirmedReference}`
           : "✅ Thanks — your report has been sent to the team.",
         "success"
       );
@@ -349,7 +352,8 @@ export default function SupportReportModal() {
         >
           <strong style={{ fontWeight: 600 }}>What we attach to help us investigate</strong>
           <span style={{ opacity: 0.8 }}>
-            The page you&apos;re on, your role, device &amp; browser, recent actions, and any errors. It
+            The page you&apos;re on, your role, your device, browser &amp; timezone, recent actions, and any
+            errors. It
             never includes passwords, tokens, cookies, or full personal data — and only the support team
             can see it.
           </span>

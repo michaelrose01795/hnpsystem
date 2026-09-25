@@ -30,9 +30,6 @@ export default function ConversationHeader({
   onToggleDetails,
   menuItems = [],
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const moreRef = useRef(null);
-  const closeMenu = useCallback(() => setMenuOpen(false), []);
   const type = getConversationType(thread?.conversationType);
   const status = getStatus(thread?.status);
   const priority = getPriority(thread?.priority);
@@ -75,6 +72,20 @@ export default function ConversationHeader({
         </div>
       </div>
 
+      <HeaderActions detailsOpen={detailsOpen} onToggleDetails={onToggleDetails} menuItems={menuItems} />
+    </header>
+  );
+}
+
+// The details toggle and the "more" menu. Shared with the read-only system and
+// bookings feeds, whose headers are built in messages-ui.js.
+export function HeaderActions({ detailsOpen, onToggleDetails, menuItems = [], menuLabel = "Conversation options" }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const moreRef = useRef(null);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+
+  return (
+    <>
       <div className="app-msg-header__actions">
         <SymbolButton
           symbol="details"
@@ -103,7 +114,7 @@ export default function ConversationHeader({
           onClose={closeMenu}
           className="app-msg-menu"
           role="menu"
-          aria-label="Conversation options"
+          aria-label={menuLabel}
         >
           {menuItems.map((item) => (
             <Button
@@ -123,6 +134,6 @@ export default function ConversationHeader({
           ))}
         </FloatingLayer>
       )}
-    </header>
+    </>
   );
 }

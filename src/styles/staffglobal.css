@@ -943,6 +943,86 @@ html.staff-scope .app-mobile-sidebar-backdrop {
   inset: 0;
 }
 
+/* Portrait-phone compact topbar: one row of symbol buttons — Menu, Status,
+   Search at the left, Help pinned to the far right. Only rendered when
+   StaffLayout's compactPhoneTopbar is on, so it needs no media query. */
+html.staff-scope .app-topbar-compact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .app-topbar-compact__end {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Portrait-phone search overlay: the field + Close, floating where the topbar
+   rests (mobile gutter below the notch), above the drop-panel backdrop. */
+html.staff-scope .app-phone-search-bar {
+  position: absolute;
+  top: calc(var(--page-gutter-y-mobile) + env(safe-area-inset-top, 0px));
+  right: max(10px, env(safe-area-inset-right));
+  left: max(10px, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-radius: var(--page-card-radius);
+}
+
+html.staff-scope .app-phone-search-bar__field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Page search bars on a portrait phone (PhoneSearchCollapse, used by SearchBar,
+   InputField type="search" and the few raw search inputs). The field folds into
+   a search symbol button; tapping it opens the global search's overlay above —
+   backdrop, floating .app-phone-search-bar and Close — with the page's own field
+   inside. Above the vertical-phone breakpoint none of this markup renders.
+   A page search's overlay layers above popups too, because a search can sit
+   inside one. (Not the global search's: its results list is a body portal at
+   3700 that must stay above its own overlay.) */
+html.staff-scope .app-mobile-sidebar-overlay.app-phone-search-overlay--page {
+  z-index: var(--z-popover);
+}
+
+/* Inside the bar the field fills the row, whatever width cap its page gave it. */
+html.staff-scope .app-phone-search-bar .app-phone-search-bar__field .searchbar-api,
+html.staff-scope .app-phone-search-bar .app-phone-search-bar__field input {
+  width: 100%;
+  max-width: none;
+}
+
+html.staff-scope .app-phone-search-trigger {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  align-self: flex-start;
+}
+
+/* A closed search that still holds a query wears a badge dot, so a filtered
+   list never looks like the whole list. The surface halo keeps the dot
+   readable against the button's own accent fill. */
+html.staff-scope .app-phone-search-trigger.has-value::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  box-shadow: 0 0 0 2px var(--surface);
+  pointer-events: none;
+}
+
 @media (max-width: 640px) and (orientation: portrait) {
   html.staff-scope .app-topbar-shell {
     z-index: 0;
@@ -952,6 +1032,16 @@ html.staff-scope .app-mobile-sidebar-backdrop {
   html.staff-scope .app-page-card {
     position: relative;
     z-index: 1;
+  }
+
+  /* The compact bar floats over the top of the page while scrolling. Anything
+     the browser scrolls into view for the user — a #anchor, a focused field, a
+     validation error brought into view — lands below the bar's footprint
+     (gutter + notch + 44px row + its 10px padding each side) instead of under
+     it. The page scrolls on <body>, so both roots carry it. */
+  html.staff-scope,
+  html.staff-scope body {
+    scroll-padding-top: calc(var(--page-gutter-y-mobile) + env(safe-area-inset-top, 0px) + var(--control-height) + 28px);
   }
 }
 
@@ -1081,6 +1171,37 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     border-radius: 0 0 var(--page-card-radius) var(--page-card-radius);
   }
 
+  /* Portrait-phone compact topbar: the close tab IS the tapped Menu / Status
+     symbol button — same 44px footprint on the same spot — so the panel unfurls
+     from under the button and retracts back into it, the same drop / seal beat
+     the 50/50 row uses. StaffLayout measures the button on open:
+     --portrait-sidebar-inset is the Menu button's left edge (the panel lines up
+     with it, mirrored on the right) and --portrait-sidebar-tab-x is the tapped
+     button's offset from that edge. */
+  html.staff-scope .app-portrait-sidebar-assembly--compact {
+    right: var(--portrait-sidebar-inset);
+    left: var(--portrait-sidebar-inset);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn {
+    --btn-color: var(--accent-text-on-tint);
+    grid-column: 1;
+    justify-self: start;
+    width: var(--control-height);
+    min-width: var(--control-height);
+    margin-left: var(--portrait-sidebar-tab-x);
+    padding: 0;
+  }
+
+  /* Menu is the first button in the bar, so its tab sits on the panel's corner
+     and that corner stays square (the default above). Status sits further in,
+     so its tab joins the straight top edge and every panel corner is rounded. */
+  html.staff-scope .app-portrait-sidebar-assembly--compact.app-portrait-sidebar-assembly--status .app-portrait-sidebar__panel,
+  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__panel .status-sidebar--vertical-phone {
+    border-radius: var(--page-card-radius);
+  }
+
   html.staff-scope .app-mobile-sidebar-overlay:not(.is-closing) .app-mobile-sidebar-backdrop {
     animation: app-portrait-sidebar-backdrop-in 0.28s ease-out both;
   }
@@ -1188,6 +1309,48 @@ html.staff-scope .app-mobile-sidebar-backdrop {
     clip-path: none;
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Portrait-phone search overlay close (global search + page searches, via
+   usePhoneSearchOverlay). The overlay stays mounted with .is-closing while the
+   bar lifts and fades and the backdrop fades with it, on one shared curve and
+   duration so they land together; the bar's animationend then unmounts it.
+   Only transform + opacity animate, so the close stays on the compositor even
+   while the keyboard retracts. Taps pass straight through to the page during
+   the fade. Reduced motion never enters .is-closing (the hook closes at once).
+   Declared after the drop-panel backdrop rule above so its 0.36s is replaced. */
+@media (max-width: 640px) and (orientation: portrait) {
+  html.staff-scope .app-phone-search-overlay.is-closing {
+    pointer-events: none;
+  }
+
+  html.staff-scope .app-phone-search-overlay.is-closing .app-phone-search-bar {
+    animation: app-phone-search-bar-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+    will-change: transform, opacity;
+  }
+
+  html.staff-scope .app-phone-search-overlay.is-closing .app-mobile-sidebar-backdrop {
+    animation: app-portrait-sidebar-backdrop-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  /* The global search's results list is a <body> portal outside the overlay;
+     fade it on the same beat instead of leaving it hanging until unmount. */
+  html.staff-scope:has(.app-phone-search-overlay.is-closing) .searchbar-api__results-menu {
+    animation: app-portrait-sidebar-backdrop-out 0.16s ease-in both;
+    pointer-events: none;
+  }
+}
+
+@keyframes app-phone-search-bar-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+
+  to {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0) scale(0.97);
   }
 }
 
@@ -1718,11 +1881,14 @@ html.staff-scope a.tab-api__item:active {
   text-decoration: none !important;
 }
 
-html.staff-scope button:not(.app-btn) {
+html.staff-scope button:not(.app-btn, .app-symbol-btn) {
   /* Compatibility fallback for legacy ordinary buttons. New action buttons
      should use <Button>, but any remaining raw button now inherits the same
      Primary control source instead of drifting onto the old accent palette.
-     Purpose-built API controls override this block in their family rules. */
+     Purpose-built API controls override this block in their family rules.
+     Symbol buttons are excluded outright: families/symbols.css is imported
+     above this rule at equal specificity, so it would otherwise lose every
+     tie and paint the circles solid Primary instead of the Secondary tint. */
   background: var(--primary);
   color: var(--onAccentText);
   border: none;
@@ -1741,10 +1907,10 @@ html.staff-scope button:not(.app-btn) {
   position: relative;
   z-index: 0;
 }
-html.staff-scope button:not(.app-btn):hover {
+html.staff-scope button:not(.app-btn, .app-symbol-btn):hover {
   background: var(--primary-hover);
 }
-html.staff-scope button:not(.app-btn):disabled {
+html.staff-scope button:not(.app-btn, .app-symbol-btn):disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -7338,14 +7504,21 @@ html.staff-scope .tracking-viewswitch[role="group"] > .app-btn {
     min-width: 0;
   }
 
-  /* 3. Filter / action toolbar children (search boxes, date
-        pickers, dropdowns, action buttons) grow from a
-        comfortable basis so they align with the content beneath
-        and wrap cleanly instead of holding a fixed pixel width. */
-  html.staff-scope .app-layout-toolbar-row > *,
-  html.staff-scope .app-toolbar-row > * {
+  /* 3. Filter / action toolbar fields (search boxes, date
+        pickers, dropdowns) grow from a comfortable basis so they
+        align with the content beneath and wrap cleanly instead of
+        holding a fixed pixel width. Buttons are left out: they keep
+        their label width so the search, filter and action buttons
+        share one line whenever they fit, and only wrap when not. */
+  html.staff-scope .app-layout-toolbar-row > :not(button, .app-btn, .app-symbol-btn, .app-filter, .app-phone-search-trigger),
+  html.staff-scope .app-toolbar-row > :not(button, .app-btn, .app-symbol-btn, .app-filter, .app-phone-search-trigger) {
     flex: 1 1 140px !important;
     min-width: 0;
+    max-width: 100%;
+  }
+
+  html.staff-scope :is(.app-layout-toolbar-row, .app-toolbar-row) > :is(button, .app-btn, .app-symbol-btn, .app-filter, .app-phone-search-trigger) {
+    flex: 0 0 auto;
     max-width: 100%;
   }
 
@@ -9309,6 +9482,19 @@ html.staff-scope .app-delivery-month-picker .calendar-api__control {
   html.staff-scope {
     --table-action-btn-height: var(--control-height);
     --tab-api-height: var(--control-height);
+  }
+
+  /* Month picker: Prev / month / Next are 32px buttons inset 6px inside a 44px
+     bar. On touch, drop the inset so each button fills the bar's full 44px —
+     the bar's own size and look are unchanged. */
+  html.staff-scope .monthpicker-api__control {
+    padding: 0;
+  }
+
+  html.staff-scope button.monthpicker-api__nav-button,
+  html.staff-scope button.monthpicker-api__month-year {
+    height: var(--control-height);
+    min-height: var(--control-height);
   }
 }
 

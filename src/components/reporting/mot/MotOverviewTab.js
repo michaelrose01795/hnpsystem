@@ -37,7 +37,7 @@ export default function MotOverviewTab({ filter, onDrilldown }) {
       </ReportSection>
 
       <ReportSection title="Performance summary" subtitle="MOT volume and MOT revenue, re-bucketed daily, weekly and monthly by the reporting engine.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
           <TrendCard kpiId="mot.volume" label="MOT volume" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <TrendCard kpiId="mot.volume" label="MOT volume" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <TrendCard kpiId="mot.volume" label="MOT volume" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

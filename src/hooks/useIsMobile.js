@@ -47,6 +47,13 @@ export function useIsPhoneFloor() {
   return useMediaQuery(MEDIA.phoneFloor);
 }
 
+/** True on a phone held upright (<= 640px and portrait) — the same "vertical
+    phone" StaffLayout folds its topbar for, where page search bars collapse
+    into a search button (see searchBarAPI/PhoneSearchCollapse). */
+export function useIsVerticalPhone() {
+  return useMediaQuery(`${MEDIA.mobile} and (orientation: portrait)`);
+}
+
 /** True at tablet width and below (<= 768px). */
 export function useIsTablet() {
   return useMediaQuery(MEDIA.tablet);

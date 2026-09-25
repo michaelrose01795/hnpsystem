@@ -3,9 +3,11 @@
 // The left panel of /messages.
 //
 //   toolbar   search · filter (All / Unread / @Me + conversation type) ·
-//             remove · new — one row
-//   pins      up to three pinned conversations sharing one row equally
-//             (one = full width, two = halves, three = thirds): name + unread
+//             remove · new — one row of buttons, left-aligned. Search is a
+//             button at every width; it opens the portrait-phone search overlay.
+//   pins      "Pinned" divider, then up to three pinned conversations sharing
+//             one row equally (one = full width, two = halves, three = thirds)
+//   divider   "Conversations", above the scrolling list
 //   feeds     System notifications and, for service roles, Bookings
 //   list      every other conversation, one 44px row each: name, time,
 //             unread count. Customer conversations carry a "Customer" tag so
@@ -121,6 +123,15 @@ function ConversationRow({ thread, active, dbUserId, selectionMode, selected, on
   );
 }
 
+// "——— PINNED ———": a caption between two separating lines.
+function ListDivider({ label }) {
+  return (
+    <div className="app-msg-divider" role="separator" aria-label={label}>
+      <span className="app-msg-divider__label">{label}</span>
+    </div>
+  );
+}
+
 function FeedRow({ title, preview, active, unread, onOpen }) {
   return (
     <div
@@ -191,15 +202,14 @@ export default function ConversationList({
       </h2>
 
       <div className="app-msg-list__toolbar">
-        <div className="app-msg-list__search">
-          <SearchBar
-            placeholder="Search…"
-            aria-label="Search conversations"
-            value={searchTerm}
-            onChange={(event) => onSearchChange(event.target.value)}
-            onClear={() => onSearchChange("")}
-          />
-        </div>
+        <SearchBar
+          alwaysCollapse
+          placeholder="Search conversations…"
+          aria-label="Search conversations"
+          value={searchTerm}
+          onChange={(event) => onSearchChange(event.target.value)}
+          onClear={() => onSearchChange("")}
+        />
         <FilterButton
           title="Filter conversations"
           activeCount={activeFilterCount}
@@ -256,6 +266,7 @@ export default function ConversationList({
       )}
       {deleteError ? <StatusMessage tone="danger">{deleteError}</StatusMessage> : null}
 
+      {showFeeds && pinnedThreads.length > 0 && <ListDivider label="Pinned" />}
       {showFeeds && pinnedThreads.length > 0 && (
         <div
           className="app-msg-pins"
@@ -294,6 +305,8 @@ export default function ConversationList({
           })}
         </div>
       )}
+
+      <ListDivider label="Conversations" />
 
       <div
         className="app-msg-list__scroll custom-scrollbar"

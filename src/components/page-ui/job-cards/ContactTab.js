@@ -29,6 +29,7 @@ import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import PopupModal from "@/components/popups/popupStyleApi";
 import { logFailure } from "@/lib/utils/logFailure";
+import { PhoneSearchCollapse } from "@/components/ui/searchBarAPI";
 
 /* ════════════════════════════════════════════════════════════════════════
    Shared constants + small pure helpers (formerly contactConstants.js).
@@ -297,13 +298,19 @@ function ManageTemplatesPopup({ isOpen, templates = [], updatedBy = null, onClos
         <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
       </div>
 
-      <input
-        className="app-input"
-        type="search"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        placeholder="Search template titles"
-        aria-label="Search template titles"
+      <PhoneSearchCollapse
+        label="Search template titles"
+        hasValue={searchTerm.length > 0}
+        renderField={() => (
+          <input
+            className="app-input"
+            type="search"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search template titles"
+            aria-label="Search template titles"
+          />
+        )}
       />
 
       {error && <StatusMessage tone="danger">{error}</StatusMessage>}
@@ -511,7 +518,7 @@ function CustomerContactSection({
           style={{
             display: "grid",
             gap: "16px",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
           }}
         >
           <EditField label="First name">
@@ -556,7 +563,7 @@ function CustomerContactSection({
             style={{
               display: "grid",
               gap: "10px", // Exact spacing requested between customer detail sections.
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
             }}
           >
             <DisplayField sectionKey="jobcard-contact-customer-name" label="Customer name" value={name} />
@@ -570,7 +577,7 @@ function CustomerContactSection({
             style={{
               display: "grid",
               gap: "12px",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
             }}
           >
             <LayerTheme
@@ -956,7 +963,7 @@ function QuickMessageTemplatesSection({
           style={{
             display: "grid",
             gap: "12px",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
           }}
         >
           {[0, 1, 2, 3].map((index) => (
@@ -974,7 +981,7 @@ function QuickMessageTemplatesSection({
           style={{
             display: "grid",
             gap: "12px",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
           }}
         >
           {templates.map((tpl) => (

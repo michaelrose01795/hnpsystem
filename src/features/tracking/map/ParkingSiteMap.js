@@ -20,16 +20,15 @@
 // image is letterboxed by `object-fit: contain` and the overlay by
 // `preserveAspectRatio="xMidYMid meet"` inside the same box - identical
 // ratios, identical box, so a point in the overlay sits exactly over the same
-// point of the plan at every size. Both live inside the pan/zoom stage, so
-// zooming, panning and Fit site move them together.
+// point of the plan at every size.
 //
 // SELECTION
 // ---------
 // Each section is ONE focusable button (role="button", aria-pressed), and the
 // label and region inside it are two hit areas for the same control — so a
 // click on the pill, a click on the building and Enter/Space on the focused
-// section all do the same thing. A click that ends a pan drag is ignored via
-// `shouldIgnoreClick`, so panning over a section never selects it.
+// section all do the same thing. An optional `shouldIgnoreClick` lets a host
+// drop a click; the tracking map is fixed (no pan/zoom) and passes none.
 
 import React, { useState } from "react";
 import { PARKING_AREAS, buildSectionGeometry } from "@/features/tracking/map/parkingAreas";

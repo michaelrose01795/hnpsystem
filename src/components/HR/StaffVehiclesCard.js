@@ -721,7 +721,7 @@ export default function StaffVehiclesCard({
                     style={{
                       marginTop: "12px",
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
                       gap: "12px",
                     }}
                   >
@@ -870,7 +870,7 @@ export default function StaffVehiclesCard({
               style={{
                 marginTop: "12px",
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
                 gap: "12px",
               }}
             >
@@ -1123,7 +1123,7 @@ export default function StaffVehiclesCard({
               style={{
                 display: "grid",
                 gap: "12px",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
               }}
             >
               <label style={historyLabelStyle}>

@@ -3,45 +3,9 @@ npm i next@latest
 --------
 
 TODO
-make sure the spelling, grammer etc works within all popups text boxes abosultely everythign wtihin the whole repo where the user has to type soemthign etc. 
-
---------
-
-TODO
 Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.css setting for popup style etc. it needs to be having the theme colour background blur as well as all the button in the top right corner etc the "Review Media" popup content also needs to a deep dive to fix as well as something is correct etc. 
-
-
-
-----check all of these for ui design/style-----
-
-
-TODO
-Admin
-
-TODO
-remove "Pages & sections Design & layout Shop Media SEO Analytics" from the "/website-manager" page
-
 
 ---------
 
-TODO
-Tracking pages and feauture updates
-
-
-
-TODO
-On the phone app in portrait mode, the top menu and status buttons are missing, although they appear in landscape; inspect the shared mobile header and fix the layout so these controls stay visible and tappable in portrait without breaking landscape or desktop.
-
-
-
------ FIlter button ------
-CHECK all pages for the filter option is working correctly 
-
-
-
-TODO
-messsages age for the all access user add mock data within the database so they have messages etc
-
-
-TODO
-"Extra screen space detected" to be opened by a button as well as screen size etc. lets have the butotn within the rigth click section, when the user rigth clicks anywhere add a button section within there like milti workspace as the name etc. when with the multie screen section the only which which chanes within the ui dislay is the surface colour card which is outisde "App Layout Page Card | 1.2.2.1 | key app-layout-page-card | file src/components/layout/StaffLayout.js:1825 | route /messages | where App Layout Page Card | parent app-layout-main-shell 1.2.2 | 1 child" card for example wil strink, the topbar will go the full width and the sidebars will do the same, popups will be in the middle of the surface colour card the (main page card) when in this view and wont distrub the visiblity of the otehr pages which might be open. if a new page is opened that section has to be selcted by clicking within the main page card like if u was on windows going from one app to another etc. when clciked the sidebar will then be linked to that mian card section, if you click onot anothe the sidebar will move again etc. within the content within the main page cards will change size just like the screen is changing size but not the sidebar or the topbar etc if that makes sense. deep dive to make this mutle dispace screen perfect etc. 
+CHECK
+have it so all of the other symbol buttons within the staffglobal.css use this style instead of what is currently bueing used. 

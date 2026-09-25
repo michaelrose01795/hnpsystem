@@ -104,7 +104,27 @@ export function buildBoundaryReportPrefill({ error, componentStack, referenceCod
   ]
     .filter((line) => line !== null)
     .join("\n");
-  return { category: "bug", title, description, referenceCode: referenceCode || undefined };
+  return {
+    category: "bug",
+    title,
+    description,
+    referenceCode: referenceCode || undefined,
+    // The private technical detail of the crash the user is reporting FROM. The
+    // modal folds `trigger` into the diagnostics blob (never shown to the
+    // reporter), so the Support Centre and the email can show the exact error
+    // instead of guessing from whatever else was in the session buffers.
+    trigger: {
+      origin: "error-boundary",
+      referenceCode: referenceCode || undefined,
+      message: "This screen stopped working and showed the recovery message.",
+      errorName: typeof error?.name === "string" ? error.name : undefined,
+      errorMessage: message,
+      errorCode: error?.code != null ? String(error.code) : undefined,
+      stack: typeof error?.stack === "string" ? error.stack : undefined,
+      componentStack: componentStack || undefined,
+      component: component || undefined,
+    },
+  };
 }
 
 /**

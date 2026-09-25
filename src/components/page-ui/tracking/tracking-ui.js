@@ -67,7 +67,10 @@ export default function TrackingDashboardUi(props) {
     TrackingRouteSkeleton,
   } = props; // receive page logic props.
 
-  const shouldStackHeaderControls = isMobileView;
+  // Phones no longer stack the header into full-width rows: the search folds
+  // to an icon there, so search, filter and page actions share one line and
+  // only wrap when they genuinely do not fit.
+  const wrapHeaderControls = isMobileView;
   const compactSearchTabs = activeTab === "tracker" || activeTab === "equipment" || activeTab === "oil-stock";
 
   switch (props.view) { // choose the page section requested by logic.
@@ -92,36 +95,41 @@ export default function TrackingDashboardUi(props) {
     }}>
           <div style={{
         display: "flex",
-        flexDirection: shouldStackHeaderControls ? "column" : "row",
+        flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         gap: "12px",
-        flexWrap: shouldStackHeaderControls ? "wrap" : "nowrap",
+        flexWrap: wrapHeaderControls ? "wrap" : "nowrap",
+        // Phone: anchors the Map view's find results to the whole row (see
+        // .tracking-shared-find in trackingMap.css).
+        position: wrapHeaderControls ? "relative" : undefined,
         width: "100%",
         maxWidth: "100%",
         minWidth: 0,
-        overflowX: shouldStackHeaderControls ? "visible" : "auto",
+        overflowX: wrapHeaderControls ? "visible" : "auto",
         overflowY: "visible",
         scrollbarWidth: "thin"
       }}>
               <DevLayoutSection sectionKey="tracking-page-shared-search" parentKey="tracking-page-body" sectionType="toolbar" style={{
           display: "flex",
           gap: "var(--space-sm)",
-          flexWrap: shouldStackHeaderControls ? "wrap" : "nowrap",
+          flexWrap: wrapHeaderControls ? "wrap" : "nowrap",
           alignItems: "center",
-          flex: shouldStackHeaderControls ? "1 1 100%" : "1 1 auto",
+          flex: "1 1 auto",
           minWidth: 0,
           maxWidth: "100%",
           // Leads the row now that there is no tab strip before it.
-          justifyContent: shouldStackHeaderControls ? "stretch" : "flex-start"
+          justifyContent: "flex-start"
         }}>
                   {sharedSearchResultsSlotRef ? (
                   // Key/Parking: the one search on the page. The Map view portals
                   // its "find a vehicle" results into the slot below, so they
                   // drop down under this bar (TrackingSiteMap `findResultsSlot`).
                   <div className="tracking-shared-find" style={{
-              flex: shouldStackHeaderControls ? "1 1 100%" : compactSearchTabs ? "1 1 clamp(180px, 26vw, 360px)" : "1 1 clamp(180px, 34vw, 520px)",
-              minWidth: shouldStackHeaderControls ? "100%" : "160px"
+              // Phone: the search is a single icon button, so the wrapper
+              // hugs it instead of claiming the whole row.
+              flex: wrapHeaderControls ? "0 0 auto" : compactSearchTabs ? "1 1 clamp(180px, 26vw, 360px)" : "1 1 clamp(180px, 34vw, 520px)",
+              minWidth: wrapHeaderControls ? 0 : "160px"
             }}>
                     <SearchBar
               value={sharedSearchValue}
@@ -141,8 +149,8 @@ export default function TrackingDashboardUi(props) {
             placeholder={sharedSearchPlaceholder}
             ariaLabel={sharedSearchPlaceholder}
             style={{
-              flex: shouldStackHeaderControls ? "1 1 100%" : compactSearchTabs ? "1 1 clamp(180px, 26vw, 360px)" : "1 1 clamp(180px, 34vw, 520px)",
-              minWidth: shouldStackHeaderControls ? "100%" : "160px"
+              flex: wrapHeaderControls ? "0 0 auto" : compactSearchTabs ? "1 1 clamp(180px, 26vw, 360px)" : "1 1 clamp(180px, 34vw, 520px)",
+              minWidth: wrapHeaderControls ? 0 : "160px"
             }} />
                   )}
                   {activeTab === "tracker" && DropdownField && (
@@ -182,12 +190,12 @@ export default function TrackingDashboardUi(props) {
               <div style={{
           display: "flex",
           gap: "var(--space-sm)",
-          flexWrap: shouldStackHeaderControls ? "wrap" : "nowrap",
+          flexWrap: wrapHeaderControls ? "wrap" : "nowrap",
           alignItems: "center",
-          justifyContent: shouldStackHeaderControls ? "stretch" : "flex-end",
-          flex: shouldStackHeaderControls ? "1 1 100%" : "0 0 auto",
-          marginLeft: shouldStackHeaderControls ? 0 : "auto",
-          minWidth: shouldStackHeaderControls ? "100%" : "max-content",
+          justifyContent: "flex-end",
+          flex: wrapHeaderControls ? "0 1 auto" : "0 0 auto",
+          marginLeft: "auto",
+          minWidth: wrapHeaderControls ? 0 : "max-content",
           whiteSpace: "nowrap"
         }}>
                   {activeTab === "tracker" && setTrackerView && (

@@ -43,7 +43,7 @@ export default function HrAttendanceUi(props) {
           {/* Mirrors the loaded layout: time logs + overtime summary side by side, absence table below. */}
           <section style={{
       display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
       gap: "var(--layout-card-gap)"
     }}>
             <SectionCard>
@@ -108,7 +108,7 @@ export default function HrAttendanceUi(props) {
       {!isLoading && !error && <>
           <section style={{
       display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
       gap: "var(--layout-card-gap)"
     }}>
             <SectionCard title="Daily Time Logs" subtitle="Sourced from the workshop clocking system" action={<Button variant="secondary" size="sm">

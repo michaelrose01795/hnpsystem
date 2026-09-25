@@ -38,11 +38,21 @@ const FALLBACK_TOP_GAP = 18; // matches --page-gutter-y in theme.css
 // `suppressHide`: while true the bar must stay visible and never fold away — even
 // after scrolling stops. Driven by the global search being in use (focused or its
 // results list open) so the topbar housing it can't disappear out from under it.
+// `fixedTop` (optional CSS length): where the floating bar pins in window-scroll
+// mode. Defaults to the measured --page-gutter-y; the portrait-phone topbar
+// passes its own so the floating bar clears the notch / status bar.
+// `forceHide`: while true a FLOATING bar stays folded away and scrolling does
+// not reveal it. The portrait-phone layout sets it while the user is typing in
+// a page field: focusing a field scrolls the page (and the keyboard opens), and
+// a bar unfolding over the top of the screen would cover the very field being
+// filled in. A docked bar (page at the top) is in flow and covers nothing.
 export default function useAutoHideTopbar({
   enabled = true,
   overlay = false,
   scrollRef = null,
   suppressHide = false,
+  fixedTop = null,
+  forceHide = false,
 } = {}) {
   const wrapperRef = useRef(null);
   const barRef = useRef(null);
@@ -148,7 +158,14 @@ export default function useAutoHideTopbar({
     // document scroll. Bail (bar stays visible) if overlay is on but the inner
     // scroller isn't mounted yet.
     const scroller = overlay ? scrollRef?.current : null;
-    if (overlay && !scroller) return undefined;
+    if (overlay && !scroller) {
+      // No page scroller at all (e.g. multi-workspace cards replaced the page
+      // card): nothing can scroll the bar away, so it rests docked.
+      floatingRef.current = false;
+      setFloating(false);
+      setHidden(false);
+      return undefined;
+    }
 
     // Overlay mode reads the inner scroller; window mode reads the document
     // scroll (lives on body in this app, but read defensively).
@@ -231,6 +248,7 @@ export default function useAutoHideTopbar({
   }, [enabled, overlay, scrollRef, measureGeom, clearHideTimer, scheduleHide]);
 
   // ---- derived styles ----------------------------------------------------
+  const folded = hidden || (forceHide && floating);
   const foldedTransform = reducedMotion
     ? "translateY(-110%)"
     : "perspective(1400px) rotateX(-92deg) translateY(-14px)";
@@ -248,9 +266,9 @@ export default function useAutoHideTopbar({
   if (enabled && overlay) {
     const barStyle = {
       transformOrigin: "top center",
-      transform: hidden ? foldedTransform : openTransform,
-      opacity: hidden ? 0 : 1,
-      pointerEvents: hidden ? "none" : "auto",
+      transform: folded ? foldedTransform : openTransform,
+      opacity: folded ? 0 : 1,
+      pointerEvents: folded ? "none" : "auto",
       transition: foldTransition,
       willChange: "transform, opacity",
     };
@@ -259,8 +277,8 @@ export default function useAutoHideTopbar({
     // its layout box, so the wrapper keeps spanning that strip. Drop the wrapper's
     // pointer-events while folded so clicks fall straight through to the content
     // that has risen into the bar's slot — as if the bar were never there.
-    const wrapperStyle = { pointerEvents: hidden ? "none" : "auto" };
-    return { wrapperRef, barRef, wrapperStyle, barStyle, floating, hidden };
+    const wrapperStyle = { pointerEvents: folded ? "none" : "auto" };
+    return { wrapperRef, barRef, wrapperStyle, barStyle, floating, hidden: folded };
   }
 
   const wrapperStyle = enabled
@@ -278,14 +296,14 @@ export default function useAutoHideTopbar({
     enabled && floating
       ? {
           position: "fixed",
-          top: `${geom.top}px`,
+          top: fixedTop || `${geom.top}px`,
           left: `${geom.left}px`,
           width: `${geom.width}px`,
           zIndex: 3300,
           transformOrigin: "top center",
-          transform: hidden ? foldedTransform : openTransform,
-          opacity: hidden ? 0 : 1,
-          pointerEvents: hidden ? "none" : "auto",
+          transform: folded ? foldedTransform : openTransform,
+          opacity: folded ? 0 : 1,
+          pointerEvents: folded ? "none" : "auto",
           transition: reducedMotion
             ? "opacity 0.25s ease, transform 0.25s ease"
             : "transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease",
@@ -293,5 +311,5 @@ export default function useAutoHideTopbar({
         }
       : undefined;
 
-  return { wrapperRef, barRef, wrapperStyle, barStyle, floating, hidden };
+  return { wrapperRef, barRef, wrapperStyle, barStyle, floating, hidden: folded };
 }

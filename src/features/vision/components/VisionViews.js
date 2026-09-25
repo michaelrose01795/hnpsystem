@@ -24,8 +24,8 @@ import {
 } from "../data/visionMockData";
 
 const styles = {
-  sectionGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--layout-card-gap)" },
-  wideGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "var(--layout-card-gap)" },
+  sectionGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "var(--layout-card-gap)" },
+  wideGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "var(--layout-card-gap)" },
   row: { display: "flex", gap: "var(--space-sm)", flexWrap: "wrap", alignItems: "center" },
   between: { display: "flex", justifyContent: "space-between", gap: "var(--space-3)", alignItems: "flex-start", flexWrap: "wrap" },
   h2: { fontSize: "1.35rem", letterSpacing: 0 },
@@ -33,7 +33,7 @@ const styles = {
   muted: { color: "var(--surfaceTextMuted)" },
   small: { color: "var(--surfaceTextMuted)", fontSize: "0.88rem" },
   badge: { display: "inline-flex", padding: "var(--control-padding-xs)", borderRadius: "var(--radius-pill)", background: "var(--secondary)", color: "var(--accentText)", fontSize: "0.8rem", fontWeight: 800 },
-  flow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--space-3)", alignItems: "stretch" },
+  flow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))", gap: "var(--space-3)", alignItems: "stretch" },
   connector: { textAlign: "center", color: "var(--accentText)", fontWeight: 800, padding: "var(--space-xs) 0" },
   list: { display: "grid", gap: "var(--space-sm)", paddingLeft: "1rem" },
   input: { width: "100%", minHeight: 120, resize: "vertical", border: "var(--input-ring)", borderRadius: "var(--input-radius)", background: "var(--input-bg)", padding: "var(--control-padding)", color: "var(--surfaceText)" },

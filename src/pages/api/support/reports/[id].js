@@ -6,7 +6,8 @@
 // developer action is audit-logged via the shared hash-chained writeAuditLog.
 //
 //   GET   → full report (diagnostics + dev-only investigation), signed screenshot
-//           URLs (short-TTL), the comment thread, and the audit history.
+//           URLs (short-TTL), the comment thread, the audit history, and the
+//           automatically-captured error events linked by reference code.
 //           Writes a `support_report_view` audit entry (private-bundle access).
 //   PATCH → triage: status / severity / assignee / duplicate-of. Writes a
 //           `support_report_update` audit entry with the requested diff.
@@ -18,6 +19,7 @@ import {
   listSupportReportComments,
   listSupportReportAudit,
 } from "@/lib/database/support";
+import { listSupportErrorEvents } from "@/lib/database/supportErrorEvents";
 import { getSupportScreenshotSignedUrl } from "@/lib/storage/supportMediaBucketService";
 import { DEV_PLATFORM_ROLES } from "@/lib/auth/roles";
 import { writeAuditLog } from "@/lib/audit/auditLog";
@@ -61,10 +63,11 @@ async function handleGet(req, res, session) {
     return res.status(404).json({ success: false, message: "Report not found" });
   }
 
-  const [screenshots, comments, audit] = await Promise.all([
+  const [screenshots, comments, audit, errorEvents] = await Promise.all([
     signScreenshots(result.data),
     listSupportReportComments(id),
     listSupportReportAudit(id),
+    listSupportErrorEvents({ reportId: id, limit: 20 }),
   ]);
 
   // Audit the private-bundle access (viewing diagnostics is privacy-sensitive).
@@ -84,6 +87,7 @@ async function handleGet(req, res, session) {
     screenshots,
     comments: comments.data || [],
     audit: audit.data || [],
+    errorEvents: errorEvents.data || [],
   });
 }
 

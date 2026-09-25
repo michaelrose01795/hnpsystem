@@ -17,7 +17,7 @@ export default function MotOperationsTab({ filter, onDrilldown }) {
         title="MOT volume and outcomes"
         subtitle="Operational MOT volume, pass/fail analysis and throughput. Pass/fail uses the documented completion_status proxy until mot_tests.result exists."
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {OPERATIONS_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend={kpi.id !== "mot.due_pipeline"} withDrilldown />
           ))}

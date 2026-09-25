@@ -102,7 +102,8 @@ function ProfileSummary({ profile }) {
           }}
         >
           <span style={{ color: "var(--surfaceTextMuted)" }}>{label}</span>
-          <span style={{ color: "var(--surfaceText)" }}>{value}</span>
+          {/* A long email address wraps instead of running past a phone-width card. */}
+          <span style={{ color: "var(--surfaceText)", minWidth: 0, overflowWrap: "anywhere" }}>{value}</span>
         </div>
       ))}
       <p style={{ margin: "12px 0 0", fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>

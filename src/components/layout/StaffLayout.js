@@ -24,8 +24,12 @@ const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), {
 import Sidebar from "@/components/layout/StaffSidebar";
 import { isRestorableRoute } from "@/lib/auth/returnRoute";
 import StaffTopbar from "@/components/layout/StaffTopbar";
+import SymbolButton, { Symbol as SymbolGlyph } from "@/components/ui/SymbolButton";
+import { usePhoneSearchOverlay } from "@/components/ui/searchBarAPI";
 import WorkspaceCommandCenter from "@/components/topbar/WorkspaceCommandCenter";
 import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
+import useVisualViewport from "@/hooks/useVisualViewport";
+import { IOS_BROWSER_TOOLBAR_LIFT, isIosBrowserTab } from "@/utils/iosBrowserChrome";
 import { SERVICE_ACTION_ROLE_SET as SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 import TopbarAlerts from "@/components/TopbarAlerts";
 import { appShellTheme } from "@/styles/appTheme";
@@ -273,6 +277,22 @@ export default function Layout({
   // document owns the sidebar, topbar and status drawer.
   const embeddedWorkspaceId = useWorkspaceEmbed();
   const isWorkspaceFrame = Boolean(embeddedWorkspaceId);
+  // Multi-workspace mode (host document only). WorkspaceHost reports whether the
+  // page-card area is split into workspace cards and which page the focused card
+  // shows. The host then renders no page of its own, so route-specific shells
+  // (the /messages layout) stand down, and the sidebar highlight and topbar
+  // department follow the focused card instead of the host route.
+  const [workspaceShell, setWorkspaceShell] = useState({ active: false, focusedHref: null });
+  const handleWorkspaceShellChange = useCallback(
+    (next) =>
+      setWorkspaceShell((prev) =>
+        prev.active === next.active && prev.focusedHref === next.focusedHref ? prev : next
+      ),
+    []
+  );
+  const multiWorkspaceActive = workspaceShell.active && !isWorkspaceFrame;
+  const isMessagesLayout = isMessagesRoute && !multiWorkspaceActive;
+  const shellActivePath = (multiWorkspaceActive && workspaceShell.focusedHref) || null;
 
   const [viewportWidth, setViewportWidth] = useState(1440);
   const [viewportHeight, setViewportHeight] = useState(900);
@@ -289,6 +309,66 @@ export default function Layout({
   const isTablet = viewportWidth <= 1024;
   const isMobile = viewportWidth <= 640; // phone view cutoff
   const isVerticalPhone = isMobile && viewportHeight >= viewportWidth;
+  // Portrait phone: the 50/50 Menu / Status row and the full-width search bar
+  // fold into the topbar as one row of symbol buttons (Menu, Status, Search …
+  // Help), and that bar floats + auto-hides like desktop so the page card gets
+  // the whole screen. Search opens as an overlay above everything.
+  const compactPhoneTopbar = isVerticalPhone && !hideSidebar;
+  // open → closing (bar + backdrop animate out) → closed; see usePhoneSearchOverlay.
+  const {
+    isOpen: isPhoneSearchOpen,
+    open: openPhoneSearch,
+    close: closePhoneSearch,
+    dismiss: dismissPhoneSearch,
+    overlayProps: phoneSearchOverlayProps,
+  } = usePhoneSearchOverlay();
+  // Portrait phone: true while a text field inside the page has focus. The
+  // floating bar then stays folded (useAutoHideTopbar forceHide) — focusing a
+  // field scrolls the page and opens the keyboard, and a bar unfolding over the
+  // top of the screen would sit on the very field being filled in.
+  const [isPhoneTypingInPage, setIsPhoneTypingInPage] = useState(false);
+  useEffect(() => {
+    if (!compactPhoneTopbar || typeof document === "undefined") {
+      setIsPhoneTypingInPage(false);
+      return undefined;
+    }
+    const NON_TEXT_INPUTS = new Set(["button", "submit", "reset", "checkbox", "radio", "range", "color", "file", "image"]);
+    const check = () => {
+      const el = document.activeElement;
+      const isTextEntry =
+        el &&
+        (el.isContentEditable ||
+          el.tagName === "TEXTAREA" ||
+          el.tagName === "SELECT" ||
+          (el.tagName === "INPUT" && !NON_TEXT_INPUTS.has((el.getAttribute("type") || "text").toLowerCase())));
+      setIsPhoneTypingInPage(Boolean(isTextEntry && el.closest(".app-page-shell")));
+    };
+    // focusout fires before focus lands on the next element, so read the
+    // settled activeElement on the next frame.
+    const onFocusChange = () => window.requestAnimationFrame(check);
+    document.addEventListener("focusin", onFocusChange);
+    document.addEventListener("focusout", onFocusChange);
+    check();
+    return () => {
+      document.removeEventListener("focusin", onFocusChange);
+      document.removeEventListener("focusout", onFocusChange);
+    };
+  }, [compactPhoneTopbar]);
+  // Phone-width /messages runs like a native chat app: the whole column is
+  // pinned to the VISIBLE viewport (which shrinks when the keyboard opens), the
+  // conversation card takes whatever the Menu / search / topbar rows leave, and
+  // the transcript scrolls inside it with the composer held at the bottom.
+  // Phone landscape (> 640px wide), tablet and desktop keep their layouts.
+  const isPhoneMessagesLayout = isMessagesRoute && isMobile && !hideSidebar && !isWorkspaceFrame;
+  const messagesViewport = useVisualViewport(isPhoneMessagesLayout, { focusScope: ".app-msg" });
+  const messagesKeyboardOpen = Boolean(messagesViewport?.keyboardOpen);
+  // In an iOS Safari tab the browser's bottom bar floats over the page, right
+  // where the composer sits, so phone /messages lifts it clear (see
+  // iosBrowserChrome.js). Read after mount: navigator does not exist on the server.
+  const [isIosSafariTab, setIsIosSafariTab] = useState(false);
+  useEffect(() => {
+    setIsIosSafariTab(isIosBrowserTab());
+  }, []);
   // The 50/50 Menu / Status control row is the breakpoint contract for the
   // top-drop sidebar treatment. Desktop keeps its side-opening rails.
   const usesTopDropSidebars = isTablet;
@@ -298,7 +378,7 @@ export default function Layout({
   // folding away as you scroll so the card grows up into its space. Excluded:
   // login (hideSidebar), tablet/mobile (kept on whole-page scroll), and the
   // messages route (which already runs its own fixed-height layout).
-  const lockViewport = !hideSidebar && !isTablet && !isMessagesRoute;
+  const lockViewport = !hideSidebar && !isTablet && !isMessagesLayout;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
   const mobileStatusButtonRef = useRef(null);
@@ -308,6 +388,21 @@ export default function Layout({
   const mobileMenuButtonRef = useRef(null);
   const [portraitSidebarTop, setPortraitSidebarTop] = useState(10);
   const [isPortraitSidebarClosing, setIsPortraitSidebarClosing] = useState(false);
+  // Portrait-phone compact topbar: where the tapped symbol button sits, so the
+  // dropped panel's close tab lands exactly on it and the panel unfurls from
+  // the button itself. inset = the Menu button's left edge (the panel lines up
+  // with it on both sides); tabX = the tapped button's offset from that edge.
+  const [portraitSidebarAnchor, setPortraitSidebarAnchor] = useState(null);
+  const [portraitStatusAnchor, setPortraitStatusAnchor] = useState(null);
+  const measureCompactAnchor = useCallback(
+    (buttonEl) => {
+      const menuEl = mobileMenuButtonRef.current;
+      if (!compactPhoneTopbar || !buttonEl || !menuEl) return null;
+      const inset = Math.round(menuEl.getBoundingClientRect().left);
+      return { inset, tabX: Math.round(buttonEl.getBoundingClientRect().left) - inset };
+    },
+    [compactPhoneTopbar]
+  );
   const workspaceNavEnabled = !presentationShell && isWorkspaceNavEnabled();
   const closeSidebar = useCallback(() => {
     const shouldAnimateClose =
@@ -330,6 +425,7 @@ export default function Layout({
       const buttonRect = mobileMenuButtonRef.current.getBoundingClientRect();
       setPortraitSidebarTop(Math.round(buttonRect.top));
     }
+    setPortraitSidebarAnchor(measureCompactAnchor(mobileMenuButtonRef.current));
     setIsPortraitStatusClosing(false);
     setIsStatusSidebarOpen(false);
     setIsPortraitSidebarClosing(false);
@@ -358,11 +454,12 @@ export default function Layout({
       const buttonRect = mobileStatusButtonRef.current.getBoundingClientRect();
       setPortraitStatusTop(Math.round(buttonRect.top));
     }
+    setPortraitStatusAnchor(measureCompactAnchor(mobileStatusButtonRef.current));
     setIsPortraitSidebarClosing(false);
     setIsSidebarOpen(false);
     setIsPortraitStatusClosing(false);
     setIsStatusSidebarOpen(true);
-  }, [usesTopDropSidebars]);
+  }, [usesTopDropSidebars, measureCompactAnchor]);
   const isMobileStatusVisible =
     isStatusSidebarOpen || (usesTopDropSidebars && isPortraitStatusClosing);
   // Fixed-card scroll model (desktop staff pages): the page card is a constant-
@@ -399,7 +496,7 @@ export default function Layout({
   // stays pinned); when the bar is shown the card rests below it with a gap. In
   // the locked model the bar is an absolute overlay and the page itself does not
   // scroll, so the hook watches the inner page scroller (pageScrollRef).
-  const enableTopbarAutoHide = !isTablet && !hideSidebar;
+  const enableTopbarAutoHide = (!isTablet || compactPhoneTopbar) && !hideSidebar;
   // While the topbar's global search is in use (focused or its results list open)
   // the bar must stay visible and never fold away — fed to the hook as suppressHide.
   const [topbarSearchActive, setTopbarSearchActive] = useState(false);
@@ -412,9 +509,39 @@ export default function Layout({
   } = useAutoHideTopbar({
     enabled: enableTopbarAutoHide,
     overlay: lockViewport,
-    scrollRef: pageScrollRef,
-    suppressHide: topbarSearchActive,
+    // Multi-workspace cards scroll inside their own frames, so the bar stays
+    // docked; swapping the ref also re-arms the hook when the page card returns.
+    scrollRef: multiWorkspaceActive ? null : pageScrollRef,
+    // Portrait phone also holds the bar open while one of its own panels (menu,
+    // status, search overlay) is open, so it can't fold away underneath them.
+    suppressHide:
+      topbarSearchActive ||
+      (compactPhoneTopbar &&
+        (isPhoneSearchOpen || isMobileSidebarVisible || isMobileStatusVisible)),
+    // Portrait phone pins the floating bar where the docked bar rests: the mobile
+    // gutter below the notch / status bar (matches the main column's padding).
+    fixedTop: compactPhoneTopbar
+      ? "calc(var(--page-gutter-y-mobile) + env(safe-area-inset-top, 0px))"
+      : null,
+    // Portrait phone keeps a floating bar folded while a page field is being typed in.
+    forceHide: compactPhoneTopbar && isPhoneTypingInPage,
   });
+
+  // The phone search overlay closes on navigation (a result was chosen) and
+  // whenever the portrait-phone layout no longer applies (rotation / resize) —
+  // instantly, since the page underneath is changing anyway.
+  useEffect(() => {
+    dismissPhoneSearch();
+  }, [router.asPath, compactPhoneTopbar, dismissPhoneSearch]);
+
+  useEffect(() => {
+    if (!isPhoneSearchOpen || typeof window === "undefined") return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") closePhoneSearch();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isPhoneSearchOpen, closePhoneSearch]);
 
   const urlJobId =
     router.query.id ||
@@ -517,7 +644,7 @@ export default function Layout({
       : rawUserRoles;
   const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles;
   const activeWorkspaceDepartment = workspaceNavEnabled
-    ? getActiveWorkspaceDepartment(router.asPath || router.pathname, userRoles)
+    ? getActiveWorkspaceDepartment(shellActivePath || router.asPath || router.pathname, userRoles)
     : null;
   const workspaceQuickActions = workspaceNavEnabled
     ? getQuickActions(userRoles, activeWorkspaceDepartment)
@@ -843,7 +970,9 @@ export default function Layout({
       if (frame) window.cancelAnimationFrame(frame);
       recomputeSpacerRef.current = null;
     };
-  }, [lockViewport, router.pathname]);
+    // multiWorkspaceActive: the page card (and so the scroller) unmounts while
+    // the workspace cards are shown and remounts when they close.
+  }, [lockViewport, router.pathname, multiWorkspaceActive]);
 
   // Hold the spacer measurement (above) still for the length of the rail motion,
   // then take one reading at the settled width. The window covers the longer of
@@ -1458,7 +1587,9 @@ export default function Layout({
     // the page card scrolls internally instead of the page scrolling. Other modes
     // keep the natural min-height/auto-grow with page scroll.
     height: lockViewport ? "100vh" : "auto",
-    minHeight: "100vh",
+    // Phone /messages sizes the page to the visible height itself (main column);
+    // 100vh is the LARGE viewport on phones and would add a toolbar's worth of scroll.
+    minHeight: isPhoneMessagesLayout ? undefined : "100vh",
     width: "100%",
     maxWidth: "100%",
     minWidth: 0,
@@ -1656,19 +1787,11 @@ export default function Layout({
             inPresentationMode={presentationShell}
             pendingHref={pendingHref}
             isAuthLoading={isPreAuthLoading}
+            activePath={shellActivePath}
           />
         </DevLayoutSection>
       )}
 
-      {/* Multi-workspace shell (src/features/workspaces). With one workspace it
-          renders display:contents wrappers only, so this column lays out exactly
-          as before; the column below is left at its original indentation. */}
-      <WorkspaceHost
-        enabled={workspacesEnabled}
-        userId={dbUserId || user?.id || null}
-        areaWidth={workspaceAreaWidth}
-        navigationItems={navigationItems}
-      >
       <DevLayoutSection
         sectionKey="app-layout-main-column"
         parentKey="app-layout-chrome"
@@ -1690,8 +1813,19 @@ export default function Layout({
               ? // Exact compact screen gutter requested for the 50/50 sidebar layout, grown to
                 // clear the notch / status bar: viewport-fit=cover + black-translucent
                 // (_document.js) draws the page under them, which hid Menu / Status in portrait.
-                "max(var(--page-gutter-y-mobile), env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) var(--page-gutter-y-mobile) max(10px, env(safe-area-inset-left))"
-              : isMessagesRoute
+                // The gutter is ADDED to the inset (not max'd with it) so the buttons clear the
+                // status bar with breathing room instead of sitting flush under its edge.
+                // Phone /messages also clears the home indicator at the bottom, because
+                // its composer sits on the bottom edge (dropped while the keyboard covers it),
+                // and in an iOS Safari tab also clears the browser's floating bottom bar.
+                `calc(var(--page-gutter-y-mobile) + env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right)) ${
+                  isPhoneMessagesLayout && !messagesKeyboardOpen
+                    ? `calc(var(--page-gutter-y-mobile) + env(safe-area-inset-bottom, 0px) + ${
+                        isIosSafariTab ? IOS_BROWSER_TOOLBAR_LIFT : 0
+                      }px)`
+                    : "var(--page-gutter-y-mobile)"
+                } max(10px, env(safe-area-inset-left))`
+              : isMessagesLayout
                 ? "var(--page-gutter-y) var(--page-gutter-x) 16px"
               : undefined,
           background: "transparent",
@@ -1704,11 +1838,29 @@ export default function Layout({
           overflowX: "hidden",
           position: "relative",
           margin: hideSidebar ? "0" : "0",
+          // Phone /messages: exactly the visible height (see isPhoneMessagesLayout), so
+          // the transcript scrolls inside the card and the composer sits on the bottom
+          // edge. Deliberately left IN FLOW rather than position: fixed — a fixed box
+          // taller than what is really on screen can never be scrolled, which stranded
+          // the composer half off a real phone. In flow, the page fits exactly when the
+          // height is right, and simply scrolls to the composer if it is not. Before
+          // the first measurement, 100svh (every toolbar showing) is the safe value.
+          ...(isPhoneMessagesLayout
+            ? {
+                // flex: none, or the column's `flex: 1 1 0%` in the auto-height chrome
+                // sizes it from its content and silently ignores this height.
+                flex: "none",
+                height: messagesViewport ? `${messagesViewport.height}px` : "100svh",
+                maxHeight: messagesViewport ? `${messagesViewport.height}px` : "100svh",
+              }
+            : null),
         }}
       >
         {showMobileSidebar && (
           <>
-            {/* 50/50 Tab-style navigation for smaller screens */}
+            {/* 50/50 Tab-style navigation for smaller screens. Portrait phone
+                moves Menu / Status (and search) into the compact topbar instead. */}
+            {!compactPhoneTopbar && (
             <div
               className={authEntranceActive ? entranceStyles.sidebarEntrance : undefined}
               style={{
@@ -1742,13 +1894,16 @@ export default function Layout({
                 </button>
               )}
             </div>
+            )}
 
             {/* Full-width search bar below tab buttons for tablet/mobile - hidden when sidebar/status is open */}
-            {!isMobileSidebarVisible && !isMobileStatusVisible && (
+            {!compactPhoneTopbar && !isMobileSidebarVisible && !isMobileStatusVisible && (
               <div
                 {...lockChromeInteraction}
                 style={{
                   width: "100%",
+                  // Stepped aside on phone /messages while the keyboard is open (see topbar).
+                  display: messagesKeyboardOpen ? "none" : undefined,
                 }}
               >
                 <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
@@ -1769,8 +1924,16 @@ export default function Layout({
                   {...{ [GLOBAL_NAV_ATTRIBUTE]: "global" }}
                   // --solo: no Status button, so Menu is the only control in the
                   // row and stretches full width. The close tab replaces Menu in
-                  // place, so it has to stretch with it.
-                  className={`app-portrait-sidebar-assembly${canViewStatusSidebar ? "" : " app-portrait-sidebar-assembly--solo"}${isPortraitSidebarClosing ? " is-closing" : " is-opening"}`}
+                  // place, so it has to stretch with it. The portrait-phone
+                  // compact topbar takes --compact instead: its close tab sits on
+                  // the Menu symbol button itself, and the panel unfurls from it.
+                  className={`app-portrait-sidebar-assembly${
+                    portraitSidebarAnchor
+                      ? " app-portrait-sidebar-assembly--compact"
+                      : canViewStatusSidebar
+                        ? ""
+                        : " app-portrait-sidebar-assembly--solo"
+                  }${isPortraitSidebarClosing ? " is-closing" : " is-opening"}`}
                   role="dialog"
                   aria-modal="true"
                   aria-label="Navigation sidebar"
@@ -1782,6 +1945,12 @@ export default function Layout({
                   }}
                   style={{
                     "--portrait-sidebar-top": `${portraitSidebarTop}px`,
+                    ...(portraitSidebarAnchor
+                      ? {
+                          "--portrait-sidebar-inset": `${portraitSidebarAnchor.inset}px`,
+                          "--portrait-sidebar-tab-x": `${portraitSidebarAnchor.tabX}px`,
+                        }
+                      : null),
                   }}
                 >
                   <button
@@ -1789,8 +1958,9 @@ export default function Layout({
                     className="app-btn app-portrait-sidebar__close-tab"
                     onClick={closeSidebar}
                     aria-label="Close navigation sidebar"
+                    title={portraitSidebarAnchor ? "Close navigation sidebar" : undefined}
                   >
-                    Close
+                    {portraitSidebarAnchor ? <SymbolGlyph symbol="close" /> : "Close"}
                   </button>
                   <div className="app-portrait-sidebar__panel">
                     <Sidebar
@@ -1851,8 +2021,34 @@ export default function Layout({
             wrapperRef={topbarWrapperRef}
             wrapperClassName={authEntranceActive ? entranceStyles.topbarEntrance : undefined}
             barRef={topbarBarRef}
-            wrapperStyle={topbarWrapperStyle}
+            wrapperStyle={
+              // Phone /messages: the keyboard leaves too little height for the bar and
+              // a conversation, so the bar steps aside while the user types.
+              messagesKeyboardOpen
+                ? { ...(topbarWrapperStyle || {}), display: "none" }
+                : compactPhoneTopbar && topbarWrapperStyle
+                  ? // Portrait phone keeps the docked bar beneath the page card (see
+                    // staffglobal.css) so in-page overlays still cover it; only the
+                    // floating bar lifts above content, via its own fixed z-index.
+                    { ...topbarWrapperStyle, zIndex: "auto" }
+                  : topbarWrapperStyle
+            }
             barStyle={topbarBarStyle}
+            compact={
+              compactPhoneTopbar
+                ? {
+                    onOpenMenu: openSidebar,
+                    onOpenStatus: openStatusSidebar,
+                    onOpenSearch: openPhoneSearch,
+                    menuOpen: isMobileSidebarVisible,
+                    statusOpen: isMobileStatusVisible,
+                    searchOpen: isPhoneSearchOpen,
+                    menuButtonRef: mobileMenuButtonRef,
+                    statusButtonRef: mobileStatusButtonRef,
+                    showStatus: canViewStatusSidebar,
+                  }
+                : null
+            }
           />
         )}
 
@@ -1884,9 +2080,17 @@ export default function Layout({
               lockViewport && !hideSidebar
                 ? "margin-top 0.45s cubic-bezier(0.4, 0, 0.2, 1)"
                 : undefined,
-            height: isMessagesRoute && !hideSidebar ? fixedMessagesPageHeight : undefined,
-            maxHeight: isMessagesRoute && !hideSidebar ? fixedMessagesPageHeight : undefined,
-            overflow: (isMessagesRoute || lockViewport) && !hideSidebar ? "hidden" : undefined,
+            // Phone /messages sizes by flex instead: the column above is already the
+            // visible viewport, and the fixed calc assumes the desktop 75px topbar,
+            // not the Menu / search / topbar rows a phone stacks above the card.
+            height:
+              isMessagesLayout && !hideSidebar && !isPhoneMessagesLayout ? fixedMessagesPageHeight : undefined,
+            maxHeight:
+              isMessagesLayout && !hideSidebar && !isPhoneMessagesLayout ? fixedMessagesPageHeight : undefined,
+            // Multi workspace: each card clips itself, and each card's page name
+            // sits in the gap above it (.app-workspace-bar), outside this box.
+            overflow:
+              (isMessagesRoute || lockViewport) && !hideSidebar && !multiWorkspaceActive ? "hidden" : undefined,
           }}
         >
           <div
@@ -1895,9 +2099,22 @@ export default function Layout({
               maxWidth: hideSidebar ? "100%" : undefined,
               minHeight: (isMessagesRoute || lockViewport) && !hideSidebar ? 0 : "100%",
               height: (isMessagesRoute || lockViewport) && !hideSidebar ? "100%" : undefined,
-              overflow: (isMessagesRoute || lockViewport) && !hideSidebar ? "hidden" : "visible",
+              overflow:
+                (isMessagesRoute || lockViewport) && !hideSidebar && !multiWorkspaceActive ? "hidden" : "visible",
             }}
           >
+            {/* Multi-workspace shell (src/features/workspaces). In single mode it
+                renders the page card below untouched. In multi mode it replaces
+                ONLY this card with 2–3 workspace cards; the sidebar, topbar and
+                status drawer around it do not change. */}
+            <WorkspaceHost
+              enabled={workspacesEnabled}
+              suspended={isTablet}
+              userId={dbUserId || user?.id || null}
+              areaWidth={workspaceAreaWidth}
+              navigationItems={navigationItems}
+              onStateChange={handleWorkspaceShellChange}
+            >
             <DevLayoutSection
               sectionKey="app-layout-page-card"
               parentKey="app-layout-main-shell"
@@ -1964,10 +2181,10 @@ export default function Layout({
                 )}
               </div>
             </DevLayoutSection>
+            </WorkspaceHost>
           </div>
         </DevLayoutSection>
       </DevLayoutSection>
-      </WorkspaceHost>
 
       {showNavToggleButton && (
         <NavEdgeToggle
@@ -2076,7 +2293,7 @@ export default function Layout({
           />
           <div
             id="compact-status-sidebar"
-            className={`app-portrait-sidebar-assembly app-portrait-sidebar-assembly--status${isPortraitStatusClosing ? " is-closing" : " is-opening"}`}
+            className={`app-portrait-sidebar-assembly app-portrait-sidebar-assembly--status${portraitStatusAnchor ? " app-portrait-sidebar-assembly--compact" : ""}${isPortraitStatusClosing ? " is-closing" : " is-opening"}`}
             role="dialog"
             aria-modal="true"
             aria-label="Status sidebar"
@@ -2088,6 +2305,12 @@ export default function Layout({
             }}
             style={{
               "--portrait-sidebar-top": `${portraitStatusTop}px`,
+              ...(portraitStatusAnchor
+                ? {
+                    "--portrait-sidebar-inset": `${portraitStatusAnchor.inset}px`,
+                    "--portrait-sidebar-tab-x": `${portraitStatusAnchor.tabX}px`,
+                  }
+                : null),
             }}
           >
             <button
@@ -2095,8 +2318,9 @@ export default function Layout({
               className="app-btn app-portrait-sidebar__close-tab"
               onClick={closeStatusSidebar}
               aria-label="Close status sidebar"
+              title={portraitStatusAnchor ? "Close status sidebar" : undefined}
             >
-              Close
+              {portraitStatusAnchor ? <SymbolGlyph symbol="close" /> : "Close"}
             </button>
             <div className="app-portrait-sidebar__panel">
               <StatusSidebar
@@ -2120,6 +2344,22 @@ export default function Layout({
                 isVerticalPhone
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Portrait-phone global search: opened from the compact topbar's search
+          button, it sits above everything (reusing the drop-panel backdrop). Its
+          results list portals to <body> above this layer. Tap outside, Close or
+          Escape dismisses it; choosing a result navigates and closes it. */}
+      {compactPhoneTopbar && isPhoneSearchOpen && (
+        <div {...phoneSearchOverlayProps} {...lockChromeInteraction}>
+          <div className="app-mobile-sidebar-backdrop" onClick={closePhoneSearch} />
+          <div className="app-phone-search-bar" role="dialog" aria-modal="true" aria-label="Global search">
+            <div className="app-phone-search-bar__field">
+              <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} autoFocus />
+            </div>
+            <SymbolButton symbol="close" label="Close search" onClick={closePhoneSearch} />
           </div>
         </div>
       )}

@@ -86,7 +86,7 @@ export default function PartsManagerDashboardUi(props) {
           <div style={{
       display: "grid",
       gap: "12px",
-      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))"
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))"
     }}>
             {Array.from({
         length: 4
@@ -96,7 +96,7 @@ export default function PartsManagerDashboardUi(props) {
           <div style={{
       display: "grid",
       gap: "16px",
-      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))"
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
     }}>
             {Array.from({
         length: 2

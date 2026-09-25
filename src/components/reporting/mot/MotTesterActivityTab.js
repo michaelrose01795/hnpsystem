@@ -17,7 +17,7 @@ export default function MotTesterActivityTab({ filter }) {
         title="Tester workload and activity"
         subtitle="Clocking-based tester activity where existing attribution supports it. Per-test signed attribution becomes reliable when mot_tests.tester_id lands."
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {TESTER_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown />
           ))}

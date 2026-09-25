@@ -2209,7 +2209,7 @@ export default function WidgetSettingsModal({
               />
             ) : (
             <Section title="Widget options">
-              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))" }}>
+              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(min(100%, 200px), 1fr))" }}>
               {"baseMonthlyIncome" in settings ? (
                 <label>
                   <FieldLabel>Base monthly income</FieldLabel>
@@ -2242,7 +2242,7 @@ export default function WidgetSettingsModal({
               ) : null}
               </div>
 
-              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))" }}>
+              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(min(100%, 200px), 1fr))" }}>
               {"plannedHours" in settings ? (
                 <label>
                   <FieldLabel>Planned hours</FieldLabel>
@@ -2308,7 +2308,7 @@ export default function WidgetSettingsModal({
               ) : null}
 
               {widgetType === "work-summary" || widgetType === "income" ? (
-                <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))" }}>
+                <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(min(100%, 200px), 1fr))" }}>
                 <label>
                   <FieldLabel>Weekly hours (fallback)</FieldLabel>
                   <input className="app-input" type="number" value={settings.contractedWeeklyHours || ""} onChange={(e) => updateSetting("contractedWeeklyHours", e.target.value)} />

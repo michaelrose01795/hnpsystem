@@ -77,7 +77,7 @@ export default function ViewAccountPageUi(props) {
               {/* Overview skeleton — --theme card holding --surface metric tiles. */}
               <LayerTheme as="section" style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
             gap: 16
           }}>
                 {Array.from({
@@ -155,7 +155,7 @@ export default function ViewAccountPageUi(props) {
               }}>Billing Information</h2>
                   <div style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
                 gap: "12px"
               }}>
                     <div><p style={{

@@ -497,6 +497,20 @@ export const UI_FAMILIES = [
         status: "approved",
       },
       {
+        id: "facts-missing",
+        className: "app-recovery-facts__value--missing",
+        description: "A fact value that was not captured, shown as \"Not available (reason)\" in a quieter voice.",
+        usage: "Support Centre report facts — never guess a missing device, time or reference.",
+        status: "approved",
+      },
+      {
+        id: "panel-block",
+        className: "app-recovery__panel-block",
+        description: "Wrapping monospace block for stack traces and raw technical error text.",
+        usage: "Technical error details in the Support Centre report view.",
+        status: "approved",
+      },
+      {
         id: "reference",
         className: "app-error-reference",
         description: "The short quotable error reference line shown under the recovery message.",
@@ -638,6 +652,13 @@ export const UI_FAMILIES = [
         status: "approved",
       },
       {
+        id: "divider",
+        className: "app-msg-divider",
+        description: "Uppercase caption centred between two --separating-line-color lines (\"——— PINNED ———\"). Lines are 1px fills, not borders.",
+        usage: "Heading each block of the conversation list: Pinned, Conversations.",
+        status: "approved",
+      },
+      {
         id: "tag",
         className: "app-msg-tag",
         description: "Caption-sized uppercase label for a type, status or priority, with --external / --warning / --danger / --accent / --success tones. Text, not a badge.",
@@ -742,7 +763,7 @@ export const UI_FAMILIES = [
     component: "src/components/ui/GlobalContextMenu.js",
     traceColor: "#d946ef",
     description:
-      "The in-app right-click menu that replaces the browser native context menu app-wide. Mounted once from _app.js; the panel is a LayerSurface and every row is a Secondary button at the 44px control floor.",
+      "The in-app right-click menu that replaces the browser native context menu app-wide. Mounted once from _app.js; the panel has no card behind it and every row is a Secondary button at the 44px control floor.",
     variants: [
       {
         id: "menu",
@@ -763,6 +784,13 @@ export const UI_FAMILIES = [
         className: "app-context-menu__separator",
         description: "Group divider. Carries the only allowed line — a --separating-line row rule.",
         usage: "Between action groups (link / edit / page).",
+        status: "approved",
+      },
+      {
+        id: "section-label",
+        className: "app-context-menu__section-label",
+        description: "Small caption naming a group of rows. Not a control: skipped by arrow keys, never highlighted.",
+        usage: "Above a named group, e.g. the Multi workspace section.",
         status: "approved",
       },
     ],
@@ -820,26 +848,33 @@ export const UI_FAMILIES = [
     component: "src/features/workspaces/WorkspaceHost.js",
     traceColor: "#0ea5e9",
     description:
-      "Side-by-side DMS workspaces on wide windows. Mounted once by StaffLayout; pages never render these classes themselves.",
+      "Multi workspace: the page-card area split into 2–3 side-by-side page cards, each an independent DMS page with its own viewport and popups. Turned on from the right-click menu or the wide-window offer. Mounted once by StaffLayout; pages never render these classes themselves.",
     variants: [
       {
         id: "area",
         className: "app-workspace-area app-workspace-slot",
-        description: "Row of workspace slots. display: contents until a second workspace exists, so single-screen layout is untouched.",
+        description: "Row of workspace slots that replaces the page card in multi mode. Not rendered at all in single mode.",
+        usage: "WorkspaceHost only.",
+        status: "approved",
+      },
+      {
+        id: "pane",
+        className: "app-workspace-pane",
+        description: "One workspace card: the page-card rung (--page-card-bg, --page-card-radius) clipping its page frame.",
         usage: "WorkspaceHost only.",
         status: "approved",
       },
       {
         id: "bar",
         className: "app-workspace-bar",
-        description: "Header above each workspace: page title or collapsed-workspace tabs, quick layouts, page actions, close.",
+        description: "Page name in the gap above each workspace card. Pressing it opens a floating card with that page's options (close page, show a collapsed page).",
         usage: "WorkspacePaneBar.",
         status: "approved",
       },
       {
         id: "frame",
         className: "app-workspace-frame",
-        description: "Extra workspace body: an embedded same-origin DMS frame, its loading skeleton, or the choose-a-page start panel.",
+        description: "Extra workspace body: an embedded same-origin DMS frame, its loading skeleton, or the start panel (a looping how-to animation, .app-workspace-demo, telling the user to open a page from the sidebar).",
         usage: "WorkspaceFrame.",
         status: "approved",
       },

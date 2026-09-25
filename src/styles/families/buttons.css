@@ -111,8 +111,8 @@ html.staff-scope .app-btn--nav {
 /* ========================================================= */
 /* === Shape modifier — circular icon button               === */
 /* === Square (locked to --control-height) + pill radius   === */
-/* === so it renders a perfect circle. Pair with a variant  === */
-/* === (e.g. .app-btn--primary) for the fill. Use for       === */
+/* === so it renders a perfect circle. Always painted with  === */
+/* === the Secondary fill (see "Icon-only buttons"). Use for=== */
 /* === single-glyph actions like an "×" close.             === */
 /* ========================================================= */
 html.staff-scope .app-btn--icon {
@@ -216,6 +216,32 @@ html.staff-scope .app-btn--danger:focus-visible {
 }
 html.staff-scope .app-btn--danger:active {
   --btn-bg: var(--danger-dark);
+}
+
+/* ========================================================= */
+/* === Icon-only buttons — always the Secondary fill       === */
+/* === A button that shows only a mark (.app-btn--has-     === */
+/* === symbol, .app-btn--icon) matches <SymbolButton> and  === */
+/* === the filter trigger whatever variant it was given:   === */
+/* === one fill for every symbol, as families/symbols.css  === */
+/* === sets out. Declared after the variants so it wins    === */
+/* === them, and before is-active so a pressed / selected  === */
+/* === toggle still paints its selected state. Kept at one  === */
+/* === class so .app-btn:disabled / .is-active (0,3,1) win. === */
+/* ========================================================= */
+html.staff-scope .app-btn--has-symbol,
+html.staff-scope .app-btn--icon {
+  --btn-bg: var(--secondary);
+  --btn-color: var(--accent-text-on-tint);
+  --btn-ring: none;
+}
+html.staff-scope .app-btn--has-symbol:is(:hover, :focus-visible):not(:disabled),
+html.staff-scope .app-btn--icon:is(:hover, :focus-visible):not(:disabled) {
+  --btn-bg: var(--secondary-hover);
+}
+html.staff-scope .app-btn--has-symbol:active:not(:disabled),
+html.staff-scope .app-btn--icon:active:not(:disabled) {
+  --btn-bg: var(--secondary-pressed);
 }
 
 /* ========================================================= */
@@ -459,7 +485,7 @@ html.staff-scope .app-reaction-bar:not(.is-open) .app-btn.app-reaction-trigger {
    save star). Declared alongside the reaction circles so it likewise wins the
    height the family otherwise locks to --control-height. Not a touch target on
    its own — only use it where a 44px control sits beside it. */
-html.staff-scope .app-btn.app-btn--icon-sm {
+html.staff-scope .app-btn--icon-sm {
   width: 32px;
   min-width: 32px;
   height: 32px;

@@ -26,15 +26,23 @@
    file, so .app-badge.app-badge--count is what lets the variant win on
    specificity rather than on source order or !important.
 
-   Sized to --table-action-btn-height (32px), the approved dealership-density
-   row-action size, so the circle stays inside the 44px nav control. */
+   A fixed 32px circle — the dealership-density row size — so it stays inside
+   the 44px nav control. It deliberately does NOT read --table-action-btn-height
+   any more: that token is lifted to 44px on touch screens (staffglobal.css,
+   pointer: coarse) because row BUTTONS need the touch floor, and a counter is
+   not a control — it swelled to a 44px circle on phones and tablets. */
+html.staff-scope .app-badge.app-badge--count,
+html.staff-scope .app-badge-slot--counted {
+  --app-badge-count-size: 32px;
+}
+
 html.staff-scope .app-badge.app-badge--count {
-  width: var(--table-action-btn-height);
-  min-width: var(--table-action-btn-height);
-  max-width: var(--table-action-btn-height);
-  height: var(--table-action-btn-height);
-  min-height: var(--table-action-btn-height);
-  max-height: var(--table-action-btn-height);
+  width: var(--app-badge-count-size);
+  min-width: var(--app-badge-count-size);
+  max-width: var(--app-badge-count-size);
+  height: var(--app-badge-count-size);
+  min-height: var(--app-badge-count-size);
+  max-height: var(--app-badge-count-size);
   padding: 0;
   border-radius: var(--radius-pill);
   flex-shrink: 0;
@@ -69,7 +77,7 @@ html.staff-scope .app-badge-slot {
 }
 
 html.staff-scope .app-badge-slot--counted {
-  padding-right: calc(var(--table-action-btn-height) + var(--space-sm));
+  padding-right: calc(var(--app-badge-count-size) + var(--space-sm));
 }
 
 /* -------------------------------------------------------------------------- */

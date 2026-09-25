@@ -125,3 +125,28 @@ describe("size cap", () => {
     expect(isWithinSizeCap(big)).toBe(false);
   });
 });
+
+describe("credential redaction in free text", () => {
+  it.each([
+    ["my password is Hunter2!", "Hunter2!", "password is [REDACTED:CREDENTIAL]"],
+    ["pwd: abc123", "abc123", "pwd: [REDACTED:CREDENTIAL]"],
+    ["api key = AKX99xyz", "AKX99xyz", "api key = [REDACTED:CREDENTIAL]"],
+    ["see https://admin:s3cret@db.example.com/x", "s3cret", "https://[REDACTED:CREDENTIALS]@db.example.com"],
+    ["Cookie: next-auth.session-token=abcdef123; path=/", "abcdef123", "[REDACTED:COOKIE]"],
+    ["Authorization: Basic YWRtaW46cGFzc3dvcmQ=", "YWRtaW46cGFzc3dvcmQ=", "[REDACTED:BASIC]"],
+    ["token ghp_abcdefghijklmnopqrstuvwxyz123456", "ghp_abcdefghij", "[REDACTED:KEY]"],
+  ])("redacts %s", (input, secret, expected) => {
+    const out = scrubString(input);
+    expect(out).not.toContain(secret);
+    expect(out).toContain(expected);
+  });
+
+  it("leaves ordinary text and reference codes alone", () => {
+    const text = "The Save button on job ERR-K3F9Q2 does nothing. Token of thanks!";
+    expect(scrubString(text)).toBe(text);
+  });
+
+  it("does not double-redact an already-redacted value", () => {
+    expect(scrubString("token: [REDACTED]")).toBe("token: [REDACTED]");
+  });
+});

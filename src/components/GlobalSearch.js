@@ -33,6 +33,9 @@ const createSlugFromResult = (item = {}) => {
 const GlobalSearch = ({
   navigationItems = [],
   onActiveChange,
+  // Focus the field on mount — used by the portrait-phone search overlay, which
+  // only mounts the search once the user has tapped the search button.
+  autoFocus = false,
 }) => {
   const router = useRouter();
   const containerRef = useRef(null);
@@ -400,6 +403,7 @@ const GlobalSearch = ({
         <input
           type="search"
           ref={inputRef}
+          autoFocus={autoFocus}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => {

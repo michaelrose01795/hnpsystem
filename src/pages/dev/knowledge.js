@@ -237,7 +237,7 @@ function KnowledgeView() {
           }
         >
           <SubSurface style={{ gap: "var(--space-md)" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-md)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "var(--space-md)" }}>
               <Field label="Title (required)">
                 <input
                   className="app-input"

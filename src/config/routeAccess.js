@@ -79,6 +79,7 @@ export const PROTECTED_PREFIXES = [
   "/jobs", // job-cards list (moved from /job-cards/view)
   "/messages",
   "/mobile",
+  "/multi-view", // multi-workspace address (src/features/workspaces)
   "/new-job", // create job card (moved from /job-cards/create)
   "/new-order", // create parts order (moved from /parts/create-order)
   "/order", // parts order register
@@ -155,6 +156,7 @@ export const ALWAYS_ALLOWED_PREFIXES = [
   "/dev/", // developer diagnostics — gate separately if needed
   "/vision/", // roadmap/vision pages
   "/mobile/", // mobile technician tools (own auth path)
+  "/multi-view", // multi-workspace address — each card checks its own page
   "/api/", // API routes are guarded server-side
 ];
 

@@ -33,7 +33,7 @@ export default function ExecutiveOverviewTab({ filter, onDrilldown }) {
         title="Weekly, monthly and year-to-date summary"
         subtitle="Company revenue re-bucketed by the reporting engine. Set the filter range to 'Year to date' for the YTD view."
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
           <ExecutiveTrendCard kpiId="mgt.company_revenue" label="Company revenue" unit="currency" format="£0,0.00" filter={filter} granularity="week" granularityLabel="Weekly" />
           <ExecutiveTrendCard kpiId="mgt.company_revenue" label="Company revenue" unit="currency" format="£0,0.00" filter={filter} granularity="month" granularityLabel="Monthly" />
           <ExecutiveTrendCard kpiId="mgt.company_revenue" label="Company revenue" unit="currency" format="£0,0.00" filter={filter} granularity="year" granularityLabel="Yearly / YTD" />

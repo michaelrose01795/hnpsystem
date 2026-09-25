@@ -202,6 +202,7 @@ import {
   emptyTrackingForm,
 } from "@/lib/jobCards/locations";
 import { logFailure } from "@/lib/utils/logFailure";
+import { PhoneSearchCollapse } from "@/components/ui/searchBarAPI";
 
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false,
   loading: () => {
@@ -224,7 +225,7 @@ const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), {
           style={{
             display: "grid",
             gap: 14,
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))"
           }}>
 
           {Array.from({ length: 4 }).map((_, i) =>
@@ -8556,7 +8557,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         data-dev-text-preview="Clocking summary KPIs"
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
           gap: "16px"
         }}>
 
@@ -9563,13 +9564,18 @@ function DocumentsTab({
         </span>
         {/* Search bar — shares the toolbar row with the Upload Documents button.
             Styling inherited from staffglobal.css input[type="search"] rules. */}
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search documents…"
-          aria-label="Search documents"
-          style={{ flex: "1 1 200px", minWidth: "160px", maxWidth: "360px", padding: "var(--control-padding)", fontSize: "14px" }} />
+        <PhoneSearchCollapse
+          label="Search documents"
+          hasValue={searchQuery.length > 0}
+          renderField={(inOverlay) => (
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search documents…"
+              aria-label="Search documents"
+              style={inOverlay ? { width: "100%" } : { flex: "1 1 200px", minWidth: "160px", maxWidth: "360px", padding: "var(--control-padding)", fontSize: "14px" }} />
+          )} />
 
         {typeof onManageDocuments === "function" ? (
           <Button variant="primary" size="sm" onClick={onManageDocuments}>

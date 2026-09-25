@@ -377,7 +377,7 @@ function collectImportant() {
 // list may only shrink.
 const RUNTIME_TOKEN_SOURCES = [
   "src/pages/_app.js", // --font-inter, pinned to :root from next/font
-  "src/components/layout/StaffLayout.js", // --portrait-sidebar-top
+  "src/components/layout/StaffLayout.js", // --portrait-sidebar-top / -inset / -tab-x
   "src/components/VHC/VideoEditorModal.js", // --video-editor-max-width / -aspect-ratio
   "src/components/ui/StaffCardGrid.js", // --app-card-grid-min
   "src/components/StatusTracking/JobProgressTracker.js", // --job-tracker-phase-color

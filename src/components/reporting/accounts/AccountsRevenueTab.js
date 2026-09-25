@@ -16,7 +16,7 @@ export default function AccountsRevenueTab({ filter }) {
   return (
     <>
       <ReportSection title="Revenue & revenue monitoring" subtitle="Total, labour and parts revenue invoiced — each with daily/weekly/monthly trend per the filter and the invoices behind it.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {REVENUE_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown />
           ))}

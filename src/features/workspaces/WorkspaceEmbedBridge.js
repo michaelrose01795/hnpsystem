@@ -9,6 +9,7 @@ import {
   WORKSPACE_MESSAGES,
   postToHost,
   openInOtherWorkspace,
+  setEmbeddedWorkspaceStatus,
 } from "@/features/workspaces/workspaceBridge";
 import { bindWorkspaceLinkTargets } from "@/features/workspaces/workspaceLinks";
 
@@ -42,13 +43,19 @@ export default function WorkspaceEmbedBridge({ workspaceId }) {
     };
   }, [workspaceId]);
 
-  // Host -> frame navigation (sidebar clicks, move/duplicate actions).
+  // Host -> frame: navigation (sidebar clicks, topbar search, move/duplicate
+  // actions) and the shell status the right-click menu reads.
   useEffect(() => {
     if (!workspaceId) return undefined;
     const onMessage = (event) => {
       if (event.origin !== window.location.origin || event.source !== window.parent) return;
       const data = event.data;
-      if (!data || data.type !== WORKSPACE_MESSAGES.NAVIGATE || typeof data.href !== "string") return;
+      if (!data) return;
+      if (data.type === WORKSPACE_MESSAGES.STATUS) {
+        setEmbeddedWorkspaceStatus({ canAdd: Boolean(data.canAdd), count: Number(data.count) || 2 });
+        return;
+      }
+      if (data.type !== WORKSPACE_MESSAGES.NAVIGATE || typeof data.href !== "string") return;
       if (data.href === router.asPath) return;
       router.push(data.href);
     };

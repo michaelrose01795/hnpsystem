@@ -424,7 +424,7 @@ export default function ServiceIndicatorDetailsModal({
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Service Reminder
             </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "12px" }}>
               {SERVICE_OPTIONS.map((option) => {
                 const isActive = serviceChoice === option.key;
                 const optionStatus = SERVICE_CHOICE_STATUS[option.key] || "Amber";

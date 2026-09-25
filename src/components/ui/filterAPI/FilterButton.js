@@ -19,6 +19,11 @@
 // The button itself opens and closes the card: one press opens it, the next
 // closes it. A click outside or Escape also closes it, and it animates out
 // before it unmounts.
+//
+// A control that is not a filter can borrow the same floating card: pass
+// `trigger` (the button's content) and `triggerClassName` (its look, owned by
+// that control's family) in place of the filter circle. `children` may also be
+// a function, ({ close }) => …, for cards whose buttons should close it.
 
 import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -64,6 +69,8 @@ export default function FilterButton({
   showActions = true,
   disabled = false,
   className = "",
+  trigger = null,
+  triggerClassName = "",
   children,
   // Anything else (data-presentation, data-testid, …) lands on the trigger
   // button, the one part of the control that is always on screen.
@@ -203,7 +210,12 @@ export default function FilterButton({
       if (event.key !== "Escape" || event.defaultPrevented) return;
       const target = event.target;
       if (target instanceof Element && target.closest(NESTED_FLOATING_SELECTOR)) return;
-      if (target instanceof Element && target.closest('[aria-expanded="true"]:not(.app-filter__trigger)')) return;
+      if (
+        target instanceof Element &&
+        target !== triggerRef.current &&
+        target.closest('[aria-expanded="true"]:not(.app-filter__trigger)')
+      )
+        return;
       close(true);
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -267,7 +279,9 @@ export default function FilterButton({
         )}
       </div>
 
-      <div className="app-filter__body">{children}</div>
+      <div className="app-filter__body">
+        {typeof children === "function" ? children({ close: () => close(true) }) : children}
+      </div>
     </div>
   ) : null;
 
@@ -276,7 +290,7 @@ export default function FilterButton({
       <button
         ref={triggerRef}
         type="button"
-        className="app-filter__trigger"
+        className={trigger ? triggerClassName : "app-filter__trigger"}
         aria-label={accessibleName}
         title={accessibleName}
         aria-haspopup="dialog"
@@ -287,8 +301,8 @@ export default function FilterButton({
         {...triggerProps}
         onClick={() => setOpen((previous) => !previous)}
       >
-        <Symbol symbol="filter" className="app-filter__glyph" />
-        {hasActive && (
+        {trigger || <Symbol symbol="filter" className="app-filter__glyph" />}
+        {!trigger && hasActive && (
           <span className="app-filter__count" aria-hidden="true">
             {activeCount > 99 ? "99+" : activeCount}
           </span>

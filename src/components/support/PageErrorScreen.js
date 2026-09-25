@@ -209,10 +209,22 @@ export default function PageErrorScreen({
               "A private technical snapshot is attached automatically.",
             ].join("\n"),
             referenceCode,
+            // Private technical detail of the page error, folded into the
+            // diagnostics blob by the modal (never shown to the reporter).
+            trigger: {
+              origin: "page-error",
+              referenceCode,
+              message: describe(statusCode).headline,
+              statusCode,
+              errorName: typeof error?.name === "string" ? error.name : undefined,
+              errorMessage: error?.message || `${statusCode} page error`,
+              errorCode: error?.code != null ? String(error.code) : undefined,
+              stack: typeof error?.stack === "string" ? error.stack : undefined,
+            },
           },
         }),
     }),
-    [router, home, openSupportReport, statusCode, referenceCode]
+    [router, home, openSupportReport, statusCode, referenceCode, error]
   );
 
   const plan = buildPageErrorPlan({ statusCode, variant, homeHref: home });

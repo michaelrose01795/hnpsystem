@@ -125,29 +125,16 @@ html.staff-scope .tracking-map__frame {
   background: var(--pmap-frame-bg);
 }
 
-/* Phones only (TrackingSiteMap sets .is-zoomable at tablet width and below).
-   Touch drags pan the plan and a pinch zooms it. The page still scrolls
-   everywhere outside the frame, so this does not trap a phone user on the
-   map. On larger screens the plan is fixed and the page scrolls over it. */
-html.staff-scope .tracking-map__frame.is-zoomable {
-  touch-action: none;
-  cursor: grab;
-}
-
-html.staff-scope .tracking-map__frame.is-zoomable:active {
-  cursor: grabbing;
-}
-
-/* The stage tracks a live drag / pinch directly rather than easing behind it. */
-html.staff-scope .tracking-map__frame.is-gesturing .tracking-map__stage {
-  transition: none;
+/* The plan is fixed on every device and orientation - no zoom, no pan.
+   Pinch and double-tap on it must not zoom the page either, while a
+   one-finger swipe still scrolls the page past it. */
+html.staff-scope .tracking-map__frame {
+  touch-action: pan-x pan-y;
 }
 
 html.staff-scope .tracking-map__stage {
   position: absolute;
   inset: 0;
-  transition: transform 220ms ease;
-  will-change: transform;
 }
 
 html.staff-scope .parking-map__viewport {
@@ -158,7 +145,7 @@ html.staff-scope .parking-map__viewport {
 
 /* The image and the overlay fill the SAME box and letterbox the same way -
    object-fit: contain against preserveAspectRatio="xMidYMid meet" - so the
-   overlay stays registered to the plan at every size and zoom level. */
+   overlay stays registered to the plan at every size. */
 html.staff-scope .parking-map__image,
 html.staff-scope .parking-map__overlay {
   position: absolute;
@@ -177,8 +164,8 @@ html.staff-scope .parking-map__image {
 
 html.staff-scope .parking-map__overlay {
   overflow: visible;
-  /* The plan underneath keeps the pointer for panning; only the sections
-     themselves take it back (below). */
+  /* Only the sections themselves take the pointer (below); the rest of
+     the overlay lets it through to the plan. */
   pointer-events: none;
 }
 
@@ -432,7 +419,7 @@ html.staff-scope .tracking-panel__sr {
 
 /* Phones and tablet portrait: the frame takes the plan's own proportions
    (the supplied plan is 1433 x 1098), so it fills the width with no empty
-   letterbox above and below. Zoom and pinch take it from there. */
+   letterbox above and below. */
 @media (max-width: 768px) {
   html.staff-scope .tracking-map__frame {
     min-height: 0;
@@ -443,7 +430,6 @@ html.staff-scope .tracking-panel__sr {
 
 
 @media (prefers-reduced-motion: reduce) {
-  html.staff-scope .tracking-map__stage,
   html.staff-scope .parking-map__region,
   html.staff-scope .parking-map__label-pill,
   html.staff-scope .tracking-panel__vehicle {
@@ -484,4 +470,12 @@ html.staff-scope .tracking-viewswitch > :last-child {
 html.staff-scope .tracking-shared-find {
   position: relative;
   min-width: 0;
+}
+
+/* Portrait phone: the search is only an icon sharing the header row with the
+   filter and page actions, so the results anchor to that whole row instead. */
+@media (max-width: 640px) and (orientation: portrait) {
+  html.staff-scope .tracking-shared-find {
+    position: static;
+  }
 }

@@ -33,7 +33,7 @@ export default function HrDashboardUi(props) {
       {!isLoading && !error && <>
           <section data-presentation="hr-metrics" style={{
       display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
       gap: "var(--layout-card-gap)"
     }}>
             {formattedMetrics.map(metric => <MetricCard key={metric.label} {...metric} accentColor="var(--primary)" />)}
@@ -42,7 +42,7 @@ export default function HrDashboardUi(props) {
           <section style={{
       display: "grid",
       gap: "var(--layout-card-gap)",
-      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))"
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
     }}>
             <SectionCard title="Department Performance Snapshot" subtitle="Productivity, quality, and teamwork scoring (rolling 30 days)">
               <LayerTheme padding="var(--space-3)" gap="0">
@@ -132,7 +132,7 @@ export default function HrDashboardUi(props) {
           <section style={{
       display: "grid",
       gap: "var(--layout-card-gap)",
-      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))"
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
     }}>
             <SectionCard title="Upcoming Holidays & Absences" subtitle="Next 14 days across the business" action={<Link href="/hr/leave" style={{
         fontSize: "var(--text-label)",

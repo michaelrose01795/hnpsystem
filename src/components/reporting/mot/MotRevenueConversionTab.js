@@ -13,7 +13,7 @@ export default function MotRevenueConversionTab({ filter, onDrilldown }) {
   return (
     <>
       <ReportSection title="MOT revenue" subtitle="MOT invoice-line value and revenue trend, served by the reporting engine.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {REVENUE_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown />
           ))}

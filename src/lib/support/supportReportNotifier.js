@@ -11,7 +11,7 @@
 
 import { sendDmsEmail } from "@/lib/email/emailApi";
 import { isSmtpConfigured } from "@/lib/email/smtp";
-import { resolveEmailBaseUrl } from "@/lib/email/template";
+import { resolvePublicAppUrl } from "@/lib/email/template";
 import { buildSupportReportEmail } from "@/lib/support/supportReportEmail";
 import { logFailure } from "@/lib/utils/logFailure";
 
@@ -23,6 +23,7 @@ import { logFailure } from "@/lib/utils/logFailure";
  * @param {object} [args.req]            The API request (for base-URL resolution + branding).
  * @param {object} args.report          The persisted/derived report fields (see buildSupportReportEmail).
  * @param {number} [args.screenshotCount]
+ * @param {object[]} [args.errorEvents]   Linked automatically-captured error events.
  * @param {object} [args.deps]          { send, isConfigured, resolveBaseUrl } — injectable for tests.
  * @returns {Promise<{ sent: boolean, skipped?: boolean, error?: string }>}
  */
@@ -30,11 +31,12 @@ export async function sendSupportReportNotification({
   req,
   report,
   screenshotCount = 0,
+  errorEvents = [],
   deps = {},
 } = {}) {
   const send = deps.send || sendDmsEmail;
   const isConfigured = deps.isConfigured || isSmtpConfigured;
-  const resolveBaseUrl = deps.resolveBaseUrl || resolveEmailBaseUrl;
+  const resolveBaseUrl = deps.resolveBaseUrl || resolvePublicAppUrl;
 
   try {
     if (!isConfigured()) {
@@ -42,9 +44,12 @@ export async function sendSupportReportNotification({
       return { sent: false, skipped: true };
     }
 
+    // Always an absolute link on the configured public site — never localhost
+    // in production (see resolvePublicAppUrl).
     const appBaseUrl = resolveBaseUrl(req);
     const { to, subject, html, text } = buildSupportReportEmail({
       report: { ...report, screenshotCount },
+      errorEvents,
       appBaseUrl,
     });
 

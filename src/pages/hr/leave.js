@@ -240,7 +240,7 @@ function LeaveContent() {
             Sync sickness and unpaid leave with payroll deductions automatically.
           </li>
         </ul>
-        <div style={{ marginTop: "var(--space-3)", display: "flex", gap: "var(--space-2)" }}>
+        <div style={{ marginTop: "var(--space-3)", display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
           <Button variant="secondary" size="sm">
             Edit calendar settings
           </Button>

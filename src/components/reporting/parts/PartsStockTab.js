@@ -16,7 +16,7 @@ export default function PartsStockTab({ filter, onDrilldown }) {
   return (
     <>
       <ReportSection title="Stock value & movement" subtitle="Inventory valuation now and how fast it turns over (cost of parts sold ÷ stock value).">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {STOCK_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend={kpi.unit === "currency"} withDrilldown={kpi.hasDrilldown} />
           ))}

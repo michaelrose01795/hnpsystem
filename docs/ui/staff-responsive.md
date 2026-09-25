@@ -50,26 +50,29 @@ It will not scroll; it will disappear.
 
 ---
 
-## 3. Tables become cards on a phone
+## 3. Tables stay tables; stacked cards are opt-in
 
-A data table cannot be made readable at 375px as a table, and sideways scroll is
-off the table (see §2 — scrollbar chrome is hidden app-wide, so a sideways scroll
-hides columns behind an invisible scrollbar).
+**Default (2026-09):** every table keeps the global staffglobal.css table look
+(`.app-data-table` / `.app-table-shell`) at every width, including narrow
+split-screen / multi-window views. Below `MOBILE` the shell tightens its padding
+and type (the `max-width: 640px` block under "Global Table Shells" in
+`staffglobal.css`) instead of changing shape. Stacking every table by default made
+the same table render as a table in a full-width window and as cards in a
+half-width one.
 
-Below `MOBILE`, each row becomes a label/value card:
+A wide list-of-records table can opt in to label/value cards below `MOBILE`:
 
 - CSS: `.app-data-table--stack` in [families/tables.css](../../src/styles/families/tables.css)
-- DOM: [src/lib/ui/tableStacking.js](../../src/lib/ui/tableStacking.js), applied to
-  **every** table by [GlobalTableShells](../../src/components/App/GlobalTableShells.js)
+- DOM: [src/lib/ui/tableStacking.js](../../src/lib/ui/tableStacking.js), applied by
+  [GlobalTableShells](../../src/components/App/GlobalTableShells.js) to opted-in tables only
 
 Each cell needs its own column heading, which CSS cannot supply — a stylesheet
 cannot read `thead` text into a `tbody` cell. `tableStacking` stamps it on as
 `data-label`, colSpan-aware, and the CSS renders it with `attr()`.
 
-Opt out with `data-app-table-stack="off"` on the table or any ancestor
-(`DataTableShell` accepts `stack={false}`). Do so for a table that is already
-narrow, or one laid out as a grid/matrix rather than a list of records — turning
-each row into a card there loses the comparison the table exists to make.
+Opt in with `data-app-table-stack="on"` on the table or any ancestor
+(`DataTableShell` accepts `stack`). The nearest attribute wins, so
+`data-app-table-stack="off"` inside an opted-in region still keeps that table a table.
 
 Per-cell control:
 

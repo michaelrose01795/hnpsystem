@@ -17,7 +17,7 @@ export default function PaintOperationsTab({ filter }) {
       </ReportSection>
 
       <ReportSection title="Paint job volume and completed work" subtitle="Completed Paint jobs, queue depth and whole-job cycle-time proxy.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {OPERATIONS_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend={kpi.id !== "pnt.queue"} withDrilldown />
           ))}

@@ -47,7 +47,7 @@ export default function EmployeeManagementUi(props) {
 
       {isLoading && <section role="status" aria-live="polite" aria-busy="true" aria-label="Loading directory" style={{
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
     gap: "var(--layout-card-gap)"
   }}>
           <SkeletonKeyframes />
@@ -73,7 +73,7 @@ export default function EmployeeManagementUi(props) {
 
       {!isLoading && !error && <section style={{
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
     gap: "var(--layout-card-gap)"
   }}>
           <SectionCard title="Employee Directory" subtitle={`${filteredEmployees.length} of ${employees.length} employees`} action={<DirectoryFilters filters={filters} setFilters={setFilters} departments={uniqueDepartments} employmentTypes={uniqueEmploymentTypes} />}>

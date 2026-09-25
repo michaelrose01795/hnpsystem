@@ -35,7 +35,7 @@ export default function PartsOverviewTab({ filter, onDrilldown }) {
       </ReportSection>
 
       <ReportSection title="Performance summary" subtitle="Parts fitted and parts revenue, re-bucketed daily, weekly and monthly.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
           <PerformanceTrendCard kpiId="prt.fitted" label="Parts fitted" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <PerformanceTrendCard kpiId="prt.fitted" label="Parts fitted" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <PerformanceTrendCard kpiId="prt.fitted" label="Parts fitted" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

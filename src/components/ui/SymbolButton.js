@@ -232,6 +232,14 @@ export const SYMBOLS = {
       </>
     ),
   },
+  menu: {
+    label: "Menu",
+    render: () => (
+      <>
+        <path d="M2.5 5.5h19M2.5 12h19M2.5 18.5h19" {...S} />
+      </>
+    ),
+  },
   more: {
     label: "More",
     render: () => (
@@ -492,6 +500,16 @@ export const SYMBOLS = {
   },
 
   // ── Status & meta ─────────────────────────────────────────
+  status: {
+    label: "Status",
+    // A pulse line — the job status / timeline panel, distinct from the
+    // clock-face History mark.
+    render: () => (
+      <>
+        <path d="M1.5 12h4.6l2.8-7.5 6.2 15 2.8-7.5h4.6" {...S} />
+      </>
+    ),
+  },
   approve: {
     label: "Approve",
     render: () => (
@@ -610,13 +628,15 @@ export function Symbol({ symbol, className = "app-symbol-btn__glyph" }) {
   );
 }
 
-export default function SymbolButton({
+// Forwards its ref to the <button> so a host can measure it (e.g. the portrait
+// topbar's Menu / Status drops, which open from the button's on-screen position).
+const SymbolButton = React.forwardRef(function SymbolButton({
   symbol,
   label,
   className = "",
   type = "button",
   ...rest
-}) {
+}, ref) {
   const entry = SYMBOLS[symbol];
   if (!entry) {
     if (process.env.NODE_ENV !== "production" && typeof console !== "undefined") {
@@ -636,6 +656,7 @@ export default function SymbolButton({
     <button
       type={type}
       className={classes}
+      ref={ref}
       data-symbol={symbol}
       aria-label={accessibleName}
       title={accessibleName}
@@ -644,4 +665,6 @@ export default function SymbolButton({
       <Symbol symbol={symbol} />
     </button>
   );
-}
+});
+
+export default SymbolButton;

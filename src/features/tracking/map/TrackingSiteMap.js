@@ -29,21 +29,18 @@
 // location_update path; the page reloads the snapshot and every count here is
 // re-derived from it.
 //
-// ZOOM IS PHONE-ONLY
-// ------------------
-// On a tablet landscape or desktop the frame is big enough to read the whole
-// plan, so the plan is fixed: no wheel zoom, no panning, and
-// the page scrolls normally over it. At tablet portrait width and below the
-// frame shrinks to the plan's own proportions, and the plan can be zoomed with
-// a pinch (or the wheel) and panned with a drag.
+// THE PLAN IS FIXED
+// -----------------
+// The plan cannot be zoomed or panned at any width or orientation: no pinch,
+// no wheel zoom, no drag. It is always fitted to the frame and the page
+// scrolls normally over it. Sections are chosen with a plain tap / click.
 
-import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import React, { useCallback, useMemo, useReducer } from "react";
 import { createPortal } from "react-dom";
 import Button from "@/components/ui/Button";
 import LayerTheme from "@/components/ui/LayerTheme";
 import ParkingSiteMap from "@/features/tracking/map/ParkingSiteMap";
 import SectionPanel from "@/features/tracking/map/SectionPanel";
-import { useIsTablet } from "@/hooks/useIsMobile";
 import { TRACKING_SECTION_BY_ID } from "@/features/tracking/map/parkingAreas";
 import {
   INITIAL_SECTION_SELECTION,
@@ -52,21 +49,6 @@ import {
   searchVehicles,
   sectionSelectionReducer,
 } from "@/features/tracking/map/trackingMapModel";
-
-const MIN_SCALE = 1;
-const MAX_SCALE = 5;
-const ZOOM_STEP = 1.4;
-// A pointer that travels further than this between down and up was a pan, not
-// a click, and must not select the section under it.
-const DRAG_THRESHOLD_PX = 4;
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-
-// Keep the plan covering the frame: with origin 0 0 and `scale(s) translate(t)`
-// a point p lands at s*(p+t), so t must stay within [1/s - 1, 0].
-const clampPan = (value, scale) => clamp(value, Math.min(0, 1 / scale - 1), 0);
-
-const INITIAL_VIEW = { scale: 1, x: 0, y: 0 };
 
 export default function TrackingSiteMap({
   entries = [],
@@ -81,11 +63,6 @@ export default function TrackingSiteMap({
   onFindQueryChange,
   findResultsSlot = null,
 }) {
-  const [view, setView] = useState(INITIAL_VIEW);
-  const canZoom = useIsTablet();
-  // True while a finger or mouse is dragging / pinching, so the stage follows
-  // it directly instead of easing behind it.
-  const [gesturing, setGesturing] = useState(false);
   // One selection for the labels, regions, strip, overview and search results.
   // The transitions are the tested sectionSelectionReducer in trackingMapModel.
   const [selection, dispatch] = useReducer(sectionSelectionReducer, initialSelectedId, (id) =>
@@ -93,12 +70,6 @@ export default function TrackingSiteMap({
   );
   // The find query belongs to the page's shared search bar, not the reducer.
   const { selectedId, highlightKey } = selection;
-
-  const frameRef = useRef(null);
-  const panRef = useRef(null);
-  const pinchRef = useRef(null);
-  const pointersRef = useRef(new Map());
-  const draggedRef = useRef(false);
 
   const searchable = allEntries || entries;
 
@@ -131,117 +102,6 @@ export default function TrackingSiteMap({
     }
   };
 
-  const zoomBy = useCallback((factor) => {
-    setView((current) => {
-      const scale = clamp(current.scale * factor, MIN_SCALE, MAX_SCALE);
-      // Keep whatever is in the middle of the frame in the middle of it.
-      const cx = 0.5 / current.scale - current.x;
-      const cy = 0.5 / current.scale - current.y;
-      return { scale, x: clampPan(0.5 / scale - cx, scale), y: clampPan(0.5 / scale - cy, scale) };
-    });
-  }, []);
-
-  // Growing past tablet width drops back to the fitted plan, so a desktop never
-  // keeps a zoom it has no controls to undo.
-  useEffect(() => {
-    if (!canZoom) setView(INITIAL_VIEW);
-  }, [canZoom]);
-
-  // Wheel zoom has to be a non-passive listener or the browser scrolls the page
-  // out from under the map before we see the event. Phones only.
-  useEffect(() => {
-    const frame = frameRef.current;
-    if (!frame || !canZoom) return undefined;
-    const handleWheel = (event) => {
-      if (!event.deltaY) return;
-      event.preventDefault();
-      zoomBy(event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP);
-    };
-    frame.addEventListener("wheel", handleWheel, { passive: false });
-    return () => frame.removeEventListener("wheel", handleWheel);
-  }, [zoomBy, canZoom]);
-
-  // Pinch: the point of the plan under the fingers' midpoint stays under it.
-  const beginPinch = (rect) => {
-    const [a, b] = [...pointersRef.current.values()];
-    panRef.current = null;
-    draggedRef.current = true;
-    pinchRef.current = {
-      distance: Math.hypot(a.x - b.x, a.y - b.y) || 1,
-      mx: ((a.x + b.x) / 2 - rect.left) / rect.width,
-      my: ((a.y + b.y) / 2 - rect.top) / rect.height,
-      origin: view,
-      rect,
-    };
-  };
-
-  const continuePinch = () => {
-    const pinch = pinchRef.current;
-    const [a, b] = [...pointersRef.current.values()];
-    const { origin, rect } = pinch;
-    const scale = clamp((origin.scale * Math.hypot(a.x - b.x, a.y - b.y)) / pinch.distance, MIN_SCALE, MAX_SCALE);
-    const mx = ((a.x + b.x) / 2 - rect.left) / rect.width;
-    const my = ((a.y + b.y) / 2 - rect.top) / rect.height;
-    // The plan point that sat under the starting midpoint.
-    const px = pinch.mx / origin.scale - origin.x;
-    const py = pinch.my / origin.scale - origin.y;
-    setView({ scale, x: clampPan(mx / scale - px, scale), y: clampPan(my / scale - py, scale) });
-  };
-
-  const beginPan = (event) => {
-    if (!canZoom) return;
-    if (event.button !== undefined && event.button !== 0) return;
-    const frame = frameRef.current;
-    if (!frame) return;
-    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    setGesturing(true);
-    if (pointersRef.current.size === 2) {
-      beginPinch(frame.getBoundingClientRect());
-      return;
-    }
-    if (pointersRef.current.size > 2) return;
-    draggedRef.current = false;
-    panRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      origin: view,
-      rect: frame.getBoundingClientRect(),
-    };
-  };
-
-  const continuePan = (event) => {
-    if (!pointersRef.current.has(event.pointerId)) return;
-    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    if (pinchRef.current && pointersRef.current.size === 2) {
-      continuePinch();
-      return;
-    }
-    const pan = panRef.current;
-    if (!pan || pan.pointerId !== event.pointerId) return;
-    if (Math.abs(event.clientX - pan.startX) + Math.abs(event.clientY - pan.startY) < DRAG_THRESHOLD_PX) return;
-    draggedRef.current = true;
-    const dx = (event.clientX - pan.startX) / (pan.rect.width * pan.origin.scale);
-    const dy = (event.clientY - pan.startY) / (pan.rect.height * pan.origin.scale);
-    setView({
-      scale: pan.origin.scale,
-      x: clampPan(pan.origin.x + dx, pan.origin.scale),
-      y: clampPan(pan.origin.y + dy, pan.origin.scale),
-    });
-  };
-
-  const endPan = (event) => {
-    pointersRef.current.delete(event.pointerId);
-    // Lifting one finger of a pinch ends it; the remaining finger does not turn
-    // into a pan, which would jump the plan.
-    pinchRef.current = null;
-    const pan = panRef.current;
-    if (pan && pan.pointerId === event.pointerId) panRef.current = null;
-    if (pointersRef.current.size === 0) setGesturing(false);
-  };
-
-  const shouldIgnoreClick = useCallback(() => draggedRef.current, []);
-
   // Portalled under the page's search bar when the slot is there; drawn at the
   // top of the map otherwise, so the results are never lost.
   const findResultsList = findQuery ? (
@@ -271,11 +131,6 @@ export default function TrackingSiteMap({
     </ul>
   ) : null;
 
-  const stageStyle = {
-    transform: `scale(${view.scale}) translate(${view.x * 100}%, ${view.y * 100}%)`,
-    transformOrigin: "0 0",
-  };
-
   return (
     <LayerTheme
       className="tracking-map"
@@ -290,23 +145,11 @@ export default function TrackingSiteMap({
 
       <div className="tracking-map__body">
         {/* The frame sizes the view; the plan inside it is fitted, never
-            stretched, so it keeps its own proportions at any width. The stage
-            carries the pan/zoom, which moves the plan and its overlay together. */}
-        <div
-          ref={frameRef}
-          className={`tracking-map__frame${canZoom ? " is-zoomable" : ""}${gesturing ? " is-gesturing" : ""}`}
-          onPointerDown={beginPan}
-          onPointerMove={continuePan}
-          onPointerUp={endPan}
-          onPointerCancel={endPan}
-        >
-          <div className="tracking-map__stage" style={stageStyle}>
-            <ParkingSiteMap
-              selectedId={selectedId}
-              counts={grouped.counts}
-              onSelect={selectSection}
-              shouldIgnoreClick={shouldIgnoreClick}
-            />
+            stretched, so it keeps its own proportions at any width. It is
+            fixed: no zoom and no pan on any device or orientation. */}
+        <div className="tracking-map__frame">
+          <div className="tracking-map__stage">
+            <ParkingSiteMap selectedId={selectedId} counts={grouped.counts} onSelect={selectSection} />
           </div>
         </div>
 

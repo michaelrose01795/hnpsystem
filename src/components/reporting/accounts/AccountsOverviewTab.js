@@ -36,7 +36,7 @@ export default function AccountsOverviewTab({ filter, onDrilldown }) {
       </ReportSection>
 
       <ReportSection title="Performance summary" subtitle="Revenue and payments received, re-bucketed daily, weekly and monthly (revenue & payment trends).">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
           <PerformanceTrendCard kpiId="acc.revenue" label="Revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="day" granularityLabel="Daily" />
           <PerformanceTrendCard kpiId="acc.revenue" label="Revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="week" granularityLabel="Weekly" />
           <PerformanceTrendCard kpiId="acc.revenue" label="Revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="month" granularityLabel="Monthly" />

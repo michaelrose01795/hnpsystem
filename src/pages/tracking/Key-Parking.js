@@ -526,7 +526,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
               gap: "var(--space-3)"
             }}>
 
@@ -762,7 +762,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
             gap: "10px"
           }}>
 
@@ -785,7 +785,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
             gap: "var(--space-2)"
           }}>
 

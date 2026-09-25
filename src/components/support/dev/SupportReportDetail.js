@@ -30,6 +30,7 @@ import { STATUS_META, SEVERITY_META, CATEGORY_META, deriveBadges } from "@/lib/s
 import { buildGithubIssue, buildDevBundle, buildMarkdownReport, reportDeepLink } from "@/lib/support/supportExport";
 import SupportAssistedPanel from "@/components/support/dev/SupportAssistedPanel";
 import SupportGithubPanel from "@/components/support/dev/SupportGithubPanel";
+import SupportReportFacts from "@/components/support/dev/SupportReportFacts";
 import { useUser } from "@/context/UserContext";
 
 const arr = (v) => (Array.isArray(v) ? v : []);
@@ -566,7 +567,7 @@ function ActivityPanel({ audit }) {
 
 export default function SupportReportDetail({ id }) {
   const router = useRouter();
-  const { data, screenshots, comments, audit, loading, error, patch, addComment } = useSupportReport(id);
+  const { data, screenshots, comments, audit, errorEvents, loading, error, patch, addComment } = useSupportReport(id);
 
   const diagnostics = data?.diagnostics || {};
   const inv = diagnostics.investigation;
@@ -638,8 +639,12 @@ export default function SupportReportDetail({ id }) {
 
       <SupportTriagePanel report={data} patch={patch} />
 
-      {/* Description */}
-      <Panel title="Description" sectionKey="support-detail-description">
+      {/* Reference, page, action, time + timezone, device, plain-language error
+          summary, and the technical error when one exists. */}
+      <SupportReportFacts report={data} errorEvents={errorEvents} />
+
+      {/* The user's complete submitted text, exactly as stored. */}
+      <Panel title="What the user wrote" sectionKey="support-detail-description">
         <div style={{ whiteSpace: "pre-wrap", fontSize: "var(--text-body)", color: "var(--text-1)" }}>{data.description}</div>
       </Panel>
 

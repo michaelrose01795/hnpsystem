@@ -29,7 +29,7 @@ export default function OperationalPerformanceTab({ filter, onDrilldown }) {
       </ReportSection>
 
       <ReportSection title="Headline operational metrics with trends" subtitle="Efficiency, labour revenue, customer authorisation and MOT performance with history.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {headlinePanels.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown />
           ))}

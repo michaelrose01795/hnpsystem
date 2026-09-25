@@ -36,7 +36,7 @@ export default function AccountsOperationsTab({ filter, onDrilldown }) {
       </ReportSection>
 
       <ReportSection title="Revenue & payment trends" subtitle="Invoiced revenue and cash collected, re-bucketed daily / weekly / monthly.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
           <TrendCard kpiId="acc.revenue" label="Revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="day" granularityLabel="Daily" />
           <TrendCard kpiId="acc.revenue" label="Revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="week" granularityLabel="Weekly" />
           <TrendCard kpiId="acc.payments_received" label="Payments (£)" unit="currency" format="£0,0.00" filter={filter} granularity="day" granularityLabel="Daily" />

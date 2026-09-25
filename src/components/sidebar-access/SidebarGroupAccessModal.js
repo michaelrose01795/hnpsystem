@@ -181,7 +181,7 @@ export default function SidebarGroupAccessModal({
     >
       {error ? <StaffAlert tone="danger" title="Access cannot be saved">{error}</StaffAlert> : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "var(--page-stack-gap)", alignItems: "stretch" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "var(--page-stack-gap)", alignItems: "stretch" }}>
         <LayerTheme gap="10px" style={{ height: "100%", minHeight: 0 }}>
           <strong>Assigned users</strong>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>

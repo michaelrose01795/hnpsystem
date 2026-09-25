@@ -10,8 +10,8 @@
 //
 // Two skins, one controller:
 //   staff    — styled entirely by src/styles/families/context-menu.css. The
-//              panel is a <LayerSurface> (§3.0) and every row is a real
-//              Secondary button (app-btn app-btn--secondary).
+//              panel is a surface card with an outer shadow, and
+//              every row is a real Secondary button (app-btn app-btn--secondary).
 //   /website — styled by `@family context-menu` in src/styles/custglobal.css.
 //              The staff family is gated on html.staff-scope and `.app-btn` is
 //              the PRIMARY action under the customer scope, so the website skin
@@ -28,9 +28,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
-import { canOpenInOtherWorkspace, openInOtherWorkspace } from "@/features/workspaces/workspaceBridge";
-import { toWorkspaceHref } from "@/features/workspaces/workspaceModel";
 import LayerSurface from "@/components/ui/LayerSurface";
+import {
+  WORKSPACE_COMMANDS,
+  canOpenInOtherWorkspace,
+  getWorkspaceShellStatus,
+  openInOtherWorkspace,
+  runWorkspaceCommand,
+} from "@/features/workspaces/workspaceBridge";
+import { toWorkspaceHref } from "@/features/workspaces/workspaceModel";
 
 const VIEWPORT_PAD = 8; // px — keep the menu this far from the viewport edge
 const SUBMENU_GAP = 6; // px — space between a row and the submenu it opens
@@ -207,16 +213,17 @@ export default function GlobalContextMenu() {
         ? target
         : (target && target.closest ? target.closest('[contenteditable="true"]') : null);
       const selection = readSelection(target);
+      // Multi-workspace shell (src/features/workspaces): staff desktop only,
+      // read now so the menu offers exactly what the shell can do right now.
+      const shell = website ? null : getWorkspaceShellStatus();
       const items = [];
 
       if (link) {
         const href = link.href;
-        // Multi-workspace shell: offered only where it can work (a wide staff
-        // window, or inside a workspace) and only for staff pages a workspace
-        // can show. See src/features/workspaces.
+        // Only for staff pages a workspace can show.
         if (!website && canOpenInOtherWorkspace() && toWorkspaceHref(href, window.location.origin)) {
           items.push({
-            label: "Open link in other workspace",
+            label: shell?.active ? "Open link in other workspace" : "Open link beside this page",
             icon: "◫",
             onSelect: () => openInOtherWorkspace(href),
           });
@@ -362,6 +369,29 @@ export default function GlobalContextMenu() {
           },
           SEPARATOR
         );
+      }
+
+      // Multi workspace: split the page-card area into side-by-side page cards
+      // (or manage the split). Inside a card, Close / Leave act on that card.
+      if (shell?.available) {
+        const run = (command) => () => runWorkspaceCommand(command);
+        const group = [];
+        if (!shell.active) {
+          group.push({ label: "Open multi workspace", icon: "◫", onSelect: run(WORKSPACE_COMMANDS.ENTER) });
+        } else {
+          if (shell.canAdd) {
+            group.push({ label: "Add a card", icon: "＋", onSelect: run(WORKSPACE_COMMANDS.ADD) });
+          }
+          if (shell.inWorkspace) {
+            group.push({ label: "Close this card", icon: "✕", onSelect: run(WORKSPACE_COMMANDS.CLOSE) });
+          }
+          group.push({
+            label: shell.inWorkspace ? "Leave multi workspace here" : "Leave multi workspace",
+            icon: "▭",
+            onSelect: run(WORKSPACE_COMMANDS.EXIT),
+          });
+        }
+        items.push({ type: "label", label: "Multi workspace" }, ...group, SEPARATOR);
       }
 
       // Page-level group — always present, exactly as in the native menu.
@@ -533,7 +563,7 @@ export default function GlobalContextMenu() {
   const step = (items, current, direction) => {
     const selectable = items
       .map((item, index) => ({ item, index }))
-      .filter(({ item }) => item.type !== "separator" && !item.disabled);
+      .filter(({ item }) => !item.type && !item.disabled);
     if (!selectable.length) return current;
     const at = selectable.findIndex(({ index }) => index === current);
     return selectable[(at + direction + selectable.length) % selectable.length].index;
@@ -580,7 +610,7 @@ export default function GlobalContextMenu() {
       return;
     }
     const chosen = menu.items[activeIndex];
-    if (!chosen || chosen.type === "separator" || chosen.disabled) return;
+    if (!chosen || chosen.type || chosen.disabled) return;
     if (chosen.submenu && (event.key === "ArrowRight" || event.key === "Enter" || event.key === " ")) {
       event.preventDefault();
       openSubmenu(activeIndex, rowElement(PANEL_ID, activeIndex), { focus: true });
@@ -598,22 +628,23 @@ export default function GlobalContextMenu() {
   if (!menu.website) {
     return createPortal(
       <LayerSurface
+        padding="var(--space-sm)"
+        gap="var(--space-sm)"
         id={PANEL_ID}
         role="menu"
         tabIndex={-1}
         aria-label="Context menu"
         className={`app-context-menu${visible ? " is-visible" : ""}`}
-        radius="var(--control-menu-radius)"
-        padding="8px"
-        // 8px between rows — the rows are full Secondary buttons now, so they
-        // need real breathing space rather than sitting flush like list items.
-        gap="8px"
         onKeyDown={onKeyDown}
         onContextMenu={(event) => event.preventDefault()}
       >
         {menu.items.map((item, index) =>
           item.type === "separator" ? (
             <div key={`sep-${index}`} className="app-context-menu__separator" role="separator" />
+          ) : item.type === "label" ? (
+            <p key={`label-${index}`} className="app-context-menu__section-label" role="presentation">
+              {item.label}
+            </p>
           ) : (
             <button
               key={`${item.label}-${index}`}

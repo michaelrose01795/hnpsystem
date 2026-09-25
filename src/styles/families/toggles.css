@@ -200,3 +200,11 @@ html.staff-scope .app-toggle-field {
 html.staff-scope .app-toggle-field > span {
   line-height: 1.2;
 }
+
+/* Phone: the label is the tap target for its 18px box, so it keeps the 44px
+   touch floor. Only the row's hit height grows; box and caption are unchanged. */
+@media (max-width: 640px) {
+  html.staff-scope .app-toggle-field {
+    min-height: var(--control-height);
+  }
+}

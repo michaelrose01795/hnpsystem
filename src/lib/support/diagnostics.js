@@ -187,6 +187,50 @@ const pickAllowed = (source, allowlist) => {
   return out;
 };
 
+// User-Agent Client Hints (Chromium only). The device MODEL and exact OS version
+// are "high entropy" hints the browser only hands over asynchronously, so they
+// are requested once when capture is installed and cached here for the (sync)
+// snapshot. Browsers that do not support hints simply leave this null, and the
+// report says the model was not shared rather than guessing.
+let cachedClientHints = null;
+
+/**
+ * Request the high-entropy client hints once and cache them. Never throws.
+ * @param {Navigator} [nav]
+ * @returns {Promise<object|null>}
+ */
+export async function primeClientHints(nav = typeof navigator !== "undefined" ? navigator : undefined) {
+  try {
+    const data = nav?.userAgentData;
+    if (!data) return null;
+    const base = {
+      platform: data.platform || undefined,
+      mobile: typeof data.mobile === "boolean" ? data.mobile : undefined,
+      brands: Array.isArray(data.brands) ? data.brands.map((b) => ({ brand: b.brand, version: b.version })) : undefined,
+    };
+    cachedClientHints = base;
+    if (typeof data.getHighEntropyValues === "function") {
+      const high = await data.getHighEntropyValues(["model", "platformVersion"]);
+      cachedClientHints = {
+        ...base,
+        model: high?.model || undefined,
+        platformVersion: high?.platformVersion || undefined,
+      };
+    }
+    return cachedClientHints;
+  } catch {
+    return cachedClientHints;
+  }
+}
+
+const readTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 /**
  * Snapshot device/viewport info. `win` is injectable for tests.
  * @param {Window} [win]
@@ -196,12 +240,18 @@ export function snapshotDevice(win = typeof window !== "undefined" ? window : un
   const nav = win.navigator || {};
   return {
     ua: nav.userAgent || undefined,
+    ua_ch: cachedClientHints || undefined,
     platform: nav.platform || undefined,
     lang: nav.language || undefined,
     online: typeof nav.onLine === "boolean" ? nav.onLine : undefined,
     viewport: { w: win.innerWidth || null, h: win.innerHeight || null },
     dpr: win.devicePixelRatio || null,
+    touch_points: Number.isFinite(nav.maxTouchPoints) ? nav.maxTouchPoints : undefined,
     isMobile: typeof win.matchMedia === "function" ? win.matchMedia("(max-width: 640px)").matches : undefined,
+    // The reporter's own zone + offset, so the report can show their local time
+    // next to the canonical UK time.
+    timezone: readTimezone(),
+    tz_offset_minutes: -new Date().getTimezoneOffset(),
   };
 }
 
@@ -260,6 +310,10 @@ export function installBrowserCapture(store, opts = {}) {
   }
   const now = typeof opts.now === "function" ? opts.now : () => Date.now();
   const cleanups = [];
+
+  // Ask for the device model / OS version hints now, so they are ready long
+  // before anyone opens a report.
+  void primeClientHints(window.navigator);
 
   // --- console.error / console.warn (preserve + call through) ---
   for (const level of ["error", "warn"]) {

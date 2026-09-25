@@ -312,7 +312,7 @@ export default function AccountsListPage() {
   const renderLinkedFinance = () =>
   <LayerTheme as="section" sectionKey="accounts-linked-finance" sectionType="content-card" parentKey="accounts-page-shell" widthMode="full" gap="18px">
       <DevLayoutSection sectionKey="accounts-linked-finance-jump-links" sectionType="toolbar" parentKey="accounts-linked-finance">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "14px" }}>
         {financeLinks.map((link) =>
         <LayerSurface
           key={link.title}
@@ -346,7 +346,7 @@ export default function AccountsListPage() {
       </div>
       </DevLayoutSection>
       <DevLayoutSection sectionKey="accounts-linked-finance-reference-grid" sectionType="content-card" parentKey="accounts-linked-finance">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: "16px" }}>
         <LayerSurface as="article" sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Invoice References</h3>

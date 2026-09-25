@@ -27,8 +27,8 @@ import { SearchBar } from "@/components/ui/searchBarAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { SkeletonBlock, SkeletonKeyframes, InlineLoading } from "@/components/ui/LoadingSkeleton";
 import ConversationList from "@/components/page-ui/messages/ConversationList";
-import ConversationHeader from "@/components/page-ui/messages/ConversationHeader";
-import ConversationDetails from "@/components/page-ui/messages/ConversationDetails";
+import ConversationHeader, { HeaderActions } from "@/components/page-ui/messages/ConversationHeader";
+import ConversationDetails, { FeedDetails } from "@/components/page-ui/messages/ConversationDetails";
 import MessageComposer from "@/components/page-ui/messages/MessageComposer";
 import MessageItem from "@/components/page-ui/messages/MessageItem";
 import {
@@ -79,6 +79,16 @@ function Separator({ label, unread = false, innerRef }) {
 // System / bookings feed (read only)
 // ---------------------------------------------------------------------------
 function SystemFeed({ feed, isMobileView, onBack }) {
+  const { search } = feed;
+  const term = search?.open ? search.term.trim().toLowerCase() : "";
+  const notes = term
+    ? feed.notes.filter((note) =>
+        [note.message, note.customer_name, note.type_label, note.vehicle_label, note.description]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(term))
+      )
+    : feed.notes;
+
   return (
     <>
       <header className="app-msg-header">
@@ -98,7 +108,31 @@ function SystemFeed({ feed, isMobileView, onBack }) {
             </div>
           </div>
         </div>
+        <HeaderActions
+          detailsOpen={feed.detailsOpen}
+          onToggleDetails={feed.onToggleDetails}
+          menuItems={feed.menuItems}
+          menuLabel={feed.isBookings ? "Bookings options" : "Notification options"}
+        />
       </header>
+
+      {search?.open && (
+        <div className="app-msg-search" role="search">
+          <div className="app-msg-search__field">
+            <SearchBar
+              autoFocus
+              placeholder={feed.isBookings ? "Search bookings" : "Search notifications"}
+              value={search.term}
+              onChange={(event) => search.onChange(event.target.value)}
+              onClear={() => search.onChange("")}
+            />
+          </div>
+          <span className="app-msg-muted" aria-live="polite">
+            {term ? (notes.length ? `${notes.length} of ${feed.notes.length}` : "No matches") : ""}
+          </span>
+          <SymbolButton symbol="close" label="Close search" onClick={search.onClose} />
+        </div>
+      )}
 
       <div className="app-msg-feed custom-scrollbar" data-dev-section="1" data-dev-section-key="messages-system-feed" data-dev-section-type="section-shell">
         {feed.loading && <FeedSkeleton />}
@@ -110,11 +144,14 @@ function SystemFeed({ feed, isMobileView, onBack }) {
             description={feed.isBookings ? "Customer booking requests will appear here." : "Automated DMS alerts will appear here."}
           />
         )}
+        {!feed.loading && !feed.error && feed.notes.length > 0 && notes.length === 0 && (
+          <EmptyState variant="bare" title="No matches" description="Nothing in this feed matches your search." />
+        )}
         {!feed.loading &&
           !feed.error &&
-          feed.notes.map((note, index) => (
+          notes.map((note, index) => (
             <React.Fragment key={`system-${note.notification_id}`}>
-              {feed.showUnread && feed.unreadIndex === index && (
+              {!term && feed.showUnread && feed.unreadIndex === index && (
                 <Separator label="New" unread innerRef={feed.setUnreadEl} />
               )}
               <article className="app-msg-notice">
@@ -592,7 +629,8 @@ export default function MessagesPageUi(props) {
     leaveDecline,
   } = props;
 
-  const detailsOpen = Boolean(details?.open && mode === "thread");
+  const isFeed = mode === "system" || mode === "bookings";
+  const detailsOpen = Boolean(details?.open && (mode === "thread" || isFeed));
   // Below the tablet breakpoint one panel shows at a time. Decided here, not
   // in CSS, because the layer primitives set their display inline.
   const showList = !isMobileView || mobilePanelView !== "conversation";
@@ -705,9 +743,13 @@ export default function MessagesPageUi(props) {
                 sectionKey="messages-details-panel"
                 parentKey="messages-page-shell"
                 sectionType="section-shell"
-                aria-label="Conversation details"
+                aria-label={isFeed ? "Feed details" : "Conversation details"}
               >
-                <ConversationDetails {...details.props} />
+                {isFeed ? (
+                  <FeedDetails feed={systemFeed} onClose={details.props.onClose} />
+                ) : (
+                  <ConversationDetails {...details.props} />
+                )}
               </LayerTheme>
             </div>
           )}

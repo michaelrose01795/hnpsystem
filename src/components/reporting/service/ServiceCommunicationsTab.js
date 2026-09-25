@@ -19,7 +19,7 @@ export default function ServiceCommunicationsTab({ filter }) {
         title="Customer communication activity"
         subtitle="VHC send rate — the live customer-communication signal (with daily/weekly/monthly trend)."
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 12 }}>
           {COMMUNICATIONS_R1.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown={kpi.hasDrilldown} />
           ))}
@@ -30,7 +30,7 @@ export default function ServiceCommunicationsTab({ filter }) {
         title="Customer responses & follow-up"
         subtitle="Contact activity, response time and follow-up completion light up as the customer-communication event spine accrues (R2) and a follow-up entity lands (R3)."
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 12 }}>
           {COMMUNICATIONS_READINESS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend={false} withDrilldown={false} />
           ))}

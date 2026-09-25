@@ -71,7 +71,9 @@ export default function ValetingDashboardUi(props) {
           data-dev-text-preview="Queue trend and queue board"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            // Two columns wherever each gets 280px; a phone stacks them (the trend
+            // chart was squeezed to 137px and its axis labels cut off).
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
             gap: "var(--layout-card-gap)",
             alignItems: "stretch"
           }}

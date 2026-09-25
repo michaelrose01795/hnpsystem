@@ -332,6 +332,9 @@ export default function Sidebar({
   inPresentationMode = false,
   pendingHref = null,
   isAuthLoading = false,
+  // Page to highlight instead of the router's. Set by StaffLayout in
+  // multi-workspace mode, where the sidebar drives the focused card.
+  activePath = null,
 }) {
   // Collapse/expand is ONE movement. Every part of it — the shell's width, the
   // body padding, each row's padding, the label/icon handover, the section
@@ -364,7 +367,7 @@ export default function Sidebar({
     return () => clearTimeout(timer);
   }, [isCollapsed]);
   const router = useRouter();
-  const pathname = (router.asPath || router.pathname || "").split("?")[0];
+  const pathname = (activePath || router.asPath || router.pathname || "").split("?")[0];
   // Optimistic active state: in the Pages Router router.asPath does not update
   // until a navigation completes, so the clicked item would otherwise stay
   // un-highlighted for the whole load. pendingHref (set on routeChangeStart by

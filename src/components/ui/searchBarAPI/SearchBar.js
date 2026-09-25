@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef } from "react";
+import PhoneSearchCollapse from "./PhoneSearchCollapse";
 
 const pickStyleKeys = (style, keys) => {
   if (!style) return undefined;
@@ -51,6 +52,12 @@ const SearchBar = forwardRef(function SearchBar(
     disabled = false,
     onClear,
     type = "text",
+    // Portrait phone: fold into a search button that opens the global-search
+    // style overlay (PhoneSearchCollapse). Pass false where the field must
+    // stay inline.
+    phoneCollapse = true,
+    // Fold into the search button at every width, not only on a portrait phone.
+    alwaysCollapse = false,
     ...rest
   },
   ref
@@ -86,8 +93,10 @@ const SearchBar = forwardRef(function SearchBar(
     }
   };
 
-  return (
-    <div className={["searchbar-api", className].filter(Boolean).join(" ")} style={wrapperStyle} data-draft-ignore="true">
+  // In the phone overlay the host's wrapper sizing is dropped so the field
+  // fills the bar.
+  const renderField = (inOverlay) => (
+    <div className={["searchbar-api", className].filter(Boolean).join(" ")} style={inOverlay ? undefined : wrapperStyle} data-draft-ignore="true">
       <input
         {...rest}
         ref={assignInputRef}
@@ -116,6 +125,17 @@ const SearchBar = forwardRef(function SearchBar(
         &times;
       </button>
     </div>
+  );
+
+  return (
+    <PhoneSearchCollapse
+      enabled={phoneCollapse}
+      always={alwaysCollapse}
+      renderField={renderField}
+      label={ariaLabel !== "Search" ? ariaLabel : placeholder || ariaLabel}
+      hasValue={hasValue}
+      disabled={disabled}
+    />
   );
 });
 

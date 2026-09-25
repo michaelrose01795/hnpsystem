@@ -195,23 +195,48 @@ html.staff-scope .app-msg-presence--external::before {
 /* Conversation list                                                          */
 /* ========================================================================== */
 
-/* Search, filter, remove and new on one row. The search takes whatever the
-   three 44px circles leave. */
+/* Search, filter, remove and new: one row of 44px buttons, left-aligned. The
+   search is a button at every width (SearchBar alwaysCollapse) and opens the
+   portrait-phone search overlay, so the narrow panel never holds a field. */
 html.staff-scope .app-msg-list__toolbar {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--space-xs);
   flex: none;
   min-width: 0;
 }
 
-html.staff-scope .app-msg-list__search {
-  flex: 1 1 auto;
-  min-width: 0;
+html.staff-scope .app-msg-list__toolbar > * {
+  flex: none;
 }
 
-html.staff-scope .app-msg-list__toolbar > :not(.app-msg-list__search) {
+/* "——— PINNED ———" / "——— CONVERSATIONS ———": a caption between two
+   separating lines, heading each block of the list. The lines are 1px fills,
+   not borders. */
+html.staff-scope .app-msg-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
   flex: none;
+}
+
+html.staff-scope .app-msg-divider::before,
+html.staff-scope .app-msg-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--separating-line-color);
+}
+
+html.staff-scope .app-msg-divider__label {
+  flex: none;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  opacity: 0.6;
 }
 
 html.staff-scope .app-msg-list__scroll {
@@ -362,6 +387,21 @@ html.staff-scope .app-msg-header {
   flex: none;
   flex-wrap: nowrap;
   min-height: var(--control-height);
+  position: relative;
+  padding-bottom: var(--space-sm);
+}
+
+/* The line between the header and the chat below it: a 1px fill, like
+   .app-msg-divider, not a border. */
+html.staff-scope .app-msg-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--separating-line-color);
+  pointer-events: none;
 }
 
 html.staff-scope .app-msg-header__identity {
@@ -406,6 +446,30 @@ html.staff-scope .app-msg-header__meta {
 
 html.staff-scope .app-msg-header__meta > * {
   flex: none;
+}
+
+/* Portrait phone: one row cannot hold a name, its meta and the actions, and the
+   meta was being cut off mid-word at the panel edge. Stack name over meta and
+   let the meta items wrap onto a second line (the tags are inline-flex, so an
+   ellipsis cannot render on them — wrapping is the only way they stay whole). */
+@media (max-width: 640px) {
+  html.staff-scope .app-msg-header__text {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  html.staff-scope .app-msg-header__title {
+    max-width: 100%;
+    font-size: var(--text-h4);
+  }
+
+  html.staff-scope .app-msg-header__meta {
+    max-width: 100%;
+    flex-wrap: wrap;
+    gap: 2px var(--space-sm);
+    overflow: visible;
+  }
 }
 
 html.staff-scope .app-msg-header__actions {
@@ -717,23 +781,6 @@ html.staff-scope .app-msg-toolbar .app-reaction-bar:not(.is-open) .app-reaction-
    inside .app-data-table. */
 html.staff-scope .app-msg-toolbar .app-symbol-btn {
   min-height: var(--table-action-btn-height);
-}
-
-/* The react button takes the same solid accent fill as the reply, pin and
-   more circles beside it (the family's Secondary tint would make it the odd
-   one out). Re-bound through the button family's own --btn-* variables. */
-html.staff-scope .app-msg-toolbar .app-reaction-trigger {
-  --btn-bg: var(--primary);
-  --btn-color: var(--onAccentText);
-}
-
-html.staff-scope .app-msg-toolbar .app-reaction-trigger:hover,
-html.staff-scope .app-msg-toolbar .app-reaction-trigger:focus-visible {
-  --btn-bg: var(--primary-hover);
-}
-
-html.staff-scope .app-msg-toolbar .app-reaction-trigger:active {
-  --btn-bg: var(--primary-pressed);
 }
 
 html.staff-scope .app-msg-reactions {

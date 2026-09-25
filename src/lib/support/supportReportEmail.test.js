@@ -93,6 +93,81 @@ describe("buildSupportReportEmail — never leaks", () => {
   });
 });
 
+describe("buildSupportReportEmail — complete, honest report", () => {
+  const withDiagnostics = {
+    ...baseReport,
+    diagnostics: {
+      report_context: { reference_code: "ERR-K3F9Q2", reference_source: "error" },
+      route: { asPath: "/job-cards/00076", title: "Job Card 00076" },
+      recent_actions: [{ type: "click", label: "Save changes" }],
+      device: {
+        ua: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+        timezone: "Europe/London",
+        viewport: { w: 390, h: 844 },
+      },
+      trigger: {
+        origin: "error-toast",
+        referenceCode: "ERR-K3F9Q2",
+        message: "Couldn't save the job card",
+        devInfo:
+          "=== HNP SYSTEM ERROR ===\nReference: ERR-K3F9Q2\n\nUser Message: Couldn't save the job card\nTechnical Error: Request failed with status 500\nError Type: HttpError\n\nStack Trace:\nHttpError: Request failed\n    at save (jobs.js:10:5)",
+      },
+    },
+  };
+
+  it("keeps the user's COMPLETE text — no truncation", () => {
+    const long = `${"word ".repeat(900)}THE-END-MARKER`;
+    const email = buildSupportReportEmail({ report: { ...baseReport, description: long } });
+    expect(email.html).toContain("THE-END-MARKER");
+    expect(email.text).toContain("THE-END-MARKER");
+  });
+
+  it("shows reference, page, action, timezone'd time, device, summary and technical error", () => {
+    const email = buildSupportReportEmail({ report: withDiagnostics, appBaseUrl: "https://app.example" });
+    for (const body of [email.html, email.text]) {
+      expect(body).toContain("ERR-K3F9Q2");
+      expect(body).toContain("Job Card 00076");
+      expect(body).toContain("Save changes");
+      expect(body).toContain("BST");
+      expect(body).toContain("Europe/London");
+      expect(body).toContain("iOS 17.5");
+      expect(body).toContain("Safari 17");
+      expect(body).toContain("iPhone");
+      expect(body).toMatch(/server hit an error/);
+      expect(body).toContain("HttpError");
+      expect(body).toContain("at save (jobs.js:10:5)");
+    }
+    expect(email.subject).toContain("ERR-K3F9Q2");
+  });
+
+  it("omits the technical block when there was no error, and says so plainly", () => {
+    const email = buildSupportReportEmail({ report: baseReport });
+    expect(email.text).not.toContain("TECHNICAL ERROR");
+    expect(email.text).toContain("No technical error was recorded");
+  });
+
+  it("shows missing facts as Not available instead of inventing them", () => {
+    const email = buildSupportReportEmail({ report: baseReport });
+    expect(email.text).toMatch(/Device model:\s+Not available \(/);
+    expect(email.text).toMatch(/Reference:\s+Not available \(/);
+  });
+
+  it("always builds an absolute link from the base URL it is given", () => {
+    const email = buildSupportReportEmail({ report: baseReport, appBaseUrl: "https://dms.example.com/" });
+    expect(email.html).toContain(`href="https://dms.example.com/dev/support-reports/${baseReport.id}"`);
+    expect(email.text).toContain(`Open: https://dms.example.com/dev/support-reports/${baseReport.id}`);
+    expect(email.html).not.toContain("localhost");
+  });
+
+  it("redacts a password typed into the description", () => {
+    const email = buildSupportReportEmail({
+      report: { ...baseReport, description: "I logged in, my password is Hunter2! and it failed" },
+    });
+    expect(email.html).not.toContain("Hunter2");
+    expect(email.text).toContain("password is [REDACTED:CREDENTIAL]");
+  });
+});
+
 describe("sendSupportReportNotification — never blocks", () => {
   it("skips cleanly (no send) when SMTP is not configured", async () => {
     const send = vi.fn();

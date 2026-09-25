@@ -42,7 +42,7 @@ export default function PaintOverviewTab({ filter, onDrilldown }) {
       </ReportSection>
 
       <ReportSection title="Weekly and monthly summary" subtitle="Paint completed volume re-bucketed by the reporting engine.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
           <TrendCard kpiId="pnt.jobs_completed" label="Paint jobs completed" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <TrendCard kpiId="pnt.jobs_completed" label="Paint jobs completed" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <TrendCard kpiId="pnt.jobs_completed" label="Paint jobs completed" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

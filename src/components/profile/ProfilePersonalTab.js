@@ -263,7 +263,7 @@ function InsightPanel({ finance, onAction }) {
             gap: "8px",
             gridTemplateColumns: isMobile
               ? "minmax(0, 1fr)"
-              : "repeat(auto-fit, minmax(220px, 1fr))",
+              : "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
           }}
         >
           {insights.map((insight) => (
@@ -328,7 +328,7 @@ function AddWidgetModal({
             gap: "8px",
             gridTemplateColumns: isMobile
               ? "minmax(0, 1fr)"
-              : "repeat(auto-fill, minmax(200px, 1fr))",
+              : "repeat(auto-fill, minmax(min(100%, 200px), 1fr))",
           }}
         >
           {PERSONAL_WIDGET_TYPE_OPTIONS.map((definition) => {

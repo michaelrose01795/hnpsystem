@@ -17,8 +17,18 @@ import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import ShareNotePopup from "@/components/GlobalNotes/ShareNotePopup";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
+import useIsMobile from "@/hooks/useIsMobile";
+import { IOS_BROWSER_TOOLBAR_LIFT, isIosBrowserTab } from "@/utils/iosBrowserChrome";
 
 const BUBBLE_SIZE = 44;
+// On a phone /messages the composer (attach / text / send) runs along the
+// bottom edge, exactly where the bubble docks by default. This is the height
+// kept clear above the bottom of the screen so the bubble never covers Send:
+// the 44px composer row plus the page card's padding and the screen gutter.
+const MESSAGES_COMPOSER_CLEARANCE = 96;
+// Phone: the topbar row (screen gutter + 44px buttons + the bar's padding) plus
+// room for the notch, so the bubble can never be parked over the bar's buttons.
+const PHONE_TOPBAR_CLEARANCE = 120;
 const PANEL_DEFAULT = { x: 120, y: 90, width: 460, height: 360 };
 const PANEL_CLOSE_ANIMATION_MS = 150;
 const SAVE_DEBOUNCE_MS = 520;
@@ -268,6 +278,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     : numericDbUserId;
   const [hasHydrated, setHasHydrated] = useState(false);
   const [bubblePosition, setBubblePosition] = useState({ x: 0, y: 0 });
+  const isPhoneWidth = useIsMobile();
   const [panelRect, setPanelRect] = useState(PANEL_DEFAULT);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPanelVisible, setIsPanelVisible] = useState(false);
@@ -1151,7 +1162,27 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         }`}
         style={{
           left: bubblePosition.x,
-          top: bubblePosition.y,
+          // Display-only adjustments on a phone; the saved position is untouched,
+          // so the bubble returns to it on a larger screen:
+          //  • kept below the portrait topbar row, so it never sits on Menu /
+          //    Status / Search / Help (the bubble layers above the bar);
+          //  • on /messages, lifted clear of the composer along the bottom edge.
+          top:
+            isPhoneWidth && typeof window !== "undefined"
+              ? Math.max(
+                  PHONE_TOPBAR_CLEARANCE,
+                  pathname === "/messages"
+                    ? Math.min(
+                        bubblePosition.y,
+                        window.innerHeight -
+                          BUBBLE_SIZE -
+                          MESSAGES_COMPOSER_CLEARANCE -
+                          // The composer is lifted over iOS Safari's bottom bar; follow it.
+                          (isIosBrowserTab() ? IOS_BROWSER_TOOLBAR_LIFT : 0)
+                      )
+                    : bubblePosition.y
+                )
+              : bubblePosition.y,
         }}
         onPointerDown={startBubbleDrag}
         aria-label="Open Notes"
