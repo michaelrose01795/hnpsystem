@@ -206,7 +206,7 @@ export default function StaffTopbar({
           {compact.showStatus && (
             <SymbolButton
               ref={compact.statusButtonRef}
-              symbol="status"
+              symbol="tracking"
               label="Open job status"
               onClick={compact.onOpenStatus}
               aria-expanded={Boolean(compact.statusOpen)}

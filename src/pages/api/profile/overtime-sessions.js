@@ -5,6 +5,7 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import { getOvertimePeriodBounds } from "@/lib/database/hr";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 async function resolveUserId(req, res) {
   const devBypassEnv = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
@@ -30,7 +31,7 @@ async function resolveUserId(req, res) {
   return resolveSessionUserId(session);
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -251,3 +252,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: error.message });
   }
 }
+
+export default withAuditRequest(handler);

@@ -37,6 +37,7 @@ import {
 } from "@/lib/auth/rateLimit";
 import { hashPassword, ALGO_BCRYPT } from "@/lib/auth/passwords";
 import { writeAuditLog } from "@/lib/audit/auditLog";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const PASSWORD_RESET_PUBLIC_BASE_URL =
   process.env.PASSWORD_RESET_PUBLIC_URL || "https://hnpsystem.vercel.app";
@@ -385,7 +386,7 @@ async function handleConfirm(req, res) {
   });
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
     if (req.method !== "POST") {
       res.setHeader("Allow", ["POST"]);
@@ -421,3 +422,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: "Unexpected password reset error." });
   }
 }
+
+export default withAuditRequest(handler);

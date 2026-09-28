@@ -66,7 +66,10 @@ const csvCell = (value) => {
 export function auditEventsToCsv(rows = []) {
   const columns = [
     ["occurred_at", "Occurred at"],
+    ["actor_type", "Actor type"],
+    ["actor_user_id", "User ID"],
     ["actor_name", "User"],
+    ["actor_email", "User email"],
     ["actor_role", "Role"],
     ["actor_department", "Department"],
     ["session_id", "Session"],
@@ -76,8 +79,11 @@ export function auditEventsToCsv(rows = []) {
     ["route", "Route"],
     ["page_title", "Page title"],
     ["action_label", "Action"],
+    ["table_name", "Table"],
+    ["operation", "Operation"],
     ["record_type", "Record type"],
     ["record_id", "Record ID"],
+    ["changed_fields", "Changed fields"],
     ["outcome", "Outcome"],
     ["duration_ms", "Duration ms"],
     ["device_category", "Device"],

@@ -16,11 +16,12 @@ import {
   parseLeaveRequestNotes,
   serializeLeaveRequestNotes,
 } from "@/lib/hr/leaveRequests";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const buildRequesterName = (user = {}) =>
   [user.first_name || "", user.last_name || ""].filter(Boolean).join(" ").trim() || user.email || "Employee";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -239,3 +240,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withAuditRequest(handler);

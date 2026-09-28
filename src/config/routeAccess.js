@@ -60,6 +60,7 @@ export const PUBLIC_PREFIXES = [
 
 // Path prefixes that require an authenticated session.
 export const PROTECTED_PREFIXES = [
+  "/access", // Stock Access (/access, /access/manage)
   "/accounts",
   "/admin",
   "/appointments",

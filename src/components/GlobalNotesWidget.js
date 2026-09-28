@@ -15,6 +15,7 @@ import styles from "@/components/GlobalNotesWidget.module.css";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
+import SymbolButton from "@/components/ui/SymbolButton";
 import ShareNotePopup from "@/components/GlobalNotes/ShareNotePopup";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
 import useIsMobile from "@/hooks/useIsMobile";
@@ -1213,6 +1214,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         <LayerSurface
           as="section"
           className={`${styles.panel} ${isPanelVisible ? styles.panelEnter : styles.panelExit}`}
+          data-phone-popup="fill"
           radius="var(--section-card-radius)"
           padding="var(--space-2)"
           gap="var(--space-2)"
@@ -1312,6 +1314,15 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
                   </button>
               )}
             </div>
+
+            {/* Phone portrait only: the panel fills the screen and covers the
+                bubble, so it needs its own close. Hidden elsewhere by staffglobal.css. */}
+            <SymbolButton
+              symbol="close"
+              label="Close Notes"
+              className="app-phone-popup-close"
+              onClick={closePanel}
+            />
           </header>
 
           <div className={`${styles.body} ${activeView === "ai" ? styles.bodyAi : ""} themed-scrollbar`}>

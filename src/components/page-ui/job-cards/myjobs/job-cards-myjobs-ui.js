@@ -356,7 +356,8 @@ export default function MyJobsPageUi(props) {
       <style jsx>{`
         @media (max-width: 480px) {
           :global(.app-page-stack) {
-            gap: 12px !important;
+            /* Portrait phone rhythm: 10px, including under the search row. */
+            gap: var(--space-2) !important;
           }
           :global(.myjobs-filter-toolbar) {
             gap: 10px !important;

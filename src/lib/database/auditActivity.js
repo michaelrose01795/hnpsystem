@@ -345,6 +345,30 @@ export async function listAuditFilterOptions({ department = null } = {}) {
   };
 }
 
+// The complete change history of one record — live and archived events —
+// newest first. `recordType` may be the audit record type (e.g. "job_card") or
+// the table name (e.g. "jobs"); the database resolves either.
+export async function getRecordAuditHistory({ recordType, recordId, limit = 500 }) {
+  const type = String(recordType || "").trim().slice(0, 100);
+  const id = String(recordId ?? "").trim().slice(0, 180);
+  if (!type || !id) throw new Error("A record type and record id are required.");
+  const { data, error } = await requireServiceClient().rpc("audit_record_history", {
+    p_record_type: type,
+    p_record_id: id,
+    p_limit: Math.min(5000, Math.max(1, Number(limit) || 500)),
+  });
+  if (error) throw new Error(`Unable to load record history: ${error.message}`);
+  return data || [];
+}
+
+// Every table in the database with its audit status: tracked, excluded (with
+// the reason), disabled, or NOT COVERED.
+export async function getAuditCoverage() {
+  const { data, error } = await requireServiceClient().rpc("audit_coverage_report");
+  if (error) throw new Error(`Unable to load audit coverage: ${error.message}`);
+  return data || [];
+}
+
 export async function getAuditSessionSummaries(sessionIds = []) {
   const ids = sessionIds.map(normaliseUuid).filter(Boolean).slice(0, 100);
   if (!ids.length) return [];

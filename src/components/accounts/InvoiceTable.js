@@ -16,6 +16,7 @@ import Button from "@/components/ui/Button";
 import DataTableShell from "@/components/ui/DataTableShell";
 import EmptyState from "@/components/ui/EmptyState";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 const getInvoiceDisplayValue = (invoice) =>
@@ -88,6 +89,9 @@ const isInvoiceOverdue = (invoice) => {
   return due.getTime() < Date.now();
 };
 export default function InvoiceTable({ invoices, filters, onFilterChange, pagination, onPageChange, onExport, loading, accentSurface = false, navigationDisabled = false, showHeader = true }) {
+  // Portrait phone: 10px between the search/filter/action row and the
+  // content beneath it.
+  const isVerticalPhone = useIsVerticalPhone();
   const Layer = accentSurface ? LayerTheme : LayerSurface;
   const router = useRouter();
   void onPageChange;
@@ -141,7 +145,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
       sectionKey="accounts-invoices-table-card"
       sectionType="content-card"
       parentKey="accounts-invoices-table"
-      style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      style={{ display: "flex", flexDirection: "column", gap: isVerticalPhone ? "var(--space-2)" : "16px" }}>
 
       {showHeader &&
       <DevLayoutSection sectionKey="accounts-invoices-table-header" sectionType="content-card" parentKey="accounts-invoices-table-card">

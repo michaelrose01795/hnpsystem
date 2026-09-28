@@ -88,7 +88,7 @@ export default function TrackingDashboardUi(props) {
         <DevLayoutSection sectionKey="tracking-page-body" parentKey="tracking-page" sectionType="section-shell" style={{
       display: "flex",
       flexDirection: "column",
-      gap: isMobileView ? "16px" : "18px",
+      gap: isMobileView ? "10px" : "18px",
       width: "100%",
       maxWidth: "100%",
       minWidth: 0
@@ -97,7 +97,9 @@ export default function TrackingDashboardUi(props) {
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
-        alignItems: "center",
+        // Phone: top-aligned, so the search sits level with the first line of
+        // actions when they wrap to two.
+        alignItems: wrapHeaderControls ? "flex-start" : "center",
         gap: "12px",
         flexWrap: wrapHeaderControls ? "wrap" : "nowrap",
         // Phone: anchors the Map view's find results to the whole row (see
@@ -115,7 +117,8 @@ export default function TrackingDashboardUi(props) {
           gap: "var(--space-sm)",
           flexWrap: wrapHeaderControls ? "wrap" : "nowrap",
           alignItems: "center",
-          flex: "1 1 auto",
+          // Phone: hugs the search button so the actions share its line.
+          flex: wrapHeaderControls ? "0 1 auto" : "1 1 auto",
           minWidth: 0,
           maxWidth: "100%",
           // Leads the row now that there is no tab strip before it.
@@ -193,9 +196,12 @@ export default function TrackingDashboardUi(props) {
           flexWrap: wrapHeaderControls ? "wrap" : "nowrap",
           alignItems: "center",
           justifyContent: "flex-end",
-          flex: wrapHeaderControls ? "0 1 auto" : "0 0 auto",
+          // Phone: takes the rest of the search's line and wraps its own
+          // buttons there; it only drops below as a whole when its widest
+          // button (min-content) cannot fit beside the search.
+          flex: wrapHeaderControls ? "1 1 0" : "0 0 auto",
           marginLeft: "auto",
-          minWidth: wrapHeaderControls ? 0 : "max-content",
+          minWidth: wrapHeaderControls ? "min-content" : "max-content",
           whiteSpace: "nowrap"
         }}>
                   {activeTab === "tracker" && setTrackerView && (

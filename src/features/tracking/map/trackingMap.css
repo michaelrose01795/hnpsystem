@@ -116,10 +116,11 @@ html.staff-scope .tracking-map__frame {
   position: relative;
   width: 100%;
   min-width: 0;
-  /* The plan is the point of this view, so it takes the room: tall enough to
-     read on a laptop, capped so it cannot run off a short viewport. */
-  min-height: 420px;
-  height: min(78vh, 900px);
+  /* The frame takes the plan's own proportions (the supplied plan is
+     1433 x 1098) at every width, so the plan fills it edge to edge with no
+     empty letterbox around it. The row height follows the frame. */
+  aspect-ratio: 1433 / 1098;
+  align-self: start;
   overflow: hidden;
   border-radius: var(--radius-sm);
   background: var(--pmap-frame-bg);
@@ -250,12 +251,21 @@ html.staff-scope .parking-map__section:focus-visible .parking-map__region {
 html.staff-scope .tracking-panel {
   min-width: 0;
   /* Exactly the frame's height, so the two read as one tool, and the list
-     scrolls inside the panel instead of lengthening the page. Reaching the end
-     of the list does not hand the scroll on to the page. */
-  height: min(78vh, 900px);
-  min-height: 420px;
+     scrolls inside the panel instead of lengthening the page. Size
+     containment stops the panel's content from setting the row height, so
+     the grid row is the frame's height and the panel stretches to it.
+     Reaching the end of the list does not hand the scroll on to the page. */
+  contain: size;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* The panel is the one scroller. Its children keep their full height rather
+   than flex-shrinking into the fixed-height column — a shrunk child (the
+   overview table's shell is overflow: hidden) clips its own rows and leaves
+   the panel nothing to scroll. */
+html.staff-scope .tracking-panel > * {
+  flex-shrink: 0;
 }
 
 html.staff-scope .tracking-panel__head {
@@ -411,20 +421,8 @@ html.staff-scope .tracking-panel__sr {
   /* Stacked under the map it keeps its own scroll, capped so the map above
      stays in reach. */
   html.staff-scope .tracking-panel {
-    height: auto;
-    min-height: 0;
+    contain: none;
     max-height: min(70vh, 640px);
-  }
-}
-
-/* Phones and tablet portrait: the frame takes the plan's own proportions
-   (the supplied plan is 1433 x 1098), so it fills the width with no empty
-   letterbox above and below. */
-@media (max-width: 768px) {
-  html.staff-scope .tracking-map__frame {
-    min-height: 0;
-    height: auto;
-    aspect-ratio: 1433 / 1098;
   }
 }
 

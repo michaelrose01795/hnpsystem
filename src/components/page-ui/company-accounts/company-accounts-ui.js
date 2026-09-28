@@ -1,6 +1,10 @@
 // file location: src/components/page-ui/company-accounts/company-accounts-ui.js
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
 
 export default function CompanyAccountsIndexPageUi(props) {
+  // Portrait phone: 10px between the search/filter/action row and the
+  // content beneath it.
+  const isVerticalPhone = useIsVerticalPhone();
   const {
     ALLOWED_ROLES,
     Button,
@@ -35,7 +39,7 @@ export default function CompanyAccountsIndexPageUi(props) {
           <div style={{
         display: "flex",
         flexDirection: "column",
-        gap: "20px"
+        gap: isVerticalPhone ? "var(--space-2)" : "20px"
       }}>
           <div style={{
               display: "flex",

@@ -11,6 +11,7 @@ import { supabaseService } from "@/lib/database/supabaseClient";
 import { getClientIp, getUserAgent } from "@/lib/auth/rateLimit";
 import { writeAuditLog } from "@/lib/audit/auditLog";
 import { COOKIE_POLICY_VERSION } from "@/lib/consent/consentLedger";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -25,7 +26,7 @@ const sanitiseCategories = (raw) => {
   return out;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed." });
@@ -87,3 +88,5 @@ export default async function handler(req, res) {
 
   return res.status(200).json({ success: true });
 }
+
+export default withAuditRequest(handler);

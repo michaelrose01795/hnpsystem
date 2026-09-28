@@ -26,10 +26,11 @@
 import { getProductsByIds, createPendingOrder } from "@/lib/database/shop";
 import { getPublicPartsByIds } from "@/lib/database/partsCatalogPublic";
 import { getCustomerSessionFromReq } from "@/lib/auth/customerSession";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const SHIPPING_FLAT_PENCE = 595;
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ success: false, message: "Method Not Allowed" });
@@ -113,3 +114,5 @@ export default async function handler(req, res) {
     total_pence: total,
   });
 }
+
+export default withAuditRequest(handler, { actor: "customer" });

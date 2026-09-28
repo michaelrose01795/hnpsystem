@@ -109,6 +109,29 @@ html.staff-scope .app-btn--nav {
 }
 
 /* ========================================================= */
+/* === Layout modifier                                     === */
+/* === --tile: a large, full-width, left-aligned touch     === */
+/* === target holding a stacked title / detail / status —  === */
+/* === item pickers on /access. Palette comes from the     === */
+/* === variant (secondary), so it follows the ladder.      === */
+/* ========================================================= */
+html.staff-scope .app-btn--tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: var(--space-xs);
+  width: 100%;
+  min-width: 0;
+  min-height: calc(var(--control-height) * 2);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  text-align: left;
+  white-space: normal;
+  line-height: 1.25;
+}
+
+/* ========================================================= */
 /* === Shape modifier — circular icon button               === */
 /* === Square (locked to --control-height) + pill radius   === */
 /* === so it renders a perfect circle. Always painted with  === */

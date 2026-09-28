@@ -13,7 +13,7 @@ export const SYMBOL_USAGE = [
   { label: "Delivery row (Deliveries) — call, details, invoice, navigate", file: "src/components/Deliveries/DeliveryRow.js" },
   { label: "Write up form (JobCards) — add", file: "src/components/JobCards/WriteUpForm.js" },
   { label: "Staff layout (layout) — close", file: "src/components/layout/StaffLayout.js" },
-  { label: "Staff topbar (layout) — menu, search, status", file: "src/components/layout/StaffTopbar.js" },
+  { label: "Staff topbar (layout) — menu, search, tracking", file: "src/components/layout/StaffTopbar.js" },
   { label: "News comment thread (NewsFeed) — delete, edit, reply", file: "src/components/NewsFeed/NewsCommentThread.js" },
   { label: "Notes tab (components) — pin", file: "src/components/NotesTab.js" },
   { label: "Payslips ui (payslips) — delete, edit, view", file: "src/components/page-ui/accounts/payslips/payslips-ui.js" },

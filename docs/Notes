@@ -7,5 +7,30 @@ Deep dive to find out why the "Review Media" popup isnt follows the staffgloabl.
 
 ---------
 
-CHECK
-have it so all of the other symbol buttons within the staffglobal.css use this style instead of what is currently bueing used. 
+TODO
+/access page
+
+TODO
+check page, make adjustments. 
+
+
+TODO
+have it so access pages are within a "Access" modual which is now created, only add the access modual to the all access user atm. make sure it can be added to others within the page etc
+
+---------
+
+
+TODO
+/database tale
+
+CHECK 
+Database tables to make sure all ok, and all now have a data time and user who cahnged it etc
+
+---------
+
+
+TODO
+and the filter card section doesnt popup from the bottom and only going half way up the screen etc 
+
+
+meu button gapin vertical mode etc

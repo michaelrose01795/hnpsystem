@@ -1,6 +1,10 @@
 // file location: src/components/page-ui/accounts/invoices/accounts-invoices-ui.js
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
 
 export default function InvoicesPageUi(props) {
+  // Portrait phone: 10px between the search/filter/action row and the
+  // content beneath it.
+  const isVerticalPhone = useIsVerticalPhone();
   const {
     Button,
     DevLayoutSection,
@@ -26,7 +30,7 @@ export default function InvoicesPageUi(props) {
           <div style={{
         display: "flex",
         flexDirection: "column",
-        gap: "20px"
+        gap: isVerticalPhone ? "var(--space-2)" : "20px"
       }}>
             <DevLayoutSection as="div" data-presentation="invoices-actions" sectionKey="accounts-invoices-header-actions" sectionType="toolbar" parentKey="accounts-invoices-page-shell" style={{
           display: "flex",

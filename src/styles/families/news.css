@@ -949,6 +949,15 @@ html.staff-scope .app-news-revision__body {
   }
 }
 
+/* Portrait phone: the search, filter and add buttons share one row (see
+   staffglobal.css "The collapsed page search shares the line"), and the feed
+   starts 10px beneath it — the same 10px rhythm as the phone gutter. */
+@media (max-width: 640px) and (orientation: portrait) {
+  html.staff-scope .app-news {
+    row-gap: var(--space-2);
+  }
+}
+
 /* The publish action is a square symbol button, not a field, so its column
    sizes to the button instead of taking an equal share of the row. Declared
    after the responsive block on purpose: the media queries above set flex on

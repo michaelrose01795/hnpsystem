@@ -2,8 +2,12 @@
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { FilterButton, FilterField } from "@/components/ui/filterAPI";
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
 
 export default function ArchivedJobsPageUi(props) {
+  // Portrait phone: the search folds to a button that shares the filter's
+  // row, and the results start 10px below it.
+  const isVerticalPhone = useIsVerticalPhone();
   const {
     Button,
     DevLayoutSection,
@@ -31,7 +35,7 @@ export default function ArchivedJobsPageUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
-      <LayerSurface sectionKey="job-cards-archive-page-shell" sectionType="page-shell" shell className="app-page-stack" gap="24px" padding={0}>
+      <LayerSurface sectionKey="job-cards-archive-page-shell" sectionType="page-shell" shell className="app-page-stack" gap={isVerticalPhone ? "var(--space-2)" : "24px"} padding={0}>
         <DevLayoutSection as="form" data-presentation="archive-filters" sectionKey="job-cards-archive-search-toolbar" parentKey="job-cards-archive-page-shell" sectionType="toolbar" backgroundToken="transparent" onSubmit={event => {
       event.preventDefault();
       runSearch(query);
@@ -46,7 +50,7 @@ export default function ArchivedJobsPageUi(props) {
       color: "var(--search-text)"
     }}>
           <DevLayoutSection sectionKey="job-cards-archive-search-input" parentKey="job-cards-archive-search-toolbar" sectionType="filter-row" backgroundToken="search-surface" style={{
-        flex: "1 1 260px"
+        flex: isVerticalPhone ? "0 0 auto" : "1 1 260px"
       }}>
             <SearchBar value={query} onChange={event => setQuery(event.target.value)} onClear={() => setQuery("")} placeholder="Search by reg, job number, or customer name" style={{
           flex: "1 1 260px"

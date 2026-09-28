@@ -1,4 +1,7 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
+import Button from "@/components/ui/Button";
 
 const MONTH_NAMES = [
   "January",
@@ -73,6 +76,12 @@ export default function MonthPicker({
   const monthPickerRef = useRef(null);
   const yearScrollRef = useRef(null);
   const selectedYearRef = useRef(null);
+  const menuRef = useRef(null);
+  const isVerticalPhone = useIsVerticalPhone();
+  // On a vertical phone the menu fills the screen (staffglobal.css). Rendered in
+  // place it would be trapped under the card it sits in (stacking context, hover
+  // lift), so there it is portalled to <body> like the dropdown menus.
+  const placeMenu = (menu) => (isVerticalPhone ? createPortal(menu, document.body) : menu);
 
   const selected = parseMonthValue(isControlled ? value : null) || internalValue;
   const selectedValue = isEmptyControlledValue ? "" : formatMonthValue(selected);
@@ -106,7 +115,11 @@ export default function MonthPicker({
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (monthPickerRef.current && !monthPickerRef.current.contains(event.target)) {
+      if (
+        monthPickerRef.current &&
+        !monthPickerRef.current.contains(event.target) &&
+        !menuRef.current?.contains(event.target)
+      ) {
         setIsOpen(false);
       }
     }
@@ -211,8 +224,8 @@ export default function MonthPicker({
         </button>
       </div>
 
-      {isOpen && (
-        <div className="monthpicker-api__menu" role="dialog" aria-modal="false">
+      {isOpen && placeMenu(
+        <div ref={menuRef} className="monthpicker-api__menu" role="dialog" aria-modal="false">
           <div className="monthpicker-api__month-grid" role="listbox" aria-label="Month">
             {MONTH_NAMES.map((month, monthIndex) => {
               const isSelected = selected.month === monthIndex;
@@ -253,6 +266,18 @@ export default function MonthPicker({
               );
             })}
           </div>
+
+          {/* Phone portrait only: the menu fills the screen, so there is no
+              "outside" left to tap. Hidden elsewhere by staffglobal.css. */}
+          <Button
+            type="button"
+            variant="secondary"
+            symbol={false}
+            className="app-phone-popup-close"
+            onClick={() => setIsOpen(false)}
+          >
+            Close
+          </Button>
         </div>
       )}
 

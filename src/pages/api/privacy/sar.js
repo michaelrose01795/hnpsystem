@@ -9,6 +9,7 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabaseService } from "@/lib/database/supabaseClient";
 import { getClientIp, getUserAgent } from "@/lib/auth/rateLimit";
 import { writeAuditLog } from "@/lib/audit/auditLog";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const ALLOWED_TYPES = new Set([
   "access",
@@ -19,7 +20,7 @@ const ALLOWED_TYPES = new Set([
   "restriction",
 ]);
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed." });
@@ -83,3 +84,5 @@ export default async function handler(req, res) {
 
   return res.status(200).json({ success: true, request: row });
 }
+
+export default withAuditRequest(handler);

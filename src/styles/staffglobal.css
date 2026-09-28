@@ -1122,7 +1122,11 @@ html.staff-scope .app-phone-search-trigger.has-value::after {
     --btn-color: var(--accentText);
   }
 
-  html.staff-scope .app-portrait-sidebar__close-tab::after {
+  /* Scoped through the assembly so it outranks the legacy tooltip reset
+     (.app-hover-tooltip[data-tooltip]::after { content: none }): the tab carries
+     a title, which useNativeTitleTooltips turns into that class, and the reset
+     would otherwise delete this bridge and open a gap under the tab. */
+  html.staff-scope .app-portrait-sidebar-assembly .app-portrait-sidebar__close-tab.app-btn::after {
     content: "";
     position: absolute;
     top: calc(100% - 1px);
@@ -1175,17 +1179,27 @@ html.staff-scope .app-phone-search-trigger.has-value::after {
      symbol button — same 44px footprint on the same spot — so the panel unfurls
      from under the button and retracts back into it, the same drop / seal beat
      the 50/50 row uses. StaffLayout measures the button on open:
-     --portrait-sidebar-inset is the Menu button's left edge (the panel lines up
-     with it, mirrored on the right) and --portrait-sidebar-tab-x is the tapped
-     button's offset from that edge. */
+     --portrait-sidebar-inset is the topbar's left edge (the page gutter), so the
+     panel is exactly as wide as the topbar and the page card, mirrored on the
+     right; --portrait-sidebar-tab-x is the tapped button's offset from that
+     edge. */
   html.staff-scope .app-portrait-sidebar-assembly--compact {
     right: var(--portrait-sidebar-inset);
     left: var(--portrait-sidebar-inset);
     grid-template-columns: minmax(0, 1fr);
   }
 
-  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn {
+  /* The tab is a solid theme-coloured stem: the --theme tint composited over
+     --surface so it stays opaque over the page, running straight down through
+     the 10px gap (::after) to join the top of the panel. */
+  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn,
+  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn:hover,
+  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn:focus-visible {
+    --btn-bg: linear-gradient(var(--theme), var(--theme)), var(--surface);
     --btn-color: var(--accent-text-on-tint);
+  }
+
+  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn {
     grid-column: 1;
     justify-self: start;
     width: var(--control-height);
@@ -1194,10 +1208,15 @@ html.staff-scope .app-phone-search-trigger.has-value::after {
     padding: 0;
   }
 
-  /* Menu is the first button in the bar, so its tab sits on the panel's corner
-     and that corner stays square (the default above). Status sits further in,
-     so its tab joins the straight top edge and every panel corner is rounded. */
-  html.staff-scope .app-portrait-sidebar-assembly--compact.app-portrait-sidebar-assembly--status .app-portrait-sidebar__panel,
+  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn::after {
+    background: linear-gradient(var(--theme), var(--theme)), var(--surface);
+  }
+
+  /* The panel runs out to the page gutter, so no tab sits on one of its corners
+     any more — every corner is rounded and each tab joins the straight top
+     edge. */
+  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__panel,
+  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__panel .app-sidebar--vertical-phone,
   html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__panel .status-sidebar--vertical-phone {
     border-radius: var(--page-card-radius);
   }
@@ -7509,9 +7528,11 @@ html.staff-scope .tracking-viewswitch[role="group"] > .app-btn {
         align with the content beneath and wrap cleanly instead of
         holding a fixed pixel width. Buttons are left out: they keep
         their label width so the search, filter and action buttons
-        share one line whenever they fit, and only wrap when not. */
-  html.staff-scope .app-layout-toolbar-row > :not(button, .app-btn, .app-symbol-btn, .app-filter, .app-phone-search-trigger),
-  html.staff-scope .app-toolbar-row > :not(button, .app-btn, .app-symbol-btn, .app-filter, .app-phone-search-trigger) {
+        share one line whenever they fit, and only wrap when not. A
+        wrapper holding only the collapsed search button counts as a
+        button too (see 5). */
+  html.staff-scope .app-layout-toolbar-row > :not(button, .app-btn, .app-symbol-btn, .app-filter, .app-phone-search-trigger, :has(> .app-phone-search-trigger:only-child)),
+  html.staff-scope .app-toolbar-row > :not(button, .app-btn, .app-symbol-btn, .app-filter, .app-phone-search-trigger, :has(> .app-phone-search-trigger:only-child)) {
     flex: 1 1 140px !important;
     min-width: 0;
     max-width: 100%;
@@ -7530,6 +7551,45 @@ html.staff-scope .tracking-viewswitch[role="group"] > .app-btn {
   html.staff-scope .app-toolbar-row > .app-layout-tab-row,
   html.staff-scope .app-toolbar-row > .tab-api {
     flex-basis: 100% !important;
+  }
+
+  /* 5. The collapsed page search shares the line. Here SearchBar folds
+        into a 44px search button, but most page toolbars wrap it in a
+        column sized for the full-width field (flex: 1 1 100% / width:
+        100%). That column kept claiming a whole line, so the button sat
+        alone and the filter and add buttons wrapped underneath it. A
+        wrapper holding nothing but the button now hugs it, so the search,
+        filter and action buttons form one row. */
+  html.staff-scope .app-phone-search-trigger {
+    width: auto;
+    max-width: 100%;
+  }
+
+  html.staff-scope div:has(> .app-phone-search-trigger:only-child) {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+  }
+
+  /* The filter button keeps its badge reserve (6px above and below the
+     circle, see .app-filter) inside its own box, but no longer adds it to
+     the row: the row is the 44px of its buttons, level with the search
+     button, and the 10px below it is 10px of clear space. */
+  html.staff-scope .app-filter {
+    margin-block: calc(-1 * var(--app-filter-badge-overhang));
+  }
+
+  /* 6. Vertical rhythm around that row is 10px: between the toolbar's own
+        wrapped lines, and from the toolbar down to the content beneath it
+        (the toolbar's container, up to two wrappers above the button).
+        Containers whose gap is set inline set their phone gap themselves. */
+  html.staff-scope :is(div, section, form):has(
+      > .app-phone-search-trigger,
+      > * > .app-phone-search-trigger,
+      > * > * > .app-phone-search-trigger
+    ),
+  html.staff-scope .app-page-stack:has(> * > * > * > .app-phone-search-trigger) {
+    row-gap: var(--space-2);
   }
 }
 
@@ -10453,4 +10513,211 @@ html.staff-scope .app-filter__label {
   html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] .app-filter__body {
     animation: none;
   }
+}
+
+/* ========================================================= */
+/* === Phone portrait: every popup fills the screen        === */
+/* ========================================================= */
+/* THE LAW for popups on a vertical phone. Anything that opens over the page —
+   popup cards, the floating Notes panel, the Filter card, the calendar / month /
+   time pickers, the modal and drawer family — takes the whole screen, less one
+   gap on every side so it still reads as a floating card.
+
+   The gap is --popup-viewport-gap (10px, or the notch / home-indicator inset
+   when that is larger), the same token .popup-backdrop already pads with. Change
+   it there and here and every popup follows.
+
+   Several of these surfaces are placed by JS with inline left / top / width /
+   height / max-height (Notes remembers where you dragged it; Filter anchors to
+   its button and flips above it). The !important below is what overrides those
+   inline values, and it is shared by one selector list so the whole family costs
+   a handful of declarations. Any other floating panel opts in with
+   data-phone-popup="fill".
+
+   Because a full-screen panel leaves no "outside" to tap and covers the button
+   that opened it, each of these components renders an .app-phone-popup-close
+   that only shows here. Dropdown option lists, the right-click menu and the
+   messages toolbars stay anchored menus on purpose — they are not popups. */
+@media not all and (max-width: 640px) and (orientation: portrait) {
+  html.staff-scope .app-phone-popup-close {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) and (orientation: portrait) {
+  html.staff-scope {
+    --popup-viewport-gap: max(10px, env(safe-area-inset-top), env(safe-area-inset-bottom));
+  }
+
+  /* Popup cards sit in the .popup-backdrop flex box, which already pads by the
+     gap, so they only need to take the full height as well as the full width.
+     min-height, NOT height: a definite height turns every `height: 100%` /
+     `max-height: 100%` child into a card-sized box, and one with overflow
+     hidden then clips its content with nothing left for the card to scroll.
+     Kept content-sized, the card is the scroller and reaches the bottom. Cards
+     built to be fixed-height (.app-settings-popup-card) set their own height. */
+  html.staff-scope .popup-card,
+  html.staff-scope .popup-backdrop > * {
+    min-height: calc(100dvh - (var(--popup-viewport-gap) * 2)) !important;
+  }
+
+  /* Media editors (Edit photo / Edit video) are fixed-height settings cards
+     whose root clips (overflow: hidden) and whose sections carry inline
+     `flex: 0 1 auto` — on a phone a portrait video plus the trim controls is
+     taller than the screen, so the sections were squashed over each other and
+     the bottom controls cut off. Here the root scrolls, its sections keep their
+     full height, and the player is capped so a portrait clip leaves room. */
+  html.staff-scope .app-media-editor-popup {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  html.staff-scope .app-media-editor-popup > * {
+    flex-shrink: 0 !important;
+  }
+
+  html.staff-scope .app-media-editor-popup .video-editor-player {
+    width: min(100%, calc(45dvh * var(--video-editor-aspect-ratio, 0.5625)));
+    max-height: 45dvh;
+    margin-inline: auto;
+  }
+
+  /* Free-floating panels are pinned to the viewport, one gap in from each edge. */
+  html.staff-scope .app-filter__panel,
+  html.staff-scope .calendar-api__menu,
+  html.staff-scope .monthpicker-api__menu,
+  html.staff-scope .timepicker-api__menu,
+  html.staff-scope .app-modal__panel,
+  html.staff-scope .app-drawer__panel,
+  html.staff-scope [data-phone-popup="fill"] {
+    position: fixed;
+    inset: var(--popup-viewport-gap) !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0;
+    min-height: 0;
+    max-width: none;
+    max-height: none !important;
+    margin: 0;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    z-index: var(--z-popover);
+  }
+
+  /* The calendar / month / time pickers portal to <body> here (see their
+     components) — rendered in place, the card around them would trap them under
+     the topbar and, once its hover lift applied, become their containing block.
+
+     The pickers were centred with translate(-50%, -50%), including a stronger
+     .popup-card-scoped rule; the doubled class outranks both so the pinned
+     inset is not dragged half a screen up and left. */
+  html.staff-scope .calendar-api__menu.calendar-api__menu,
+  html.staff-scope .monthpicker-api__menu.monthpicker-api__menu {
+    transform: none;
+    animation: none;
+  }
+
+  /* The Filter card's unfold animation leaves a transform on the card (and it
+     declares will-change: transform). Either makes the card the containing block
+     for fixed descendants, so a calendar opened inside it would pin to the card
+     instead of the screen. Here it fades instead. */
+  html.staff-scope .app-filter__panel {
+    will-change: opacity;
+  }
+
+  html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] {
+    animation-name: app-filter-panel-fade-in;
+  }
+
+  html.staff-scope .app-filter__panel[data-state="closing"] {
+    animation-name: app-filter-panel-fade-out;
+  }
+
+  html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] .app-filter__body {
+    animation-name: app-filter-panel-fade-in;
+  }
+
+  /* The Filter card's header: title, then Close on the same line; Clear all and
+     Show results wrap beneath (see the max-width: 480px rule above). */
+  html.staff-scope .app-filter__header .app-phone-popup-close {
+    order: 1;
+    flex: 0 0 auto;
+  }
+
+  html.staff-scope .app-filter__actions {
+    order: 2;
+  }
+
+  /* Notes: the panel is a fixed full-screen card here, so its Close sits at the
+     end of the tab strip and the drag / resize grips have nothing to do. */
+  html.staff-scope [data-phone-popup="fill"] .app-phone-popup-close {
+    flex: 0 0 auto;
+  }
+
+  /* Pickers: stack the content and let the grid grow into the extra height,
+     with Close as a full-width row along the bottom. */
+  html.staff-scope .calendar-api__menu,
+  html.staff-scope .timepicker-api__menu {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  html.staff-scope .calendar-api__menu > .app-phone-popup-close,
+  html.staff-scope .timepicker-api__menu > .app-phone-popup-close {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  html.staff-scope .monthpicker-api__menu {
+    grid-template-rows: minmax(0, 1fr) auto;
+    max-width: none;
+  }
+
+  html.staff-scope .monthpicker-api__menu > .app-phone-popup-close {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  html.staff-scope .calendar-api__menu .calendar-api__days {
+    flex: 1 1 auto;
+    grid-auto-rows: 1fr;
+    min-height: 0;
+  }
+
+  html.staff-scope .calendar-api__menu button.calendar-api__day {
+    aspect-ratio: auto;
+  }
+
+  html.staff-scope .calendar-api__menu .calendar-api__month-year-picker {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+  }
+
+  html.staff-scope .timepicker-api__menu .timepicker-api__selectors {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  html.staff-scope .timepicker-api__menu .timepicker-api__column {
+    min-height: 0;
+  }
+
+  html.staff-scope .timepicker-api__menu .timepicker-api__options {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 0;
+  }
+}
+
+@keyframes app-filter-panel-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes app-filter-panel-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }

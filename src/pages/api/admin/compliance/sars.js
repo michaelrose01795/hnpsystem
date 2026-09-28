@@ -8,6 +8,7 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { requireComplianceAdmin } from "@/lib/compliance/roles";
 import { listRegister, updateRegisterRow } from "@/lib/compliance/registers";
 import { getAuditContext } from "@/lib/audit/auditContext";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const ALLOWED_PATCH_FIELDS = new Set([
   "status",
@@ -18,7 +19,7 @@ const ALLOWED_PATCH_FIELDS = new Set([
   "handled_by",
 ]);
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const gate = await requireComplianceAdmin({ getServerSession, authOptions, req, res });
   if (gate.error) {
     return res.status(gate.error.status).json({ success: false, message: gate.error.message });
@@ -63,3 +64,5 @@ export default async function handler(req, res) {
   res.setHeader("Allow", ["GET", "PATCH"]);
   return res.status(405).json({ success: false, message: "Method not allowed." });
 }
+
+export default withAuditRequest(handler);

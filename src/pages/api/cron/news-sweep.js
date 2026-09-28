@@ -20,8 +20,9 @@
 
 import { archiveExpiredPosts, publishDueScheduledPosts } from "@/lib/database/newsFeed/posts";
 import { runSystemPostSweep } from "@/lib/database/newsFeed/systemPosts";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method)) {
     res.setHeader("Allow", ["GET", "POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed." });
@@ -59,3 +60,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: "The news sweep failed." });
   }
 }
+
+export default withAuditRequest(handler, { actor: "system" });

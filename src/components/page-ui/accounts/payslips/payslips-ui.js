@@ -13,6 +13,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import SymbolButton from "@/components/ui/SymbolButton";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { FilterButton, FilterField } from "@/components/ui/filterAPI";
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
 
 // Payslip status → staffglobal .app-badge tone modifier.
 const STATUS_BADGE_TONE = {
@@ -25,6 +26,9 @@ const statusToneClass = (status) =>
   STATUS_BADGE_TONE[String(status || "").toLowerCase()] || "app-badge--neutral";
 
 export default function PayslipsAdminPageUi(uiProps) {
+  // Portrait phone: 10px between the search/filter/action row and the
+  // content beneath it.
+  const isVerticalPhone = useIsVerticalPhone();
   const {
     ALLOWED_ROLES,
     Button,
@@ -79,7 +83,7 @@ export default function PayslipsAdminPageUi(uiProps) {
   return (
     <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
       <DevLayoutSection sectionKey="payslips-page-shell" sectionType="page-shell" shell>
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: isVerticalPhone ? "var(--space-2)" : "20px" }}>
           {/* Filter toolbar — lives in the main page section, above the table card */}
           <DevLayoutSection sectionKey="payslips-filter-toolbar" sectionType="filter-row" parentKey="payslips-page-shell">
             <ToolbarRow>

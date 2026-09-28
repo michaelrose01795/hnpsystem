@@ -4,6 +4,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import { SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import PropTypes from "prop-types";
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
 
 const columnDefinitions = [
 { key: "account_id", label: "Account ID" },
@@ -49,6 +50,8 @@ export default function AccountTable({
   toolbar
 }) {
   const [hoveredAccountId, setHoveredAccountId] = React.useState(null);
+  // Portrait phone: 10px between the search/filter/action row and the table.
+  const isVerticalPhone = useIsVerticalPhone();
 
   const sortedIcon = (columnKey) => {
     if (!sortState || sortState.field !== columnKey) return "";
@@ -66,7 +69,7 @@ export default function AccountTable({
   };
 
   return (
-    <LayerTheme as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <LayerTheme as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" style={{ display: "flex", flexDirection: "column", gap: isVerticalPhone ? "var(--space-2)" : "16px" }}>
       {/* Filter toolbar (when supplied by the consumer) sits at the top of the card. */}
       {toolbar}
       <div

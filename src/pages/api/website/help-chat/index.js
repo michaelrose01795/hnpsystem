@@ -14,8 +14,9 @@ import {
   sendHelpChatError,
   summariseChat,
 } from "@/lib/website/helpChatApi";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
     res.setHeader("Allow", ["GET", "POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed." });
@@ -47,3 +48,5 @@ export default async function handler(req, res) {
     return sendHelpChatError(res, error, "Could not open the chat.");
   }
 }
+
+export default withAuditRequest(handler, { actor: "customer" });

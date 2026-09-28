@@ -197,6 +197,20 @@ const resilientFetch = async (input, init = {}) => {
           headers.set("x-request-id", crypto.randomUUID());
         }
         requestInit = { ...init, headers };
+      } else if (typeof window === "undefined" && !isRetriableMethod(method)) {
+        // Server: attach the actor bound to this API request by
+        // src/lib/audit/requestAuditContext.js so the database audit trigger
+        // can attribute the write. Read through the registered symbol so this
+        // browser-bundled module never imports node:async_hooks.
+        const auditHeaders = globalThis[Symbol.for("hnp.audit.requestContext")]
+          ?.getStore?.()?.headers;
+        if (auditHeaders) {
+          const headers = new Headers(
+            init?.headers || (typeof input === "object" ? input?.headers : undefined) || {}
+          );
+          for (const [name, value] of Object.entries(auditHeaders)) headers.set(name, value);
+          requestInit = { ...init, headers };
+        }
       }
       // Any HTTP response (including 4xx/5xx) is a success at the transport
       // layer — only thrown errors (network failure / abort) are retried.

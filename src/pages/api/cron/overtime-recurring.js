@@ -6,8 +6,9 @@
 import { supabase } from "@/lib/database/supabaseClient";
 import { getOvertimePeriodBounds } from "@/lib/database/hr";
 import { doesRuleMatchDate } from "@/lib/overtime/recurringUtils";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -168,3 +169,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error.message });
   }
 }
+
+export default withAuditRequest(handler, { actor: "system" });

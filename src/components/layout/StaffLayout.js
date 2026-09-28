@@ -390,15 +390,17 @@ export default function Layout({
   const [isPortraitSidebarClosing, setIsPortraitSidebarClosing] = useState(false);
   // Portrait-phone compact topbar: where the tapped symbol button sits, so the
   // dropped panel's close tab lands exactly on it and the panel unfurls from
-  // the button itself. inset = the Menu button's left edge (the panel lines up
-  // with it on both sides); tabX = the tapped button's offset from that edge.
+  // the button itself. inset = the topbar's left edge (the page gutter), so the
+  // panel is exactly as wide as the topbar and the page card, mirrored on the
+  // right; tabX = the tapped button's offset from that edge.
   const [portraitSidebarAnchor, setPortraitSidebarAnchor] = useState(null);
   const [portraitStatusAnchor, setPortraitStatusAnchor] = useState(null);
   const measureCompactAnchor = useCallback(
     (buttonEl) => {
       const menuEl = mobileMenuButtonRef.current;
-      if (!compactPhoneTopbar || !buttonEl || !menuEl) return null;
-      const inset = Math.round(menuEl.getBoundingClientRect().left);
+      const edgeEl = menuEl?.closest(".app-topbar-shell") || menuEl;
+      if (!compactPhoneTopbar || !buttonEl || !edgeEl) return null;
+      const inset = Math.round(edgeEl.getBoundingClientRect().left);
       return { inset, tabX: Math.round(buttonEl.getBoundingClientRect().left) - inset };
     },
     [compactPhoneTopbar]

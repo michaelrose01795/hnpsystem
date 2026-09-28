@@ -27,7 +27,7 @@
 
 import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Symbol } from "@/components/ui/SymbolButton";
+import SymbolButton, { Symbol } from "@/components/ui/SymbolButton";
 import Button from "@/components/ui/Button";
 
 // Gap between the button and the card, and the minimum gap to the viewport.
@@ -39,9 +39,11 @@ const VIEWPORT_GUTTER = 16;
 const CLOSE_FALLBACK_MS = 220;
 
 // Portalled menus opened from inside the card (MultiSelectDropdown with
-// usePortal) render in <body>, outside the card's DOM. A click in one of them
-// is still "inside" the filter, so it must not close the card.
-const NESTED_FLOATING_SELECTOR = ".dropdown-api__menu, .app-dropdown-menu";
+// usePortal, and the calendar / month / time pickers on a vertical phone)
+// render in <body>, outside the card's DOM. A click in one of them is still
+// "inside" the filter, so it must not close the card.
+const NESTED_FLOATING_SELECTOR =
+  ".dropdown-api__menu, .app-dropdown-menu, .calendar-api__menu, .monthpicker-api__menu, .timepicker-api__menu";
 
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
@@ -277,6 +279,15 @@ export default function FilterButton({
             )}
           </div>
         )}
+
+        {/* Phone portrait only: the card fills the screen and covers the
+            trigger, so it needs its own close. Hidden elsewhere by staffglobal.css. */}
+        <SymbolButton
+          symbol="close"
+          label={`Close ${title}`}
+          className="app-phone-popup-close"
+          onClick={() => close(true)}
+        />
       </div>
 
       <div className="app-filter__body">

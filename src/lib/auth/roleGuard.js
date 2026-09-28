@@ -4,6 +4,12 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { HR_CORE_ROLES, hasAllAccessRole, normalizeRoles } from "@/lib/auth/roles";
+import { buildStaffAuditHeaders, runWithAuditHeaders } from "@/lib/audit/requestAuditContext";
+
+// Every database write the handler makes is attributed to this session by the
+// audit trigger (see src/lib/audit/requestAuditContext.js).
+const runAudited = (handler, req, res, session) =>
+  runWithAuditHeaders(buildStaffAuditHeaders(req, session), () => handler(req, res, session));
 
 /**
  * Wrap API route handlers with a role guard to enforce Keycloak-based RBAC.
@@ -27,7 +33,7 @@ export function withRoleGuard(handler, { allow = [], authorize } = {}) {
     const allowCookieBypass = cookieRoles.length > 0 && process.env.NODE_ENV !== "production";
 
     if (devBypassEnv) {
-      return handler(req, res, {
+      return runAudited(handler, req, res, {
         user: { roles: HR_CORE_ROLES },
         devBypass: true,
       });
@@ -47,7 +53,7 @@ export function withRoleGuard(handler, { allow = [], authorize } = {}) {
         return;
       }
 
-      return handler(req, res, fauxSession);
+      return runAudited(handler, req, res, fauxSession);
     }
 
     const session = await getServerSession(req, res, authOptions);
@@ -63,7 +69,7 @@ export function withRoleGuard(handler, { allow = [], authorize } = {}) {
     // shortcut) satisfies every endpoint guard so a demonstration can load the
     // data behind every page from one session.
     if (hasAllAccessRole(roles)) {
-      return handler(req, res, session);
+      return runAudited(handler, req, res, session);
     }
 
     const isAllowed =
@@ -76,6 +82,6 @@ export function withRoleGuard(handler, { allow = [], authorize } = {}) {
       return;
     }
 
-    return handler(req, res, session);
+    return runAudited(handler, req, res, session);
   };
 }

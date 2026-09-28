@@ -10,6 +10,7 @@ import {
   setNoteSharedUsers,
   updateFloatingNote,
 } from "@/lib/database/floatingNotes";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const parsePositiveInteger = (value) => {
   const parsed = Number(value);
@@ -24,7 +25,7 @@ const sendResult = (res, result, successStatus = 200) => {
   return res.status(resultStatus(result)).json(result);
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader("Cache-Control", "private, no-store");
 
   const session = await getServerSession(req, res, authOptions);
@@ -116,3 +117,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, error: { message: "Floating notes request failed" } });
   }
 }
+
+export default withAuditRequest(handler);

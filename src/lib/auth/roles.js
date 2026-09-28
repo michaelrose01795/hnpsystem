@@ -100,6 +100,28 @@ export const EQUIPMENT_USER_ROLES = Array.from(new Set([
   ...VALET_ROLES,
 ]));
 
+/* ------------------------------------------------------------------------ */
+/* Stock Access (/access, /access/manage).                                   */
+/* Capability mapping lives in src/features/stockAccess/                     */
+/* stockAccessPermissions.js, shared by the pages, the nav and /api/access.  */
+/* ------------------------------------------------------------------------ */
+// Maintain the stock: create/edit items, adjust, thresholds, restock
+// processing, custody investigation, warranty outcomes.
+export const STOCK_ACCESS_MANAGER_ROLES = Array.from(new Set([
+  ...PARTS_ORDER_ROLES,
+  ...WORKSHOP_CONTROLLER_ROLES,
+  ...DEALERSHIP_MANAGER_ROLES,
+  ...ADMIN_ROLES,
+]));
+// Log movements: take out, return, use, warranty store, restock request.
+export const STOCK_ACCESS_USER_ROLES = Array.from(new Set([
+  ...STOCK_ACCESS_MANAGER_ROLES,
+  ...WORKSHOP_FLOOR_ROLES,
+  ...TECHNICIAN_ROLES.map((role) => role.toLowerCase()),
+  ...PARTS_DEPARTMENT_ROLES,
+  ...VALET_ROLES,
+]));
+
 export const EFFICIENCY_VIEW_ROLES = Array.from(new Set([
   ...WORKSHOP_CAPACITY_VIEW_ROLES,
   ...MANAGER_SCOPED_ROLES,

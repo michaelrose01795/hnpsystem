@@ -15,6 +15,7 @@ import { getStaffVehiclePayrollDeductionsForUser } from "@/lib/profile/staffVehi
 import { buildCiProfilePayload, getCiUserId, isPlaywrightCi } from "@/lib/api/ciMocks";
 import { isSyntheticDevPlatformSession } from "@/lib/auth/devSession";
 import { DEV_PLATFORM_ROLE } from "@/lib/auth/roles";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const adminDb = getDatabaseClient();
 
@@ -516,7 +517,7 @@ async function getUserStaffVehiclePayrollDeductions(userId) {
   return getStaffVehiclePayrollDeductionsForUser(userId, adminDb);
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -627,3 +628,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withAuditRequest(handler);

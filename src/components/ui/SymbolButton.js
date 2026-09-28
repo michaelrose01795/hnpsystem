@@ -510,6 +510,19 @@ export const SYMBOLS = {
       </>
     ),
   },
+  tracking: {
+    label: "Tracking",
+    // A route from a start point to a location pin — the portrait-phone
+    // topbar's job status / tracking button.
+    render: () => (
+      <>
+        <circle cx="5.2" cy="18.6" r="2.4" {...S} />
+        <path d="M7.6 18.6H15a2.8 2.8 0 0 0 0-5.6H9a2.8 2.8 0 0 1 0-5.6h2.6" {...S} />
+        <path d="M17.6 1.9c-2.3 0-4.1 1.8-4.1 4.1 0 3 4.1 7 4.1 7s4.1-4 4.1-7c0-2.3-1.8-4.1-4.1-4.1Z" {...S} />
+        <circle cx="17.6" cy="6" r="1.3" {...S} />
+      </>
+    ),
+  },
   approve: {
     label: "Approve",
     render: () => (

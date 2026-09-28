@@ -13,6 +13,7 @@ import {
   updateRegisterRow,
 } from "@/lib/compliance/registers";
 import { getAuditContext } from "@/lib/audit/auditContext";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const ALLOWED_FIELDS = new Set([
   "detected_at",
@@ -42,7 +43,7 @@ const sanitisePayload = (body) => {
   return out;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const gate = await requireComplianceAdmin({ getServerSession, authOptions, req, res });
   if (gate.error) {
     return res.status(gate.error.status).json({ success: false, message: gate.error.message });
@@ -91,3 +92,5 @@ export default async function handler(req, res) {
   res.setHeader("Allow", ["GET", "POST", "PATCH"]);
   return res.status(405).json({ success: false, message: "Method not allowed." });
 }
+
+export default withAuditRequest(handler);
