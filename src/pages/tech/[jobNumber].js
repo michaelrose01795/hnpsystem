@@ -104,6 +104,7 @@ import themeConfig, {
 // Uses thin CSS variable wrapper aliases to keep the same token references.
 import TechJobDetailPageUi from "@/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
+import { PhoneSearchCollapse } from "@/components/ui/searchBarAPI";
 const _p = { // CSS variable token aliases for this layout (matches appTheme palette)
   accent: "var(--primary)", // primary brand colour
   accentSoft: "var(--surface)", // light accent surface
@@ -137,7 +138,7 @@ const vhcLayoutStyles = { // page layout style map — only used on this page
   sectionHeader: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   sectionTitle: { fontSize: "18px", fontWeight: "700", color: _p.textPrimary, margin: 0 },
   sectionSubtitle: { fontSize: "13px", color: _p.textMuted, margin: 0 },
-  sectionsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-md)" },
+  sectionsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "var(--space-md)" },
   sectionCard: { position: "relative", textAlign: "left", backgroundColor: _p.surface, borderRadius: _r.lg, padding: "var(--space-6)", boxShadow: "none", cursor: "pointer", transition: "transform 0.2s ease, border-color 0.2s ease", display: "flex", flexDirection: "column", gap: "var(--space-3)" },
   sectionCardHover: { transform: "translateY(-3px)", boxShadow: "none" },
   cardTitle: { fontSize: "16px", fontWeight: "700", color: _p.textPrimary, margin: 0 },
@@ -5563,19 +5564,24 @@ function DocumentsTab({
         <span style={{ fontSize: "13px", color: "var(--text-1)", fontWeight: 500 }}>
           {sortedDocuments.length > 0 ? `${sortedDocuments.length} file${sortedDocuments.length !== 1 ? "s" : ""}` : "No documents yet"}
         </span>
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search documents…"
-          aria-label="Search documents"
-          style={{
-            flex: "1 1 200px",
-            minWidth: "160px",
-            maxWidth: "360px",
-            padding: "var(--control-padding)",
-            fontSize: "14px"
-          }} />
+        <PhoneSearchCollapse
+          label="Search documents"
+          hasValue={searchQuery.length > 0}
+          renderField={(inOverlay) => (
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search documents…"
+              aria-label="Search documents"
+              style={inOverlay ? { width: "100%" } : {
+                flex: "1 1 200px",
+                minWidth: "160px",
+                maxWidth: "360px",
+                padding: "var(--control-padding)",
+                fontSize: "14px"
+              }} />
+          )} />
         {typeof onManageDocuments === "function" ? (
           <Button variant="primary" size="sm" onClick={onManageDocuments}>
             Upload Documents

@@ -34,6 +34,7 @@ import {
   getHelpChatContext,
   sendHelpChatError,
 } from "@/lib/website/helpChatApi";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const badRequest = (message) => Object.assign(new Error(message), { status: 400 });
 
@@ -95,7 +96,7 @@ async function handleQueue(chat, body, context) {
   return next;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
     res.setHeader("Allow", ["GET", "POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed." });
@@ -123,3 +124,5 @@ export default async function handler(req, res) {
     return sendHelpChatError(res, error, "Could not update the chat.");
   }
 }
+
+export default withAuditRequest(handler, { actor: "customer" });

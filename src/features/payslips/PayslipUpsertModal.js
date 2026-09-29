@@ -273,7 +273,7 @@ export default function PayslipUpsertModal({
 
         <div style={{ padding: "20px 24px", overflowY: "auto", display: "grid", gap: "16px" }}>
           {/* Person + status */}
-          <FieldGroup columns="repeat(auto-fit, minmax(220px, 1fr))">
+          <FieldGroup columns="repeat(auto-fit, minmax(min(100%, 220px), 1fr))">
             <label style={labelStyle}>
               User
               <DropdownField
@@ -303,7 +303,7 @@ export default function PayslipUpsertModal({
           </FieldGroup>
 
           {/* Dates */}
-          <FieldGroup columns="repeat(auto-fit, minmax(220px, 1fr))">
+          <FieldGroup columns="repeat(auto-fit, minmax(min(100%, 220px), 1fr))">
             <label style={labelStyle}>
               Paid date
               <CalendarField

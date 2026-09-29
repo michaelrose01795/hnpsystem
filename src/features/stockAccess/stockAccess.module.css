@@ -1,0 +1,318 @@
+/* src/features/stockAccess/stockAccess.module.css
+   Stock Access (/access, /access/manage) — layout and typography only.
+
+   Every surface is a LayerSurface / LayerTheme, every control is a shared
+   Button / InputField / DropdownField / TabGroup, and the item tiles are the
+   buttons family's `app-btn--tile` variant. This module only arranges them:
+   grids, stacks, the quantity stepper and text sizes, all from theme tokens.
+
+   BORDERS: none, except the allowed --separating-line between timeline rows
+   (CLAUDE.md 3.0a). */
+
+/* ------------------------------------------------------------------------ */
+/* Quick screen                                                              */
+/* ------------------------------------------------------------------------ */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+.searchRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.searchField {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.bigActions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-sm);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--text-h4);
+  font-weight: 700;
+}
+
+.tileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.tileTitle {
+  font-size: var(--text-body);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.tileMeta {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  opacity: 0.78;
+}
+
+.tileFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  margin-top: auto;
+}
+
+.qty {
+  font-size: var(--text-body);
+  font-weight: 700;
+}
+
+.muted {
+  opacity: 0.72;
+}
+
+.small {
+  font-size: var(--text-body-sm);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Action sheet                                                              */
+/* ------------------------------------------------------------------------ */
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-card-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+.sheetHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.sheetTitle {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.statusLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-body-sm);
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-sm);
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-sm);
+}
+
+.stepperValue {
+  text-align: center;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-sm);
+}
+
+.submitRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-sm);
+}
+
+.preview {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-md);
+  font-size: var(--text-body-sm);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: center;
+  padding: var(--space-md) 0;
+}
+
+.confirmMark {
+  font-size: var(--text-h1);
+  line-height: 1;
+}
+
+.confirmText {
+  margin: 0;
+  font-size: var(--text-h4);
+  font-weight: 700;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  border-radius: var(--radius-md);
+  background: var(--media-letterbox-bg);
+  object-fit: cover;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Manage view                                                               */
+/* ------------------------------------------------------------------------ */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.toolbarFilter {
+  flex: 1 1 180px;
+  min-width: 160px;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-sm);
+}
+
+.cellTitle {
+  font-weight: 700;
+}
+
+.cellSub {
+  display: block;
+  font-size: var(--text-caption);
+  opacity: 0.72;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-sm) var(--space-md);
+  margin: 0;
+}
+
+.detailGrid dt {
+  font-size: var(--text-caption);
+  opacity: 0.72;
+}
+
+.detailGrid dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timelineRow {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+  gap: var(--space-xs) var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: var(--separating-line);
+}
+
+.timelineRow:last-child {
+  border-bottom: none;
+}
+
+.timelineTime {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-caption);
+  opacity: 0.78;
+}
+
+.timelineBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.timelineSummary {
+  font-weight: 700;
+}
+
+.qrBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.qrSvg {
+  width: min(220px, 70vw);
+  height: auto;
+  background: var(--surface);
+  color: var(--text-1);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 767px) {
+  .tileGrid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .timelineRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

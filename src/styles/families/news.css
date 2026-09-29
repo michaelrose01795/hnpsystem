@@ -670,7 +670,7 @@ html.staff-scope .app-news-composer {
 
 html.staff-scope .app-news-composer__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: var(--space-3);
   min-width: 0;
 }
@@ -946,6 +946,15 @@ html.staff-scope .app-news-revision__body {
 
   html.staff-scope .app-news-comment__replies {
     padding-left: var(--space-sm);
+  }
+}
+
+/* Portrait phone: the search, filter and add buttons share one row (see
+   staffglobal.css "The collapsed page search shares the line"), and the feed
+   starts 10px beneath it — the same 10px rhythm as the phone gutter. */
+@media (max-width: 640px) and (orientation: portrait) {
+  html.staff-scope .app-news {
+    row-gap: var(--space-2);
   }
 }
 

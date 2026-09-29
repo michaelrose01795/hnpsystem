@@ -160,7 +160,7 @@ export const vhcModalContentStyles = {
   // in JS. Any future summary strip uses the global `.app-section-card` class.
   cardGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
     gap: "var(--space-5)",
   },
   // Layout only. The card surface — background, radius, padding, gap, shadow —

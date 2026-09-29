@@ -2148,8 +2148,11 @@ export default function EfficiencyTab({
                 </div>
               </div>
 
-              {/* Entries table */}
-              <div style={tableWrapperStyle}>
+              {/* Entries table. flexShrink 0: the card is a height-capped flex
+                  column, and this overflow-hidden wrapper would otherwise be the
+                  one child squeezed, clipping the bottom of the table's scroller
+                  (e.g. on a phone with Edit details open). The card scrolls instead. */}
+              <div style={{ ...tableWrapperStyle, flexShrink: 0 }}>
                 <div style={{ maxHeight: "400px", overflowY: "auto" }}>
                   <table className="app-data-table">
                     <thead>
@@ -2571,7 +2574,7 @@ export default function EfficiencyTab({
             gap: 8px !important;
             justify-content: flex-start !important;
           }
-          :global(.efficiency-filter-shell > div:first-child > div:not(.app-filter)) {
+          :global(.efficiency-filter-shell > div:first-child > div:not(.app-filter, .efficiency-search-wrap)) {
             min-width: min(100%, 180px) !important;
             max-width: 100% !important;
           }
@@ -2593,13 +2596,15 @@ export default function EfficiencyTab({
           :global(.efficiency-filter-calendar),
           :global(.efficiency-tech-filter-dropdown),
           :global(.efficiency-filter-calendar .calendar-api__control),
-          :global(.efficiency-tech-filter-dropdown .dropdown-api__control),
-          :global(.efficiency-search-wrap),
-          :global(.efficiency-search-wrap .searchbar-api) {
+          :global(.efficiency-tech-filter-dropdown .dropdown-api__control) {
             width: 100% !important;
           }
+          /* The search folds into a 44px button here, so its column hugs
+             the button and sits on the row beside the date and filter. An
+             explicit basis, because the inline width: 100% would win over
+             an auto one. */
           :global(.efficiency-search-wrap) {
-            flex: 1 1 100% !important;
+            flex: 0 0 var(--control-height) !important;
             min-width: 0 !important;
           }
           :global(.efficiency-summary-grid) {

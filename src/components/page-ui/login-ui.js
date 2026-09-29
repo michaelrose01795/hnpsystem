@@ -121,9 +121,9 @@ export default function LoginPageUi(props) {
                 <div className="login-dev-content">
                   <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} onSingleUserDepartmentLogin={handleDevLogin} onPresentationSelect={handlePresentationSelect} onDevPlatformSelect={handleDevPlatformSelect} />
 
-                  <p className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")} aria-busy={loadingDevUsers || rosterLoading ? "true" : undefined}>
+                  <div className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")} aria-busy={loadingDevUsers || rosterLoading ? "true" : undefined} style={{ margin: "1em 0" }}> {/* div not p: InlineLoading renders a block <div>, invalid inside <p> (hydration error). Margin keeps the former <p> default spacing. */}
                     <InlineLoading width={220} height={10} label="Loading database users for dev login" />
-                  </p>
+                  </div>
 
 
                   <Button type="button" onClick={handleDevLogin} variant="primary" disabled={isRedirecting} style={{

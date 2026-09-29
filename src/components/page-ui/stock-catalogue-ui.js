@@ -285,7 +285,7 @@ export default function StockCataloguePageUi(props) {
               </LayerSurface>)}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--layout-card-gap)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "var(--layout-card-gap)" }}>
             <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
               <strong style={{ color: "var(--accentText)" }}>Stock status breakdown</strong>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "var(--space-2)" }}>

@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const SELECT_FIELDS = "rule_id, day_of_week, hours, active, pattern_type, week_parity, label"; // fields returned to client
 
@@ -60,7 +61,7 @@ async function findExistingRule(userId, row) {
   return data;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
     const userId = await resolveUserId(req, res); // authenticate user
 
@@ -195,3 +196,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: error.message });
   }
 }
+
+export default withAuditRequest(handler);

@@ -617,3 +617,12 @@
     min-height: 132px;
   }
 }
+
+/* Phone portrait: staffglobal.css pins the panel full-screen (it carries
+   data-phone-popup="fill"), so there is nothing to drag or resize. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .dragHandle,
+  .resizeHandle {
+    display: none;
+  }
+}

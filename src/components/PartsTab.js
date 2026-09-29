@@ -2583,7 +2583,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
                     gap: "var(--layout-card-gap)",
                     alignItems: "end",
                   }}

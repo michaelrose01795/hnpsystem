@@ -25,7 +25,7 @@ export default function ValetingBreakdownCards({ filter, keys = null }) {
         sectionType="section-shell"
         backgroundToken="transparent"
         data-dev-text-preview="val.cars_washed breakdown grid"
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 12 }}
       >
         {wanted.map((card) => (
           <KpiValueCard

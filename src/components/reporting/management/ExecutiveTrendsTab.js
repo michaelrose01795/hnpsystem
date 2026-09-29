@@ -15,7 +15,7 @@ export default function ExecutiveTrendsTab({ filter }) {
     <>
       {TREND_KPIS.map((kpi) => (
         <ReportSection key={kpi.id} title={`${kpi.label} — trends`} subtitle={`Daily, weekly, monthly and yearly ${kpi.label.toLowerCase()} via the shared trend framework.`}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: 12 }}>
             {TREND_GRANULARITIES.map((g) => (
               <ExecutiveTrendCard
                 key={g.value}

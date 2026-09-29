@@ -232,7 +232,7 @@ function PerformanceContent() {
           style={{
             display: "grid",
             gap: "var(--space-md)",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))"
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))"
           }}>
           
           <DropdownField

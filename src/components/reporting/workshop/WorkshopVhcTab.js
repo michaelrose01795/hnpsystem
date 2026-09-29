@@ -15,7 +15,7 @@ export default function WorkshopVhcTab({ filter }) {
       title="VHC performance"
       subtitle="Inspection completion, findings and commercial conversion — real severity, correct ratios (no default-amber)."
     >
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 12 }}>
         {VHC_KPIS.map((kpi) => (
           <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown={kpi.hasDrilldown} />
         ))}

@@ -21,7 +21,7 @@
 // pixel position, so placements survive the asset being re-exported at another
 // resolution. ParkingSiteMap.js multiplies them by the image's natural size,
 // which is the overlay's coordinate system — so labels and regions stay locked
-// to the plan through zoom, pan and Fit site.
+// to the plan at every frame size.
 //
 //   labelAnchor  the centre of the section's name pill
 //   region       the clickable area: { x0, y0, x1, y1 } fractional bounds

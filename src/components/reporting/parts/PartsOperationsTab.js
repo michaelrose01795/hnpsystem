@@ -16,7 +16,7 @@ export default function PartsOperationsTab({ filter, onDrilldown }) {
   return (
     <>
       <ReportSection title="Requests · ordering · receiving · fitting" subtitle="The parts flow, each with daily/weekly/monthly trend per the filter and the records behind it.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {OPERATIONS_FLOW.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown />
           ))}

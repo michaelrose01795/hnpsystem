@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect, useId, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
+import Button from "@/components/ui/Button";
 
 const ALLOWED_MINUTE_STEPS = [5, 10, 15, 30];
 
@@ -43,6 +46,11 @@ export default function TimePicker({
   const timePickerRef = useRef(null);
   const menuRef = useRef(null);
   const controlRef = useRef(null);
+  const isVerticalPhone = useIsVerticalPhone();
+  // On a vertical phone the menu fills the screen (staffglobal.css). Rendered in
+  // place it would be trapped under the card it sits in (stacking context, hover
+  // lift), so there it is portalled to <body> like the dropdown menus.
+  const placeMenu = (menu) => (isVerticalPhone ? createPortal(menu, document.body) : menu);
 
   // Parse the value prop to set initial state. Display is always 12-hour;
   // incoming values may be 24-hour HH:MM (on the wire) or 12-hour HH:MM AM/PM.
@@ -78,7 +86,11 @@ export default function TimePicker({
   // Close time picker when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (timePickerRef.current && !timePickerRef.current.contains(event.target)) {
+      if (
+        timePickerRef.current &&
+        !timePickerRef.current.contains(event.target) &&
+        !menuRef.current?.contains(event.target)
+      ) {
         setIsOpen(false);
       }
     }
@@ -255,7 +267,7 @@ export default function TimePicker({
         </svg>
       </button>
 
-      {isOpen && (
+      {isOpen && placeMenu(
         <div ref={menuRef} className="timepicker-api__menu" role="dialog" aria-modal="false">
           <div className="timepicker-api__header">
             <div className="timepicker-api__display">
@@ -323,6 +335,18 @@ export default function TimePicker({
               </div>
             </div>
           </div>
+
+          {/* Phone portrait only: the menu fills the screen, so there is no
+              "outside" left to tap. Hidden elsewhere by staffglobal.css. */}
+          <Button
+            type="button"
+            variant="secondary"
+            symbol={false}
+            className="app-phone-popup-close"
+            onClick={() => setIsOpen(false)}
+          >
+            Close
+          </Button>
         </div>
       )}
 

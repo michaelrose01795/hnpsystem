@@ -14,6 +14,7 @@ import {
   markOrderPaid,
   decrementStockForOrder,
 } from "@/lib/database/shop";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 export const config = {
   api: { bodyParser: false },
@@ -27,7 +28,7 @@ const readRaw = (req) =>
     req.on("error", reject);
   });
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).end();
@@ -77,3 +78,5 @@ export default async function handler(req, res) {
     return res.status(500).send(err.message);
   }
 }
+
+export default withAuditRequest(handler, { actor: "system" });

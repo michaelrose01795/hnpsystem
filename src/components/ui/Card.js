@@ -58,9 +58,12 @@ export default function Card({
             alignItems: "center",
             justifyContent: "space-between",
             gap: "var(--space-md)",
+            // Title and action share one row while they fit; on a phone the action
+            // drops beneath the title instead of running off the card's edge.
+            flexWrap: "wrap",
           }}
         >
-          <div>
+          <div style={{ minWidth: 0 }}>
             {title && (
               <div
                 style={{

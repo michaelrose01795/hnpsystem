@@ -67,6 +67,7 @@ import { buildStableDisplayId, formatMeasurement, resolveLocationKey, normalizeT
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations";
 import { DEFAULT_LABOUR_RATE_GBP, resolveVhcTotal } from "@/lib/vhc/shared";
 import { logFailure } from "@/lib/utils/logFailure";
+import { PhoneSearchCollapse } from "@/components/ui/searchBarAPI";
 
 const LABOUR_SUGGEST_DEBUG = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DEBUG_LABOUR_SUGGESTIONS === "1";
 
@@ -1567,7 +1568,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collap
                       gridTemplateColumns:
                         isBrakesHubsSection
                           ? "1fr"
-                          : "repeat(auto-fit, minmax(240px, 1fr))",
+                          : "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
                       gap: "10px",
                     }}
                   >
@@ -1733,7 +1734,7 @@ const HealthSectionPair = ({ sections, onOpen }) => {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
         gap: "18px",
         alignItems: "start",
       }}
@@ -8558,15 +8559,22 @@ export default function VhcDetailsPanel({
           }}
         >
           {/* Search box */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", alignItems: "end" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "12px", alignItems: "end" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <input
-                type="search"
-                className="app-input"
-                value={partsIdentifiedSearch}
-                onChange={(event) => setPartsIdentifiedSearch(event.target.value)}
-                placeholder="Search VHC items, parts, part numbers…"
-                style={controlStyle}
+              <PhoneSearchCollapse
+                label="Search VHC items, parts, part numbers"
+                hasValue={String(partsIdentifiedSearch || "").length > 0}
+                renderField={(inOverlay) => (
+                  <input
+                    type="search"
+                    className="app-input"
+                    value={partsIdentifiedSearch}
+                    onChange={(event) => setPartsIdentifiedSearch(event.target.value)}
+                    placeholder="Search VHC items, parts, part numbers…"
+                    aria-label="Search VHC items, parts, part numbers"
+                    style={inOverlay ? undefined : controlStyle}
+                  />
+                )}
               />
             </label>
           </div>
@@ -9308,7 +9316,7 @@ export default function VhcDetailsPanel({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 200px), 1fr))",
           gap: "16px",
         }}
       >
@@ -10326,7 +10334,7 @@ export default function VhcDetailsPanel({
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
                           gap: "12px",
                         }}
                       >
@@ -10917,7 +10925,7 @@ export default function VhcDetailsPanel({
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
                         gap: "12px",
                       }}
                     >
@@ -11374,20 +11382,26 @@ export default function VhcDetailsPanel({
               <h3 style={{ margin: 0 }}>Search parts catalogue</h3>
               <div style={{ display: "flex", gap: "var(--control-gap)", flexWrap: "wrap", alignItems: "end" }}>
                 <div style={{ flex: "1 1 280px", minWidth: 0 }}>
-                  <input
-                    id="vhc-add-parts-search"
-                    type="search"
-                    className="app-input app-input--search"
-                    aria-label="Part number or description"
-                    value={addPartsSearch}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      setAddPartsSearch(nextValue);
-                      if (String(selectedSuggestionQuery || "").trim().toLowerCase() !== nextValue.trim().toLowerCase()) {
-                        setSelectedSuggestionQuery("");
-                      }
-                    }}
-                    placeholder="Search by part number or description"
+                  <PhoneSearchCollapse
+                    label="Part number or description"
+                    hasValue={String(addPartsSearch || "").length > 0}
+                    renderField={() => (
+                      <input
+                        id="vhc-add-parts-search"
+                        type="search"
+                        className="app-input app-input--search"
+                        aria-label="Part number or description"
+                        value={addPartsSearch}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          setAddPartsSearch(nextValue);
+                          if (String(selectedSuggestionQuery || "").trim().toLowerCase() !== nextValue.trim().toLowerCase()) {
+                            setSelectedSuggestionQuery("");
+                          }
+                        }}
+                        placeholder="Search by part number or description"
+                      />
+                    )}
                   />
                 </div>
                 <Button type="button" variant="primary" size="sm" onClick={handleOpenNewPart}>

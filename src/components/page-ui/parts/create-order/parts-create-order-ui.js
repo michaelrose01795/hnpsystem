@@ -540,7 +540,7 @@ export default function PartsCreateOrderUi(props) {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "12px" }}>
                 <DropdownField name="pricing_level" label="Customer pricing level" value={form.pricing_level} onChange={(event) => handleFieldChange("pricing_level", event.target.value)} options={[{ value: "retail", label: "Retail" }, { value: "trade", label: "Trade" }, { value: "staff", label: "Staff" }, { value: "warranty", label: "Warranty" }]} />
                 <DropdownField name="payment_status" label="Payment status" value={form.payment_status} onChange={(event) => handleFieldChange("payment_status", event.target.value)} options={[{ value: "draft", label: "Not invoiced" }, { value: "issued", label: "Invoice issued" }, { value: "paid", label: "Paid" }]} />
                 <DropdownField name="order_source" label="Order source" value={form.order_source} onChange={(event) => handleFieldChange("order_source", event.target.value)} options={[{ value: "phone", label: "Telephone" }, { value: "counter", label: "Parts counter" }, { value: "email", label: "Email" }, { value: "workshop", label: "Workshop" }, { value: "online", label: "Online" }]} />
@@ -557,7 +557,7 @@ export default function PartsCreateOrderUi(props) {
                 </FormField>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "12px" }}>
                 <FormField label="Internal notes" hint="Visible to staff only." htmlFor="internal-notes">
                   <textarea id="internal-notes" name="internal_notes" className="app-input app-input--textarea" rows={3} value={form.internal_notes} onChange={(event) => handleFieldChange("internal_notes", event.target.value)} placeholder="Supplier, stock or handling notes" />
                 </FormField>
@@ -690,7 +690,7 @@ export default function PartsCreateOrderUi(props) {
 
             {supersededPart(editLine) ? <StatusMessage tone="warning">Superseded by {supersededPart(editLine)}</StatusMessage> : null}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "12px" }}>
               <FormField label="Part number" htmlFor="edit-part-number">
                 <input id="edit-part-number" name="edit_part_number" className="app-input" value={editLine.part_number} onChange={(event) => handlePartChange(editLine.client_id, "part_number", event.target.value.toUpperCase())} placeholder="Part number" />
               </FormField>

@@ -100,7 +100,7 @@ export default function DepartmentPerformanceTab({ filter }) {
       </ReportSection>
 
       <ReportSection title="Department throughput trends" subtitle="Throughput history for the operational departments, built by the shared trend framework.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
           <ExecutiveTrendCard kpiId="wsh.jobs_completed" label="Workshop jobs completed" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <ExecutiveTrendCard kpiId="prt.fitted" label="Parts fitted" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <ExecutiveTrendCard kpiId="mot.volume" label="MOT volume" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />

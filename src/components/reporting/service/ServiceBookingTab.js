@@ -19,7 +19,7 @@ export default function ServiceBookingTab({ filter }) {
         title="Appointment & booking volume"
         subtitle="Appointments booked (the drill lists each appointment and its booking advisor) and the customer-engagement mix, with trends."
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 12 }}>
           {BOOKING_R1.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown={kpi.hasDrilldown} />
           ))}
@@ -30,7 +30,7 @@ export default function ServiceBookingTab({ filter }) {
         title="Booking performance"
         subtitle="Appointment conversion (booked → arrived / job-created) lights up once appointment status-history accrues (R2)."
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 12 }}>
           {BOOKING_READINESS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend={false} withDrilldown={false} />
           ))}

@@ -3,11 +3,16 @@
 // Mobile stacked-card tables — the DOM half of the .app-data-table--stack mode
 // defined in src/styles/families/tables.css.
 //
-// Below the MOBILE breakpoint each table row is rendered as a label/value card
-// instead of a row, because a real table is unreadable at the 375px floor and
-// this app deliberately never scrolls tables sideways (scrollbar chrome is
-// hidden app-wide, so a sideways scroll hides columns behind an invisible
-// scrollbar). Each cell therefore has to carry its own column heading. CSS
+// OPT-IN (2026-09). Tables keep the global staffglobal.css table look at every
+// width — narrow browser windows (split / multi-window view) included — so a
+// table only stacks when it, or an ancestor, carries data-app-table-stack="on"
+// (DataTableShell's `stack` prop). Stacking every table by default made the same
+// table render as a table on a full-width window and as cards on a half-width
+// one, which read as the global table styles being lost.
+//
+// When opted in, below the MOBILE breakpoint each table row is rendered as a
+// label/value card instead of a row. Each cell therefore has to carry its own
+// column heading. CSS
 // cannot do that — a stylesheet has no way to read thead text into a tbody
 // cell — so the label is stamped onto the cell as data-label here and rendered
 // by the CSS via attr().
@@ -20,16 +25,17 @@
 import { MEDIA } from "@/styles/breakpoints";
 
 /**
- * Opt a table out with data-app-table-stack="off".
+ * Opt a table in with data-app-table-stack="on"; everything else stays a table.
  *
  * Checked on the table AND on its ancestors, because DataTableShell puts the
  * attribute on the wrapper it renders — it has no handle on the table element,
- * which is an arbitrary child passed in as its children prop.
+ * which is an arbitrary child passed in as its children prop. The nearest
+ * attribute wins, so an "off" inside an "on" region still opts that table out.
  */
 export function isStackDisabled(table) {
-  if (!table) return false;
-  if (table.dataset?.appTableStack === "off") return true;
-  return Boolean(table.closest?.('[data-app-table-stack="off"]'));
+  if (!table) return true;
+  const owner = table.closest?.("[data-app-table-stack]");
+  return owner?.getAttribute("data-app-table-stack") !== "on";
 }
 
 /**

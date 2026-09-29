@@ -86,6 +86,7 @@ export function useSupportReport(id) {
   const [screenshots, setScreenshots] = useState([]);
   const [comments, setComments] = useState([]);
   const [audit, setAudit] = useState([]);
+  const [errorEvents, setErrorEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -101,6 +102,7 @@ export function useSupportReport(id) {
       setScreenshots(payload.screenshots || []);
       setComments(payload.comments || []);
       setAudit(payload.audit || []);
+      setErrorEvents(payload.errorEvents || []);
     } catch (err) {
       setError(err.message || "Failed to load report");
     } finally {
@@ -177,5 +179,5 @@ export function useSupportReport(id) {
     [id, pushAlert]
   );
 
-  return { data, screenshots, comments, audit, loading, error, reload: load, patch, addComment };
+  return { data, screenshots, comments, audit, errorEvents, loading, error, reload: load, patch, addComment };
 }

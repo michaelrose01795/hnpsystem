@@ -17,6 +17,7 @@
 import { sanitiseDiagnostics, isWithinSizeCap, scrubString } from "@/lib/support/sanitise";
 import { normalizeRoles } from "@/lib/auth/roles";
 import { stableHash } from "@/lib/support/incidentClustering";
+import { isValidReferenceCode, mintSupportReferenceCode } from "@/lib/support/reportDetails";
 
 // User-facing category list (value + plain-English label). The popup renders
 // these; the server validates against the value set. Values mirror the CHECK
@@ -75,10 +76,19 @@ export function screenshotAnnotation(entry) {
  * @param {{ body?: object, session?: object }} args
  * @returns {{ ok: true, input: object } | { ok: false, error: string }}
  */
-export function buildReportInsert({ body = {}, session = {} } = {}) {
+export function buildReportInsert({ body = {}, session = {}, userAgent = null, now = new Date() } = {}) {
   const description = String(body?.description || "").trim();
   if (!description) {
     return { ok: false, error: "Please describe what happened." };
+  }
+  // Keep the user's words COMPLETE: refuse an over-long description with a clear
+  // message rather than silently cutting the end off. The popup's textarea has
+  // the same limit, so a normal user never reaches this.
+  if (description.length > MAX_DESCRIPTION) {
+    return {
+      ok: false,
+      error: `Please shorten your description to ${MAX_DESCRIPTION.toLocaleString("en-GB")} characters or fewer.`,
+    };
   }
 
   const category = SUPPORT_CATEGORY_VALUES.has(body?.category)
@@ -111,6 +121,25 @@ export function buildReportInsert({ body = {}, session = {} } = {}) {
   const rawDiagnostics =
     body?.diagnostics && typeof body.diagnostics === "object" ? { ...body.diagnostics } : {};
   if (attachments.length) rawDiagnostics.attachments = attachments;
+
+  // Every report gets a quotable reference. The code the user already saw (on
+  // the error toast / recovery screen) is kept so the report lines up with the
+  // automatically-captured error events; otherwise a SUP-… code is minted.
+  const suppliedRef = typeof body?.referenceCode === "string" ? body.referenceCode.trim() : "";
+  const receivedAt = now instanceof Date && !Number.isNaN(now.getTime()) ? now : new Date();
+  const referenceCode = isValidReferenceCode(suppliedRef)
+    ? suppliedRef
+    : mintSupportReferenceCode(receivedAt.getTime());
+  // Server-stamped facts (never taken from the client's own claims):
+  //   reference_code / reference_source — see above.
+  //   received_at        — the authoritative submission instant (UTC ISO).
+  //   request_user_agent — fallback for OS/browser if the client sent no device.
+  rawDiagnostics.report_context = {
+    reference_code: referenceCode,
+    reference_source: isValidReferenceCode(suppliedRef) ? "error" : "report",
+    received_at: receivedAt.toISOString(),
+    request_user_agent: userAgent ? String(userAgent).slice(0, 500) : undefined,
+  };
   const diagnostics = sanitiseDiagnostics(rawDiagnostics);
   if (!isWithinSizeCap(diagnostics)) {
     return { ok: false, error: "Diagnostics payload exceeds the size limit." };
@@ -138,8 +167,11 @@ export function buildReportInsert({ body = {}, session = {} } = {}) {
   return {
     ok: true,
     input: {
+      referenceCode,
       title,
-      description: scrubString(description).slice(0, MAX_DESCRIPTION),
+      // Scrubbed but never truncated (length was checked above; redaction
+      // markers can make it slightly longer, which is fine for a text column).
+      description: scrubString(description),
       category,
       reporterUserId,
       reporterUsername,

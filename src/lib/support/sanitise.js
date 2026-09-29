@@ -79,11 +79,35 @@ const isSecretKeyName = (key) => {
 const VALUE_PATTERNS = [
   // JWT / NextAuth / Supabase tokens: three base64url segments.
   { re: /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, label: "JWT" },
-  // Bearer tokens in headers / logs.
+  // Bearer / Basic credentials in headers / logs.
   { re: /\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, label: "BEARER" },
+  { re: /\bBasic\s+[A-Za-z0-9+/]{12,}=*/g, label: "BASIC" },
+  // Credentials embedded in a URL: scheme://user:pass@host.
+  // (No lookbehind: this module ships to the browser and older iOS Safari
+  // rejects lookbehind at parse time, which would break the whole bundle.)
+  {
+    re: /\b([a-z][a-z0-9+.-]*:\/\/)[^\s/:@]+:[^\s/@]+@/gi,
+    label: "CREDENTIALS",
+    replace: (label) => (_m, scheme) => `${scheme}[REDACTED:${label}]@`,
+  },
   // Stripe-style and generic prefixed secret keys (sk_live_, service_role, etc.).
   { re: /\b(?:sk|pk|rk|whsec)_[A-Za-z0-9_]{8,}/g, label: "KEY" },
+  { re: /\bsb_(?:secret|publishable)_[A-Za-z0-9_-]{8,}/g, label: "KEY" },
+  { re: /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}|\bgithub_pat_[A-Za-z0-9_]{20,}/g, label: "KEY" },
+  { re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g, label: "KEY" },
+  { re: /\bAKIA[0-9A-Z]{16}\b/g, label: "KEY" },
+  { re: /\bAIza[0-9A-Za-z_-]{35}\b/g, label: "KEY" },
   { re: /service_role[A-Za-z0-9._-]*/gi, label: "KEY" },
+  // Session cookies as they appear in a Cookie header or a pasted devtools line.
+  { re: /\b((?:__Secure-|__Host-)?(?:next-auth\.|authjs\.)?(?:session[-_.]?token|csrf[-_.]?token|sid|connect\.sid))=[^;\s]+/gi, label: "COOKIE" },
+  // Typed credentials: "password: hunter2", "my pin is 1234", "api key = abc".
+  {
+    re: /\b(password|passwd|pwd|passcode|secret|api[ _-]?key|access[ _-]?key|token)(\s*(?:is|was|=|:)\s*)(?!\[REDACTED)["']?[^\s"',;]+/gi,
+    label: "CREDENTIAL",
+    // Leave "password is" readable so the report still makes sense and replace
+    // only the value that followed it.
+    replace: (label) => (_m, name, sep) => `${name}${sep}[REDACTED:${label}]`,
+  },
   // Supabase anon/service JWTs already caught by the JWT rule above.
   // UK National Insurance number (e.g. QQ123456C).
   { re: /\b[A-CEGHJ-PR-TW-Z]{2}\d{6}[A-D]\b/gi, label: "NINO" },
@@ -114,8 +138,8 @@ export function scrubString(input) {
 
   out = maskEmail(out);
 
-  for (const { re, label } of VALUE_PATTERNS) {
-    out = out.replace(re, `[REDACTED:${label}]`);
+  for (const { re, label, replace } of VALUE_PATTERNS) {
+    out = out.replace(re, replace ? replace(label) : `[REDACTED:${label}]`);
   }
   return out;
 }

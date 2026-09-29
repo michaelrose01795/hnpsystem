@@ -7,10 +7,9 @@
  * Component: src/components/ui/GlobalContextMenu.js (mounted once from _app.js)
  * Showcase:  /dev/user-diagnostic#context-menu
  *
- * The panel itself is a <LayerSurface>, so its background / radius / padding
- * come from the layer primitive (§3.0). The rows are real Secondary buttons —
- * the markup carries `app-btn app-btn--secondary`, so buttons.css owns every
- * colour and this file adds layout only. Nothing here paints a row fill.
+ * The panel is a borderless LayerSurface card with an outer shadow. The rows
+ * are real Secondary buttons (`app-btn app-btn--secondary`), so buttons.css
+ * owns their tint. Loaded through staffglobal.css via families/index.css.
  */
 
 /* -------------------------------------------------------------------------- */
@@ -26,14 +25,10 @@ html.staff-scope .app-context-menu {
   max-height: min(72vh, 640px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* Even accent glow on all four sides, so the panel reads as HOVERING above
-     the page. Deliberately NOT --control-menu-shadow: that token leads with a
-     `0 0 0 1px` hairline plus a black 12px halo, which rendered as a dark
-     outline around the menu. Two evenly-spread accent halos, no spread ring,
-     no black — nothing here reads as a border. */
-  box-shadow:
-    0 0 18px rgba(var(--accentMainRgb), 0.38),
-    0 0 44px rgba(var(--accentMainRgb), 0.22);
+  /* LayerSurface owns the fill, radius and spacing; elevation belongs to
+     the whole card so the shadow follows its outer edge. */
+  box-shadow: var(--dropdown-menu-shadow);
+  outline: none;
   opacity: 0;
   transform: translateY(-4px);
   transition: opacity 0.12s ease, transform 0.12s ease;
@@ -66,14 +61,30 @@ html.staff-scope .app-context-menu__item {
   font-weight: var(--control-font-weight);
 }
 
+/* Keep each state matched to the Secondary tint on the surface card. The
+   `.app-context-menu` prefix out-ranks the buttons.css state rules. */
+html.staff-scope .app-context-menu .app-context-menu__item {
+  --btn-bg: linear-gradient(var(--secondary), var(--secondary)) var(--surface);
+}
+
 /* Keyboard highlight has to match what :hover paints, so arrowing down the
    menu looks identical to running the mouse down it. Deliberately NOT named
    is-active: .app-btn.is-active means SELECTED and paints a full brand fill. */
-html.staff-scope .app-context-menu__item.is-highlighted:not(:disabled) {
-  --btn-bg: var(--secondary-hover);
+html.staff-scope .app-context-menu .app-context-menu__item:hover:not(:disabled),
+html.staff-scope .app-context-menu .app-context-menu__item:focus-visible,
+html.staff-scope .app-context-menu .app-context-menu__item.is-highlighted:not(:disabled) {
+  --btn-bg: linear-gradient(var(--secondary-hover), var(--secondary-hover)) var(--surface);
 }
 
-html.staff-scope .app-context-menu__item:focus-visible {
+html.staff-scope .app-context-menu .app-context-menu__item:active:not(:disabled) {
+  --btn-bg: linear-gradient(var(--secondary-pressed), var(--secondary-pressed)) var(--surface);
+}
+
+html.staff-scope .app-context-menu .app-context-menu__item:disabled {
+  --btn-bg: linear-gradient(var(--control-disabled-bg), var(--control-disabled-bg)) var(--surface);
+}
+
+html.staff-scope .app-context-menu .app-context-menu__item:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -102,6 +113,20 @@ html.staff-scope .app-context-menu__icon {
   align-items: center;
   justify-content: center;
   opacity: 0.75;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Section label — names a group of rows (e.g. "Multi workspace"). Plain text,
+   not a control: it is skipped by arrow-key navigation and never highlights. */
+html.staff-scope .app-context-menu__section-label {
+  margin: 0;
+  padding: 2px 4px 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  opacity: 0.7;
 }
 
 /* -------------------------------------------------------------------------- */

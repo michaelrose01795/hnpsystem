@@ -3388,6 +3388,27 @@ html.website-scope button.ws-nav-toggle {
   }
 }
 
+/* Portrait phone: wordmark + basket + Menu + call + account measured ~420px,
+   so on a 375px phone the centred row spilled off BOTH edges — the wordmark
+   lost its left side and the account capsule its right. Tighter gaps, a
+   slightly smaller wordmark (still led by --ws-logo-h) and the account
+   capsule at its minimum padding bring the row inside the gutters. */
+@media (max-width: 480px) {
+  html.website-scope .ws-nav-inner {
+    gap: 6px;
+  }
+  html.website-scope .ws-nav-actions,
+  html.website-scope .ws-nav .ws-brand {
+    gap: 6px;
+  }
+  html.website-scope .ws-nav .ws-logo {
+    height: calc(var(--ws-logo-h, 38px) * 0.8);
+  }
+  html.website-scope .ws-nav-actions .ws-nav-account {
+    padding: 0 10px;
+  }
+}
+
 /* ── Grouped home bar (.ws-nav--grouped) ──────────────────────────────────
    The home page folds its links into WebsiteNavGroup dropdowns, so its bar
    fits from 1024px, keeps the dropdowns un-clipped on the 1024–1279px row and
@@ -10664,6 +10685,18 @@ html.website-scope dialog.ws-cart-drawer::backdrop { background: var(--website-b
   /* inline-flex + centred so the taller box grows around the text rather than
      pushing the baseline, which would knock the contact block out of rhythm. */
   html.website-scope .ws-contact-phone {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--website-control-height);
+  }
+
+  /* The brand's home link (not only the .ws-brand box around it) is the tap
+     target, and the stock / parts / footer / contact-card tel: links are the
+     other phone numbers a customer taps on a phone. All measured 19-38px tall. */
+  html.website-scope .ws-brand > a,
+  html.website-scope .ws-catalog-phone,
+  html.website-scope .ws-footer-tel,
+  html.website-scope .ws-info-value > a:only-child {
     display: inline-flex;
     align-items: center;
     min-height: var(--website-control-height);

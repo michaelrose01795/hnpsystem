@@ -224,7 +224,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
           </div>
           {companyMessage && <StatusMessage tone={companyMessage.includes("saved") ? "success" : "danger"}>{companyMessage}</StatusMessage>}
           {companyLoading ? (
-            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading company profile" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+            <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading company profile" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "12px" }}>
               <SkeletonKeyframes />
               {Array.from({ length: 12 }, (_, index) => <SkeletonBlock key={index} height="44px" />)}
               <div style={{ gridColumn: "1 / -1" }}>
@@ -232,7 +232,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
               </div>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "12px" }}>
               <input className="app-input" value={companyProfile.company_name} onChange={(event) => handleCompanyInputChange("company_name", event.target.value)} placeholder="Company name" />
               <input className="app-input" value={companyProfile.address_line1} onChange={(event) => handleCompanyInputChange("address_line1", event.target.value)} placeholder="Address line 1" />
               <input className="app-input" value={companyProfile.address_line2} onChange={(event) => handleCompanyInputChange("address_line2", event.target.value)} placeholder="Address line 2" />

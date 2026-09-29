@@ -65,7 +65,7 @@
 
 .headerGrid { /* // grid for invoice to/deliver to/job info */
   display: grid; /* // enable grid layout */
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* // responsive columns */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); /* // responsive columns */
   gap: var(--space-md); /* // spacing between boxes */
 } /* // end headerGrid */
 

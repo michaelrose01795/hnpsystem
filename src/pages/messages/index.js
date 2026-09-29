@@ -38,6 +38,7 @@ const UNREAD_MARKER_STORAGE_KEY = "messagesUnreadMarkerDismissals";
 const PINNED_THREADS_STORAGE_KEY = "messagesPinnedThreadIds";
 const DETAILS_OPEN_STORAGE_KEY = "messagesDetailsOpen";
 const MAX_PINNED_THREADS = 3;
+const SYSTEM_NOTIFICATION_LIMIT = 5;
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 const PRESENCE_POLL_MS = 60 * 1000;
 
@@ -109,6 +110,9 @@ function MessagesPage() {
   const [bookingNotifications, setBookingNotifications] = useState([]);
   const [systemLoading, setSystemLoading] = useState(false);
   const [bookingsLoading, setBookingsLoading] = useState(false);
+  // Bumped by "Refresh" in a feed's options menu to re-run its loader.
+  const [systemReloadKey, setSystemReloadKey] = useState(0);
+  const [bookingsReloadKey, setBookingsReloadKey] = useState(0);
   const [systemError, setSystemError] = useState("");
   const [bookingsError, setBookingsError] = useState("");
   const [activeSystemView, setActiveSystemView] = useState(false);
@@ -650,6 +654,8 @@ function MessagesPage() {
     ensureMobileConversationHistory();
     if (isMobileView) setMobilePanelView("conversation");
     setSystemUnreadCutoff(lastSystemViewedAt || null);
+    setSearchOpen(false);
+    setSearchTerm("");
     setActiveSystemView(true);
     setActiveBookingsView(false);
     setActiveThreadId(null);
@@ -663,6 +669,8 @@ function MessagesPage() {
     ensureMobileConversationHistory();
     if (isMobileView) setMobilePanelView("conversation");
     setBookingsUnreadCutoff(lastBookingsViewedAt || null);
+    setSearchOpen(false);
+    setSearchTerm("");
     setActiveBookingsView(true);
     setActiveSystemView(false);
     setActiveThreadId(null);
@@ -1446,7 +1454,7 @@ function MessagesPage() {
           .select("notification_id, message, created_at, target_role")
           .or("target_role.ilike.%customer%,target_role.is.null")
           .order("created_at", { ascending: false })
-          .limit(5);
+          .limit(SYSTEM_NOTIFICATION_LIMIT);
         if (notesResult.error) throw notesResult.error;
         if (!cancelled) setSystemNotifications((notesResult.data || []).map((row) => ({ ...row, kind: "notification" })));
       } catch (fetchError) {
@@ -1466,14 +1474,14 @@ function MessagesPage() {
         if (!entry) return;
         const targetRole = (entry.target_role || "").toLowerCase();
         if (targetRole && !targetRole.includes("customer")) return;
-        setSystemNotifications((prev) => [{ ...entry, kind: "notification" }, ...prev].slice(0, 5));
+        setSystemNotifications((prev) => [{ ...entry, kind: "notification" }, ...prev].slice(0, SYSTEM_NOTIFICATION_LIMIT));
       })
       .subscribe();
     return () => {
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [systemReloadKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1523,7 +1531,7 @@ function MessagesPage() {
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [canSeeCustomerRequests]);
+  }, [bookingsReloadKey, canSeeCustomerRequests]);
 
   // Realtime: any change to a thread I am in refreshes the list, and the open
   // transcript refreshes in place.
@@ -1784,6 +1792,26 @@ function MessagesPage() {
       ]
     : [];
 
+  const feedMenuItems = isSystemThreadActive
+    ? [
+        {
+          label: searchOpen ? "Close search" : activeBookingsView ? "Search bookings" : "Search notifications",
+          onClick: () => {
+            setSearchOpen((prev) => !prev);
+            setSearchTerm("");
+          },
+        },
+        {
+          label: "Refresh",
+          disabled: activeBookingsView ? bookingsLoading : systemLoading,
+          onClick: () =>
+            activeBookingsView ? setBookingsReloadKey((key) => key + 1) : setSystemReloadKey((key) => key + 1),
+        },
+        ...(showSystemUnreadMarker
+          ? [{ label: "Clear “New” marker", onClick: () => dismissUnreadMarker(systemUnreadMarkerKey) }]
+          : []),
+      ]
+    : [];
 
   const lastMineIndex = (() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -1883,6 +1911,20 @@ function MessagesPage() {
         setUnreadEl: setSystemUnreadMarkerEl,
         formatTimestamp: formatNotificationTimestamp,
         onCreateJob: handleCreateJobFromRequest,
+        lastViewedAt: activePseudoUnreadCutoff,
+        limit: activeBookingsView ? null : SYSTEM_NOTIFICATION_LIMIT,
+        detailsOpen,
+        onToggleDetails: () => toggleDetails(),
+        menuItems: feedMenuItems,
+        search: {
+          open: searchOpen,
+          term: searchTerm,
+          onChange: setSearchTerm,
+          onClose: () => {
+            setSearchOpen(false);
+            setSearchTerm("");
+          },
+        },
       }}
       headerProps={{
         thread: activeThread,

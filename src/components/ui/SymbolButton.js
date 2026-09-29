@@ -232,6 +232,14 @@ export const SYMBOLS = {
       </>
     ),
   },
+  menu: {
+    label: "Menu",
+    render: () => (
+      <>
+        <path d="M2.5 5.5h19M2.5 12h19M2.5 18.5h19" {...S} />
+      </>
+    ),
+  },
   more: {
     label: "More",
     render: () => (
@@ -492,6 +500,29 @@ export const SYMBOLS = {
   },
 
   // ── Status & meta ─────────────────────────────────────────
+  status: {
+    label: "Status",
+    // A pulse line — the job status / timeline panel, distinct from the
+    // clock-face History mark.
+    render: () => (
+      <>
+        <path d="M1.5 12h4.6l2.8-7.5 6.2 15 2.8-7.5h4.6" {...S} />
+      </>
+    ),
+  },
+  tracking: {
+    label: "Tracking",
+    // A route from a start point to a location pin — the portrait-phone
+    // topbar's job status / tracking button.
+    render: () => (
+      <>
+        <circle cx="5.2" cy="18.6" r="2.4" {...S} />
+        <path d="M7.6 18.6H15a2.8 2.8 0 0 0 0-5.6H9a2.8 2.8 0 0 1 0-5.6h2.6" {...S} />
+        <path d="M17.6 1.9c-2.3 0-4.1 1.8-4.1 4.1 0 3 4.1 7 4.1 7s4.1-4 4.1-7c0-2.3-1.8-4.1-4.1-4.1Z" {...S} />
+        <circle cx="17.6" cy="6" r="1.3" {...S} />
+      </>
+    ),
+  },
   approve: {
     label: "Approve",
     render: () => (
@@ -610,13 +641,15 @@ export function Symbol({ symbol, className = "app-symbol-btn__glyph" }) {
   );
 }
 
-export default function SymbolButton({
+// Forwards its ref to the <button> so a host can measure it (e.g. the portrait
+// topbar's Menu / Status drops, which open from the button's on-screen position).
+const SymbolButton = React.forwardRef(function SymbolButton({
   symbol,
   label,
   className = "",
   type = "button",
   ...rest
-}) {
+}, ref) {
   const entry = SYMBOLS[symbol];
   if (!entry) {
     if (process.env.NODE_ENV !== "production" && typeof console !== "undefined") {
@@ -636,6 +669,7 @@ export default function SymbolButton({
     <button
       type={type}
       className={classes}
+      ref={ref}
       data-symbol={symbol}
       aria-label={accessibleName}
       title={accessibleName}
@@ -644,4 +678,6 @@ export default function SymbolButton({
       <Symbol symbol={symbol} />
     </button>
   );
-}
+});
+
+export default SymbolButton;

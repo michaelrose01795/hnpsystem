@@ -1,2 +1,3 @@
 import { updateCustomerVhcDecision } from "@/lib/database/vhcCustomerDecision";
-export default updateCustomerVhcDecision;
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
+export default withAuditRequest(updateCustomerVhcDecision, { actor: "customer" });

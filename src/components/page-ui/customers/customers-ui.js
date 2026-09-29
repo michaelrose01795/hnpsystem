@@ -12,12 +12,15 @@ import { FilterButton, FilterField } from "@/components/ui/filterAPI";
 const dash = (value) => (value ? value : "—");
 const countLabel = (value) => (typeof value === "number" ? String(value) : "—");
 
-// Summary tiles sit in a nowrap row (see the strip below). The centring
-// overrides the space-between that .app-summary-item defaults to, so label and
-// value read as one centred pair inside the fixed 44px tile.
+// Summary tiles sit in a nowrap row (see the strip below). Each tile sizes to
+// its own content ("1 0 auto") and keeps label + value on one line, so a long
+// label such as "Total customers" never pushes the value onto a second line
+// and overflows the fixed 44px tile. The centring overrides the space-between
+// that .app-summary-item defaults to, so label and value read as one pair.
 const SUMMARY_TILE_STYLE = {
-  flex: "1 0 8.5rem",
-  minWidth: 0,
+  flex: "1 0 auto",
+  flexWrap: "nowrap",
+  whiteSpace: "nowrap",
   justifyContent: "center",
   textAlign: "center",
 };
@@ -67,13 +70,13 @@ export default function CustomersIndexUi(props) {
               <div
                 style={{
                   display: "flex",
-                  flexWrap: "wrap",
+                  flexWrap: "nowrap",
                   alignItems: "center",
                   gap: "10px",
                   minWidth: 0,
                 }}
               >
-                <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+                <div style={{ flex: "1 1 260px", minWidth: "140px" }}>
                   <SearchBar
                     data-presentation="customers-search"
                     placeholder="Search name, email, phone or postcode"
@@ -87,9 +90,11 @@ export default function CustomersIndexUi(props) {
                     bar and the filter button, so search, counts and sort read
                     as one control line. The shell is a --theme layer, so the
                     tiles stay LayerSurface and the alternation holds. Tiles
-                    are a fixed 44px (.app-summary-item) and lay out nowrap;
-                    on a narrow screen the strip wraps onto its own line and
-                    scrolls horizontally if it still does not fit. */}
+                    are a fixed 44px (.app-summary-item) and lay out nowrap.
+                    The whole row is nowrap too: on a narrow screen search,
+                    summary and filter stay on one line, and the strip (the
+                    only part that shrinks past its content) scrolls
+                    horizontally instead of wrapping. */}
                 <DevLayoutSection
                   sectionKey="customers-list-summary"
                   parentKey="customers-list-filter-shell"

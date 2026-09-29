@@ -21,6 +21,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import PopupModal from "@/components/popups/popupStyleApi";
 import CapacitySettingsPopup from "@/components/Clocking/CapacitySettingsPopup";
 import { buildWorkshopCapacitySegments } from "@/lib/capacity/technicianCapacity";
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
 
 // ===========================================================================
 // Shared style constants (replace the former CSS-module tokens)
@@ -835,6 +836,8 @@ export default function WorkshopQueuePlanner({
   // drives all matching across every section. The search only highlights matches
   // (it never filters cards out), so `outstandingJobs` arrives unfiltered and the
   // matching job numbers come through `highlightedSearchJobNumbers`.
+  // Portrait phone: 10px between the search row and the board beneath it.
+  const isVerticalPhone = useIsVerticalPhone();
   const techRowsSafe = techRows || [];
   const motRowsSafe = motRows || [];
   const outstanding = outstandingJobs || [];
@@ -930,7 +933,7 @@ export default function WorkshopQueuePlanner({
       data-dev-section-type="page-shell"
       data-dev-background-token="transparent"
       data-dev-text-preview="Workshop queue planner"
-      style={{ position: "relative", display: "flex", flexDirection: "column", gap: "16px", width: "100%", minWidth: 0, minHeight: "100%" }}
+      style={{ position: "relative", display: "flex", flexDirection: "column", gap: isVerticalPhone ? "var(--space-2)" : "16px", width: "100%", minWidth: 0, minHeight: "100%" }}
     >
       {/* Sentinel at the search bar's resting position. While it stays in view the
           bar is at rest (no float styling); once it scrolls past the sticky line

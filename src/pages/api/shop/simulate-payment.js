@@ -19,6 +19,7 @@ import {
   markOrderPaid,
   decrementStockForOrder,
 } from "@/lib/database/shop";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const DECLINE_RATE = 0.4;
 
@@ -28,7 +29,7 @@ const DECLINE_REASONS = [
   "Card verification failed. Please try again.",
 ];
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ success: false, message: "Method Not Allowed" });
@@ -61,3 +62,5 @@ export default async function handler(req, res) {
 
   return res.status(200).json({ success: true, order_number: order.order_number });
 }
+
+export default withAuditRequest(handler, { actor: "system" });

@@ -24,7 +24,7 @@ export default function RevenueProfitabilityTab({ filter, onDrilldown }) {
       </ReportSection>
 
       <ReportSection title="Gross revenue & growth trends" subtitle="Company revenue history plus the year-on-year growth composite (prior-year window null until ≥13 months of history accrue).">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginBottom: 12 }}>
           <ExecutiveTrendCard kpiId="mgt.company_revenue" label="Gross revenue" unit="currency" format="£0,0.00" filter={filter} granularity="month" granularityLabel="Monthly" />
           <ExecutiveTrendCard kpiId="vhc.upsell_revenue" label="VHC upsell revenue" unit="currency" format="£0,0.00" filter={filter} granularity="month" granularityLabel="Monthly" />
         </div>

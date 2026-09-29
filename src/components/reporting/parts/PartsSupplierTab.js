@@ -16,7 +16,7 @@ export default function PartsSupplierTab({ filter, onDrilldown }) {
   return (
     <>
       <ReportSection title="Ordering & delivery monitoring" subtitle="Order lines placed and goods received in the period — the supported-by-data ordering performance view.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {ORDERING_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown />
           ))}

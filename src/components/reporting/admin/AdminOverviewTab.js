@@ -42,7 +42,7 @@ export default function AdminOverviewTab({ filter, onDrilldown }) {
       </ReportSection>
 
       <ReportSection title="Weekly and monthly summary" subtitle="Audited activity volume re-bucketed by the reporting engine.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
           <TrendCard kpiId="adm.audit_activity" label="Audit activity" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <TrendCard kpiId="adm.audit_activity" label="Audit activity" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <TrendCard kpiId="adm.audit_activity" label="Audit activity" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

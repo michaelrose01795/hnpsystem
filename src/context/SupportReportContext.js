@@ -161,6 +161,8 @@ export function SupportDiagnosticsProvider({ children }) {
           asPath: router?.asPath,
           pathname: router?.pathname,
           query: router?.query,
+          // The page as the user knows it ("Job Card 00076"), not just its URL.
+          title: typeof document !== "undefined" ? document.title || undefined : undefined,
         },
         sectionKey: overrides.sectionKey || latestSectionKey(),
         session: sessionSnapshot,

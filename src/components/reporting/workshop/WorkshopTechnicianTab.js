@@ -16,7 +16,7 @@ export default function WorkshopTechnicianTab({ filter, onDrilldown }) {
   return (
     <>
       <ReportSection title="Efficiency & activity" subtitle="Per-technician metrics from the canonical (int-keyed) efficiency entries.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 12 }}>
           {TECHNICIAN_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend={kpi.unit !== "count"} withDrilldown={kpi.hasDrilldown} />
           ))}

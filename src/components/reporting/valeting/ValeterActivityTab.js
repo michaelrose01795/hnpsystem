@@ -24,7 +24,7 @@ export default function ValeterActivityTab({ filter }) {
         title="Productivity"
         subtitle="The catalogue productivity KPI needs wash assignee and shift attribution. It is shown as a declared blocker rather than an invented leaderboard."
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {VALETER_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend={false} withDrilldown={false} />
           ))}
@@ -32,7 +32,7 @@ export default function ValeterActivityTab({ filter }) {
       </ReportSection>
 
       <ReportSection title="Activity trends" subtitle="Completed Valeting volume trend. True per-valeter trends unlock when assignee history is captured.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           <KpiPanel kpi={{ id: "val.cars_washed", label: "Completed Valets", unit: "count", format: "0,0", readiness: "R1", hasDrilldown: true }} filter={filter} withTrend withDrilldown />
         </div>
       </ReportSection>

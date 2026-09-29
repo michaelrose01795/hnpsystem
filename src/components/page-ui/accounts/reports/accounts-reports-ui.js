@@ -5,8 +5,12 @@ import { Dropdown } from "@/components/ui/dropdownAPI"; // canonical dropdown
 import { MonthPicker } from "@/components/ui/monthPickerAPI"; // canonical month picker
 import { SearchBar } from "@/components/ui/searchBarAPI"; // canonical search bar
 import { SectionSkeleton, SkeletonMetricCard } from "@/components/ui/LoadingSkeleton"; // shared loading skeletons
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
 
 export default function AccountsReportsPageUi(props) {
+  // Portrait phone: 10px between the search/filter/action row and the
+  // content beneath it.
+  const isVerticalPhone = useIsVerticalPhone();
   const {
     Button,
     DevLayoutSection,
@@ -41,7 +45,7 @@ export default function AccountsReportsPageUi(props) {
       return <ProtectedRoute allowedRoles={REPORT_ROLES}>
       <>
         <DevLayoutSection as="div" sectionKey="accounts-reports-page-shell" sectionType="page-shell" backgroundToken="page-card-bg" shell className="app-layout-page-shell" style={{
-      gap: "20px"
+      gap: isVerticalPhone ? "var(--space-2)" : "20px"
     }}>
           <ToolbarRow style={{
         justifyContent: "flex-start",

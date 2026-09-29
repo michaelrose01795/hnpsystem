@@ -343,7 +343,7 @@ function LeaveRequestModal({
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
             <div>
               <DropdownField
                 label="Leave Type"
@@ -374,7 +374,7 @@ function LeaveRequestModal({
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
             <div>
               <CalendarField
                 label="Start Date"
@@ -399,7 +399,7 @@ function LeaveRequestModal({
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
             <div style={{ ...modalStatStyle }}>
               <span style={modalStatLabelStyle}>Total work days</span>
               <span style={modalStatValueStyle}>{hasValidDateRange ? `${leaveTotals.workDays.toFixed(1)}d` : "—"}</span>
@@ -2128,7 +2128,7 @@ export function ProfileWorkTab({
               style={{
                 display: "grid",
                 gap: "12px",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
               }}
             >
               <SkeletonMetricCard />
@@ -2176,7 +2176,7 @@ export function ProfileWorkTab({
                 padding: "10px",
                 display: "grid",
                 gap: isMobile ? "10px" : "14px",
-                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
               }}
             >
               {/* Total Hours (logged) card with 3 sub-columns + grand total */}

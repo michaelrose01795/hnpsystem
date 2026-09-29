@@ -20,6 +20,7 @@
 import { getCustomerSessionFromReq } from "@/lib/auth/customerSession";
 import { getCustomerCart, saveCustomerCart } from "@/lib/database/shop";
 import { getPublicPartsByIds } from "@/lib/database/partsCatalogPublic";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const MAX_LINES = 60;
 const MAX_QTY = 99;
@@ -70,7 +71,7 @@ const mergeLines = (saved, incoming) => {
   return [...byId.values()];
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const session = getCustomerSessionFromReq(req);
 
   if (!session) {
@@ -123,3 +124,5 @@ export default async function handler(req, res) {
   res.setHeader("Allow", "GET, PUT");
   return res.status(405).json({ success: false, message: "Method Not Allowed" });
 }
+
+export default withAuditRequest(handler, { actor: "customer" });

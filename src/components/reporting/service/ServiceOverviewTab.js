@@ -42,7 +42,7 @@ export default function ServiceOverviewTab({ filter, onDrilldown }) {
         title="Performance summary"
         subtitle="Booking volume and authorised VHC value, re-bucketed daily, weekly and monthly (advisor activity trends)."
       >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
           <PerformanceTrendCard kpiId="svc.booking_volume" label="Bookings" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <PerformanceTrendCard kpiId="svc.booking_volume" label="Bookings" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <PerformanceTrendCard kpiId="svc.booking_volume" label="Bookings" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

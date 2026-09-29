@@ -305,6 +305,28 @@
   user-select: all;
 }
 
+/* A multi-line technical block (stack trace, component stack, raw error text)
+   in the Support Centre report view. Wraps instead of scrolling sideways so it
+   stays readable on a phone. */
+.app-recovery__panel-block {
+  margin: 0;
+  color: var(--text-1);
+  font-family: var(--font-family-mono);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* A fact that was not captured. Shown honestly as "Not available (reason)" in
+   a quieter voice than a real value, never replaced with a guess. */
+.app-recovery-facts__value--missing {
+  opacity: 0.62;
+  font-style: italic;
+  font-weight: 400;
+}
+
 /* ===========================================================================
    Reference line (the report popup)
    ---------------------------------------------------------------------------

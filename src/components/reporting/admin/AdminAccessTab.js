@@ -19,7 +19,7 @@ export default function AdminAccessTab({ filter }) {
       </ReportSection>
 
       <ReportSection title="User & access KPIs" subtitle="Login success rate, login failures and active-user proxy.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {ACCESS_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown />
           ))}

@@ -203,8 +203,14 @@ export default function SectionPanel({
         {/* The global table (staffglobal.css / families/tables.css), untouched.
             Every section is shown without an inner scroll — the panel itself
             is the one scroller — and three short columns stay a table on a
-            phone rather than stacking into cards. */}
-        <DataTableShell visibleRows={TRACKING_SECTIONS.length} stack={false}>
+            phone rather than stacking into cards. The row cap is lifted
+            outright: the rows hold 44px buttons, so they run taller than the
+            cap's row height and the last few would otherwise be clipped. */}
+        <DataTableShell
+          visibleRows={TRACKING_SECTIONS.length}
+          stack={false}
+          style={{ maxHeight: "none" }} // layout-only: the panel is the scroller, not the table
+        >
           <table className="app-data-table">
             <thead>
               <tr>

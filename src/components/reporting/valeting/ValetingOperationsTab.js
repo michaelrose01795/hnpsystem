@@ -19,7 +19,7 @@ export default function ValetingOperationsTab({ filter, onDrilldown }) {
       </ReportSection>
 
       <ReportSection title="Completed work and throughput" subtitle="Completed valet volume, completion rate and no-wash rate for the selected period.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {OPERATIONS_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend={kpi.id === "val.cars_washed"} withDrilldown />
           ))}

@@ -10,6 +10,7 @@ import { buildCiClockRows, buildCiClockStatus, getCiUserId, isPlaywrightCi } fro
 import { isSyntheticDevPlatformSession } from "@/lib/auth/devSession";
 import { getAuditContext } from "@/lib/audit/auditContext";
 import { writeAuditLog } from "@/lib/audit/auditLog";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 async function resolveUserId(req, res) {
   const queryUserId = req.query.userId || req.body?.userId;
@@ -86,7 +87,7 @@ async function autoCloseStaleRecord(record) {
   return { closedRecord: record, error };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
     const today = new Date().toISOString().split("T")[0];
 
@@ -400,3 +401,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: error.message });
   }
 }
+
+export default withAuditRequest(handler);

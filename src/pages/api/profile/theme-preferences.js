@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import { supabaseService, supabase } from "@/lib/database/supabaseClient";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const VALID_MODES = new Set(["light", "dark", "system"]);
 const VALID_ACCENTS = new Set(["red", "beige", "grey", "blue", "green", "yellow", "pink", "orange", "purple"]);
@@ -91,7 +92,7 @@ async function readThemePreference(req, res) {
   }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "GET") {
     return readThemePreference(req, res);
   }
@@ -154,3 +155,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withAuditRequest(handler);

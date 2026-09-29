@@ -26,9 +26,88 @@ export function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+// Hosts that only resolve on the machine / network that generated the link.
+// A link to one of these in an email is dead for everyone else.
+export function isLocalOrPrivateHost(hostname) {
+  const h = String(hostname || "").toLowerCase().replace(/^\[|\]$/g, "");
+  if (!h) return true;
+  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) return true;
+  if (h === "::1" || h === "0.0.0.0" || h.startsWith("127.")) return true;
+  if (/^10\./.test(h) || /^192\.168\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  if (/^(fc|fd)[0-9a-f]{2}:/.test(h) || h.startsWith("fe80:")) return true;
+  return false;
+}
+
+const hostOf = (origin) => {
+  try {
+    return new URL(origin).hostname;
+  } catch {
+    return "";
+  }
+};
+
+/**
+ * The origin that links in an outgoing email must point at.
+ *
+ *   1. The configured public site URL — NEXT_PUBLIC_APP_URL, then
+ *      NEXT_PUBLIC_SITE_URL (either may omit the scheme). In development this
+ *      still wins, so a developer can point links at a tunnel on purpose.
+ *   2. Production: NEXTAUTH_URL, Vercel's stable production domain, then the
+ *      default public app URL. A localhost / private-network value is SKIPPED
+ *      in production (a dev value copied into prod env must never reach a
+ *      recipient), and the request Host header is never trusted there (it is
+ *      client-controlled).
+ *   3. Development: the host the request actually came in on (so a link in a
+ *      local test email opens the local app), then NEXTAUTH_URL, then
+ *      http://localhost:3000.
+ *
+ * @param {object} [req]  incoming request (dev only — used for the Host header)
+ * @param {Record<string,string|undefined>} [env]  defaults to process.env
+ * @returns {string} origin without a trailing slash
+ */
+export function resolvePublicAppUrl(req, env = process.env) {
+  const isProduction = env.NODE_ENV === "production";
+  // First usable configured value, skipping local/private hosts in production.
+  const firstConfigured = (values) => {
+    for (const value of values) {
+      if (!value || !String(value).trim()) continue;
+      const origin = normalizeAbsoluteUrl(value, "");
+      if (!origin) continue;
+      if (isProduction && isLocalOrPrivateHost(hostOf(origin))) continue;
+      return origin;
+    }
+    return "";
+  };
+
+  const publicSite = firstConfigured([env.NEXT_PUBLIC_APP_URL, env.NEXT_PUBLIC_SITE_URL]);
+  if (publicSite) return publicSite;
+
+  if (isProduction) {
+    return firstConfigured([env.NEXTAUTH_URL, env.VERCEL_PROJECT_PRODUCTION_URL]) || DEFAULT_PUBLIC_APP_URL;
+  }
+
+  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
+  if (host) {
+    const firstHost = String(host).split(",")[0].trim();
+    const local = isLocalOrPrivateHost(firstHost.replace(/:\d+$/, ""));
+    const proto = String(req?.headers?.["x-forwarded-proto"] || (local ? "http" : "https")).split(",")[0].trim();
+    try {
+      return new URL(`${proto}://${firstHost}`).origin;
+    } catch {
+      // fall through
+    }
+  }
+  return firstConfigured([env.NEXTAUTH_URL]) || "http://localhost:3000";
+}
+
 export function resolveEmailBaseUrl(req) {
-  if (process.env.NEXT_PUBLIC_APP_URL) return normalizeAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL);
-  if (process.env.NEXT_PUBLIC_SITE_URL) return normalizeAbsoluteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  // A localhost / private address copied into production env must never reach
+  // an email recipient — skip it and fall through to the public defaults.
+  const prodSafe = (value) =>
+    value &&
+    !(process.env.NODE_ENV === "production" && isLocalOrPrivateHost(hostOf(normalizeAbsoluteUrl(value, ""))));
+  if (prodSafe(process.env.NEXT_PUBLIC_APP_URL)) return normalizeAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL);
+  if (prodSafe(process.env.NEXT_PUBLIC_SITE_URL)) return normalizeAbsoluteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   if (process.env.VERCEL_URL) return normalizeAbsoluteUrl(`https://${process.env.VERCEL_URL}`);
   if (process.env.NODE_ENV === "production") return DEFAULT_PUBLIC_APP_URL;
   const proto = req?.headers?.["x-forwarded-proto"] || "http";

@@ -42,7 +42,7 @@ export default function PartsDashboardUi(props) {
       };
       const splitRowStyle = {
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
         gap: "var(--page-stack-gap, 16px)"
       };
       // Themed-card wrapper — replaces <Section> for this dashboard so each

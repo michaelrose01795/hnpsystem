@@ -22,6 +22,7 @@ import {
 } from "@/lib/compliance/registers";
 import { getAuditContext } from "@/lib/audit/auditContext";
 import { writeAuditLog } from "@/lib/audit/auditLog";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const ALLOWED_POLICY_FIELDS = new Set([
   "entity_type",
@@ -40,7 +41,7 @@ const sanitisePolicy = (body) => {
   return out;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const gate = await requireComplianceAdmin({ getServerSession, authOptions, req, res });
   if (gate.error) return res.status(gate.error.status).json({ success: false, message: gate.error.message });
   const auditCtx = await getAuditContext(req, res);
@@ -134,3 +135,5 @@ export default async function handler(req, res) {
   res.setHeader("Allow", ["GET", "POST", "PATCH"]);
   return res.status(405).json({ success: false, message: "Method not allowed." });
 }
+
+export default withAuditRequest(handler);

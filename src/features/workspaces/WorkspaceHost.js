@@ -1,45 +1,68 @@
 // file location: src/features/workspaces/WorkspaceHost.js
 //
-// The multi-workspace DMS shell. Mounted once by StaffLayout around the main
-// column (the PRIMARY workspace) and never anywhere else, so every current and
-// future staff page gets workspaces without any page-level code.
+// The multi-workspace DMS shell. Mounted once by StaffLayout IN PLACE OF the
+// page card (inside .app-page-content) and never anywhere else, so every
+// current and future staff page gets workspaces without any page-level code.
 //
-// Single-screen behaviour is unchanged by construction: with only the primary
-// workspace, the wrapper and the primary slot are `display: contents`, render
-// no bar and add no box, so the main column lays out exactly as it did before.
-// The DOM nesting is the same in both modes, which is also what stops the
-// primary page from remounting (and losing its state) when a workspace is added.
+// Single mode (the default): renders its children — the normal page card —
+// untouched, plus the "Extra screen space detected" offer on wide windows.
 //
-// Extra workspaces are same-origin iframes of the app in embedded mode (see
-// WorkspaceEmbedBridge): same NextAuth session, same roles, same theme storage,
-// their own router and page state. Every frame stays mounted while it exists —
-// collapsed ones are hidden, not removed — and on-screen order is CSS `order`,
-// so swapping or collapsing never reloads a page.
+// Multi mode ("Multi workspace", from the right-click menu, the offer, or a
+// link sent to another workspace): ONLY the page-card area changes. The sidebar,
+// topbar and status drawer stay where they are, full width, and drive whichever
+// workspace is focused. The card area splits into 2–3 page cards, each a
+// same-origin iframe of the app in embedded mode (see WorkspaceEmbedBridge):
+//   • each card is its own viewport, so a page reflows to the card's width
+//     exactly as it would to a resized window (media queries, useIsMobile);
+//   • each page's popups, drawers and toasts centre in its own card and never
+//     cover the others;
+//   • click inside a card to focus it — like switching windows — and the
+//     sidebar (and topbar search) then open pages in that card.
+// The host's own page is not rendered in multi mode; the host route is only a
+// way in: when it changes (topbar search, a notification link, Back, a pasted
+// URL) that page opens in the focused card. While the cards are up the address
+// bar reads "/multi-view/<card>-<card>" (src/pages/multi-view). Leaving multi mode keeps the
+// focused card's page as the one page.
+//
+// Every frame stays mounted while it exists — collapsed ones are hidden, not
+// removed — frames render in a fixed DOM order and on-screen order is CSS
+// `order`, so swapping or collapsing never reloads a page.
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { isPublicVhcReportPath } from "@/config/routeAccess";
+import { isPublicVhcReportPath, DYNAMIC_DETAIL_EXTENDS } from "@/config/routeAccess";
 import { buildKey, readJSON, writeJSON } from "@/lib/topbar/workspaceStorage";
 import {
-  PRIMARY_WORKSPACE_ID,
   MAX_WORKSPACES,
+  MIN_WORKSPACES,
   createInitialState,
   workspaceReducer,
+  isMulti,
   computeLayout,
   fitCapacity,
   suggestCapacity,
   shouldOfferWorkspace,
-  activePresetId,
   pickOtherWorkspace,
+  getWorkspace,
+  focusedHref,
+  findWorkspaceShowing,
+  workspaceCount,
   weightOf,
+  cardWidthChoices,
+  maxCardShare,
   labelForHref,
   toWorkspaceHref,
   serializeState,
   deserializeState,
+  isMultiViewPath,
+  multiViewHref,
+  parseMultiViewPath,
 } from "@/features/workspaces/workspaceModel";
 import {
   WORKSPACE_MESSAGES,
+  WORKSPACE_COMMANDS,
   OPEN_IN_WORKSPACE_EVENT,
-  setWorkspaceHostAvailable,
+  WORKSPACE_COMMAND_EVENT,
+  setWorkspaceHostStatus,
 } from "@/features/workspaces/workspaceBridge";
 import { bindWorkspaceLinkTargets } from "@/features/workspaces/workspaceLinks";
 import WorkspacePaneBar from "@/features/workspaces/components/WorkspacePaneBar";
@@ -50,6 +73,11 @@ import WorkspaceSpacePrompt from "@/features/workspaces/components/WorkspaceSpac
 const STORAGE_FEATURE = "multi-workspace";
 // Marks the one global sidebar. Its links open in the focused workspace.
 export const GLOBAL_NAV_ATTRIBUTE = "data-workspace-nav";
+
+// Detail routes ("/job-cards/[jobNumber]") as their static base, so a pasted
+// multi-view URL can tell "job-cards.123" apart from a page called "job".
+const DETAIL_BASE_PATHS = Object.keys(DYNAMIC_DETAIL_EXTENDS).map((pattern) => pattern.split("/[")[0]);
+const FALLBACK_HREF = "/newsfeed";
 
 const toHref = (raw) =>
   typeof window === "undefined"
@@ -72,13 +100,30 @@ function useKeyedRefs() {
   return [nodes, refFor];
 }
 
-export default function WorkspaceHost({ enabled, userId, areaWidth, navigationItems, children }) {
+// Fixed DOM order for the frames. Moving an iframe in the DOM reloads it, so
+// the array order (which swaps change) is only ever applied through CSS order.
+const byId = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+export default function WorkspaceHost({
+  enabled,
+  suspended = false,
+  userId,
+  areaWidth,
+  navigationItems,
+  onStateChange,
+  children,
+}) {
   const router = useRouter();
   const [state, dispatch] = useReducer(workspaceReducer, undefined, createInitialState);
   const stateRef = useRef(state);
   stateRef.current = state;
   const areaWidthRef = useRef(areaWidth);
   areaWidthRef.current = areaWidth;
+  const suspendedRef = useRef(suspended);
+  suspendedRef.current = suspended;
+  // StaffLayout rebuilds this list every render; effects read it through a ref.
+  const navigationItemsRef = useRef(navigationItems);
+  navigationItemsRef.current = navigationItems;
 
   const [frames, frameRef] = useKeyedRefs();
   const [slots, slotRef] = useKeyedRefs();
@@ -101,21 +146,41 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
   }, [state, storageKey, restoredKey]);
   const restored = Boolean(storageKey) && restoredKey === storageKey;
 
-  // The primary workspace's page is simply the host route.
-  useEffect(() => {
-    dispatch({ type: "route", id: PRIMARY_WORKSPACE_ID, href: router.asPath });
-  }, [router.asPath]);
-
-  const active = enabled && restored && state.workspaces.length > 1;
+  const multi = isMulti(state);
+  // `live`: the shell can take commands. `active`: the cards are on screen.
+  const live = enabled && restored && !suspended;
+  const active = live && multi;
   const layout = useMemo(() => computeLayout(state, areaWidth), [state, areaWidth]);
-  const hostAvailable = enabled && restored && (state.workspaces.length > 1 || fitCapacity(areaWidth) >= 2);
-  const hostAvailableRef = useRef(hostAvailable);
-  hostAvailableRef.current = hostAvailable;
+  const canAdd = !multi || state.workspaces.length < MAX_WORKSPACES;
+  const count = workspaceCount(state);
+  // A declarative data-workspace-target link only diverts a plain click when
+  // the cards can actually sit side by side (or already do).
+  const linkTargetsLive = live && (multi || fitCapacity(areaWidth) >= MIN_WORKSPACES);
+  const linkTargetsLiveRef = useRef(linkTargetsLive);
+  linkTargetsLiveRef.current = linkTargetsLive;
 
+  // What the right-click menu may offer in this document.
   useEffect(() => {
-    setWorkspaceHostAvailable(hostAvailable);
-    return () => setWorkspaceHostAvailable(false);
-  }, [hostAvailable]);
+    setWorkspaceHostStatus(live ? { available: true, active: multi, canAdd, count } : null);
+  }, [live, multi, canAdd, count]);
+  useEffect(() => () => setWorkspaceHostStatus(null), []);
+
+  // …and in every workspace frame.
+  const postStatus = useCallback(
+    (frame) => frame?.post({ type: WORKSPACE_MESSAGES.STATUS, canAdd, count }),
+    [canAdd, count]
+  );
+  useEffect(() => {
+    if (!active) return;
+    frames.current.forEach((frame) => postStatus(frame));
+  }, [active, frames, postStatus]);
+
+  // Tell the layout which page the focused card shows, so the sidebar
+  // highlight and the topbar's department follow the focused card.
+  const currentFocusedHref = active ? focusedHref(state) : null;
+  useEffect(() => {
+    onStateChange?.({ active, focusedHref: currentFocusedHref });
+  }, [active, currentFocusedHref, onStateChange]);
 
   const labelOf = useCallback(
     (workspace) => labelForHref(workspace?.href, navigationItems),
@@ -123,17 +188,77 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
   );
 
   // ── Commands ───────────────────────────────────────────────────────────────
+  // Unmounted frames (suspended on a narrow window) just record the page; it
+  // loads when the card next mounts.
   const navigateWorkspace = useCallback(
     (id, href) => {
-      if (!href) return;
-      if (id === PRIMARY_WORKSPACE_ID) {
-        router.push(href);
-        return;
-      }
+      if (!id || !href) return;
       frames.current.get(id)?.navigate(href);
       dispatch({ type: "route", id, href });
     },
-    [router, frames]
+    [frames]
+  );
+
+  const enterMulti = useCallback(
+    (linkHref = null) => {
+      if (isMulti(stateRef.current)) return false;
+      const here = toHref(router.asPath);
+      // A link sent to another workspace opens beside the page the user is on
+      // and leaves them focused where they were. Otherwise the new, empty card
+      // takes focus, so the very next sidebar click fills it.
+      dispatch({
+        type: "enter",
+        hrefs: [here, linkHref || null],
+        focusIndex: linkHref ? 0 : 1,
+        hostHref: router.asPath,
+      });
+      return true;
+    },
+    [router]
+  );
+
+  const exitMulti = useCallback(
+    (keepId) => {
+      const current = stateRef.current;
+      if (!isMulti(current)) return;
+      const keep = getWorkspace(current, keepId) || getWorkspace(current, current.focusedId);
+      // The multi-view URL is not a page of its own, so leaving from an empty
+      // card still has to land somewhere real.
+      const href =
+        keep?.href ||
+        (isMultiViewPath(router.asPath)
+          ? current.workspaces.find((w) => w.href)?.href || FALLBACK_HREF
+          : null);
+      dispatch({ type: "exit" });
+      if (href && href !== router.asPath) router.push(href);
+    },
+    [router]
+  );
+
+  // Closing the second-last card IS leaving multi mode: the one left becomes
+  // the page.
+  const closeWorkspace = useCallback(
+    (id) => {
+      const current = stateRef.current;
+      if (!getWorkspace(current, id)) return;
+      if (current.workspaces.length <= MIN_WORKSPACES) {
+        exitMulti(current.workspaces.find((w) => w.id !== id)?.id);
+        return;
+      }
+      dispatch({ type: "close", id });
+    },
+    [exitMulti]
+  );
+
+  const addWorkspace = useCallback(
+    (afterId) => {
+      const current = stateRef.current;
+      if (!isMulti(current)) return enterMulti();
+      if (current.workspaces.length >= MAX_WORKSPACES) return false;
+      dispatch({ type: "add", href: null, afterId: afterId || current.workspaces.at(-1)?.id });
+      return true;
+    },
+    [enterMulti]
   );
 
   const openInOther = useCallback(
@@ -141,6 +266,7 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
       const href = toHref(rawHref);
       if (!href) return false;
       const current = stateRef.current;
+      if (!isMulti(current)) return suspendedRef.current ? false : enterMulti(href);
       const target = pickOtherWorkspace(current, sourceId);
       if (target) {
         navigateWorkspace(target, href);
@@ -148,17 +274,111 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
         return true;
       }
       if (current.workspaces.length >= MAX_WORKSPACES) return false;
-      dispatch({ type: "add", href, afterId: sourceId });
+      dispatch({ type: "add", href, afterId: sourceId, focus: false });
       return true;
     },
-    [navigateWorkspace]
+    [enterMulti, navigateWorkspace]
   );
 
   const focusWorkspace = useCallback((id) => dispatch({ type: "focus", id }), []);
-  const addWorkspace = useCallback(
-    () => dispatch({ type: "add", href: null, afterId: stateRef.current.workspaces.at(-1)?.id }),
-    []
+
+  const runCommand = useCallback(
+    (command, sourceId) => {
+      const focused = sourceId || stateRef.current.focusedId;
+      switch (command) {
+        case WORKSPACE_COMMANDS.ENTER:
+          enterMulti();
+          break;
+        case WORKSPACE_COMMANDS.ADD:
+          addWorkspace(sourceId);
+          break;
+        case WORKSPACE_COMMANDS.CLOSE:
+          if (focused) closeWorkspace(focused);
+          break;
+        case WORKSPACE_COMMANDS.EXIT:
+          exitMulti(focused);
+          break;
+        default:
+          break;
+      }
+    },
+    [enterMulti, addWorkspace, closeWorkspace, exitMulti]
   );
+
+  // ── The host route is a way in ─────────────────────────────────────────────
+  // In multi mode the host renders no page, so a host navigation (topbar
+  // search, notification, Back, a pasted URL, a reload onto a new URL) opens
+  // that page in the focused card — or focuses the card already showing it.
+  const hostPath = router.asPath;
+  const routerReady = router.isReady;
+  useEffect(() => {
+    // Before isReady a dynamic route's asPath can still be its pattern
+    // ("/job-cards/[id]"), which must never be sent to a card.
+    if (!restored || !routerReady) return;
+    const current = stateRef.current;
+    if (!isMulti(current) || current.hostHref === hostPath) return;
+    dispatch({ type: "syncHost", href: hostPath });
+    const href = toHref(hostPath);
+    if (!href) return;
+    if (!suspendedRef.current) {
+      const showing = findWorkspaceShowing(current, href);
+      if (showing && getWorkspace(current, showing)?.href === href) {
+        dispatch({ type: "showTab", id: showing });
+        return;
+      }
+    }
+    navigateWorkspace(current.focusedId, href);
+    dispatch({ type: "reveal", id: current.focusedId });
+  }, [hostPath, restored, routerReady, navigateWorkspace]);
+
+  // Window narrowed to tablet while in multi mode: the normal single card comes
+  // back, showing the focused card's page. The cards return, with the pages
+  // they had, when the window widens again.
+  const wasSuspendedRef = useRef(suspended);
+  useEffect(() => {
+    const was = wasSuspendedRef.current;
+    wasSuspendedRef.current = suspended;
+    if (!restored || was || !suspended) return;
+    const current = stateRef.current;
+    const href = focusedHref(current);
+    if (!isMulti(current) || !href || href === router.asPath) return;
+    dispatch({ type: "syncHost", href });
+    router.replace(href);
+  }, [suspended, restored, router]);
+
+  // ── The address bar names the cards ────────────────────────────────────────
+  // In multi mode the host renders no page, so its route would otherwise keep
+  // naming whatever page the user entered from. It is replaced (never pushed)
+  // with "/multi-view/<card>-<card>" whenever the cards change. It only moves
+  // once the host is in step with the route (hostHref === hostPath), so a
+  // route that has just arrived as a way in is handed to a card first.
+  const cardsHref = active ? multiViewHref(state.workspaces) : null;
+  const hostInStep = state.hostHref === hostPath || isMultiViewPath(hostPath);
+  useEffect(() => {
+    if (!cardsHref || !routerReady || !hostInStep || hostPath === cardsHref) return;
+    dispatch({ type: "syncHost", href: cardsHref });
+    // Shallow: after the first swap onto /multi-view this is the same page, so
+    // no data refetch and no route progress bar for a card changing page.
+    router.replace(cardsHref, undefined, { shallow: true, scroll: false });
+  }, [cardsHref, hostInStep, hostPath, routerReady, router]);
+
+  // A multi-view URL loaded with no cards to show (another workstation, cleared
+  // storage, a shared link) opens the cards it names. On a window too narrow for
+  // cards it falls back to one page, so the placeholder page is never left up.
+  useEffect(() => {
+    if (!restored || !routerReady || !isMultiViewPath(hostPath)) return;
+    const current = stateRef.current;
+    if (isMulti(current) && !suspended) return;
+    const knownPaths = [...(navigationItemsRef.current || []).map((item) => item?.href), ...DETAIL_BASE_PATHS];
+    const hrefs = parseMultiViewPath(hostPath, knownPaths).map((href) => (href ? toHref(href) : null));
+    if (!isMulti(current) && !suspended) {
+      dispatch({ type: "enter", hrefs, focusIndex: 0, hostHref: hostPath });
+      return;
+    }
+    const fallback = focusedHref(current) || hrefs.find(Boolean) || FALLBACK_HREF;
+    dispatch({ type: "syncHost", href: fallback });
+    router.replace(fallback);
+  }, [hostPath, restored, routerReady, suspended, router]);
 
   // ── Frame -> host messages ─────────────────────────────────────────────────
   useEffect(() => {
@@ -173,6 +393,7 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
       switch (data.type) {
         case WORKSPACE_MESSAGES.READY:
           frame.markReady();
+          postStatus(frame);
           if (toHref(data.href)) dispatch({ type: "route", id: data.id, href: toHref(data.href) });
           break;
         case WORKSPACE_MESSAGES.ROUTE:
@@ -186,29 +407,36 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
         case WORKSPACE_MESSAGES.OPEN:
           openInOther(data.href, data.id);
           break;
+        case WORKSPACE_MESSAGES.COMMAND:
+          runCommand(data.command, data.id);
+          break;
         default:
           break;
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [enabled, frames, openInOther]);
+  }, [enabled, frames, openInOther, runCommand, postStatus]);
 
-  // ── Host-document link requests ────────────────────────────────────────────
+  // ── Host-document requests (right-click menu, declarative links) ───────────
   useEffect(() => {
     if (!enabled) return undefined;
-    const onOpen = (event) => openInOther(event.detail?.href, PRIMARY_WORKSPACE_ID);
+    const sourceId = () => stateRef.current.focusedId;
+    const onOpen = (event) => openInOther(event.detail?.href, sourceId());
+    const onCommand = (event) => runCommand(event.detail?.command, null);
     window.addEventListener(OPEN_IN_WORKSPACE_EVENT, onOpen);
+    window.addEventListener(WORKSPACE_COMMAND_EVENT, onCommand);
     const unbindLinks = bindWorkspaceLinkTargets(
-      (href) => hostAvailableRef.current && openInOther(href, PRIMARY_WORKSPACE_ID)
+      (href) => linkTargetsLiveRef.current && openInOther(href, sourceId())
     );
     return () => {
       window.removeEventListener(OPEN_IN_WORKSPACE_EVENT, onOpen);
+      window.removeEventListener(WORKSPACE_COMMAND_EVENT, onCommand);
       unbindLinks();
     };
-  }, [enabled, openInOther]);
+  }, [enabled, openInOther, runCommand]);
 
-  // ── The one global sidebar drives the focused workspace ────────────────────
+  // ── The one global sidebar drives the focused card ─────────────────────────
   useEffect(() => {
     if (!active) return undefined;
     const onClick = (event) => {
@@ -216,72 +444,52 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = event.target?.closest?.("a[href]");
       if (!anchor || !anchor.closest(`[${GLOBAL_NAV_ATTRIBUTE}="global"]`)) return;
-      const current = stateRef.current;
-      if (current.focusedId === PRIMARY_WORKSPACE_ID) return;
-      if (!computeLayout(current, areaWidthRef.current).visibleIds.includes(current.focusedId)) return;
       const href = toHref(anchor.getAttribute("href"));
       if (!href) return;
+      const focused = stateRef.current.focusedId;
       // preventDefault only: next/link then skips its own navigation, while the
       // sidebar's onClick (close drawer, record recents) still runs.
       event.preventDefault();
-      navigateWorkspace(current.focusedId, href);
+      navigateWorkspace(focused, href);
+      dispatch({ type: "reveal", id: focused });
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
   }, [active, navigateWorkspace]);
 
-  // ── Page actions ───────────────────────────────────────────────────────────
-  const actionOptionsFor = (workspace) => {
-    const href = workspace.primary ? router.asPath : workspace.href;
-    const others = state.workspaces.filter((other) => other.id !== workspace.id);
-    const nameOf = (other) => (other.primary ? `Main (${labelOf(other)})` : labelOf(other));
-    const options = others.map((other) => ({ value: `swap:${other.id}`, label: `Swap places with ${nameOf(other)}` }));
-    if (href) {
-      others.forEach((other) =>
-        options.push({ value: `copy:${other.id}`, label: `Open this page in ${nameOf(other)} too` })
-      );
-      if (!workspace.primary) {
-        others.forEach((other) =>
-          options.push({ value: `move:${other.id}`, label: `Move this page to ${nameOf(other)}` })
-        );
-      }
-      if (state.workspaces.length < MAX_WORKSPACES) {
-        options.push({ value: "duplicate", label: "Duplicate into a new workspace" });
-      }
-      if (!workspace.primary) options.push({ value: "reload", label: "Reload this workspace" });
-      options.push({ value: "tab", label: "Open in a new browser tab" });
-    }
-    return options;
-  };
+  const positionOf = (id) => state.workspaces.findIndex((w) => w.id === id) + 1;
 
-  const runAction = (workspace, value) => {
-    const href = workspace.primary ? router.asPath : workspace.href;
-    const [verb, targetId] = String(value).split(":");
-    switch (verb) {
-      case "swap":
-        dispatch({ type: "swapOrder", a: workspace.id, b: targetId });
-        break;
-      case "copy":
-        navigateWorkspace(targetId, href);
-        dispatch({ type: "reveal", id: targetId });
-        break;
-      case "move":
-        navigateWorkspace(targetId, href);
-        dispatch({ type: "close", id: workspace.id });
-        dispatch({ type: "showTab", id: targetId });
-        break;
-      case "duplicate":
-        dispatch({ type: "add", href, afterId: workspace.id });
-        break;
-      case "reload":
-        frames.current.get(workspace.id)?.reload();
-        break;
-      case "tab":
-        if (href) window.open(href, "_blank", "noopener,noreferrer");
-        break;
-      default:
-        break;
-    }
+  // ── Page options (the floating card behind each card's page name) ─────────
+  const pageOptionsFor = (workspace, visibleIds) => {
+    const id = workspace.id;
+    const href = workspace.href;
+    const index = visibleIds.indexOf(id);
+    const count = visibleIds.length;
+    const total = visibleIds.reduce((sum, visibleId) => sum + weightOf(state, visibleId), 0) || 1;
+    const currentShare = weightOf(state, id) / total;
+    const maxShare = maxCardShare(count, areaWidth);
+    const swapWith = (neighbourId) => neighbourId && dispatch({ type: "swapOrder", a: id, b: neighbourId });
+    return {
+      href,
+      onReload: href ? () => frames.current.get(id)?.reload() : null,
+      onOpenTab: href ? () => window.open(href, "_blank", "noopener,noreferrer") : null,
+      onMoveLeft: index > 0 ? () => swapWith(visibleIds[index - 1]) : null,
+      onMoveRight: index >= 0 && index < count - 1 ? () => swapWith(visibleIds[index + 1]) : null,
+      widthChoices:
+        index < 0
+          ? []
+          : cardWidthChoices(count).map((choice) => ({
+              ...choice,
+              active: Math.abs(choice.share - currentShare) < 0.01,
+              disabled: choice.share > maxShare + 0.001,
+            })),
+      onWidth: (share) => dispatch({ type: "cardWidth", visibleIds, id, share }),
+      onDuplicate:
+        href && state.workspaces.length < MAX_WORKSPACES
+          ? () => dispatch({ type: "add", href, afterId: id })
+          : null,
+      onKeepOnly: href ? () => exitMulti(id) : null,
+    };
   };
 
   // ── Divider sizing ─────────────────────────────────────────────────────────
@@ -301,19 +509,42 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
   );
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  const promptCapacity = suggestCapacity(areaWidth);
+  const showPrompt = live && !resizing && shouldOfferWorkspace(state, areaWidth);
+  const prompt = showPrompt ? (
+    <WorkspaceSpacePrompt
+      active={multi}
+      onAdd={() => addWorkspace()}
+      onDismiss={() => dispatch({ type: "dismissPrompt", capacity: promptCapacity })}
+    />
+  ) : null;
+
+  if (!active) {
+    return (
+      <>
+        {children}
+        {prompt}
+      </>
+    );
+  }
+
   const visibleIndex = new Map(layout.visibleIds.map((id, index) => [id, index]));
   // flex-grow values that sum to less than 1 only hand out that fraction of the
   // free space, so shares are normalised over what is actually on screen.
   const visibleWeightTotal =
     layout.visibleIds.reduce((sum, id) => sum + weightOf(state, id), 0) || 1;
-  const firstVisibleId = layout.visibleIds[0];
-  const presetId = activePresetId(state, layout.visibleIds);
   const tabs = layout.tabIds.length
-    ? layout.tabIds.map((id) => {
-        const workspace = state.workspaces.find((w) => w.id === id);
-        return { value: id, label: workspace?.primary ? `Main · ${labelOf(workspace)}` : labelOf(workspace) };
-      })
+    ? layout.tabIds.map((id) => ({ value: id, label: labelOf(getWorkspace(state, id)) }))
     : null;
+
+  // The page a new card offers to open "here too": the most recently focused
+  // other card that has one.
+  const suggestionFor = (workspace) => {
+    const otherId = state.focusHistory.find(
+      (id) => id !== workspace.id && getWorkspace(state, id)?.href
+    );
+    return otherId ? getWorkspace(state, otherId) : null;
+  };
 
   const slotProps = (workspace) => {
     const index = visibleIndex.get(workspace.id);
@@ -322,13 +553,8 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
     return {
       ref: slotRef(workspace.id),
       role: "region",
-      "aria-label": workspace.primary ? "Main workspace" : `Workspace: ${labelOf(workspace)}`,
-      className: [
-        "app-workspace-slot",
-        workspace.primary ? "" : "app-workspace-slot--frame",
-        hidden ? "is-hidden" : "",
-        focused ? "is-focused" : "",
-      ]
+      "aria-label": `Workspace ${positionOf(workspace.id)}: ${labelOf(workspace)}${focused ? " (focused)" : ""}`,
+      className: ["app-workspace-slot", hidden ? "is-hidden" : "", focused ? "is-focused" : ""]
         .filter(Boolean)
         .join(" "),
       style: {
@@ -340,95 +566,63 @@ export default function WorkspaceHost({ enabled, userId, areaWidth, navigationIt
     };
   };
 
-  const barFor = (workspace) => {
-    const label = labelOf(workspace);
-    const showsTabs = Boolean(tabs) && layout.tabbedShownId === workspace.id;
-    return (
-      <WorkspacePaneBar
-        label={label}
-        isPrimary={workspace.primary}
-        isFocused={state.focusedId === workspace.id}
-        tabs={showsTabs ? tabs : null}
-        activeTabId={layout.tabbedShownId}
-        onSelectTab={(id) => dispatch({ type: "showTab", id })}
-        actionOptions={actionOptionsFor(workspace)}
-        onAction={(value) => runAction(workspace, value)}
-        onClose={workspace.primary ? null : () => dispatch({ type: "close", id: workspace.id })}
-        showShellControls={workspace.id === firstVisibleId}
-        showPresets={layout.visibleIds.length >= 2}
-        presetId={presetId}
-        onPreset={(lead) => dispatch({ type: "preset", visibleIds: layout.visibleIds, lead })}
-        canAdd={state.workspaces.length < MAX_WORKSPACES}
-        onAdd={addWorkspace}
-      />
-    );
-  };
-
-  const primary = state.workspaces.find((w) => w.primary);
-  const extras = active ? state.workspaces.filter((w) => !w.primary) : [];
-  const promptCapacity = suggestCapacity(areaWidth);
-  const showPrompt = enabled && restored && !resizing && shouldOfferWorkspace(state, areaWidth);
-
   return (
-    <div
-      className={`app-workspace-area${active ? " is-active" : ""}${resizing ? " is-resizing" : ""}`}
-    >
-      {/* Primary slot: always index 0, always the same element, so the page
-          inside never remounts when the mode changes. */}
-      <div {...(active ? slotProps(primary) : { className: "app-workspace-slot", onPointerDownCapture: () => focusWorkspace(PRIMARY_WORKSPACE_ID) })}>
-        {active && barFor(primary)}
-        {children}
-      </div>
-
-      {extras.map((workspace) => (
-        <div key={workspace.id} {...slotProps(workspace)}>
-          {barFor(workspace)}
-          <WorkspaceFrame
-            ref={frameRef(workspace.id)}
-            id={workspace.id}
-            href={workspace.href}
-            label={labelOf(workspace)}
-            primaryHref={toHref(router.asPath)}
-            primaryLabel={labelOf(primary)}
-            navigationItems={navigationItems}
-            onChoose={(href) => navigateWorkspace(workspace.id, href)}
-          />
-        </div>
-      ))}
-
-      {active &&
-        layout.visibleIds.slice(0, -1).map((leftId, index) => {
-          const rightId = layout.visibleIds[index + 1];
-          const leftWeight = weightOf(state, leftId);
-          const share = leftWeight / (leftWeight + weightOf(state, rightId));
-          const nameFor = (id) => {
-            const workspace = state.workspaces.find((w) => w.id === id);
-            return workspace?.primary ? "Main workspace" : labelOf(workspace);
-          };
-          return (
-            <WorkspaceDivider
-              key={`${leftId}|${rightId}`}
-              leftId={leftId}
-              rightId={rightId}
-              share={share}
-              order={index * 2 + 1}
-              getPairRect={getPairRect}
-              onResize={onResize}
-              onResizeStart={() => setResizing(true)}
-              onResizeEnd={() => setResizing(false)}
-              leftLabel={nameFor(leftId)}
-              rightLabel={nameFor(rightId)}
+    <div className={`app-workspace-area is-active${resizing ? " is-resizing" : ""}`}>
+      {[...state.workspaces].sort(byId).map((workspace) => {
+        const label = labelOf(workspace);
+        const suggestion = suggestionFor(workspace);
+        return (
+          <div key={workspace.id} {...slotProps(workspace)}>
+            <WorkspacePaneBar
+              label={label}
+              isFocused={state.focusedId === workspace.id}
+              tabs={tabs && layout.tabbedShownId === workspace.id ? tabs : null}
+              activeTabId={layout.tabbedShownId}
+              onSelectTab={(id) => dispatch({ type: "showTab", id })}
+              onClose={() => closeWorkspace(workspace.id)}
+              options={pageOptionsFor(workspace, layout.visibleIds)}
             />
-          );
-        })}
+            <div className="app-workspace-pane">
+              <WorkspaceFrame
+                ref={frameRef(workspace.id)}
+                id={workspace.id}
+                href={workspace.href}
+                label={label}
+                isFocused={state.focusedId === workspace.id}
+                suggestHref={suggestion?.href || null}
+                suggestLabel={suggestion ? labelOf(suggestion) : null}
+                onChoose={(href) => {
+                  focusWorkspace(workspace.id);
+                  navigateWorkspace(workspace.id, href);
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
 
-      {showPrompt && (
-        <WorkspaceSpacePrompt
-          capacity={promptCapacity}
-          onAdd={addWorkspace}
-          onDismiss={() => dispatch({ type: "dismissPrompt", capacity: promptCapacity })}
-        />
-      )}
+      {layout.visibleIds.slice(0, -1).map((leftId, index) => {
+        const rightId = layout.visibleIds[index + 1];
+        const leftWeight = weightOf(state, leftId);
+        const share = leftWeight / (leftWeight + weightOf(state, rightId));
+        return (
+          <WorkspaceDivider
+            key={`${leftId}|${rightId}`}
+            leftId={leftId}
+            rightId={rightId}
+            share={share}
+            order={index * 2 + 1}
+            getPairRect={getPairRect}
+            onResize={onResize}
+            onResizeStart={() => setResizing(true)}
+            onResizeEnd={() => setResizing(false)}
+            leftLabel={labelOf(getWorkspace(state, leftId))}
+            rightLabel={labelOf(getWorkspace(state, rightId))}
+          />
+        );
+      })}
+
+      {prompt}
     </div>
   );
 }

@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect, useId, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { useIsVerticalPhone } from "@/hooks/useIsMobile";
+import Button from "@/components/ui/Button";
 
 const pickStyleKeys = (style, keys) => {
   if (!style) return undefined;
@@ -67,6 +70,11 @@ export default function Calendar({
   const controlRef = useRef(null);
   const yearScrollRef = useRef(null);
   const selectedYearRef = useRef(null);
+  const isVerticalPhone = useIsVerticalPhone();
+  // On a vertical phone the menu fills the screen (staffglobal.css). Rendered in
+  // place it would be trapped under the card it sits in (stacking context, hover
+  // lift), so there it is portalled to <body> like the dropdown menus.
+  const placeMenu = (menu) => (isVerticalPhone ? createPortal(menu, document.body) : menu);
 
   // Normalize date value to Date object
   const normalizedValue = useMemo(() => {
@@ -97,7 +105,11 @@ export default function Calendar({
   // Close calendar when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target) &&
+        !menuRef.current?.contains(event.target)
+      ) {
         setIsOpen(false);
       }
     }
@@ -345,7 +357,7 @@ export default function Calendar({
         </svg>
       </button>
 
-      {isOpen && (
+      {isOpen && placeMenu(
         <div ref={menuRef} className="calendar-api__menu" role="dialog" aria-modal="false">
           <div className="calendar-api__header">
             <button
@@ -507,6 +519,18 @@ export default function Calendar({
               </div>
             </>
           )}
+
+          {/* Phone portrait only: the menu fills the screen, so there is no
+              "outside" left to tap. Hidden elsewhere by staffglobal.css. */}
+          <Button
+            type="button"
+            variant="secondary"
+            symbol={false}
+            className="app-phone-popup-close"
+            onClick={() => setIsOpen(false)}
+          >
+            Close
+          </Button>
         </div>
       )}
 

@@ -5,31 +5,35 @@
  * Component: src/features/workspaces/WorkspaceHost.js (+ ./components/*)
  * Registry:  src/components/ui/variants.js (id: "workspace")
  *
- * The shell must leave single-screen behaviour untouched, so the two wrappers
- * it always renders (.app-workspace-area, .app-workspace-slot) default to
- * `display: contents` and only become boxes once a second workspace exists
- * (.app-workspace-area.is-active).
+ * Single mode renders nothing from this family (the host passes the normal
+ * page card straight through). Multi mode replaces ONLY the page card, inside
+ * .app-page-content, with a row of workspace cards; the sidebar, topbar and
+ * status drawer around it are untouched.
  *
- * Borders: none. Panes are separated by the shell background and the divider
+ * Each card (.app-workspace-pane) is the page-card rung of the surface ladder
+ * (§3.0a-2): the same --page-card-bg fill and --page-card-radius as the single
+ * page card, sitting on the app shell. The page inside is an iframe whose own
+ * page card fills it edge to edge (.app-workspace-embed has no gutter), so a
+ * card looks exactly like the normal page card, just narrower.
+ *
+ * Borders: none. Cards are separated by the shell background and the divider
  * handle is a filled pill, not a rule (CLAUDE.md §3.0a).
  */
 
 /* -------------------------------------------------------------------------- */
 /* Area + slots */
-html.staff-scope .app-workspace-area,
-html.staff-scope .app-workspace-slot {
-  display: contents;
-}
-
 html.staff-scope .app-workspace-area.is-active {
   display: flex;
-  flex: 1 1 0;
-  min-width: 0;
   align-items: stretch;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   position: relative;
 }
 
 html.staff-scope .app-workspace-area.is-active .app-workspace-slot {
+  position: relative; /* anchors its .app-workspace-bar in the gap above it */
   display: flex;
   flex-direction: column;
   flex-basis: 0;
@@ -38,14 +42,16 @@ html.staff-scope .app-workspace-area.is-active .app-workspace-slot {
   min-height: 0;
 }
 
-/* Extra workspaces hold the viewport while the primary page may grow with its
-   content (tablet / messages scroll models). */
-html.staff-scope .app-workspace-area.is-active .app-workspace-slot--frame {
-  align-self: flex-start;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100dvh;
+/* The card itself — see the header note. Clips the iframe to the card radius. */
+html.staff-scope .app-workspace-pane {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--page-card-bg);
+  border-radius: var(--page-card-radius);
 }
 
 /* Collapsed into a tab: hidden, never unmounted, so its page keeps its state. */
@@ -64,33 +70,72 @@ html.staff-scope .app-workspace-area.is-resizing iframe {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Pane bar */
-/* One row: the title yields (ellipsis) first. The controls stay together as a
-   group and only drop to their own row when the pane is too narrow for both. */
+/* Pane bar — the card's page name, in the gap between the topbar and the card.
+   Positioned out of flow above the slot, so the card's top edge lines up with
+   the single page card's exactly. Its height is that gap: StaffLayout rests the
+   page shell --page-gutter-y + 12px below the overlay topbar's bottom edge. */
 html.staff-scope .app-workspace-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: calc(var(--page-gutter-y) + 12px);
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  padding: var(--page-gutter-y) var(--page-gutter-x) 0;
+  padding: 0 var(--space-xs);
   min-width: 0;
 }
 
-html.staff-scope .app-workspace-bar__identity {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  flex: 1 1 160px;
+/* The FilterButton wrapper: no badge reserve (this trigger has no badge), and
+   it may shrink so a long page name ellipsises in a narrow card. */
+html.staff-scope .app-workspace-bar .app-workspace-bar__menu {
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 100%;
+  padding: 0;
 }
 
-/* Collapsed workspaces: the tabs take their own full row, controls below. */
-html.staff-scope .app-workspace-bar--tabs {
-  flex-wrap: wrap;
+/* The page name — PLAIN TEXT + the focus dot, deliberately minimal.
+   ⚠ Do not restyle this as a button (no fill, pill, padding, hover tint or
+   44px control height). It is a <button> only for keyboard/screen-reader
+   access to its options card; visually it must stay the bare title it was
+   before, sitting quietly in the gap above the card. The global
+   `button:not(.app-btn)` reset in staffglobal.css would otherwise turn it into
+   a Primary control, so every property that reset sets is neutralised here,
+   scoped under .app-workspace-bar to outrank it (including its :hover). */
+html.staff-scope .app-workspace-bar button.app-workspace-bar__trigger,
+html.staff-scope .app-workspace-bar button.app-workspace-bar__trigger:hover,
+html.staff-scope .app-workspace-bar button.app-workspace-bar__trigger:active,
+html.staff-scope .app-workspace-bar button.app-workspace-bar__trigger[aria-expanded="true"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-sm);
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-1);
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transform: none;
+  transition: none;
 }
 
-html.staff-scope .app-workspace-bar--tabs .app-workspace-bar__identity {
-  flex-basis: 100%;
+/* Keyboard focus only — never shown for a mouse click. */
+html.staff-scope .app-workspace-bar button.app-workspace-bar__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-xs);
 }
 
 html.staff-scope .app-workspace-bar__focus-dot {
@@ -107,14 +152,23 @@ html.staff-scope .app-workspace-bar.is-focused .app-workspace-bar__focus-dot {
 }
 
 html.staff-scope .app-workspace-bar__title {
-  margin: 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--text-body-sm);
   font-weight: 600;
+  line-height: 1.2;
   color: var(--text-1);
+  opacity: 0.72;
+  transition: var(--control-transition);
+}
+
+/* The focused card — the one the sidebar and topbar search open pages in —
+   reads like the active window: full-strength title beside the accent dot. */
+html.staff-scope .app-workspace-bar.is-focused .app-workspace-bar__title {
+  opacity: 1;
+  font-weight: 700;
 }
 
 html.staff-scope .app-workspace-bar__sr-only {
@@ -126,29 +180,25 @@ html.staff-scope .app-workspace-bar__sr-only {
   white-space: nowrap;
 }
 
-html.staff-scope .app-workspace-bar__tabs {
-  min-width: 0;
-}
-
-html.staff-scope .app-workspace-bar__controls {
+/* Inside the floating card (a portalled .app-filter__panel): stacked option
+   buttons (collapsed pages; duplicate / keep only / close) … */
+html.staff-scope .app-workspace-bar__menu-group {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex: 0 0 auto;
-  flex-wrap: nowrap;
+  flex-direction: column;
   gap: var(--space-sm);
-  margin-left: auto;
 }
 
-html.staff-scope .app-workspace-bar__presets {
-  display: inline-flex;
-  gap: var(--space-xs);
+/* … and side-by-side rows (page actions, width, position) that share the
+   card's width evenly and wrap when a label will not fit. */
+html.staff-scope .app-workspace-bar__menu-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
 }
 
-/* Wrapper that sizes the (full-width by design) Page actions dropdown. */
-html.staff-scope .app-workspace-bar__actions {
-  width: 200px;
-  flex: 0 0 auto;
+html.staff-scope .app-workspace-bar__menu-row > * {
+  flex: 1 1 0;
+  min-width: max-content;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -177,24 +227,131 @@ html.staff-scope .app-workspace-frame__iframe.is-loading {
 html.staff-scope .app-workspace-frame__loading {
   position: absolute;
   inset: 0;
-  padding: var(--page-gutter-y) var(--page-gutter-x);
+  padding: var(--page-card-padding);
   overflow: hidden;
 }
 
 html.staff-scope .app-workspace-frame--start {
-  padding: var(--page-gutter-y) var(--page-gutter-x);
+  padding: var(--page-card-padding);
   overflow-y: auto;
 }
 
+/* Centred in the card both ways, whatever the card's width. */
 html.staff-scope .app-workspace-start {
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
+  align-items: center;
   justify-content: center;
+  min-height: 100%;
+  text-align: center;
 }
 
-html.staff-scope .app-workspace-start__links {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--space-sm);
+/* -------------------------------------------------------------------------- */
+/* Start-panel how-to (WorkspaceStartDemo) — one 6s loop:
+     0–24%  cursor travels to the empty card and clicks it (card selected)
+    24–52%  cursor travels to a sidebar page and clicks it (page highlighted)
+    52–64%  the card fills with the page
+    64–100% hold, fade, restart
+   Borderless: every shape is a filled rung of the surface ladder. */
+html.staff-scope .app-workspace-demo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+html.staff-scope .app-workspace-demo__screen {
+  fill: var(--theme);
+}
+
+html.staff-scope .app-workspace-demo__panel {
+  fill: var(--surface);
+}
+
+html.staff-scope .app-workspace-demo__nav,
+html.staff-scope .app-workspace-demo__line {
+  fill: var(--text-1);
+  fill-opacity: 0.16;
+}
+
+html.staff-scope .app-workspace-demo__nav--target {
+  animation: app-workspace-demo-nav 6s var(--ease-default) infinite;
+}
+
+html.staff-scope .app-workspace-demo__focus {
+  fill: var(--primary);
+  fill-opacity: 0.12;
+  opacity: 0;
+  animation: app-workspace-demo-focus 6s var(--ease-default) infinite;
+}
+
+html.staff-scope .app-workspace-demo__line--new {
+  opacity: 0;
+  animation: app-workspace-demo-fill 6s var(--ease-out) infinite;
+}
+
+html.staff-scope .app-workspace-demo__click {
+  fill: var(--primary);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+html.staff-scope .app-workspace-demo__click--card {
+  animation: app-workspace-demo-click-card 6s var(--ease-out) infinite;
+}
+
+html.staff-scope .app-workspace-demo__click--nav {
+  animation: app-workspace-demo-click-nav 6s var(--ease-out) infinite;
+}
+
+html.staff-scope .app-workspace-demo__cursor {
+  animation: app-workspace-demo-cursor 6s var(--ease-default) infinite;
+}
+
+html.staff-scope .app-workspace-demo__cursor path {
+  fill: var(--text-1);
+  stroke: var(--surface);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+@keyframes app-workspace-demo-cursor {
+  0% { transform: translate(120px, 140px); opacity: 0; }
+  6% { transform: translate(120px, 130px); opacity: 1; }
+  20%, 28% { transform: translate(192px, 76px); }
+  44%, 76% { transform: translate(32px, 60px); opacity: 1; }
+  86%, 100% { transform: translate(32px, 60px); opacity: 0; }
+}
+
+@keyframes app-workspace-demo-click-card {
+  0%, 21% { opacity: 0; transform: scale(0.3); }
+  23% { opacity: 0.35; }
+  30%, 100% { opacity: 0; transform: scale(1.6); }
+}
+
+@keyframes app-workspace-demo-click-nav {
+  0%, 45% { opacity: 0; transform: scale(0.3); }
+  47% { opacity: 0.35; }
+  54%, 100% { opacity: 0; transform: scale(1.6); }
+}
+
+@keyframes app-workspace-demo-focus {
+  0%, 22% { opacity: 0; }
+  26%, 86% { opacity: 1; }
+  94%, 100% { opacity: 0; }
+}
+
+@keyframes app-workspace-demo-nav {
+  0%, 46% { fill: var(--text-1); fill-opacity: 0.16; }
+  49%, 86% { fill: var(--primary); fill-opacity: 1; }
+  94%, 100% { fill: var(--text-1); fill-opacity: 0.16; }
+}
+
+@keyframes app-workspace-demo-fill {
+  0%, 52% { opacity: 0; }
+  62%, 86% { opacity: 1; }
+  94%, 100% { opacity: 0; }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -277,13 +434,15 @@ html.staff-scope .app-workspace-prompt__actions {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Embedded mode — the chrome-less shell a workspace frame renders */
+/* Embedded mode — the chrome-less shell a workspace frame renders. No gutter:
+   its page card fills the frame, and the host's .app-workspace-pane supplies
+   the card shape around it. */
 html.staff-scope .app-workspace-embed {
   display: flex;
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  padding: var(--page-gutter-y) var(--page-gutter-x);
+  padding: 0;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -292,17 +451,10 @@ html.staff-scope .app-workspace-embed {
 /* === Responsive — breakpoints: src/styles/breakpoints.js                  === */
 /* ========================================================================== */
 @media (max-width: 640px) {
-  html.staff-scope .app-workspace-bar {
-    padding: var(--page-gutter-y-mobile) var(--page-gutter-x-mobile) 0;
-  }
-
-  html.staff-scope .app-workspace-bar__controls {
-    flex-wrap: wrap;
-  }
-
+  /* The embed deliberately keeps padding 0 here: a card can be exactly this
+     narrow, and its page card must still fill the frame. */
   html.staff-scope .app-workspace-frame--start,
-  html.staff-scope .app-workspace-frame__loading,
-  html.staff-scope .app-workspace-embed {
+  html.staff-scope .app-workspace-frame__loading {
     padding: var(--page-gutter-y-mobile) var(--page-gutter-x-mobile);
   }
 
@@ -313,7 +465,28 @@ html.staff-scope .app-workspace-embed {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* The how-to holds its finished frame: card selected, page picked, card full. */
+  html.staff-scope .app-workspace-demo *,
+  html.staff-scope .app-workspace-demo__cursor {
+    animation: none;
+  }
+
+  html.staff-scope .app-workspace-demo__focus,
+  html.staff-scope .app-workspace-demo__line--new {
+    opacity: 1;
+  }
+
+  html.staff-scope .app-workspace-demo__nav--target {
+    fill: var(--primary);
+    fill-opacity: 1;
+  }
+
+  html.staff-scope .app-workspace-demo__cursor {
+    transform: translate(32px, 60px);
+  }
+
   html.staff-scope .app-workspace-bar__focus-dot,
+  html.staff-scope .app-workspace-bar__title,
   html.staff-scope .app-workspace-divider::before {
     transition: none;
   }

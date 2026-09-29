@@ -77,7 +77,7 @@ export default function HRDashboardTab() {
         parentKey="hr-manager-tab-dashboard"
         sectionType="section-shell"
         data-dev-card-section="Dashboard metrics row"
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "10px" }}
       >
         {formattedMetrics.map((metric) => (
           <MetricCard

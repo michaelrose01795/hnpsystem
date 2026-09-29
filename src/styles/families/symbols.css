@@ -46,6 +46,11 @@ html.staff-scope .app-symbol-btn {
   /* The circle is locked to the control floor in all three dimensions so a
      flex parent can neither stretch nor squash it out of round. */
   box-sizing: border-box;
+  /* Carried over from the global raw-button reset, which skips symbol buttons
+     (staffglobal.css `button:not(.app-btn, .app-symbol-btn)`), so badges and
+     tooltips still anchor to the circle. */
+  position: relative;
+  z-index: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;

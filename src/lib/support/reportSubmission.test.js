@@ -156,7 +156,9 @@ describe("buildReportInsert — diagnostics re-sanitisation (defence in depth)",
     const result = buildReportInsert({ body: { description: "x" }, session: session() });
     expect(result.ok).toBe(true);
     expect(result.input.route).toBeNull();
-    expect(result.input.diagnostics).toEqual({});
+    // Only the server-stamped report context — nothing from the (absent) client blob.
+    expect(Object.keys(result.input.diagnostics)).toEqual(["report_context"]);
+    expect(result.input.diagnostics.report_context.reference_code).toMatch(/^SUP-/);
   });
 });
 
@@ -251,5 +253,42 @@ describe("category catalogue", () => {
       expect(typeof c.value).toBe("string");
       expect(typeof c.label).toBe("string");
     }
+  });
+});
+
+describe("buildReportInsert — complete text + reference code", () => {
+  const session = { user: { id: "7", name: "Jane", roles: ["techs"] } };
+
+  it("keeps the full description (up to the limit) without truncating", () => {
+    const text = `${"a".repeat(4990)}END`;
+    const result = buildReportInsert({ body: { description: text }, session });
+    expect(result.ok).toBe(true);
+    expect(result.input.description.endsWith("END")).toBe(true);
+    expect(result.input.description.length).toBe(4993);
+  });
+
+  it("refuses an over-long description instead of silently cutting it", () => {
+    const result = buildReportInsert({ body: { description: "a".repeat(5001) }, session });
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/5,000 characters/);
+  });
+
+  it("keeps the error reference code the user already saw", () => {
+    const result = buildReportInsert({ body: { description: "x", referenceCode: "ERR-K3F9Q2" }, session });
+    expect(result.input.referenceCode).toBe("ERR-K3F9Q2");
+    expect(result.input.diagnostics.report_context.reference_source).toBe("error");
+  });
+
+  it("mints a SUP code when none (or a malformed one) was sent", () => {
+    const result = buildReportInsert({ body: { description: "x", referenceCode: "<b>bad</b>" }, session });
+    expect(result.input.referenceCode).toMatch(/^SUP-[A-Z0-9]{6}$/);
+    expect(result.input.diagnostics.report_context.reference_source).toBe("report");
+  });
+
+  it("stamps the server receive time and the request user agent", () => {
+    const now = new Date("2026-07-01T10:15:30.000Z");
+    const result = buildReportInsert({ body: { description: "x" }, session, userAgent: "UA/1.0", now });
+    expect(result.input.diagnostics.report_context.received_at).toBe("2026-07-01T10:15:30.000Z");
+    expect(result.input.diagnostics.report_context.request_user_agent).toBe("UA/1.0");
   });
 });

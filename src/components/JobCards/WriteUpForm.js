@@ -2492,7 +2492,7 @@ function WriteUpForm({
           style={{
             display: "grid",
             gap: 14,
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
           }}
         >
           {Array.from({ length: 4 }).map((_, i) => (
@@ -2845,7 +2845,7 @@ function WriteUpForm({
             <div style={{
               flex: 1,
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
               gap: "16px",
               minHeight: 0
             }}>

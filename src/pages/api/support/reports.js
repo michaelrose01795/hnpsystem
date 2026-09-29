@@ -28,7 +28,7 @@ import {
   listSupportReports,
   getSupportReportStats,
 } from "@/lib/database/support";
-import { linkErrorEventsToReport } from "@/lib/database/supportErrorEvents";
+import { linkErrorEventsToReport, listSupportErrorEvents } from "@/lib/database/supportErrorEvents";
 import { hasDevPlatformAccess } from "@/lib/auth/roles";
 import { normaliseListFilters } from "@/lib/support/triageValidation";
 import {
@@ -133,7 +133,11 @@ async function handlePost(req, res, session) {
   }
 
   // 2. Validate + assemble the insert (re-sanitises diagnostics, identity from session).
-  const built = buildReportInsert({ body: req.body, session });
+  const built = buildReportInsert({
+    body: req.body,
+    session,
+    userAgent: req.headers["user-agent"] || null,
+  });
   if (!built.ok) {
     return res.status(400).json({ success: false, message: built.error });
   }
@@ -193,13 +197,19 @@ async function handlePost(req, res, session) {
   // 4b. Stamp this report onto the error events that were captured AUTOMATICALLY
   //     when the failure happened (same reference code, logged before the user
   //     pressed "Report a problem"). Best-effort: the report is already saved, so
-  //     a link failure must not affect the response.
-  const referenceCode =
-    typeof req.body?.referenceCode === "string" ? req.body.referenceCode.trim() : null;
+  //     a link failure must not affect the response. Only an error-issued code
+  //     can have events; a freshly minted SUP-… code never does.
+  const referenceCode = input.referenceCode;
+  const fromError = input.diagnostics?.report_context?.reference_source === "error";
   let linkedErrorEvents = 0;
-  if (referenceCode && reportId) {
+  let errorEvents = [];
+  if (fromError && reportId) {
     const linked = await linkErrorEventsToReport(referenceCode, reportId);
     linkedErrorEvents = linked.linked || 0;
+    // Read them back (sanitised at write time) so the email can show the
+    // technical detail recorded when the failure happened.
+    const events = await listSupportErrorEvents({ reportId, limit: 10 });
+    if (events.success) errorEvents = events.data;
   }
 
   // 5. Append-only audit log (never throws; failures are logged internally).
@@ -221,8 +231,9 @@ async function handlePost(req, res, session) {
     userAgent: req.headers["user-agent"] || null,
   });
 
-  // 6. Best-effort internal notification email (Phase 11). Carries only the
-  //    already-sanitised persisted columns (never the diagnostics blob), and
+  // 6. Best-effort internal notification email (Phase 11). Carries the
+  //    sanitised report columns plus the curated, re-sanitised facts derived
+  //    from the diagnostics (buildReportFacts) — never the raw blob — and
   //    NEVER throws — the report is already saved, so email failure/absence of
   //    SMTP must not affect the response.
   await sendSupportReportNotification({
@@ -235,6 +246,7 @@ async function handlePost(req, res, session) {
       created_at: created.data?.created_at,
     },
     screenshotCount,
+    errorEvents,
   });
 
   return res.status(201).json({

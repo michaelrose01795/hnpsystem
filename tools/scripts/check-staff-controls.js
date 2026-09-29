@@ -506,7 +506,7 @@ const buttonContracts = [
   {
     path: staffGlobalPath,
     source: staffGlobalSource,
-    selector: "html.staff-scope button:not(.app-btn)",
+    selector: "html.staff-scope button:not(.app-btn, .app-symbol-btn)",
     required: ["background: var(--primary)", "color: var(--onAccentText)"],
   },
   {

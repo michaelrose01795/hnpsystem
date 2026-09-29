@@ -26,7 +26,7 @@ export default function VehiclePreparationTab({ filter }) {
       </ReportSection>
 
       <ReportSection title="Department demand analysis" subtitle="Total completed Valeting volume and records behind the demand split.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {PREPARATION_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown />
           ))}

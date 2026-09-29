@@ -27,10 +27,11 @@ function classifyTable(table) {
 
   const hasHeadings = Boolean(table.tHead || table.querySelector(HEADING_SELECTOR));
 
-  /* Mobile stacked-card mode. Applied here rather than per call site so that
-     every raw table in the app gets it too, reusing this observer instead of
-     installing another one. Opt out per table with data-app-table-stack="off".
-     The resize handler below re-runs classification, so this flips live. */
+  /* Mobile stacked-card mode — opt-in only (data-app-table-stack="on"), so
+     every other table keeps the global table look at every width. Applied here
+     rather than per call site, reusing this observer instead of installing
+     another one. The resize handler below re-runs classification, so this
+     flips live. */
   const stacked = applyStacking(table);
 
   /* A stacked table drops its desktop table chrome entirely. .app-table-shell

@@ -13,8 +13,9 @@ import {
   getEffectiveConsents,
   CONSENT_PURPOSES,
 } from "@/lib/consent/consentLedger";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   const userId = Number(session?.user?.id);
   if (!session?.user || !Number.isFinite(userId) || userId <= 0) {
@@ -85,3 +86,5 @@ export default async function handler(req, res) {
   res.setHeader("Allow", ["GET", "POST"]);
   return res.status(405).json({ success: false, message: "Method not allowed." });
 }
+
+export default withAuditRequest(handler);

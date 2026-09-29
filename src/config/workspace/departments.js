@@ -35,6 +35,13 @@ import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 import { EQUIPMENT_USER_ROLES } from "@/lib/auth/roles";
 import { LOAN_CAR_ROLES } from "@/features/loanCars/loanCarAccess";
 import { STOCK_ROLES } from "@/features/stockControl/stockAccess";
+import { ANY_STORE_USER_ROLES, storeManagerRoles, storeUserRoles } from "@/features/stockAccess/stockAccessPermissions";
+import { STOCK_ACCESS_HUB_HREF, STOCK_ACCESS_STORES, storeHref, storeManageHref } from "@/config/stockAccessStores";
+
+// Stock Access pages, one per store in src/config/stockAccessStores.js — a new
+// store gets its sidebar buttons, page access and role defaults from here.
+export const STOCK_ACCESS_STORE_HREFS = STOCK_ACCESS_STORES.map(storeHref);
+export const STOCK_ACCESS_MANAGE_HREFS = STOCK_ACCESS_STORES.map(storeManageHref);
 
 // ---------------------------------------------------------------------------
 // Reporting role derivations (moved here from src/config/navigation.js so the
@@ -787,6 +794,10 @@ export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
     flag: null,
     items: [
       { label: "Equipment/Tools", href: "/tracking/Equipment-Tools", roles: EQUIPMENT_USER_ROLES },
+      // Stock Access: the hub, then one page per store. Roled to the lists
+      // /api/access enforces for that store.
+      { label: "Stock Access", href: STOCK_ACCESS_HUB_HREF, roles: ANY_STORE_USER_ROLES },
+      ...STOCK_ACCESS_STORES.map((store) => ({ label: store.label, href: storeHref(store), roles: storeUserRoles(store) })),
     ],
   },
   {
@@ -797,6 +808,7 @@ export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
     flag: null,
     items: [
       { label: "Oil/Stock", href: "/tracking/Oil-Stock", roles: STOCK_ROLES },
+      ...STOCK_ACCESS_STORES.map((store) => ({ label: `Manage ${store.label}`, href: storeManageHref(store), roles: storeManagerRoles(store) })),
     ],
   },
   {
@@ -840,6 +852,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     department: "workshop",
     hrefs: [
       "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools",
+      ...STOCK_ACCESS_STORE_HREFS,
     ],
   },
   {
@@ -853,7 +866,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     key: "department-parts",
     label: "Parts",
     department: "parts",
-    hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock"],
+    hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock", ...STOCK_ACCESS_MANAGE_HREFS],
   },
   {
     key: "department-management",
@@ -884,7 +897,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
   },
 ]);
 
-// SAVED-LAYOUT MIGRATION (2026-09-22 tracker split).
+// SAVED-LAYOUT MIGRATION (2026-09-22 tracker split; v7 2026-09-28 Stock Access).
 //
 // Per-user layouts from the Sidebar Access editor are stored verbatim in
 // users.sidebar_access and rendered as saved, so a library change alone never
@@ -899,12 +912,14 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
 // Applied by migrateSidebarLayout() in manifest.js; normalizeSidebarAccess() in
 // src/lib/sidebarAccess.js stamps the version when a layout is saved.
 export const SIDEBAR_LAYOUT_MIGRATION = Object.freeze({
-  version: 6,
+  version: 7,
   hrefMoves: Object.freeze({ "/tracking": "/tracking/Key-Parking" }),
   moduleAdditions: Object.freeze([
     Object.freeze({ moduleKey: "department-service", href: "/tracking/Loan-car" }),
     Object.freeze({ moduleKey: "department-workshop", href: "/tracking/Equipment-Tools" }),
     Object.freeze({ moduleKey: "department-parts", href: "/tracking/Oil-Stock" }),
+    ...STOCK_ACCESS_STORE_HREFS.map((href) => Object.freeze({ moduleKey: "department-workshop", href })),
+    ...STOCK_ACCESS_MANAGE_HREFS.map((href) => Object.freeze({ moduleKey: "department-parts", href })),
   ]),
 });
 
@@ -940,9 +955,9 @@ export const WORKSPACE_MODULES = Object.freeze({
   general: [{ key: "communication", label: "Communication", hrefs: ["/newsfeed", "/messages"] }, { key: "operations", label: "Operations", hrefs: ["/tracking/Key-Parking", "/archive"] }],
   management: [{ key: "people", label: "People & HR", hrefs: ["/hr/manager"] }, { key: "governance", label: "Governance", hrefs: ["/admin/compliance"] }, { key: "website", label: "Website Operations", hrefs: ["/website-manager"] }],
   service: [{ key: "job-intake", label: "Job Intake", hrefs: ["/jobs", "/new-job", "/appointments", "/nextjobs"] }, { key: "customers", label: "Customers", hrefs: ["/customers", "/tracking/Loan-car"] }],
-  workshop: [{ key: "control", label: "Workshop Control", hrefs: ["/nextjobs", "/jobs", "/clocking", "/consumables-tracker", "/tracking/Equipment-Tools"] }, { key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency", "/consumables-request", "/appointments", "/new-job"] }],
+  workshop: [{ key: "control", label: "Workshop Control", hrefs: ["/nextjobs", "/jobs", "/clocking", "/consumables-tracker", "/tracking/Equipment-Tools", ...STOCK_ACCESS_STORE_HREFS] }, { key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency", "/consumables-request", "/appointments", "/new-job"] }],
   mot: [{ key: "my-work", label: "My Work", hrefs: ["/tech", "/tech/efficiency"] }],
-  parts: [{ key: "stock", label: "Stock & Receiving", hrefs: ["/stock-catalogue", "/goods-in", "/tracking/Oil-Stock"] }, { key: "fulfilment", label: "Fulfilment", hrefs: ["/jobs", "/deliveries", "/delivery-planner"] }, { key: "ordering", label: "Ordering", hrefs: ["/order", "/new-order"] }],
+  parts: [{ key: "stock", label: "Stock & Receiving", hrefs: ["/stock-catalogue", "/goods-in", "/tracking/Oil-Stock", ...STOCK_ACCESS_MANAGE_HREFS] }, { key: "fulfilment", label: "Fulfilment", hrefs: ["/jobs", "/deliveries", "/delivery-planner"] }, { key: "ordering", label: "Ordering", hrefs: ["/order", "/new-order"] }],
   valeting: [{ key: "work-queue", label: "Work Queue", hrefs: ["/valet"] }],
   accounts: [{ key: "accounts", label: "Accounts", hrefs: ["/accounts", "/company-accounts"] }, { key: "billing", label: "Billing", hrefs: ["/accounts/invoices", "/accounts/reports", "/accounts/payslips"] }],
   reports: [{ key: "operational", label: "Operational Reports", hrefs: ["/reports/workshop", "/reports/service", "/reports/parts", "/reports/mot", "/reports/paint", "/reports/valeting"] }, { key: "business", label: "Business Reports", hrefs: ["/reports/accounts", "/reports/admin", "/reports/overview"] }],

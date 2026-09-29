@@ -7,8 +7,9 @@ import { supabase } from "@/lib/database/supabaseClient"; // Supabase client for
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver"; // Resolve DB user_id from session
 import { writeAuditLog } from "@/lib/audit/auditLog";
 import { getAuditContext } from "@/lib/audit/auditContext";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Only allow POST method for updates
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]); // Inform client of allowed methods
@@ -106,3 +107,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: "Internal server error." });
   }
 }
+
+export default withAuditRequest(handler);

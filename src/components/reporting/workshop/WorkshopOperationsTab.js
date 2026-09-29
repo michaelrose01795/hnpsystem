@@ -14,7 +14,7 @@ export default function WorkshopOperationsTab({ filter, onDrilldown }) {
   return (
     <>
       <ReportSection title="Job volume & flow" subtitle="Intake, completion and throughput balance, with daily/weekly/monthly trend per the filter.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 12 }}>
           {OPERATIONS_KPIS.map((kpi) => (
             <KpiPanel key={kpi.id} kpi={kpi} filter={filter} withTrend withDrilldown />
           ))}

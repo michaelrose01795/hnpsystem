@@ -31,7 +31,7 @@ export default function AutomationRoadmapSection() {
         style={{
           display: "grid",
           gap: 12,
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
         }}
       >
         {AUTOMATION_ROADMAP.map((item) => (

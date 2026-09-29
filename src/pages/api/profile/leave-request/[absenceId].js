@@ -10,6 +10,7 @@ import {
   parseLeaveRequestNotes,
   serializeLeaveRequestNotes,
 } from "@/lib/hr/leaveRequests";
+import { withAuditRequest } from "@/lib/audit/withAuditRequest";
 
 const VALID_TYPES = ["Holiday", "Sickness", "Unpaid Leave"];
 
@@ -144,7 +145,7 @@ async function sendManagerMessages({
   return refs;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (!["PATCH", "DELETE"].includes(req.method)) {
     res.setHeader("Allow", ["PATCH", "DELETE"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -361,3 +362,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withAuditRequest(handler);

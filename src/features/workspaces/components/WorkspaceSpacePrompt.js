@@ -2,13 +2,13 @@
 //
 // The small, non-modal "Extra screen space detected" offer. It never takes
 // focus or blocks the page; dismissing it is remembered for this amount of
-// space (see promptDismissedCapacity in the model).
+// space (see promptDismissedCapacity in the model). The same mode is always
+// available by hand from the right-click menu (Multi workspace).
 import React from "react";
 import Button from "@/components/ui/Button";
 import SymbolButton from "@/components/ui/SymbolButton";
 
-export default function WorkspaceSpacePrompt({ capacity, onAdd, onDismiss }) {
-  const isThird = capacity >= 3;
+export default function WorkspaceSpacePrompt({ active, onAdd, onDismiss }) {
   return (
     <section className="app-workspace-prompt" role="region" aria-label="Extra screen space detected">
       <div className="app-workspace-prompt__head">
@@ -16,13 +16,13 @@ export default function WorkspaceSpacePrompt({ capacity, onAdd, onDismiss }) {
         <SymbolButton symbol="close" label="Dismiss" onClick={onDismiss} />
       </div>
       <p className="app-workspace-prompt__body">
-        {isThird
-          ? "There is room for another DMS workspace. Add a third to keep one more page open alongside."
-          : "Your window is wide enough for a second DMS workspace, so you can keep another page, such as Messages, open beside this one."}
+        {active
+          ? "There is room for a third page card. Add one to keep another page open alongside these."
+          : "Your window is wide enough to show two pages side by side, each in its own card, such as Messages beside a job card. You can also turn this on any time from the right-click menu."}
       </p>
       <div className="app-workspace-prompt__actions">
         <Button variant="primary" size="sm" symbol={false} onClick={onAdd}>
-          Add workspace
+          {active ? "Add a card" : "Open multi workspace"}
         </Button>
         <Button variant="secondary" size="sm" symbol={false} onClick={onDismiss}>
           Not now
