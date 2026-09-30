@@ -124,6 +124,48 @@ const normalizeRequestQuantity = (value) => {
   return Math.min(MAX_REQUEST_QUANTITY, Math.max(MIN_REQUEST_QUANTITY, parsed));
 };
 
+// Opens a bare window with every consumable as a tick box + name, packed into
+// narrow newspaper columns so as many as possible fit on each A4 sheet. Built
+// with DOM calls (text nodes only), so no item name is ever parsed as HTML.
+// Print is always black on white, whatever the app theme.
+function printConsumableList(items) {
+  const win = window.open("", "_blank", "width=820,height=1000");
+  if (!win) return false;
+  const doc = win.document;
+  const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  doc.title = `Consumable stock take ${today}`;
+  const style = doc.createElement("style");
+  style.textContent =
+    "@page{size:A4 portrait;margin:8mm}" +
+    "*{box-sizing:border-box}" +
+    "body{font-family:system-ui,sans-serif;margin:0;color:black;background:white;font-size:8.5pt;line-height:1.25}" +
+    "h1{font-size:10pt;margin:0 0 2mm;display:flex;justify-content:space-between;gap:4mm}" +
+    "h1 span{font-weight:400}" +
+    "ul{list-style:none;margin:0;padding:0;column-count:4;column-gap:4mm}" +
+    "li{display:flex;gap:1.5mm;align-items:flex-start;padding:0.35mm 0;break-inside:avoid}" +
+    "li b{font-size:10pt;line-height:1;font-weight:400;flex:0 0 auto}";
+  doc.head.appendChild(style);
+  const heading = doc.createElement("h1");
+  heading.append("Consumable stock take");
+  const meta = doc.createElement("span");
+  meta.textContent = `${items.length} items · ${today}`;
+  heading.appendChild(meta);
+  const list = doc.createElement("ul");
+  items.forEach((item) => {
+    const row = doc.createElement("li");
+    const box = doc.createElement("b");
+    box.textContent = "☐";
+    const name = doc.createElement("span");
+    name.textContent = (item?.name || "Unnamed consumable").toString().trim();
+    row.append(box, name);
+    list.appendChild(row);
+  });
+  doc.body.append(heading, list);
+  win.focus();
+  win.print();
+  return true;
+}
+
 function StockCheckPopup({
   open,
   onClose,
@@ -539,6 +581,14 @@ function StockCheckPopup({
     }
   };
 
+  // Prints the whole list regardless of what is ticked in the popup.
+  const handlePrintList = () => {
+    setError("");
+    if (!printConsumableList(sortedConsumables)) {
+      setError("Allow pop-ups for this site to print the stock list.");
+    }
+  };
+
   const handleManagerAction = async (payload) => {
     setManagerActionLoading(true);
     setStatusMessage("");
@@ -804,6 +854,15 @@ function StockCheckPopup({
               size="sm"
             >
               Clear Selection
+            </Button>
+            <Button
+              type="button"
+              onClick={handlePrintList}
+              variant="secondary"
+              size="sm"
+              disabled={loading || totalItems === 0}
+            >
+              Print
             </Button>
             <Button
               type="button"
