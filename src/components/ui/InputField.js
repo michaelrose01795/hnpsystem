@@ -8,7 +8,7 @@
 // getFieldProps) paints the success ring. forwardRef exposes the inner <input>
 // so useFormValidation can focus the first invalid field.
 //
-// type="search" folds into a search button on a portrait phone, like SearchBar
+// type="search" folds into a search button at every screen size, like SearchBar
 // (see searchBarAPI/PhoneSearchCollapse). Pass phoneCollapse={false} to opt out.
 import React from "react";
 import FieldError from "./FieldError";
@@ -41,7 +41,7 @@ const InputField = React.forwardRef(function InputField(
   );
 
   const renderField = (inOverlay) =>
-    // In the phone search overlay only the input shows; the label becomes its
+    // In the search overlay only the input shows; the label becomes its
     // accessible name so the bar stays one row.
     inOverlay ? (
       React.cloneElement(input, { "aria-label": rest["aria-label"] || label })

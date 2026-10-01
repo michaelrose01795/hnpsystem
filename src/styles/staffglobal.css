@@ -960,8 +960,9 @@ html.staff-scope .app-topbar-compact__end {
   margin-left: auto;
 }
 
-/* Portrait-phone search overlay: the field + Close, floating where the topbar
-   rests (mobile gutter below the notch), above the drop-panel backdrop. */
+/* Search overlay (every screen size): the field + Close, floating where the
+   topbar rests (gutter below the notch), above the drop-panel backdrop. Above
+   phone width the bar is capped and centred instead of spanning the screen. */
 html.staff-scope .app-phone-search-bar {
   position: absolute;
   top: calc(var(--page-gutter-y-mobile) + env(safe-area-inset-top, 0px));
@@ -975,16 +976,24 @@ html.staff-scope .app-phone-search-bar {
   border-radius: var(--page-card-radius);
 }
 
+@media (min-width: 641px) {
+  html.staff-scope .app-phone-search-bar {
+    top: calc(var(--page-gutter-y) + env(safe-area-inset-top, 0px));
+    max-width: 40rem;
+    margin-inline: auto;
+  }
+}
+
 html.staff-scope .app-phone-search-bar__field {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-/* Page search bars on a portrait phone (PhoneSearchCollapse, used by SearchBar,
+/* Page search bars at every screen size (PhoneSearchCollapse, used by SearchBar,
    InputField type="search" and the few raw search inputs). The field folds into
-   a search symbol button; tapping it opens the global search's overlay above —
+   a search symbol button; pressing it opens the global search's overlay above —
    backdrop, floating .app-phone-search-bar and Close — with the page's own field
-   inside. Above the vertical-phone breakpoint none of this markup renders.
+   inside.
    A page search's overlay layers above popups too, because a search can sit
    inside one. (Not the global search's: its results list is a body portal at
    3700 that must stay above its own overlay.) */
@@ -1005,6 +1014,16 @@ html.staff-scope .app-phone-search-trigger {
   flex: 0 0 auto;
   align-items: center;
   align-self: flex-start;
+}
+
+/* Most page toolbars wrap the search in a column sized for the full-width
+   field (flex: 1 1 100% / width: 100%). A wrapper holding nothing but the
+   collapsed button hugs it instead, so the search, filter and action buttons
+   share one line. */
+html.staff-scope div:has(> .app-phone-search-trigger:only-child) {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
 }
 
 /* A closed search that still holds a query wears a badge dot, so a filtered
@@ -1335,7 +1354,7 @@ html.staff-scope .app-phone-search-trigger.has-value::after {
   }
 }
 
-/* Portrait-phone search overlay close (global search + page searches, via
+/* Search overlay close, at every screen size (global search + page searches, via
    usePhoneSearchOverlay). The overlay stays mounted with .is-closing while the
    bar lifts and fades and the backdrop fades with it, on one shared curve and
    duration so they land together; the bar's animationend then unmounts it.
@@ -1343,26 +1362,24 @@ html.staff-scope .app-phone-search-trigger.has-value::after {
    while the keyboard retracts. Taps pass straight through to the page during
    the fade. Reduced motion never enters .is-closing (the hook closes at once).
    Declared after the drop-panel backdrop rule above so its 0.36s is replaced. */
-@media (max-width: 640px) and (orientation: portrait) {
-  html.staff-scope .app-phone-search-overlay.is-closing {
-    pointer-events: none;
-  }
+html.staff-scope .app-phone-search-overlay.is-closing {
+  pointer-events: none;
+}
 
-  html.staff-scope .app-phone-search-overlay.is-closing .app-phone-search-bar {
-    animation: app-phone-search-bar-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
-    will-change: transform, opacity;
-  }
+html.staff-scope .app-phone-search-overlay.is-closing .app-phone-search-bar {
+  animation: app-phone-search-bar-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+  will-change: transform, opacity;
+}
 
-  html.staff-scope .app-phone-search-overlay.is-closing .app-mobile-sidebar-backdrop {
-    animation: app-portrait-sidebar-backdrop-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
-  }
+html.staff-scope .app-phone-search-overlay.is-closing .app-mobile-sidebar-backdrop {
+  animation: app-portrait-sidebar-backdrop-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+}
 
-  /* The global search's results list is a <body> portal outside the overlay;
-     fade it on the same beat instead of leaving it hanging until unmount. */
-  html.staff-scope:has(.app-phone-search-overlay.is-closing) .searchbar-api__results-menu {
-    animation: app-portrait-sidebar-backdrop-out 0.16s ease-in both;
-    pointer-events: none;
-  }
+/* The global search's results list is a <body> portal outside the overlay;
+   fade it on the same beat instead of leaving it hanging until unmount. */
+html.staff-scope:has(.app-phone-search-overlay.is-closing) .searchbar-api__results-menu {
+  animation: app-portrait-sidebar-backdrop-out 0.16s ease-in both;
+  pointer-events: none;
 }
 
 @keyframes app-phone-search-bar-out {
@@ -7567,22 +7584,12 @@ html.staff-scope .tracking-viewswitch[role="group"] > .app-btn {
     flex-basis: 100% !important;
   }
 
-  /* 5. The collapsed page search shares the line. Here SearchBar folds
-        into a 44px search button, but most page toolbars wrap it in a
-        column sized for the full-width field (flex: 1 1 100% / width:
-        100%). That column kept claiming a whole line, so the button sat
-        alone and the filter and add buttons wrapped underneath it. A
-        wrapper holding nothing but the button now hugs it, so the search,
-        filter and action buttons form one row. */
+  /* 5. The collapsed page search shares the line: the 44px search button
+        keeps its own width. (The wrapper-hugging rule that goes with it
+        applies at every width — see .app-phone-search-trigger.) */
   html.staff-scope .app-phone-search-trigger {
     width: auto;
     max-width: 100%;
-  }
-
-  html.staff-scope div:has(> .app-phone-search-trigger:only-child) {
-    flex: 0 0 auto;
-    width: auto;
-    min-width: 0;
   }
 
   /* The filter button keeps its badge reserve (6px above and below the

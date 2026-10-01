@@ -1,13 +1,15 @@
 // file location: src/components/ui/searchBarAPI/PhoneSearchCollapse.js
 //
-// Portrait-phone search behaviour for every page search bar.
+// Collapsed search behaviour for every page search bar, at every screen size.
+// (It began as the portrait-phone behaviour — hence the name — and now applies
+// to tablet and desktop too.)
 //
-// Above the vertical-phone breakpoint this renders the search field exactly as
-// before. On a phone held upright the field folds into a search SymbolButton;
-// tapping it opens the same overlay the topbar's global search uses (blurred
-// drop-panel backdrop + floating .app-phone-search-bar with a Close button),
-// with the page's own field inside it. The value stays with the page, so the
-// list underneath is already filtered when the overlay closes.
+// The field folds into a search SymbolButton; pressing it opens the same
+// overlay the topbar's global search uses (blurred drop-panel backdrop +
+// floating .app-phone-search-bar with a Close button), with the page's own
+// field inside it. The value stays with the page, so the list underneath is
+// already filtered when the overlay closes. Pass enabled={false} to keep a
+// field inline.
 //
 // Close: the Close button, a tap on the backdrop, Escape, or Enter. Enter also
 // submits the trigger's <form> when there is one — the field is portalled out
@@ -18,17 +20,14 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import SymbolButton from "@/components/ui/SymbolButton";
-import { useIsVerticalPhone } from "@/hooks/useIsMobile";
 
 // Must match the bar's close animation (app-phone-search-bar-out in
 // staffglobal.css). Only a safety net: animationend normally ends the close.
 const CLOSE_FALLBACK_MS = 400;
 const CLOSE_ANIMATION = "app-phone-search-bar-out";
-// The media query that close animation is declared under.
-const CLOSE_ANIMATION_QUERY = "(max-width: 640px) and (orientation: portrait)";
 
 /**
- * Open / closing / closed state for a portrait-phone search overlay, shared by
+ * Open / closing / closed state for a search overlay, shared by
  * the page searches below and StaffLayout's global search. close() keeps the
  * overlay mounted with `is-closing` so the bar and backdrop can animate out,
  * and drops the keyboard at the same moment instead of after the unmount.
@@ -50,12 +49,9 @@ export function usePhoneSearchOverlay() {
 
   const close = useCallback(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // The close animation only exists on a portrait phone; anywhere else
-    // (an `always` collapse on a wider screen) close at once.
-    const animates = window.matchMedia(CLOSE_ANIMATION_QUERY).matches;
     setPhase((current) => {
       if (current !== "open") return current;
-      return reduceMotion || !animates ? "closed" : "closing";
+      return reduceMotion ? "closed" : "closing";
     });
   }, []);
 
@@ -89,11 +85,7 @@ export default function PhoneSearchCollapse({
   hasValue = false,
   disabled = false,
   enabled = true,
-  // Fold into the button at every width, not only on a portrait phone — for
-  // tight toolbars where an inline field does not fit.
-  always = false,
 }) {
-  const isVerticalPhone = useIsVerticalPhone();
   const { isOpen, isClosing, open, close: closeOverlay, overlayProps } = usePhoneSearchOverlay();
   const triggerRef = useRef(null);
   const fieldRef = useRef(null);
@@ -111,9 +103,7 @@ export default function PhoneSearchCollapse({
     fieldRef.current?.querySelector("input, textarea")?.focus();
   }, [isOpen, isClosing]);
 
-  // Stay open if the viewport stops matching mid-search (an Android keyboard
-  // can shrink the viewport past portrait) — only the trigger is phone-only.
-  if (!enabled || (!isVerticalPhone && !always && !isOpen)) {
+  if (!enabled) {
     return renderField(false);
   }
 

@@ -196,8 +196,8 @@ html.staff-scope .app-msg-presence--external::before {
 /* ========================================================================== */
 
 /* Search, filter, remove and new: one row of 44px buttons, left-aligned. The
-   search is a button at every width (SearchBar alwaysCollapse) and opens the
-   portrait-phone search overlay, so the narrow panel never holds a field. */
+   search is a button at every width (as every SearchBar is) and opens the
+   search overlay, so the narrow panel never holds a field. */
 html.staff-scope .app-msg-list__toolbar {
   display: flex;
   align-items: center;

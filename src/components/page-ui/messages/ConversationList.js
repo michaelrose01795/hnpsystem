@@ -203,7 +203,6 @@ export default function ConversationList({
 
       <div className="app-msg-list__toolbar">
         <SearchBar
-          alwaysCollapse
           placeholder="Search conversations…"
           aria-label="Search conversations"
           value={searchTerm}

@@ -17,10 +17,9 @@
 // Most-Used Pages: the Live KPI + Smart Insight "stats" no longer flex-grow apart
 // — they sit together at the left. Two quick-access buttons for the user's two
 // most-used pages (learned by the behaviour model) are pushed to the right, just
-// before the Global Search field.
+// before the Global Search button.
 import React from "react";
 import Link from "next/link";
-import GlobalSearch from "@/components/GlobalSearch";
 import { hasAllAccessRole } from "@/lib/auth/roles";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import SupportControl from "@/components/support/SupportControl";
@@ -78,7 +77,6 @@ export default function StaffTopbar({
   isTablet,
   isVerticalPhone,
   lockChromeInteraction = {},
-  colors,
   // Live KPI widgets (Phase 2.2): resolved descriptors { key, label, value }.
   // Rendered as compact stat widgets in the leftmost section.
   kpis = [],
@@ -93,16 +91,16 @@ export default function StaffTopbar({
   currentJob,
   onStartJob,
   onStatusChange,
-  navigationItems,
   userRoles = [],
   // All Access demo login only ({ value, options, onChange }). Present → the bar
   // renders the "view bar as user" picker where Create User normally sits. Null
   // for every other session, which keeps the button exactly as it was.
   userPreview = null,
   overlay = false,
-  // Bubbled up so StaffLayout can lock the auto-hide topbar open while the global
-  // search is in use (focused or its results list showing).
-  onSearchActiveChange,
+  // Global search is a symbol button at every width: it opens StaffLayout's
+  // search overlay, and searchOpen reports whether that overlay is showing.
+  onOpenSearch,
+  searchOpen = false,
   // Auto-hide/fold geometry is owned by StaffLayout (via useAutoHideTopbar) so
   // the page card can react to the bar's folded state. The refs + computed
   // styles arrive here as props; this component is purely presentational.
@@ -164,7 +162,7 @@ export default function StaffTopbar({
       className={["app-topbar-dock", wrapperClassName].filter(Boolean).join(" ")}
       style={{ overflow: "visible", ...wrapperStyle, ...overlayStyle }}
     >
-    {/* Top bar: live figures, technician job controls, a rotating insight, quick links to most-used pages, search and help. */}
+    {/* Top bar: live figures, technician job controls, a rotating insight, quick links to most-used pages, a search button that opens the global search, and help. */}
     <DevLayoutSection
       as="section"
       ref={barRef}
@@ -426,25 +424,16 @@ export default function StaffTopbar({
               </div>
             )}
 
+            {/* Global search: a symbol button that opens the search overlay
+                (owned by StaffLayout), the same as the portrait-phone bar. */}
             {!isVerticalPhone && (
-              <div
-                style={{
-                  // Search field flexes with the bar: a comfortable basis that
-                  // grows on wide screens and shrinks (never below usable) as the
-                  // bar narrows.
-                  flex: "1 1 auto",
-                  minWidth: 0,
-                  width: "clamp(15rem, 20vw, 26rem)",
-                  maxWidth: "26rem",
-                  position: "relative",
-                }}
-              >
-                <GlobalSearch
-                  accentColor={colors.accent}
-                  navigationItems={navigationItems}
-                  onActiveChange={onSearchActiveChange}
-                />
-              </div>
+              <SymbolButton
+                symbol="search"
+                label="Open global search"
+                onClick={onOpenSearch}
+                aria-expanded={Boolean(searchOpen)}
+                aria-haspopup="dialog"
+              />
             )}
 
             <div

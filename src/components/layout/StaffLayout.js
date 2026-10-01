@@ -499,9 +499,6 @@ export default function Layout({
   // the locked model the bar is an absolute overlay and the page itself does not
   // scroll, so the hook watches the inner page scroller (pageScrollRef).
   const enableTopbarAutoHide = (!isTablet || compactPhoneTopbar) && !hideSidebar;
-  // While the topbar's global search is in use (focused or its results list open)
-  // the bar must stay visible and never fold away — fed to the hook as suppressHide.
-  const [topbarSearchActive, setTopbarSearchActive] = useState(false);
   const {
     wrapperRef: topbarWrapperRef,
     barRef: topbarBarRef,
@@ -514,12 +511,12 @@ export default function Layout({
     // Multi-workspace cards scroll inside their own frames, so the bar stays
     // docked; swapping the ref also re-arms the hook when the page card returns.
     scrollRef: multiWorkspaceActive ? null : pageScrollRef,
-    // Portrait phone also holds the bar open while one of its own panels (menu,
-    // status, search overlay) is open, so it can't fold away underneath them.
+    // The bar stays visible while the global search overlay is open. Portrait
+    // phone also holds it open while one of its own panels (menu, status) is
+    // open, so it can't fold away underneath them.
     suppressHide:
-      topbarSearchActive ||
-      (compactPhoneTopbar &&
-        (isPhoneSearchOpen || isMobileSidebarVisible || isMobileStatusVisible)),
+      isPhoneSearchOpen ||
+      (compactPhoneTopbar && (isMobileSidebarVisible || isMobileStatusVisible)),
     // Portrait phone pins the floating bar where the docked bar rests: the mobile
     // gutter below the notch / status bar (matches the main column's padding).
     fixedTop: compactPhoneTopbar
@@ -1902,17 +1899,25 @@ export default function Layout({
             </div>
             )}
 
-            {/* Full-width search bar below tab buttons for tablet/mobile - hidden when sidebar/status is open */}
+            {/* Global search button below the tab buttons for tablet/mobile (opens
+                the search overlay) - hidden when sidebar/status is open. It keeps
+                its own row so Menu / Status stay an even 50/50 for the drop panels. */}
             {!compactPhoneTopbar && !isMobileSidebarVisible && !isMobileStatusVisible && (
               <div
                 {...lockChromeInteraction}
                 style={{
                   width: "100%",
                   // Stepped aside on phone /messages while the keyboard is open (see topbar).
-                  display: messagesKeyboardOpen ? "none" : undefined,
+                  display: messagesKeyboardOpen ? "none" : "flex",
                 }}
               >
-                <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
+                <SymbolButton
+                  symbol="search"
+                  label="Open global search"
+                  onClick={openPhoneSearch}
+                  aria-expanded={isPhoneSearchOpen}
+                  aria-haspopup="dialog"
+                />
               </div>
             )}
 
@@ -1995,7 +2000,6 @@ export default function Layout({
             isTablet={isTablet}
             isVerticalPhone={isVerticalPhone}
             lockChromeInteraction={lockChromeInteraction}
-            colors={colors}
             kpis={
               topbarStatsHidden ? [] : topbarIsTech ? technicianKpis : topbarSections.kpis
             }
@@ -2009,7 +2013,6 @@ export default function Layout({
             currentJob={currentJob}
             onStartJob={() => setIsModalOpen(true)}
             onStatusChange={handleStatusChange}
-            navigationItems={navigationItems}
             // The bar's own role-gated content follows the previewed user; the
             // rest of the layout stays on the real session roles.
             userRoles={topbarRoles}
@@ -2023,7 +2026,8 @@ export default function Layout({
                 : null
             }
             overlay={lockViewport}
-            onSearchActiveChange={setTopbarSearchActive}
+            onOpenSearch={openPhoneSearch}
+            searchOpen={isPhoneSearchOpen}
             wrapperRef={topbarWrapperRef}
             wrapperClassName={authEntranceActive ? entranceStyles.topbarEntrance : undefined}
             barRef={topbarBarRef}
@@ -2356,11 +2360,12 @@ export default function Layout({
         </div>
       )}
 
-      {/* Portrait-phone global search: opened from the compact topbar's search
-          button, it sits above everything (reusing the drop-panel backdrop). Its
-          results list portals to <body> above this layer. Tap outside, Close or
-          Escape dismisses it; choosing a result navigates and closes it. */}
-      {compactPhoneTopbar && isPhoneSearchOpen && (
+      {/* Global search overlay (every screen size): opened from the search
+          symbol button, it sits above everything (reusing the drop-panel
+          backdrop). Its results list portals to <body> above this layer. Tap
+          outside, Close or Escape dismisses it; choosing a result navigates
+          and closes it. */}
+      {isPhoneSearchOpen && (
         <div {...phoneSearchOverlayProps} {...lockChromeInteraction}>
           <div className="app-mobile-sidebar-backdrop" onClick={closePhoneSearch} />
           <div className="app-phone-search-bar" role="dialog" aria-modal="true" aria-label="Global search">
