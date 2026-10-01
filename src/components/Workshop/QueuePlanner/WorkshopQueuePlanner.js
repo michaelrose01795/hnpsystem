@@ -267,6 +267,7 @@ function WorkshopQueueCard({
   };
 
   return (
+    // Draggable job card: job number, registration, vehicle and customer, job type, status and booking or check-in time with estimated or clocked hours.
     <div
       ref={refCallback}
       data-dnd-job-card="true"
@@ -347,6 +348,7 @@ function WorkshopQueueDropZone({
   return (
     <ScrollArrowFrame axis="x" hidden={Boolean(draggingJob)} style={{ display: "flex" }}>
     {(scrollRef) => (
+    // A technician's job lane: their queued job cards in order, which also accepts jobs dragged onto it.
     <div
       ref={scrollRef}
       data-dnd-target-type="assignee"
@@ -382,6 +384,7 @@ function WorkshopQueueDropZone({
               {index > 0 && (
                 <span style={{ flex: "0 0 auto", color: "var(--surfaceTextMuted)", fontSize: "14px", fontWeight: 700, userSelect: "none", opacity: 0.6 }}>→</span>
               )}
+              {/* One job assigned to this technician, shown as a draggable card. */}
               <WorkshopQueueCard
                 job={job}
                 variant="assigned"
@@ -428,6 +431,7 @@ function WorkshopQueueRow({ row, estimateJobHours, getJobClockedTimeText, onEdit
 
   return (
     <React.Fragment>
+      {/* Technician cell: name, jobs queued, hours done, hours left and a capacity bar; clicking it opens the capacity settings. */}
       <div
         data-dnd-target-type="assignee"
         data-dnd-target-key={row.panelKey}
@@ -530,6 +534,7 @@ const WorkshopQueueBoard = React.memo(function WorkshopQueueBoard({ techRows, mo
   );
 
   return (
+    // Assignment board: a row for every technician and MOT tester showing their capacity and queued jobs.
     <LayerTheme
       sectionKey="workshop-queue-board"
       parentKey="workshop-queue-planner"
@@ -573,6 +578,7 @@ const WorkshopQueueBoard = React.memo(function WorkshopQueueBoard({ techRows, mo
 // Job details modal
 // ===========================================================================
 const Field = ({ label, value, wide }) => (
+  // One labelled detail in the job pop-up, such as registration, customer or status.
   <LayerTheme
     radius="var(--radius-sm)"
     padding="10px 12px"
@@ -609,6 +615,7 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onAssign, est
       : { background: "rgba(var(--accent-base-rgb), 0.08)", color: "var(--text-1)" };
 
   return (
+    // Job details pop-up: job number with buttons to open the job card, assign a technician or close, followed by the job's details.
     <PopupModal
       isOpen
       onClose={onClose}
@@ -634,6 +641,7 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onAssign, est
             </div>
           </header>
 
+          {/* Summary line: vehicle, registration and current status. */}
           <LayerTheme
             radius="var(--radius-sm)"
             padding="10px 12px"
@@ -652,6 +660,7 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onAssign, est
           )}
 
           <div className="wqp-fieldgrid" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px", marginBottom: "18px" }}>
+            {/* Detail tiles: registration, vehicle, customer, phone, booking and check-in times, hours, service type, status, technician, MOT tester, VHC and parts status. */}
             <Field label="Registration" value={job.reg} />
             <Field label="Vehicle" value={vehicle} />
             <Field label="Customer" value={job.customer || "Unknown customer"} />
@@ -666,6 +675,7 @@ function WorkshopJobModal({ job, feedback, onClose, onOpenJobCard, onAssign, est
             <Field label="VHC Status" value={vhcStatus} />
             <Field label="Parts Status" value={partsStatus} />
 
+            {/* Customer requests: a numbered list of the work the customer has asked for. */}
             <LayerTheme
               radius="var(--radius-sm)"
               padding="10px 12px"
@@ -734,6 +744,7 @@ function TechnicianAssignmentModal({ job, technicians, onClose, onAssign, onUnas
   };
 
   return (
+    // Assign technician pop-up: a dropdown to choose a technician (or unassign) with Assign and Close buttons.
     <PopupModal
       isOpen={Boolean(job)}
       onClose={isAssigning ? undefined : onClose}
@@ -965,7 +976,7 @@ export default function WorkshopQueuePlanner({
         </div>
       )}
 
-      {/* ============================ 1 · Checked In Jobs =================== */}
+      {/* Checked In Jobs: a collapsible strip of jobs whose vehicles have arrived, with a count in the heading. */}
       <LayerTheme
         as="section"
         sectionKey="workshop-checked-in-section"
@@ -1012,6 +1023,7 @@ export default function WorkshopQueuePlanner({
           <span style={{ ...sectionMetaStyle, display: "inline-flex", flexShrink: 0, marginLeft: "auto", whiteSpace: "nowrap", visibility: "visible", opacity: 1 }}>{checkedInJobs.length} checked in</span>
         </div>
         {!checkedInCollapsed && (checkedInJobs.length === 0 ? (
+          // Message shown when no vehicles have been checked in yet.
           <div
             data-dev-section="1"
             data-dev-section-key="workshop-checked-in-empty"
@@ -1037,6 +1049,7 @@ export default function WorkshopQueuePlanner({
             style={{ display: "flex", gap: "var(--wqp-gap)", overflowX: "auto", overscrollBehaviorX: "contain", padding: "14px 2px 6px", scrollbarWidth: "thin", marginTop: "12px" }}
           >
             {checkedInJobs.map((job) => (
+              // One checked-in job, shown as a draggable card.
               <WorkshopQueueCard
                 key={job.jobNumber}
                 job={job}
@@ -1116,6 +1129,7 @@ export default function WorkshopQueuePlanner({
           <span style={{ ...sectionMetaStyle, display: "inline-flex", flexShrink: 0, marginLeft: "auto", whiteSpace: "nowrap", visibility: "visible", opacity: 1 }}>{outstanding.length} waiting to allocate</span>
         </div>
         {!unassignedCollapsed && (outstanding.length === 0 ? (
+          // Message shown when every job is allocated; a job can be dropped here to return it to the pool.
           <div
             data-dev-section="1"
             data-dev-section-key="workshop-unassigned-empty"
@@ -1148,6 +1162,7 @@ export default function WorkshopQueuePlanner({
                 {matchesDropIndicator("outstanding", "outstanding", job.jobNumber, "before") && (
                   <div style={{ height: "3px", width: "100%", borderRadius: "var(--radius-pill)", background: "var(--primary)" }} />
                 )}
+                {/* One unassigned job, shown as a card that can be dragged onto a technician. */}
                 <WorkshopQueueCard
                   job={job}
                   variant="unassigned"
@@ -1176,10 +1191,10 @@ export default function WorkshopQueuePlanner({
         ))}
       </LayerTheme>
 
-      {/* ===================== 4 + 5 · Next jobs board ===================== */}
+      {/* Assignment board: technician and MOT tester rows with their capacity and queued jobs. */}
       <WorkshopQueueBoard techRows={techRowsSafe} motRows={motRowsSafe} activeDropTarget={activeDropTarget} {...sharedDropProps} />
 
-      {/* ============================ Drag ghost ============================ */}
+      {/* Floating preview that follows the pointer while a job is being dragged, showing its job number and registration. */}
       {isDragActive && draggingJob && (
         <div
           aria-hidden="true"
@@ -1209,7 +1224,7 @@ export default function WorkshopQueuePlanner({
         </div>
       )}
 
-      {/* ============================ 6 · Details modal ==================== */}
+      {/* Job details pop-up for the job that was clicked. */}
       {selectedJob && (
         <WorkshopJobModal
           job={selectedJob}
@@ -1226,6 +1241,7 @@ export default function WorkshopQueuePlanner({
       )}
 
       {showTechnicianAssignment && selectedJob && (
+        // Pop-up for choosing which technician the selected job is assigned to.
         <TechnicianAssignmentModal
           job={selectedJob}
           technicians={assignableStaffList || []}
@@ -1235,6 +1251,7 @@ export default function WorkshopQueuePlanner({
         />
       )}
 
+      {/* Pop-up for editing a technician's available hours for a given day. */}
       <CapacitySettingsPopup
         isOpen={Boolean(capacityTechnician)}
         compact

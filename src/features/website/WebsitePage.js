@@ -77,6 +77,7 @@ import { FEATURED_REVIEW_LIMIT, reviewTopics } from "./data/reviews";
 
 function Section({ id, tint, children }) {
   return (
+    // One full-width band of the customer home page, optionally tinted, holding a single block of content such as cars, offers or contact.
     <section id={id} data-presentation={`website-${id}`} className={tint ? "ws-section ws-section--tint" : "ws-section"}>
       <div className="ws-container">{children}</div>
     </section>
@@ -464,6 +465,7 @@ export default function WebsitePage() {
         ) : null;
       return (
         <PreviewClickTarget key={row.id} {...click("hero", "Hero banner")}>
+          {/* Hero banner: headline, intro copy and call-to-action buttons, the three quick customer actions, the showroom photo with review score and location, and a strip of trust points. */}
           <section id={row.anchor || "top"} data-presentation="website-hero" className="ws-hero">
             <div className="ws-container ws-hero-inner">
               {/* Intro copy sits level with the top of the photo; the three
@@ -529,6 +531,7 @@ export default function WebsitePage() {
 
     cars: (row) => (
       <PreviewClickTarget key={row.id} {...click("vehicles", "Featured vehicles")}>
+        {/* Our Cars: new / used tabs with counts, a vehicle count and sort control, a row of featured stock cards and a link to the full stock search. */}
         <Section id={row.anchor || "cars"} tint={row.tint}>
           <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} media={SECTION_HEAD_MEDIA.cars} />
 
@@ -575,6 +578,7 @@ export default function WebsitePage() {
           {carSearch.shownCards.length ? (
             <div className="ws-grid ws-grid--cars-row">
               {carSearch.shownCards.map((v) => (
+                // One vehicle from current stock, shown as a card.
                 <VehicleCard key={v.id} vehicle={v} />
               ))}
             </div>
@@ -611,6 +615,7 @@ export default function WebsitePage() {
             </div>
           ) : null}
 
+          {/* Enquiry prompt: invites customers who cannot find the right car to tell the sales team what they are looking for. */}
           <div className="ws-card ws-cars-enquiry">
             <div>
               <h3 className="ws-h3">Can’t find the right car?</h3>
@@ -633,6 +638,7 @@ export default function WebsitePage() {
     offers: (row) =>
       liveOffers(offers).length ? (
         <PreviewClickTarget key={row.id} {...click("offers", "Manufacturer offers")}>
+          {/* Offers: the current manufacturer offers with their filters and cards. */}
           <Section id={row.anchor || "offers"} tint={row.tint}>
             <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} media={SECTION_HEAD_MEDIA.offers} />
             <OffersSection offers={offers} />
@@ -641,6 +647,7 @@ export default function WebsitePage() {
       ) : null,
 
     shop: (row) => (
+      // Shop: the online shop section for parts and accessories.
       <Section key={row.id} id={row.anchor || "shop"} tint={row.tint}>
         <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} media={SECTION_HEAD_MEDIA.shop} />
         <ShopSection />
@@ -660,6 +667,7 @@ export default function WebsitePage() {
       const internalCta = String(cta?.href || "").startsWith("/");
       return (
         <PreviewClickTarget key={row.id} {...click("sell-your-car", "Sell Your Car")}>
+          {/* Sell your car: heading and three-step explanation beside the valuation form, with benefit cards underneath. */}
           <Section id={row.anchor || "sell"} tint={row.tint}>
             <div className="ws-sell-layout">
               <div className="ws-sell-intro">
@@ -687,6 +695,7 @@ export default function WebsitePage() {
                 ) : null}
               </div>
               {cta?.label && internalCta ? (
+                // Valuation form: the customer enters their vehicle details and is taken to the valuation wizard.
                 <SellValuationPanel ctaLabel={cta.label} href={cta.href} />
               ) : cta?.label ? (
                 <a href={cta.href || "#contact"} className="ws-btn ws-btn--primary">
@@ -718,6 +727,7 @@ export default function WebsitePage() {
       const booking = serviceAndParts.booking || {};
       return (
         <PreviewClickTarget key={row.id} {...click("service-parts", "Service & Parts")}>
+          {/* Service and parts: a card for each workshop service beside the booking panel, then the workshop photo and highlight cards. */}
           <Section id={row.anchor || "service"} tint={row.tint}>
             <SectionHead
               eyebrow={row.eyebrow || serviceAndParts.eyebrow}
@@ -727,6 +737,7 @@ export default function WebsitePage() {
             />
             <div className="ws-service-layout">
               <BenefitCards items={services} />
+              {/* Workshop booking panel: lets the customer choose a service and request an appointment, with the service opening hours. */}
               <WorkshopBookingPanel
                 services={services}
                 title={booking.title}
@@ -775,6 +786,7 @@ export default function WebsitePage() {
       const cta = motability.cta;
       return (
         <PreviewClickTarget key={row.id} {...click("motability", "Motability")}>
+          {/* Motability: vehicle cards that can be filtered by brand, the scheme benefits and the specialist team panel. */}
           <Section id={row.anchor || "motability"} tint={row.tint}>
             <SectionHead
               eyebrow={row.eyebrow || motability.eyebrow}
@@ -810,6 +822,7 @@ export default function WebsitePage() {
                   style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, max(220px, calc((100% - 4 * clamp(16px, 2vw, 24px)) / 5))), 1fr))" }}
                 >
                   {shownModels.slice(0, visibleMotabilityCount).map((m) => (
+                    // One vehicle available on the Motability Scheme, shown as a card.
                     <MotabilityModelCard key={m.id || `${m.brand}-${m.model}`} model={m} />
                   ))}
                 </div>
@@ -837,6 +850,7 @@ export default function WebsitePage() {
             ) : null}
 
             {specialist.title || cta?.label ? (
+              // Motability specialists panel: team photos, a short introduction, the payment line and buttons to call or visit the showroom.
               <div className="ws-section-block ws-card ws-panel ws-specialist">
                 {specialistTeam.length ? (
                   <ul className="ws-specialist-photos" aria-label="Our Motability team">
@@ -881,9 +895,11 @@ export default function WebsitePage() {
       if (isBlank(about) && !milestones.length) return null;
       return (
         <PreviewClickTarget key={row.id} {...click("about", "About Us")}>
+          {/* About us: the dealership's story beside a team photograph, followed by the history timeline. */}
           <Section id={row.anchor || "about"} tint={row.tint}>
             {isBlank(about) ? null : (
               <div className="ws-split ws-about">
+                {/* About copy card: heading, paragraphs about the dealership and a few compact highlights. */}
                 <div className="ws-card ws-panel ws-split-text ws-about-copy">
                   <SectionHead
                     eyebrow={row.eyebrow || about.eyebrow}
@@ -927,6 +943,7 @@ export default function WebsitePage() {
       if (!ratingList.length && !reviewList.length && !reviewCta?.href) return null;
       return (
         <PreviewClickTarget key={row.id} {...click("reviews", "Customer reviews")}>
+          {/* Customer reviews: overall rating, per-platform scores, topic filters, featured quotes and a button to leave a review. */}
           <Section id={row.anchor || "reviews"} tint={row.tint}>
             <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} center />
             <ReviewsPanel
@@ -947,6 +964,7 @@ export default function WebsitePage() {
     team: (row) =>
       departments.length ? (
       <PreviewClickTarget key={row.id} {...click("team-members", "Team members")}>
+        {/* Meet the team: staff grouped by department, each with a headcount and a grid of member cards. */}
         <Section id={row.anchor || "team"} tint={row.tint}>
           <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} center />
           {/* Departments stack as full-width bands so every member grid is the same width. */}
@@ -962,6 +980,7 @@ export default function WebsitePage() {
               </div>
               <div className="ws-grid ws-grid--team">
                 {dep.members.map((m) => (
+                  // Team member card: photo, name and job role.
                   <article key={m.id} id={`team-member-${m.id}`} className="ws-card ws-member">
                     {m.photo ? (
                       <div className="ws-member-photo">
@@ -988,6 +1007,7 @@ export default function WebsitePage() {
     blog: (row) =>
       asList(blogPosts).length ? (
         <PreviewClickTarget key={row.id} {...click("blog-posts", "Help & advice")}>
+          {/* Help and advice: a grid of guide cards with a 'Show more' button to reveal further guides. */}
           <Section id={row.anchor || "blog"} tint={row.tint}>
             <SectionHead eyebrow={row.eyebrow} title={row.title} lead={row.lead} />
             <div
@@ -996,6 +1016,7 @@ export default function WebsitePage() {
               style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, max(220px, calc((100% - 4 * clamp(16px, 2vw, 24px)) / 5))), 1fr))" }}
             >
               {asList(blogPosts).slice(0, visibleGuideCount).map((post) => (
+                // Guide card: image with category chip, date and reading time, title, excerpt and a 'More info' button that opens the full article.
                 <article key={post.id} className="ws-card">
                   {post.image ? (
                     <div className="ws-help-media">
@@ -1057,6 +1078,7 @@ export default function WebsitePage() {
       const socials = asList(contact.socials);
       return (
         <PreviewClickTarget key={row.id} {...click("contact", "Contact details")}>
+          {/* Contact: the dealership promise, a prompt to visit, then phone, address, opening times, social links and a map. */}
           <Section id={row.anchor || "contact"} tint={row.tint}>
             <SectionHead
               eyebrow={row.eyebrow || contact.eyebrow}
@@ -1080,6 +1102,7 @@ export default function WebsitePage() {
                 a labelled but empty panel behind. */}
             {isBlank(contact) ? null : (
             <div className="ws-contact">
+              {/* Contact details card: phone number, address, sales and service opening times and social media links. */}
               <div className="ws-card ws-panel ws-contact-details">
                 {contact.phone ? (
                   <div className="ws-contact-block">
@@ -1119,6 +1142,7 @@ export default function WebsitePage() {
                 ) : null}
               </div>
               {contact.mapEmbed ? (
+                // Map card: an embedded map showing where the dealership is.
                 <div className="ws-card ws-contact-map">
                   <iframe
                     title={`${brand.name || "Dealership"} location`}

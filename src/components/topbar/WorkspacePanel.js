@@ -68,6 +68,7 @@ export default function WorkspacePanel({
   if (!isOpen) return null;
 
   return (
+    // My workspace drawer: slides in from the right with Customise and Close buttons and a scrolling list of personal widgets.
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}
@@ -127,6 +128,7 @@ export default function WorkspacePanel({
         }}
       >
         {widgets.map((widget) => (
+          // Widget block: an icon and title above either the reminders list or a list of items that open the related page when clicked.
           <LayerTheme key={widget.id} radius="var(--radius-md)" gap="8px" padding="14px">
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span aria-hidden="true">{widget.icon}</span>

@@ -78,6 +78,7 @@ function dueWarning(label, dateKey, todayKey) {
 
 function Section({ title, actions, children }) {
   return (
+    // Titled block within the loan vehicle form: a heading, optional actions and the fields passed in.
     <LayerTheme as="section" radius="var(--radius-sm)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">
       <div className="loan-car-section-head">
         <h3 className="app-record-heading">{title}</h3>
@@ -307,6 +308,7 @@ function CarEditor({ car, todayKey, canEdit, migrationPending, onSaved, onBusyCh
 
   return (
     <form id={FORM_ID} className="loan-car-form" onSubmit={submit} noValidate>
+      {/* Vehicle: registration with DVLA lookup, make/model, colour, transmission, fuel type and whether the car is active. */}
       <Section title="Vehicle">
         <div className="loan-car-lookup-row">
           <InputField
@@ -354,6 +356,7 @@ function CarEditor({ car, todayKey, canEdit, migrationPending, onSaved, onBusyCh
         </label>
       </Section>
 
+      {/* Mileage and fuel: current mileage and fuel level, plus recent fuel readings. */}
       <Section title="Mileage & fuel">
         <InputField id="loan-car-fleet-mileage" label="Mileage" type="number" value={form.mileage} onChange={(event) => update("mileage", event.target.value)} disabled={!canEdit} />
         <div className="app-record-field">
@@ -374,6 +377,7 @@ function CarEditor({ car, todayKey, canEdit, migrationPending, onSaved, onBusyCh
         ) : null}
       </Section>
 
+      {/* MOT and service: MOT due date, service due date and service due mileage, with warnings when either is close. */}
       <Section title="MOT & service">
         <div className="loan-car-form-grid">
           <CalendarField label="MOT due" value={form.motDue} onValueChange={(value) => update("motDue", value)} disabled={!canEdit || migrationPending} />
@@ -390,6 +394,7 @@ function CarEditor({ car, todayKey, canEdit, migrationPending, onSaved, onBusyCh
         {motWarning || serviceWarning ? <StatusMessage tone="warning">{[motWarning, serviceWarning].filter(Boolean).join(" · ")}</StatusMessage> : null}
       </Section>
 
+      {/* Notes: free-text notes about the vehicle. */}
       <Section title="Notes">
         <label className="loan-car-textarea">
           <span className="app-record-field__label">Vehicle notes</span>
@@ -401,6 +406,7 @@ function CarEditor({ car, todayKey, canEdit, migrationPending, onSaved, onBusyCh
 
       {!isNew ? (
         <>
+          {/* Unavailable periods: dates the car is off the road and why, which permitted users can add or remove. */}
           <Section title="Unavailable periods">
             {migrationPending ? (
               <p className="app-record-note">Unavailable periods switch on once the loan car database update is applied.</p>
@@ -416,6 +422,7 @@ function CarEditor({ car, todayKey, canEdit, migrationPending, onSaved, onBusyCh
               />
             )}
           </Section>
+          {/* Activity: a log of recent events recorded against the vehicle. */}
           <Section title="Activity">
             {detail.events.length === 0 ? (
               <p className="app-record-note">No activity recorded yet.</p>
@@ -494,6 +501,7 @@ export default function LoanCarFleetDrawer({
           ) : null
         }>
         {message ? <StatusMessage tone={message.tone}>{message.text}</StatusMessage> : null}
+        {/* List of every loan vehicle with its availability; selecting one opens it for viewing or editing. */}
         <LayerTheme as="section" radius="var(--radius-sm)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">
           <FleetList cars={sortedCars} availabilityByCar={availabilityByCar} todayKey={todayKey} onOpen={(carId) => setView({ carId })} />
         </LayerTheme>

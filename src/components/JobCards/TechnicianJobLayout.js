@@ -20,6 +20,7 @@ export const TECHNICIAN_JOB_TAB_LABELS = Object.fromEntries(
 
 export function TechnicianJobHeader({ children }) {
   return (
+    // Job header bar at the top of the technician's job page: the job status and job number on the left, with icon buttons for technical information, clocking in or out and completing the job on the right.
     <LayerTheme
       as="div"
       sectionKey="myjob-header"
@@ -64,6 +65,7 @@ export function TechnicianJobSummaryCard({
   ...rest
 }) {
   return (
+    // Summary card: one small box of key job information shown in the row beneath the header.
     <LayerTheme
       sectionKey={sectionKey}
       sectionType={sectionType}
@@ -80,6 +82,7 @@ export function TechnicianJobSummaryCard({
 
 export function TechnicianJobTabRow({ children }) {
   return (
+    // Tab row: the scrollable strip of tabs for switching between parts of the job.
     <LayerTheme
       as="div"
       className="tab-scroll-row"
@@ -109,6 +112,7 @@ export function TechnicianJobTabRow({ children }) {
 
 export function TechnicianJobContentShell({ activeTab, children }) {
   return (
+    // Main content area: shows whichever tab the technician has selected.
     <LayerTheme
       as="section"
       className="app-layout-section-shell"

@@ -259,6 +259,7 @@ export default function AccountsListPage() {
   // renderFilters is rendered inside the AccountTable card so the controls live
   // directly in accounts-ledger-table-card without creating a nested card.
   const renderFilters = () =>
+  // Filter toolbar: search accounts and narrow them by status, account type, date range and balance, with a button to clear the filters.
   <DevLayoutSection sectionKey="accounts-filter-toolbar" sectionType="filter-row" parentKey="accounts-ledger-table-card">
       <ToolbarRow>
       <SearchBar
@@ -310,10 +311,13 @@ export default function AccountsListPage() {
 
 
   const renderLinkedFinance = () =>
+  // Linked finance section: shortcuts into invoices, job cards, parts orders and goods in, plus the most recent invoice and goods-in references.
   <LayerTheme as="section" sectionKey="accounts-linked-finance" sectionType="content-card" parentKey="accounts-page-shell" widthMode="full" gap="18px">
+      {/* Shortcut cards: one card for each related finance area. */}
       <DevLayoutSection sectionKey="accounts-linked-finance-jump-links" sectionType="toolbar" parentKey="accounts-linked-finance">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "14px" }}>
         {financeLinks.map((link) =>
+        // Shortcut card: the area name, its latest reference or a hint, a short description and a button to open that area.
         <LayerSurface
           key={link.title}
           as="article"
@@ -345,8 +349,10 @@ export default function AccountsListPage() {
         )}
       </div>
       </DevLayoutSection>
+      {/* Recent references: two side-by-side lists of the latest invoices and goods-in records. */}
       <DevLayoutSection sectionKey="accounts-linked-finance-reference-grid" sectionType="content-card" parentKey="accounts-linked-finance">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: "16px" }}>
+        {/* Recent invoice references: each invoice's number, account, total and due date, with buttons to open the related job, order or invoice. */}
         <LayerSurface as="article" sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Invoice References</h3>
@@ -387,6 +393,7 @@ export default function AccountsListPage() {
             </div>
           )}
         </LayerSurface>
+        {/* Recent goods-in references: each record's number, supplier, supplier invoice and date, with buttons to open it or the goods-in workspace. */}
         <LayerSurface as="article" sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Goods In References</h3>

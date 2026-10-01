@@ -122,6 +122,7 @@ describe("role workspace defaults", () => {
       "Workshop",
       "Tech",
       "Parts",
+      "Access",
       "Admin",
       "Accounts",
       "MOT",

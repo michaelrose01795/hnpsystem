@@ -479,12 +479,12 @@ export default function StatusSidebar({
         </button>
       )}
 
-      {/* Sidebar panel - FLOATING */}
+      {/* Status sidebar panel: the floating job tracker with a header and a scrolling timeline of the job's progress. */}
       <div
         className={`app-page-card app-page-card--no-hover${isVerticalPhone ? ' status-sidebar--vertical-phone' : ''}`}
         style={panelStyle}
       >
-        {/* Header */}
+        {/* Sidebar header: job search box or the current job's details, with Clear Job and Close buttons. */}
         <div className={isVerticalPhone ? undefined : "app-section-card"} style={{
           color: 'var(--text-1)',
           padding: compactMode ? '10px 12px' : '0 16px',
@@ -697,6 +697,7 @@ export default function StatusSidebar({
         }}>
           {/* Show message when no job selected */}
           {!jobId ? (
+            // Placeholder shown when no job has been selected, prompting the user to search for one.
             <div className={isVerticalPhone ? undefined : "app-section-card"} style={{
               display: 'flex', 
               flexDirection: 'column', 

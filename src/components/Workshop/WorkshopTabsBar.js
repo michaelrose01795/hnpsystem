@@ -20,6 +20,7 @@ export default function WorkshopTabsBar() {
 
   if (tabs.items.length === 0 && quickActions.items.length === 0) return null;
 
+  // Workshop navigation bar: links to the workshop pages on the left and quick action links on the right.
   return (
     <LayerSurface
       padding="var(--space-5)"

@@ -51,6 +51,7 @@ function InfoCell({ label, value }) {
 function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentColor = "var(--text-1)" }) {
   const safeRows = Array.isArray(rows) ? rows : [];
   return (
+    // Line-item table: description, hours, rate and amount for each row, with a total at the bottom.
     <div
       style={{
         border: "none",
@@ -171,6 +172,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
         }
       : {});
 
+  // Payslip detail popup: one payslip in full, with employer and employee details, the pay period, earnings, deductions, gross and net pay, year-to-date totals and notes.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -179,7 +181,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
       cardStyle={{ width: "min(100%, 880px)", padding: 0 }}
     >
       <div style={{ display: "grid", gap: 0 }}>
-        {/* Header */}
+        {/* Payslip header: the pay period, the date paid and the reference, with the close button. */}
         <div
           style={{
             padding: "20px 24px",
@@ -232,6 +234,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
               gap: "16px",
             }}
           >
+            {/* Employer details: the company name and address the payslip was issued by. */}
             <LayerTheme style={{ padding: "14px", gap: "10px" }}>
               <span style={sectionTitleStyle}>Employer</span>
               <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-1)" }}>
@@ -248,6 +251,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
                 ) : null}
               </div>
             </LayerTheme>
+            {/* Employee details: the person's name, role, department, email, National Insurance number and tax code. */}
             <LayerTheme style={{ padding: "14px", gap: "10px" }}>
               <span style={sectionTitleStyle}>Employee</span>
               <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-1)" }}>
@@ -265,7 +269,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
             </LayerTheme>
           </div>
 
-          {/* Pay context */}
+          {/* Pay context: the pay period dates, payment date, hourly rate and contracted hours. */}
           <LayerTheme
             style={{
               padding: "14px",
@@ -292,7 +296,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
             />
           </LayerTheme>
 
-          {/* Earnings */}
+          {/* Earnings: an itemised list of what was earned this period, with the total. */}
           <LayerTheme style={{ display: "grid", gap: "8px", padding: "14px" }}>
             <span style={sectionTitleStyle}>Earnings</span>
             <RowsTable
@@ -304,7 +308,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
             />
           </LayerTheme>
 
-          {/* Deductions */}
+          {/* Deductions: tax, National Insurance, pension and any other amounts taken off, with the total. */}
           <LayerTheme style={{ display: "grid", gap: "8px", padding: "14px" }}>
             <span style={sectionTitleStyle}>Deductions</span>
             <RowsTable
@@ -337,24 +341,28 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
               gap: "12px",
             }}
           >
+            {/* Gross pay for the period. */}
             <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Gross pay</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success)" }}>
                 {formatCurrency(payslip.grossPay)}
               </span>
             </LayerTheme>
+            {/* Taxable pay for the period. */}
             <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Taxable pay</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-1)" }}>
                 {formatCurrency(payslip.taxablePay ?? payslip.grossPay)}
               </span>
             </LayerTheme>
+            {/* Net pay - the amount actually paid to the employee. */}
             <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Net pay</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accentText)" }}>
                 {formatCurrency(payslip.netPay)}
               </span>
             </LayerTheme>
+            {/* Employer pension contribution for the period. */}
             <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Employer pension</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-1)" }}>
@@ -363,7 +371,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
             </LayerTheme>
           </div>
 
-          {/* YTD totals */}
+          {/* Year to date: running totals for the tax year so far. */}
           <LayerTheme style={{ padding: "14px", gap: "10px" }}>
             <span style={sectionTitleStyle}>Year to date</span>
             <div
@@ -381,7 +389,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
             </div>
           </LayerTheme>
 
-          {/* Notes */}
+          {/* Notes: any free-text note attached to this payslip, shown only when one exists. */}
           {payslip.notes ? (
             <LayerTheme style={{ padding: "14px", gap: "8px" }}>
               <span style={sectionTitleStyle}>Notes</span>

@@ -33,6 +33,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
 
   return (
     // List-row container hosts onClick + hover handlers; row background is data-driven (rowBackground), so kept inline.
+    // Parts order row: order number, customer and vehicle, fulfilment method, scheduled time, item count, invoice value and status; clicking it opens the order.
     <DevLayoutSection
       sectionKey={sectionKey}
       parentKey={parentKey}
@@ -131,6 +132,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
           {primaryStatus}
         </span>
       </div>
+      {/* Parts summary: a count of the parts on the order and the names of the first four. */}
       {items.length > 0 &&
       <LayerTheme radius="var(--radius-xs)" padding="10px 12px" gap={undefined} style={{
         display: "grid",

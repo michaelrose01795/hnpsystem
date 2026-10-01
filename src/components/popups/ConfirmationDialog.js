@@ -92,6 +92,7 @@ export default function ConfirmationDialog({
   );
 
   return (
+    // Confirmation pop-up: a title with confirm and cancel buttons, the question being asked and optional supporting details.
     <PopupModal
       isOpen={isOpen}
       onClose={onCancel}
@@ -163,6 +164,7 @@ export default function ConfirmationDialog({
             const label = entry?.label ?? "";
             const value = entry?.value ?? "—";
             return (
+              // Detail tile: one labelled value giving context for the decision.
               <LayerTheme
                 key={`${label}-${index}`}
                 radius="var(--radius-md)"

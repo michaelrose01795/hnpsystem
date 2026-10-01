@@ -18,13 +18,16 @@ export default function AdminUtilitiesTab({ filter, onApplySavedView }) {
 
   return (
     <>
+      {/* Saved views: save and recall a set of report filters for the admin report. */}
       <ReportSection title="Saved views" subtitle="Save and recall a filter set for this Admin report.">
         <SavedViewsBar targetRef={ADMIN_VIEW_TARGET} currentFilter={filter} onApply={onApplySavedView} />
       </ReportSection>
 
+      {/* Exports and drill-downs: one card per admin measure for downloading or exploring the records behind it. */}
       <ReportSection title="Exports & drill-downs" subtitle="Download the contributing records behind each drillable Admin KPI, or explore them inline. Every export is itself audited.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
           {ALL_EXPORTABLE.map((kpi) => (
+            // One export card: the measure's name and ID with Explore and Export CSV buttons.
             <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-export-card", kpi.id)} data-dev-text-preview={`${kpi.label} export card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
@@ -42,6 +45,7 @@ export default function AdminUtilitiesTab({ filter, onApplySavedView }) {
       </ReportSection>
 
       {explore && (
+        // Drill-down: table of the records behind the measure being explored, with a close button.
         <ReportSection title={`Drill-down: ${explore.label}`}>
           <ReportDrilldownTable kpiId={explore.id} label={explore.label} filter={filter} onClose={() => setExplore(null)} />
         </ReportSection>

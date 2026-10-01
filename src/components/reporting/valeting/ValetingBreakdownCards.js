@@ -20,6 +20,7 @@ export default function ValetingBreakdownCards({ filter, keys = null }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Cars-washed breakdown: a responsive grid of small figures splitting the valeting total into its operational categories. */}
       <DevLayoutSection
         sectionKey={gridKey}
         sectionType="section-shell"
@@ -28,6 +29,7 @@ export default function ValetingBreakdownCards({ filter, keys = null }) {
         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 12 }}
       >
         {wanted.map((card) => (
+          // One breakdown figure: the category label and its value for the selected period.
           <KpiValueCard
             key={card.key}
             compact

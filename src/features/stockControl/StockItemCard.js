@@ -80,6 +80,7 @@ export function StockItemCard({ row, siblings = [], capabilities, onOpen, onActi
   if (runOut) rows.push(["Est. run-out", runOut]);
 
   return (
+    // Stock item card: name, category and location, stock status and level gauge, min/target, check dates, orders and usage, with buttons for history, recording stock and the next suggested action. Clicking the card opens the item.
     <LayerTheme
       className="stock-card"
       radius="var(--radius-sm)"

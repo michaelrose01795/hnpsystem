@@ -22,9 +22,9 @@
 // MOT and tax status are NOT returned for the same reason - they are personal
 // to the keeper and the wizard asks the customer about the MOT instead.
 
-export const runtime = "nodejs"; // https module needs the Node runtime on Vercel
+export const runtime = "nodejs"; // Server-only lookup cache and credentials.
 
-import https from "https";
+import { lookupDvla } from "@/lib/vehicles/lookup";
 
 import { getClientIp } from "@/lib/auth/rateLimit";
 import {
@@ -44,45 +44,14 @@ const store = createRateStore();
 // generous for a household with several vehicles and useless for a scraper.
 const LIMIT = { windowMs: 60 * 1000, max: 10, abuseThreshold: 40, retainMs: 10 * 60 * 1000 };
 
-function dvlaLookup(registration, apiKey) {
-  return new Promise((resolve, reject) => {
-    const payload = JSON.stringify({ registrationNumber: registration });
-
-    const req = https.request(
-      {
-        hostname: "driver-vehicle-licensing.api.gov.uk",
-        port: 443,
-        path: "/vehicle-enquiry/v1/vehicles",
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(payload),
-        },
-        // Shorter than the staff route's 30s: this one sits in front of a
-        // customer watching a spinner, and the wizard has a manual fallback.
-        timeout: 12000,
-      },
-      (response) => {
-        let data = "";
-        response.on("data", (chunk) => {
-          data += chunk;
-        });
-        response.on("end", () => resolve({ status: response.statusCode, data }));
-      },
-    );
-
-    req.on("error", reject);
-    req.on("timeout", () => {
-      req.destroy();
-      const error = new Error("DVLA request timed out");
-      error.code = "ETIMEDOUT";
-      reject(error);
-    });
-
-    req.write(payload);
-    req.end();
-  });
+// Share bounded caching and in-flight calls with staff lookup; retain the public allowlist and rate limit.
+async function dvlaLookup(registration) {
+  try {
+    const result = await lookupDvla(registration);
+    return { status: 200, data: JSON.stringify(result.data) };
+  } catch (error) {
+    return { status: error.status || 503, data: "Vehicle lookup unavailable" };
+  }
 }
 
 // The allowlist. Everything the estimate engine reads, and nothing else.
@@ -142,7 +111,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await dvlaLookup(registration, process.env.DVLA_API_KEY);
+    const response = await dvlaLookup(registration);
 
     if (response.status === 404) {
       return res.status(404).json({

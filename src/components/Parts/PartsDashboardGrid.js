@@ -79,6 +79,7 @@ export default function PartsDashboardGrid({
       <StaffPageHeader title={title} subtitle={subtitle} />
 
       <StaffCardGrid minColumnWidth="220px">
+        {/* Summary cards: one tile per headline parts figure, showing its label, value and a short helper line. */}
         {summaryCards.map((card, index) => (
           <StaffCard
             as="article"
@@ -99,6 +100,7 @@ export default function PartsDashboardGrid({
 
       <div style={splitGridStyle}>
         <div style={columnStyle}>
+          {/* Active job queue: table of jobs waiting on parts, with job number and registration, advisor, when the parts are needed and status. */}
           <LayerTheme
             as="section"
             sectionKey="parts-ops-active-job-queue"
@@ -137,6 +139,7 @@ export default function PartsDashboardGrid({
           </LayerTheme>
 
           <div style={twoCardGridStyle}>
+            {/* Inventory alerts: parts that are low, out of stock or on back-order. */}
             <LayerTheme
               as="section"
               sectionKey="parts-ops-inventory-alerts"
@@ -145,6 +148,7 @@ export default function PartsDashboardGrid({
               style={sectionCardStyle}
             >
               <h2 className="app-staff-card__title">Inventory Alerts</h2>
+              {/* One card per alerted part: part number and name, supplier and bin location, stock against minimum, quantity on order, cost, selling price, margin and linked jobs. */}
               {inventoryAlerts.map((alert) => {
                 const statusLabel =
                   alert.status === "low_stock"
@@ -181,6 +185,7 @@ export default function PartsDashboardGrid({
               })}
             </LayerTheme>
 
+            {/* Team focus: the priorities for the parts team today, each with a short description and the person responsible. */}
             <LayerTheme
               as="section"
               sectionKey="parts-ops-team-focus"
@@ -201,6 +206,7 @@ export default function PartsDashboardGrid({
         </div>
 
         <div style={columnStyle}>
+          {/* Team availability: who in the parts team is working and when. */}
           <LayerTheme
             as="section"
             sectionKey="parts-ops-team-availability"
@@ -209,6 +215,7 @@ export default function PartsDashboardGrid({
             style={sectionCardStyle}
           >
             <h2 className="app-staff-card__title">Team Availability</h2>
+            {/* One card per team member: name, role, and their status with the hours it applies to. */}
             {teamAvailability.map((entry) => (
               <LayerSurface
                 key={entry.name}
@@ -225,6 +232,7 @@ export default function PartsDashboardGrid({
             ))}
           </LayerTheme>
 
+          {/* Inbound deliveries: supplier deliveries on their way, with expected arrival time, number of lines and reference. */}
           <LayerTheme
             as="section"
             sectionKey="parts-ops-inbound-deliveries"

@@ -119,6 +119,7 @@ export function TechnicianAssignmentSection({
   const overCapacity = hoursDone > hoursAvailable;
 
   return (
+    // Technician Assignment: choose which technician the job is assigned to, then see that technician's details.
     <LayerSurface
       sectionKey="jobcard-scheduling-technician"
       sectionType="content-card"
@@ -148,6 +149,7 @@ export function TechnicianAssignmentSection({
       )}
 
       {selectedTech ? (
+        // Assigned technician details: name and job title, skill set, hours used against today's capacity, and where this job sits among their jobs today.
         <LayerTheme
           sectionKey="jobcard-scheduling-technician-detail"
           sectionType="content-card"
@@ -280,6 +282,7 @@ export function JobProgressSection({ jobData }) {
       : [];
 
   return (
+    // Job Progress: a ring showing how many of the job's requests are complete, with a legend counting requests in each state.
     <LayerSurface
       sectionKey="jobcard-scheduling-progress"
       sectionType="content-card"
@@ -493,6 +496,7 @@ export function CollectionTypeSection({
   };
 
   return (
+    // Collection Type: choose whether the customer is waiting, has a loan car, is collecting later or none of these.
     <LayerSurface
       sectionKey="jobcard-scheduling-collection"
       sectionType="content-card"
@@ -531,6 +535,7 @@ export function CollectionTypeSection({
         })}
       </div>
 
+      {/* Collection details for the chosen option: the loan car, the time the customer is waiting from, or the time to collect by. */}
       <LayerTheme
         sectionKey="jobcard-scheduling-collection-detail"
         sectionType="content-card"
@@ -646,6 +651,7 @@ export function CustomerUpdatesSection({
   };
 
   return (
+    // Customer Updates: shows when the customer was last updated and lets staff set or clear the date and time the next update is due.
     <LayerSurface
       sectionKey="jobcard-scheduling-customer-updates"
       sectionType="content-card"
@@ -656,6 +662,7 @@ export function CustomerUpdatesSection({
         Customer Updates
       </h3>
 
+      {/* Last updated: the date and time of the most recent message the customer could see. */}
       <LayerTheme
         sectionKey="jobcard-scheduling-customer-updates-last"
         sectionType="content-card"
@@ -740,6 +747,7 @@ export function QuickActionsSection({
   ];
 
   return (
+    // Quick Actions: shortcut buttons to change collection times, add a workshop note or send the customer an update.
     <LayerSurface
       sectionKey="jobcard-scheduling-quick-actions"
       sectionType="content-card"

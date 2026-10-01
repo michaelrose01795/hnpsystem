@@ -31,6 +31,7 @@ const RouteSkeleton = () => (
   <div style={deliveryStyles.listScroll}>
     <SkeletonKeyframes />
     {Array.from({ length: 5 }).map((_, index) => (
+      // Loading placeholder for one delivery stop while the route loads.
       <LayerSurface
         key={index}
         padding="var(--space-3)"
@@ -120,6 +121,7 @@ export default function PartsDeliveriesPageUi(props) {
   if (props.view === "no-access") {
     return (
       <div style={deliveryStyles.page}>
+        {/* Access message shown to staff whose role cannot open the delivery diary. */}
         <LayerTheme as="section" sectionKey="parts-deliveries-no-access" sectionType="content-card">
           <EmptyState
             variant="page"
@@ -142,6 +144,7 @@ export default function PartsDeliveriesPageUi(props) {
     busy && deliveryId && busy.id === deliveryId ? busy.action : null;
 
   const detailPanel = (
+    // Detail panel for the selected delivery: its customer, address, driver, vehicle, map, history and actions.
     <DeliveryDetailPanel
       capabilities={capabilities}
       delivery={selectedDelivery}
@@ -165,6 +168,7 @@ export default function PartsDeliveriesPageUi(props) {
   );
 
   const routeList = (
+    // Route list: the day's delivery stops in drive order, with a stop count, reordering hint, error and empty messages.
     <LayerTheme
       as="section"
       sectionKey="parts-deliveries-list"
@@ -234,6 +238,7 @@ export default function PartsDeliveriesPageUi(props) {
       {!loading && deliveries.length > 0 ? (
         <div style={deliveryStyles.listScroll}>
           {deliveries.map((delivery, index) => (
+            // One delivery stop on the route, which can be selected, actioned or dragged to a new position.
             <DeliveryRow
               key={delivery.id}
               busy={busyActionFor(delivery.id)}
@@ -301,6 +306,7 @@ export default function PartsDeliveriesPageUi(props) {
                 {summaryTiles.map((tile) => {
                   const active = statusFilter === tile.key;
                   return (
+                    // Status tile: shows how many deliveries are in this status and filters the route to it when pressed.
                     <LayerTheme
                       key={tile.key}
                       as="button"
@@ -405,6 +411,7 @@ export default function PartsDeliveriesPageUi(props) {
         {/* Body: the route, with the detail panel (and its map) alongside    */}
         {/* ---------------------------------------------------------------- */}
         {weekOpen ? (
+          // Week view: the seven days around the selected date with their delivery counts, for jumping to another day.
           <DeliveryWeekPanel onSelectDate={changeDate} selectedDate={selectedDate} week={week} />
         ) : null}
 
@@ -415,6 +422,7 @@ export default function PartsDeliveriesPageUi(props) {
       </div>
 
       {proofTarget ? (
+        // Pop-up for recording proof of delivery on a completed stop.
         <DeliveryProofModal
           delivery={proofTarget}
           error={modalError}
@@ -425,6 +433,7 @@ export default function PartsDeliveriesPageUi(props) {
       ) : null}
 
       {failureTarget ? (
+        // Pop-up for recording why a delivery could not be made.
         <DeliveryFailureModal
           delivery={failureTarget}
           error={modalError}
@@ -435,6 +444,7 @@ export default function PartsDeliveriesPageUi(props) {
       ) : null}
 
       {routeSettingsOpen ? (
+        // Pop-up for route settings, including optimising the drive order.
         <DeliveryRouteSettingsModal
           capabilities={capabilities}
           deliveries={allDeliveries}

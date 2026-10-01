@@ -136,6 +136,7 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
   };
 
   return (
+    // Sidebar access editor: choose which sidebar links this employee can see, department by department, or reset to their role's defaults.
     <LayerSurface gap="16px">
       <div
         style={{
@@ -165,6 +166,7 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
         const isAccount = group.category === "account";
         const groupEnabled = group.items.filter((item) => checked.has(item.href)).length;
         return (
+          // Department group: tick boxes for each sidebar link in the department, with buttons to change the whole group and a count of how many are enabled.
           <LayerTheme key={group.department} gap="10px">
             <div
               style={{

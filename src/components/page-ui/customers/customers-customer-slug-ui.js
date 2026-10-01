@@ -96,6 +96,7 @@ export default function CustomerDetailWorkspaceUi(props) {
           </div>
 
           {activeTab === "messages" ? (
+            // Messages tab panel: the customer's message thread, shown inside its own tinted panel.
             // The Messages tab keeps its own panel chrome, unchanged.
             <LayerTheme
               as="section"

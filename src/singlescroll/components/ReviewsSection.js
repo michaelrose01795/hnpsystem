@@ -20,6 +20,7 @@ const Stars = ({ count }) => (
 );
 
 export default function ReviewsSection() {
+  // Customer reviews section: a heading, the average rating from each review site and a wall of review cards.
   return (
     <section className={`${styles.section} ${styles.reviewsSection}`} aria-label="Customer reviews">
       <header className={styles.subSceneHead} data-reveal>
@@ -42,6 +43,7 @@ export default function ReviewsSection() {
       <div className={styles.reviewsGrid}>
         {reviews.map((review) => (
           <div key={review.id} data-reveal>
+            {/* One review card: star rating, the customer's quote, their name, and the review site and date. */}
             <Card3D intensity={0.6}>
               <LayerSurface className={styles.reviewCard} padding="24px">
                 <Stars count={review.rating} />

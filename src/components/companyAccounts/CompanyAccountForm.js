@@ -189,6 +189,7 @@ export default function CompanyAccountForm({
   };
 
   return (
+    // Company account form: bulk paste box, company and billing fields, notes, and cancel / save buttons.
     <DevLayoutSection
       as="form"
       sectionKey={sectionKey}
@@ -197,6 +198,7 @@ export default function CompanyAccountForm({
       onSubmit={handleSubmit}
       style={{ ...fieldGroupStyles, flexDirection: "column", flexWrap: "nowrap" }}
     >
+      {/* Bulk data entry: paste a comma-separated line of account details and apply it to fill the fields below. */}
       <DevLayoutSection sectionKey={`${sectionKey}-bulk-entry`} sectionType="content-card" parentKey={sectionKey}>
         <label style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "0.9rem" }}>
           <span style={{ fontWeight: 600 }}>Bulk data entry</span>
@@ -241,6 +243,7 @@ export default function CompanyAccountForm({
           )}
         </label>
       </DevLayoutSection>
+      {/* Company details: account number, company and trading names, primary contact, email, phone and linked ledger account. */}
       <DevLayoutSection
         sectionKey={`${sectionKey}-company-fields`}
         sectionType="content-card"
@@ -259,6 +262,7 @@ export default function CompanyAccountForm({
         {textInput("contact_phone", "Contact Phone")}
         {textInput("linked_account_label", "Linked Ledger Account")}
       </DevLayoutSection>
+      {/* Billing address: address lines, city, postcode and country. */}
       <DevLayoutSection
         sectionKey={`${sectionKey}-billing-fields`}
         sectionType="content-card"
@@ -275,6 +279,7 @@ export default function CompanyAccountForm({
         {textInput("billing_postcode", "Postcode")}
         {textInput("billing_country", "Country")}
       </DevLayoutSection>
+      {/* Notes: free-text notes about the company account. */}
       <DevLayoutSection sectionKey={`${sectionKey}-notes`} sectionType="content-card" parentKey={sectionKey}>
         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.9rem" }}>
           <span style={{ fontWeight: 600 }}>Notes</span>

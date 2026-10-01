@@ -61,6 +61,7 @@ export function StaffModal({
   return (
     <ModalPortal>
       <div className="app-modal" role="presentation">
+        {/* Pop-up dialog panel: a title bar with action buttons and close, the body content, and an optional footer. */}
         <LayerSurface
           className={`app-modal__panel app-modal__panel--${size}`}
           role="dialog"
@@ -108,6 +109,7 @@ export function StaffDrawer({
   return (
     <ModalPortal>
       <div className={`app-drawer app-drawer--${side}`} role="presentation">
+        {/* Slide-in drawer panel: a title bar with action buttons and close, with the drawer content beneath. */}
         <LayerSurface
           className="app-drawer__panel"
           role="dialog"
@@ -140,6 +142,7 @@ export function StaffDrawer({
 }
 
 export function StaffFilterBar({ children, actions, className = "" }) {
+  // Filter bar: a strip holding filter controls on one side and action buttons on the other.
   return (
     <LayerTheme className={`app-filter-bar ${className}`.trim()}>
       <div className="app-filter-bar__controls">{children}</div>
@@ -217,6 +220,7 @@ export function StaffJobSummaryPanel({
   children,
   action,
 }) {
+  // Job summary panel: a title and subtitle with an optional action, a list of labelled details, a row of stat tiles and any extra content.
   return (
     <LayerSurface className="app-job-summary-panel">
       <header className="app-job-summary-panel__header">
@@ -238,6 +242,7 @@ export function StaffJobSummaryPanel({
       )}
       {stats.length > 0 && (
         <div className="app-job-summary-panel__stats">
+          {/* One stat tile per figure, showing its label and value. */}
           {stats.map((item) => (
             <LayerTheme key={item.label} className="app-job-summary-panel__stat">
               <span>{item.label}</span>

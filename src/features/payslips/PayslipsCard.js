@@ -236,6 +236,7 @@ export default function PayslipsCard({
 
   return (
     <>
+      {/* Payslips card: a header that opens the full list and a preview of the two most recent payslips, hidden behind a passcode until unlocked. */}
       <DevLayoutSection
         as="div"
         sectionKey={sectionKey}
@@ -337,6 +338,7 @@ export default function PayslipsCard({
         </div>
       </DevLayoutSection>
 
+      {/* Passcode pop-up: asks for the personal passcode before any payslip details are shown. */}
       <PersonalPasscodeModal
         isOpen={isPasscodeOpen}
         mode={passcodeMode}
@@ -354,6 +356,7 @@ export default function PayslipsCard({
         onSubmit={handlePasscodeSubmit}
       />
 
+      {/* Payslips list pop-up: every payslip for this person, each of which can be opened. */}
       <PayslipsListPopup
         isOpen={isListOpen && isUnlocked}
         onClose={() => setIsListOpen(false)}
@@ -364,6 +367,7 @@ export default function PayslipsCard({
         onSelectPayslip={(slip) => setActivePayslip(slip)}
       />
 
+      {/* Payslip detail pop-up: the full breakdown of a single payslip. */}
       <PayslipDetailPopup
         isOpen={Boolean(activePayslip)}
         payslip={activePayslip}

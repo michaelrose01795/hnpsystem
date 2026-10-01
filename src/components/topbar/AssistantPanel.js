@@ -155,6 +155,7 @@ export default function AssistantPanel({
 
   const { headline, sections } = assistant || {};
 
+  // Operational assistant side panel: a headline status, then grouped lists of things needing attention, each item linking to the relevant page.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -209,6 +210,7 @@ export default function AssistantPanel({
           gap: "12px",
         }}
       >
+        {/* One card per assistant section: a heading and its list of items, or a message when there is nothing to show. */}
         {(sections || []).map((section) => (
           <LayerTheme key={section.id} radius="var(--radius-md)" gap="6px" padding="14px">
             <BlockHeading icon={section.icon} title={section.title} />

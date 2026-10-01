@@ -26,12 +26,14 @@ export default function InvoicesPageUi(props) {
     case "section1":
       return <ProtectedRoute allowedRoles={INVOICE_ROLES}>
       <>
+        {/* Invoices page: filter and export controls above the full invoice table. */}
         <DevLayoutSection sectionKey="accounts-invoices-page-shell" sectionType="page-shell" shell>
           <div style={{
         display: "flex",
         flexDirection: "column",
         gap: isVerticalPhone ? "var(--space-2)" : "20px"
       }}>
+            {/* Actions bar: invoice filters and search, with the export and other page buttons. */}
             <DevLayoutSection as="div" data-presentation="invoices-actions" sectionKey="accounts-invoices-header-actions" sectionType="toolbar" parentKey="accounts-invoices-page-shell" style={{
           display: "flex",
           gap: "10px",
@@ -49,6 +51,7 @@ export default function InvoicesPageUi(props) {
                 Accounts
               </Button>
             </DevLayoutSection>
+            {/* Invoice table: every invoice matching the filters, with paging. */}
             <DevLayoutSection data-presentation="invoices-table" sectionKey="accounts-invoices-table" sectionType="data-table" parentKey="accounts-invoices-page-shell">
               <InvoiceTable invoices={invoices} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} loading={loading} accentSurface showHeader={false} />
             </DevLayoutSection>

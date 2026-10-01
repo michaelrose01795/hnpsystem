@@ -20,6 +20,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import ValetingDashboardUi from "@/components/page-ui/dashboard/valeting/dashboard-valeting-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
 const MetricCard = ({ label, value, helper, sectionKey, parentKey }) => (
+  // Headline figure tile: a label, a large value and an optional helper line.
   <LayerSurface
     sectionKey={sectionKey}
     parentKey={parentKey}
@@ -42,6 +43,7 @@ const REPORT_TREND_FILTER = { range: "last_7d", granularity: "day", department: 
 const REPORT_TODAY_FILTER = { range: "today", granularity: "day", department: "valeting" };
 
 const TrendBlock = ({ data }) => (
+  // Cars washed trend: a chart of cars washed per day over the last seven days.
   <ReportLinkedTrend
     kpiId="val.cars_washed"
     filter={REPORT_TREND_FILTER}
@@ -56,6 +58,7 @@ const TrendBlock = ({ data }) => (
 // QueueBoard — waiting cars table. Sits inside the themed "Queue board"
 // section, so rows render as LayerSurface for alternation.
 const QueueBoard = ({ queue }) =>
+// Queue list: the cars checked in and waiting for valeting.
 <DevLayoutSection
   sectionKey="dashboard-valeting-queue-board-list"
   parentKey="dashboard-valeting-queue-board"
@@ -65,6 +68,7 @@ const QueueBoard = ({ queue }) =>
   style={{ display: "flex", flexDirection: "column", gap: "10px" }}
 >
     {queue.length === 0 ?
+  // Message shown when no cars are waiting.
   <LayerSurface
     sectionKey="dashboard-valeting-queue-empty"
     parentKey="dashboard-valeting-queue-board-list"
@@ -79,6 +83,7 @@ const QueueBoard = ({ queue }) =>
       </LayerSurface> :
 
   <>
+        {/* Column headings for the queue: Vehicle, Status and Queue. */}
         <DevLayoutSection
       sectionKey="dashboard-valeting-queue-headings"
       parentKey="dashboard-valeting-queue-board-list"
@@ -97,6 +102,7 @@ const QueueBoard = ({ queue }) =>
           <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-accent)" }}>Status</span>
           <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-accent)" }}>Queue</span>
         </DevLayoutSection>
+        {/* Scrolling list of queue rows. */}
         <DevLayoutSection
       sectionKey="dashboard-valeting-queue-rows"
       parentKey="dashboard-valeting-queue-board-list"
@@ -113,6 +119,7 @@ const QueueBoard = ({ queue }) =>
       }}>
 
           {queue.map((job) =>
+      // One waiting car: job number, registration, job status and its waiting status badge.
       <LayerSurface
         key={job.id}
         sectionKey={`dashboard-valeting-queue-row-${job.id}`}

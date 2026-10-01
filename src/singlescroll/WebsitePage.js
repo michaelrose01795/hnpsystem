@@ -44,6 +44,7 @@ const SPY_IDS = ["top", "cars", "offers", "shop", "sell", "service", "motability
 
 function Section({ id, tint, children }) {
   return (
+    // Page section: a full-width band of the public website, optionally tinted, with its content held in a centred container.
     <section id={id} data-presentation={`website-${id}`} className={tint ? "ws-section ws-section--tint" : "ws-section"}>
       <div className="ws-container">{children}</div>
     </section>
@@ -248,7 +249,7 @@ export default function WebsitePage() {
         </header>
 
         <main>
-          {/* ---------------- Hero ---------------- */}
+          {/* Hero banner: the headline, introduction and call-to-action buttons beside a showroom photo, with a row of trust highlights underneath. */}
           <PreviewClickTarget {...click("hero", "Hero banner")}>
             <section id="top" data-presentation="website-hero" className="ws-hero">
               <div className="ws-container ws-hero-inner">
@@ -288,7 +289,7 @@ export default function WebsitePage() {
             </section>
           </PreviewClickTarget>
 
-          {/* ---------------- Brands ---------------- */}
+          {/* Brand strip: the logos of the manufacturers the dealership is an authorised retailer for. */}
           <PreviewClickTarget {...click("partner-brands", "Partner brand strip")}>
             <section className="ws-section ws-section--tint ws-brands">
               <div className="ws-container ws-brands-inner">
@@ -304,7 +305,7 @@ export default function WebsitePage() {
             </section>
           </PreviewClickTarget>
 
-          {/* ---------------- Vehicles ---------------- */}
+          {/* Our Cars: a filter for all, new or used cars and a grid of vehicle cards. */}
           <PreviewClickTarget {...click("vehicles", "Featured vehicles")}>
           <Section id="cars">
             <SectionHead
@@ -332,6 +333,7 @@ export default function WebsitePage() {
             </div>
             <div className="ws-grid ws-grid--cards">
               {shownVehicles.map((v) => (
+                // Vehicle card: photo with an optional badge, brand and year, model and price.
                 <article key={v.id} className="ws-card ws-vehicle">
                   <div className="ws-vehicle-media">
                     <img src={v.image} alt={`${v.brand} ${v.model}`} loading="lazy" />
@@ -350,7 +352,7 @@ export default function WebsitePage() {
           </Section>
           </PreviewClickTarget>
 
-          {/* ---------------- Offers ---------------- */}
+          {/* Latest Offers: a grid of current manufacturer offers. */}
           <PreviewClickTarget {...click("offers", "Manufacturer offers")}>
           <Section id="offers" tint>
             <SectionHead
@@ -360,6 +362,7 @@ export default function WebsitePage() {
             />
             <div className="ws-grid ws-grid--cards">
               {offers.map((o) => (
+                // Offer card: image, offer name, headline and description.
                 <article key={o.id} className="ws-card ws-offer">
                   <div className="ws-offer-media">
                     <img src={o.image} alt={o.title} loading="lazy" />
@@ -375,7 +378,7 @@ export default function WebsitePage() {
           </Section>
           </PreviewClickTarget>
 
-          {/* ---------------- Shop ---------------- */}
+          {/* Shop: parts and accessories that can be added to a basket and bought online. */}
           <Section id="shop" tint>
             <SectionHead
               eyebrow="Shop"
@@ -385,7 +388,7 @@ export default function WebsitePage() {
             <ShopSection />
           </Section>
 
-          {/* ---------------- Sell your car ---------------- */}
+          {/* Sell your car: the steps involved, a list of benefits and a button to start a valuation. */}
           <PreviewClickTarget {...click("sell-your-car", "Sell Your Car")}>
           <Section id="sell">
             <SectionHead
@@ -395,6 +398,7 @@ export default function WebsitePage() {
             />
             <div className="ws-grid ws-grid--steps">
               {sellYourCar.steps.map((s) => (
+                // Step card: the step number, its title and a short explanation.
                 <article key={s.n} className="ws-card ws-step">
                   <span className="ws-step-n">{s.n}</span>
                   <h3 className="ws-card-title">{s.title}</h3>
@@ -402,6 +406,7 @@ export default function WebsitePage() {
                 </article>
               ))}
             </div>
+            {/* Benefits panel: a ticked list of reasons to sell to the dealership, with the call-to-action button. */}
             <div className="ws-card ws-panel ws-sell-panel">
               <ul className="ws-ticks">
                 {sellYourCar.benefits.map((b) => (
@@ -415,7 +420,7 @@ export default function WebsitePage() {
           </Section>
           </PreviewClickTarget>
 
-          {/* ---------------- Service & parts ---------------- */}
+          {/* Service and parts: a workshop photo beside a description of the service department and its opening hours. */}
           <PreviewClickTarget {...click("service-parts", "Service & Parts")}>
           <Section id="service" tint>
             <div className="ws-split">
@@ -435,7 +440,7 @@ export default function WebsitePage() {
           </Section>
           </PreviewClickTarget>
 
-          {/* ---------------- Motability ---------------- */}
+          {/* Motability: an explanation of the scheme, payment information and a call-to-action, beside the models available from each brand. */}
           <PreviewClickTarget {...click("motability", "Motability")}>
           <Section id="motability">
             <div className="ws-split ws-split--reverse">
@@ -453,6 +458,7 @@ export default function WebsitePage() {
               </div>
               <div className="ws-split-side">
                 {motability.rangeBrands.map((rb) => (
+                  // Brand range card: the brand name and the models available on Motability.
                   <div key={rb.brand} className="ws-card ws-range">
                     <h3 className="ws-card-title">{rb.brand}</h3>
                     <ul className="ws-chips">
@@ -469,7 +475,7 @@ export default function WebsitePage() {
           </Section>
           </PreviewClickTarget>
 
-          {/* ---------------- About ---------------- */}
+          {/* About: the dealership's story beside a showroom photo, followed by a timeline of milestones since 1947. */}
           <PreviewClickTarget {...click("about", "About Us")}>
           <Section id="about" tint>
             <div className="ws-split">
@@ -492,6 +498,7 @@ export default function WebsitePage() {
               </div>
               <ol className="ws-timeline">
                 {timeline.map((t) => (
+                  // Milestone card: the year, a title and a short description.
                   <li key={t.year} className="ws-card ws-milestone">
                     <span className="ws-milestone-year">{t.year}</span>
                     <h4 className="ws-card-title">{t.title}</h4>
@@ -503,7 +510,7 @@ export default function WebsitePage() {
           </Section>
           </PreviewClickTarget>
 
-          {/* ---------------- Reviews ---------------- */}
+          {/* Reviews: overall ratings from each review site and a grid of customer reviews. */}
           <PreviewClickTarget {...click("reviews", "Customer reviews")}>
           <Section id="reviews">
             <SectionHead
@@ -524,6 +531,7 @@ export default function WebsitePage() {
             </PreviewClickTarget>
             <div className="ws-grid ws-grid--reviews">
               {reviews.map((rv) => (
+                // Review card: star rating, the customer's quote, their name, and the source and date.
                 <article key={rv.id} className="ws-card ws-review">
                   <Stars rating={rv.rating} />
                   <p className="ws-review-quote">“{rv.quote}”</p>
@@ -539,7 +547,7 @@ export default function WebsitePage() {
           </Section>
           </PreviewClickTarget>
 
-          {/* ---------------- Team ---------------- */}
+          {/* Meet the Team: staff grouped by department. */}
           <PreviewClickTarget {...click("team-members", "Team members")}>
           <Section id="team" tint>
             <SectionHead
@@ -553,6 +561,7 @@ export default function WebsitePage() {
                 <h3 className="ws-h3">{dep.label}</h3>
                 <div className="ws-grid ws-grid--team">
                   {dep.members.map((m) => (
+                    // Team member card: photo, name and role.
                     <article key={m.id} className="ws-card ws-member">
                       <div className="ws-member-photo">
                         <img src={m.photo} alt={m.name} loading="lazy" />
@@ -569,7 +578,7 @@ export default function WebsitePage() {
           </Section>
           </PreviewClickTarget>
 
-          {/* ---------------- Blog ---------------- */}
+          {/* Blog: a grid of guides and articles for car buyers. */}
           <PreviewClickTarget {...click("blog-posts", "Blog posts")}>
           <Section id="blog">
             <SectionHead
@@ -579,6 +588,7 @@ export default function WebsitePage() {
             />
             <div className="ws-grid ws-grid--cards">
               {blogPosts.map((post) => (
+                // Blog post card: image, date, title and excerpt.
                 <article key={post.id} className="ws-card ws-blog">
                   <div className="ws-blog-media">
                     <img src={post.image} alt={post.title} loading="lazy" />
@@ -594,11 +604,12 @@ export default function WebsitePage() {
           </Section>
           </PreviewClickTarget>
 
-          {/* ---------------- Contact ---------------- */}
+          {/* Contact: phone number, address, opening hours and social links beside a map. */}
           <PreviewClickTarget {...click("contact", "Contact details")}>
           <Section id="contact" tint>
             <SectionHead eyebrow={contact.eyebrow} title={contact.title} center />
             <div className="ws-contact">
+              {/* Contact details panel: phone number, address, sales and service hours, and social media links. */}
               <div className="ws-card ws-panel ws-contact-details">
                 <div className="ws-contact-block">
                   <span className="ws-eyebrow">Call us</span>
@@ -626,6 +637,7 @@ export default function WebsitePage() {
                   ))}
                 </div>
               </div>
+              {/* Map showing the dealership's location. */}
               <div className="ws-card ws-contact-map">
                 <iframe
                   title="Humphries & Parks location"
@@ -639,7 +651,7 @@ export default function WebsitePage() {
           </PreviewClickTarget>
         </main>
 
-        {/* ---------------- Footer ---------------- */}
+        {/* Footer: logo, legal links, regulatory statements and the copyright line. */}
         <PreviewClickTarget {...click("footer", "Footer", null, "div")}>
         <footer className="ws-footer">
           <div className="ws-container ws-footer-inner">

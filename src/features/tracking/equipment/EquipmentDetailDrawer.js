@@ -70,6 +70,7 @@ const money = (value) => (value === null || value === undefined || value === "" 
 
 function Block({ title, children, actions }) {
   return (
+    // Titled block within the equipment record: a heading with optional action buttons, then the block's details.
     <LayerTheme radius="var(--radius-sm)" padding="12px" gap="10px">
       <div className="equipment-drawer__list-item">
         <h3 className="app-record-heading">{title}</h3>
@@ -223,21 +224,25 @@ function Overview({ detail, capabilities, checklists, onAction, onAssetChanged }
         )}
       </div>
       {panel === "qr" && (
+        // QR label: the printable QR code label for this piece of equipment.
         <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
           <EquipmentQrLabel asset={asset} />
         </LayerTheme>
       )}
       {panel === "status" && (
+        // Change status: pick a new operational status, give a reason and apply it.
         <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
           <StatusChangeForm asset={asset} onChanged={(next) => { setPanel(""); onAssetChanged(next); }} />
         </LayerTheme>
       )}
       {panel === "retire" && (
+        // Retire or reinstate: explains what retiring does, asks for a reason and confirms the change.
         <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
           <RetireForm asset={asset} onChanged={(next) => { setPanel(""); onAssetChanged(next); }} />
         </LayerTheme>
       )}
 
+      {/* Inspection schedule: when it was last checked and by whom, the last result, next due date, check interval, warning period and checklist used. */}
       <Block title="Inspection schedule">
         <RecordFieldGrid
           keepEmpty
@@ -253,6 +258,7 @@ function Overview({ detail, capabilities, checklists, onAction, onAssetChanged }
         />
       </Block>
 
+      {/* Asset: asset ID, category, department, location, manufacturer, model and serial number, with an Edit button for managers. */}
       <Block title="Asset" actions={capabilities.manage && (
         <Button type="button" variant="secondary" size="xs" onClick={() => onAction({ type: "edit" })}>Edit</Button>
       )}>
@@ -270,6 +276,7 @@ function Overview({ detail, capabilities, checklists, onAction, onAssetChanged }
         />
       </Block>
 
+      {/* Service: last service date, next service due, service interval and provider. */}
       <Block title="Service">
         <RecordFieldGrid
           keepEmpty
@@ -283,6 +290,7 @@ function Overview({ detail, capabilities, checklists, onAction, onAssetChanged }
       </Block>
 
       {asset.requiresCalibration && (
+        // Calibration: last calibrated date, expiry, interval, calibration company and certificate reference (only for equipment that needs calibrating).
         <Block title="Calibration">
           <RecordFieldGrid
             keepEmpty
@@ -297,6 +305,7 @@ function Overview({ detail, capabilities, checklists, onAction, onAssetChanged }
         </Block>
       )}
 
+      {/* Purchase and warranty: purchase date, price, supplier, order or invoice reference, warranty expiry and warranty provider. */}
       <Block title="Purchase & warranty">
         <RecordFieldGrid
           keepEmpty
@@ -312,6 +321,7 @@ function Overview({ detail, capabilities, checklists, onAction, onAssetChanged }
       </Block>
 
       {asset.notes && (
+        // Notes: free-text notes recorded against the equipment.
         <Block title="Notes">
           <p className="app-record-note">{asset.notes}</p>
         </Block>
@@ -389,6 +399,7 @@ function Faults({ faults, capabilities, onAction }) {
   if (!faults.length) return <p className="app-record-note">No faults have been reported.</p>;
   const ordered = [...faults].sort((a, b) => (a.status === "resolved") - (b.status === "resolved"));
   return ordered.map((fault) => (
+    // One fault: status, severity and whether the equipment is usable, the description, who reported and resolved it, and buttons to start the repair or resolve it.
     <LayerTheme key={fault.id} radius="var(--radius-sm)" padding="12px" gap="6px">
       <div className="equipment-drawer__status">
         <StatusBadge tone={toneOf(EQUIPMENT_FAULT_STATUSES, fault.status)}>{labelOf(EQUIPMENT_FAULT_STATUSES, fault.status)}</StatusBadge>
@@ -450,6 +461,7 @@ function DocumentUpload({ assetId, onUploaded }) {
     }
   };
   return (
+    // Add a document: choose the document type, optional title and expiry date, pick a file and upload it.
     <Block title="Add a document">
       {error && <StatusMessage tone="danger">{error}</StatusMessage>}
       <div className="equipment-form__grid">
@@ -498,6 +510,7 @@ function Documents({ detail, capabilities, onChanged }) {
       {error && <StatusMessage tone="danger">{error}</StatusMessage>}
       {detail.documents.length === 0 && <p className="app-record-note">No documents or photos yet.</p>}
       {detail.documents.length > 0 && (
+        // Document list: each document's title, type, uploader, upload and expiry dates, with Open and Remove buttons.
         <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
           <ul className="equipment-drawer__list">
             {detail.documents.map((document) => {
@@ -573,6 +586,7 @@ export default function EquipmentDetailDrawer({
   const act = (action) => onAction({ ...action, asset });
 
   return (
+    // Equipment record drawer: one asset's full record, split into Overview, History, Faults and Documents tabs.
     <EquipmentDrawer
       title={asset ? asset.name : "Equipment record"}
       description={asset ? `${asset.assetCode} · ${getCategoryLabel(asset)}` : ""}
@@ -597,6 +611,7 @@ export default function EquipmentDetailDrawer({
             ))}
           </div>
           {[7, 5].map((fieldCount, block) => (
+            // Placeholder blocks shown while the equipment record is loading.
             <LayerTheme key={block} radius="var(--radius-sm)" padding="12px" gap="10px">
               <SkeletonBlock width={block ? "64px" : "150px"} height="16px" />
               <div className="app-record-grid">

@@ -55,11 +55,13 @@ export default function PublicSharePreviewPageUi(props) {
         }} />
               <SkeletonBlock width="120px" height="32px" borderRadius="999px" />
             </div>
+            {/* Loading placeholder for the report heading: grey bars standing in for the vehicle and customer details. */}
             <LayerSurface padding="20px" gap="10px">
               <SkeletonBlock width="60%" height="22px" />
               <SkeletonBlock width="80%" height="12px" />
               <SkeletonBlock width="50%" height="12px" />
             </LayerSurface>
+            {/* Loading placeholders for the report sections: three cards of grey bars shown while the health check loads. */}
             {Array.from({
         length: 3
       }).map((_, i) => <LayerSurface key={i} padding="20px" gap="10px">
@@ -85,6 +87,7 @@ export default function PublicSharePreviewPageUi(props) {
     justifyContent: "center",
     background: "var(--surface)"
   }}>
+          {/* Error message: a warning icon with the reason the shared report could not be loaded. */}
           <div style={{
       textAlign: "center",
       padding: "24px",
@@ -135,7 +138,7 @@ export default function PublicSharePreviewPageUi(props) {
     minHeight: "100vh",
     background: "var(--surface)"
   }}>
-        {/* Header */}
+        {/* Report header: the dealership logo, job number, registration, vehicle and customer name, with the link expiry time and a read-only marker. */}
         <header style={{
       background: "var(--surface)",
       padding: "16px 24px",

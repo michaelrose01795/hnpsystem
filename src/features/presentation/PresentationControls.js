@@ -22,6 +22,7 @@ export default function PresentationControls({ onExport, exportBusy }) {
   const primaryRole = (userRoles?.[0] || "viewer").toLowerCase();
 
   return (
+    // Presentation mode control bar fixed to the bottom of the screen, with buttons to export the presentation as a PDF or exit.
     <div
       data-presentation-controls
       data-presentation-callout="controls"

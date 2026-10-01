@@ -73,6 +73,7 @@ export default function LoginPageUi(props) {
                 sizes="(max-width: 390px) 200px, (max-width: 640px) 230px, (max-width: 820px) 380px, 452px"
               />
             </div>
+            {/* Login card: staff identify themselves by full name, user ID or email, enter their password and sign in or request a password reset. */}
             <LoginCard className="login-card--auth" title="Login">
               <form onSubmit={handleDbLogin} className="login-form" aria-busy={isRedirecting}>
                 <div className="login-identity-grid" aria-label="Login user lookup">
@@ -117,6 +118,7 @@ export default function LoginPageUi(props) {
             </LoginCard>
           </div>
           {allowDevUserSelection && <div className="login-dev-panel">
+              {/* Developer login card: pick a category, department and user from dropdowns to sign in as a test user. */}
               <LoginCard className="login-card--dev" title="Developer Login">
                 <div className="login-dev-content">
                   <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} onSingleUserDepartmentLogin={handleDevLogin} onPresentationSelect={handlePresentationSelect} onDevPlatformSelect={handleDevPlatformSelect} />
@@ -217,6 +219,7 @@ export default function LoginPageUi(props) {
             }
           }
         `}</style>
+        {/* Manager preview guide: explains that the demonstration data is made up and how to use the developer login to explore the system. */}
         {allowDevUserSelection && <LayerSurface
           as="section"
           aria-label="Manager preview guide"

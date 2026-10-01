@@ -42,6 +42,7 @@ export default function WorkspaceHeader({ pathname, roles }) {
   const showShortcuts = favourites.length > 0 || recents.length > 0;
 
   return (
+    // Workspace header: breadcrumbs, the workspace name and number of areas, and shortcuts to favourite and recent pages.
     <LayerSurface
       sectionKey="workspace-header"
       parentKey="app-layout-page-card"

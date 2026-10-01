@@ -702,6 +702,7 @@ export default function EmployeesTab() {
 
   const directorySection = (
     <div ref={directorySectionRef} className="hr-employees-layout">
+      {/* Employee directory area: the searchable list of employees on the left of the page. */}
       <DevLayoutSection
         sectionKey="hr-employees-directory"
         parentKey="hr-manager-tab-employees"
@@ -709,6 +710,7 @@ export default function EmployeesTab() {
         shell
         className="hr-employees-directory-shell"
       >
+        {/* Directory card: search, filters and an Add Employee button, summary counts and the employee table. */}
         <SectionCard layer="theme"
           sectionKey="hr-employees-directory-card"
           parentKey="hr-employees-directory"
@@ -750,19 +752,23 @@ export default function EmployeesTab() {
             </div>
           </div>
           <div className="hr-employees-summary-row">
+            {/* Count of employees currently shown. */}
             <div className="hr-employees-summary-card">
               <span className="hr-employees-summary-label">Visible employees</span>
               <strong className="hr-employees-summary-value">{employeeSummary.total}</strong>
             </div>
+            {/* Count of active employees. */}
             <div className="hr-employees-summary-card">
               <span className="hr-employees-summary-label">Active</span>
               <strong className="hr-employees-summary-value">{employeeSummary.active}</strong>
             </div>
+            {/* Count of employees who are inactive or on leave. */}
             <div className="hr-employees-summary-card">
               <span className="hr-employees-summary-label">Inactive / leave</span>
               <strong className="hr-employees-summary-value">{employeeSummary.inactive}</strong>
             </div>
           </div>
+          {/* Employee table area, scrollable when the list is long. */}
           <DevLayoutSection
             sectionKey="hr-employees-directory-list"
             parentKey="hr-employees-directory-card"
@@ -771,6 +777,7 @@ export default function EmployeesTab() {
             data-dev-card-section="Employee directory table"
             className="hr-employees-list app-table-shell-scroll"
           >
+            {/* Employee table: name, department and role; selecting a row shows that person's profile. */}
             <LayerSurface padding="var(--space-3)" gap="0">
               <DataTableShell>
                 <table className="hr-employees-table app-data-table">
@@ -840,6 +847,7 @@ export default function EmployeesTab() {
         </SectionCard>
       </DevLayoutSection>
 
+      {/* Employee detail area beside the directory. */}
       <DevLayoutSection
         ref={detailPanelRef}
         sectionKey="hr-employees-detail-panel"
@@ -850,6 +858,7 @@ export default function EmployeesTab() {
         className="hr-employees-detail-panel"
         data-dev-card-section="Employee detail panel"
       >
+        {/* Profile panel for the selected employee, with an edit option. */}
         <EmployeeProfilePanel
           employee={selectedEmployee}
           onEdit={selectedEmployee ? handleStartEditEmployee : null}
@@ -860,6 +869,7 @@ export default function EmployeesTab() {
     </div>
   );
 
+  // Add New Employee form, shown in place of the directory when adding someone.
   const addFormSection = (
     <EmployeeForm
       title="Add New Employee"
@@ -878,6 +888,7 @@ export default function EmployeesTab() {
     />
   );
 
+  // Edit employee form, shown in place of the directory while an employee is being edited.
   const editFormSection =
     isEditingEmployee && editEmployee ? (
       <EmployeeForm
@@ -902,6 +913,7 @@ export default function EmployeesTab() {
   }
 
   if (error) {
+    // Error card shown when the employee directory could not be loaded.
     return (
       <SectionCard layer="theme"
         sectionKey="hr-employees-error"
@@ -936,6 +948,7 @@ function EmployeeForm({
 
   return (
     <section className="employee-form" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      {/* Employee form card: Save and Cancel actions, any error message, the employee detail fields and the sidebar access settings. */}
       <SectionCard layer="theme"
         title={title}
         subtitle={subtitle}
@@ -1399,7 +1412,7 @@ function EmployeeDetailsFields({
 
   return (
     <>
-      {/* ── Personal Details ── */}
+      {/* Personal details: first name, last name, email, phone and extension. */}
       <div style={getSectionShellStyle("personal")}>
         <SectionHeading
           title="Personal Details"
@@ -1425,7 +1438,7 @@ function EmployeeDetailsFields({
         </div>
       </div>
 
-      {/* ── Employment Details ── */}
+      {/* Employment details: department, job title, role, employment type and status, start date, probation end, contracted hours and line manager. */}
       <div style={getSectionShellStyle("employment")}>
         <SectionHeading
           title="Employment Details"
@@ -1500,7 +1513,7 @@ function EmployeeDetailsFields({
         </div>
       </div>
 
-      {/* ── Pay & Compensation ── */}
+      {/* Pay and compensation: hourly rate, overtime rate, basic salary, payroll reference and National Insurance number. */}
       <div style={getSectionShellStyle("compensation")}>
         <SectionHeading
           title="Pay &amp; Compensation"
@@ -1534,7 +1547,7 @@ function EmployeeDetailsFields({
         </div>
       </div>
 
-      {/* ── Address ── */}
+      {/* Home address: an address search that fills in the employee's home address. */}
       <div style={getSectionShellStyle("address")}>
         <SectionHeading
           title="Home Address"
@@ -1547,7 +1560,7 @@ function EmployeeDetailsFields({
         />
       </div>
 
-      {/* ── Emergency Contact ── */}
+      {/* Emergency contact: the contact's name, phone number and relationship. */}
       <div style={getSectionShellStyle("emergency")}>
         <SectionHeading
           title="Emergency Contact"

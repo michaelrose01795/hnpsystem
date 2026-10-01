@@ -3,6 +3,7 @@ import React from "react";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 export default function SectionShell({ sectionKey, parentKey = "", children, className = "", style, backgroundToken = "section-shell" }) {
+  // Generic section wrapper: places whatever content it is given inside a standard page section.
   return (
     <DevLayoutSection
       as="section"

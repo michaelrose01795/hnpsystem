@@ -12,11 +12,11 @@
 //   2. Add two page files that render the shared screens for it:
 //        src/pages/access/<key>/index.js   (copy src/pages/access/back-shed/index.js)
 //        src/pages/access/<key>/manage.js  (copy src/pages/access/back-shed/manage.js)
-//   3. Nothing else: the sidebar (Workshop group; Manage in Parts), page
-//      access, API scoping and the /access hub all read this list. Users with
-//      a saved custom sidebar layout pick the new pages up after a
-//      SIDEBAR_LAYOUT_MIGRATION version bump in
-//      src/config/workspace/departments.js.
+//   3. Nothing else: the sidebar (the Access module), page access, API scoping
+//      and the /access hub all read this list. The Access module is held by
+//      the All Access login and by anyone it is assigned to in the Developer
+//      Platform's Sidebar Access editor; a user with a saved layout picks a
+//      new store up when the module is re-applied there.
 //
 // Optional per store:
 //   userRoles     who may log movements (default STOCK_ACCESS_USER_ROLES)

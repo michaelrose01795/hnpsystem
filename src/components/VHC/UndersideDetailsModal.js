@@ -227,6 +227,7 @@ export default function UndersideDetailsModal({
             const loggedCount = redCount + amberCount + greenCount;
 
             return (
+              // One underside category button showing how many issues are logged; tapping it opens the issue report for that area.
               <LayerTheme
                 as="button"
                 className="vhc-card"
@@ -258,6 +259,7 @@ export default function UndersideDetailsModal({
           onClose={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
         >
 
+          {/* Add issue: describe an underside concern, choose its severity and add it. */}
           <IssueReportAddSection
             descriptionControl={isMiscCategory(activeConcern.category) ? (
                 <input
@@ -302,6 +304,7 @@ export default function UndersideDetailsModal({
             addDisabled={!activeConcern.temp.issue.trim()}
             disabled={locked}
           />
+          {/* Reported issues for the selected underside area. */}
           <IssueReportList
             count={activeConcernEntries.length}
             emptyMessage="No issues reported for this location."
@@ -312,6 +315,7 @@ export default function UndersideDetailsModal({
                   const lockReason = getLockReason(concern, activeConcern.category);
                   const isDeclined = lockReason === "declined";
                   return (
+                    // One reported underside issue, which can be edited, re-graded or deleted unless it is locked.
                     <IssueReportRow
                       key={`${activeConcern.category}-${idx}`}
                       issue={concern}

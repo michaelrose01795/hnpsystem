@@ -214,6 +214,7 @@ export default function CapacitySettingsPopup({
 
   if (!isOpen) return null;
 
+  // Technician capacity settings popup: set each technician's available hours for chosen dates or a whole month, see where approved leave reduces capacity, and reset to the HR defaults.
   return (
     <PopupModal
       isOpen
@@ -246,6 +247,7 @@ export default function CapacitySettingsPopup({
 
         {loading ? (
           compact ? (
+            // Loading placeholder for the single-day available hours editor.
             <LayerTheme padding="12px" gap="10px" className="capacity-settings__compact-editor" role="status" aria-live="polite" aria-busy="true" aria-label="Loading technician capacity" style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}>
               <SkeletonKeyframes />
               <SkeletonBlock width="140px" height="16px" />
@@ -254,6 +256,7 @@ export default function CapacitySettingsPopup({
           ) : (
             <div className="capacity-settings__layout" role="status" aria-live="polite" aria-busy="true" aria-label="Loading technician capacity">
               <SectionSkeleton titleWidth="120px" subtitleWidth="80px" rows={6} />
+              {/* Loading placeholder for the list of technicians and their available hours. */}
               <LayerTheme padding="12px" gap="10px" className="capacity-settings__editor">
                 <SkeletonKeyframes />
                 <SkeletonBlock width="160px" height="16px" />
@@ -263,6 +266,7 @@ export default function CapacitySettingsPopup({
           )
         ) : (
           compact ? (
+            // Available hours for one day: lists each technician so their hours for that date can be adjusted.
             <LayerTheme padding="12px" gap="10px" className="capacity-settings__compact-editor" style={{ width: "100%", minWidth: 0, boxSizing: "border-box", overflow: "visible" }}>
               <div className="capacity-settings__section-heading">
                 <div>
@@ -280,6 +284,7 @@ export default function CapacitySettingsPopup({
                     const entry = scheduleByDate.get(date)?.technicians.find((item) => item.userId === technician.userId);
                     return Object.prototype.hasOwnProperty.call(drafts, key) || (!resets.has(key) && entry?.hasOverride);
                   });
+                  // One technician row: name, contracted weekly and daily hours, an available hours box and a reset button.
                   return (
                     <LayerSurface key={technician.userId} padding="12px" gap="8px" className="capacity-settings__tech-row capacity-settings__tech-row--compact">
                       <div className="capacity-settings__tech-person">
@@ -311,6 +316,7 @@ export default function CapacitySettingsPopup({
             </LayerTheme>
           ) : (
           <div className="capacity-settings__layout">
+            {/* Select dates: month picker and day list for choosing which dates the capacity changes apply to, with a select all button. */}
             <LayerTheme padding="12px" gap="10px" className="capacity-settings__dates">
               <div className="capacity-settings__section-heading">
                 <div><strong>Select dates</strong><span>{selectedDateList.length} selected</span></div>
@@ -334,6 +340,7 @@ export default function CapacitySettingsPopup({
               </div>
             </LayerTheme>
 
+            {/* Available hours by technician: set each technician's hours for the selected dates, or put everyone back to their HR defaults. */}
             <LayerTheme padding="12px" gap="10px" className="capacity-settings__editor">
               <div className="capacity-settings__section-heading">
                 <div>
@@ -353,6 +360,7 @@ export default function CapacitySettingsPopup({
                     const entry = scheduleByDate.get(date)?.technicians.find((item) => item.userId === technician.userId);
                     return Object.prototype.hasOwnProperty.call(drafts, key) || (!resets.has(key) && entry?.hasOverride);
                   });
+                  // One technician row: name, contracted hours, any leave reduction, an available hours box and a reset button.
                   return (
                     <LayerSurface key={technician.userId} padding="12px" gap="8px" className="capacity-settings__tech-row">
                       <div className="capacity-settings__tech-person">

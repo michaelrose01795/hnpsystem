@@ -64,6 +64,7 @@ export default function ShareNotePopup({
   }, [users, search]);
 
   return (
+    // Share note popup: search colleagues and tick the ones this note should be shared with.
     <PopupModal
       isOpen
       onClose={onClose}
@@ -100,6 +101,7 @@ export default function ShareNotePopup({
           </span>
         </div>
 
+        {/* Colleague list: a scrolling list of tick boxes, one per colleague, with loading and empty messages. */}
         <LayerTheme className={styles.listSection} radius="var(--radius-sm)" padding="0" gap="0">
           <div
             className={`${styles.list} themed-scrollbar`}

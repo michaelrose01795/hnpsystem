@@ -154,6 +154,7 @@ export default function DeliveryProofModal({
   const readyToConfirm = recipientName.trim().length > 1 && !saving;
 
   return (
+    // Proof of delivery popup: records who received the delivery, with optional notes, signature and drop photo.
     <PopupModal
       isOpen
       onClose={saving ? undefined : onCancel}
@@ -187,6 +188,7 @@ export default function DeliveryProofModal({
           <div className="app-status-message app-status-message--danger">{error}</div>
         ) : null}
 
+        {/* Recipient details: who received the delivery (required), optional notes, and a tick box for collecting an exchange core when one is expected. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
           <label style={deliveryStyles.cell}>
             <span style={deliveryText.label}>Received by *</span>
@@ -222,6 +224,7 @@ export default function DeliveryProofModal({
           ) : null}
         </LayerSurface>
 
+        {/* Signature: a pad for the recipient to sign on, with a button to clear it. Optional. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
           <span style={deliveryText.label}>Signature</span>
           <canvas
@@ -241,6 +244,7 @@ export default function DeliveryProofModal({
           </div>
         </LayerSurface>
 
+        {/* Drop photo: add or change an optional photo of where the parts were left, up to 8 MB. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
           <span style={deliveryText.label}>Drop photo</span>
           <input

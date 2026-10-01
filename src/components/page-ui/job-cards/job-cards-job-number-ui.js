@@ -5,6 +5,7 @@ import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer prim
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import Button from "@/components/ui/Button";
 import SymbolButton from "@/components/ui/SymbolButton";
+import { useTechnicalVehicle } from "@/hooks/useTechnicalInfo";
 import dynamic from "next/dynamic";
 import { formatVehicleLocation } from "@/lib/tracking/vehicleLocations"; // canonical vehicle-location display
 import { getJobPriorityOption } from "@/features/jobCards/workflow/jobSettings"; // priority label + badge tone
@@ -173,6 +174,7 @@ export default function JobCardDetailPageUi(props) {
     jobSettingsMeta,
     handleJobSettingsChanged,
   } = props; // receive page logic props.
+  const vehicleDisplay = useTechnicalVehicle(props.view === "section3" && jobData ? jobNumber : null, jobData);
   // Only a non-normal priority earns a header badge.
   const jobPriority =
     jobSettingsMeta && !jobSettingsMeta.migrationPending && jobSettingsMeta.priority && jobSettingsMeta.priority !== "normal"
@@ -240,6 +242,7 @@ export default function JobCardDetailPageUi(props) {
         gap: "10px",
         rowGap: "10px"
       }} data-dev-section="1" data-dev-section-key="jobcard-page-shell" data-dev-section-type="page-shell" data-dev-shell="1">
+        {/* Archive banner: warns that this is an archived, read-only copy of the job kept for audit. */}
         {isArchiveMode && <LayerSurface as="section" sectionKey="jobcard-archive-banner" sectionType="section-shell" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 16px" style={{
         color: "var(--danger-dark)",
         fontSize: "0.95rem",
@@ -248,6 +251,7 @@ export default function JobCardDetailPageUi(props) {
             Archived copy &middot; Job #{jobData.jobNumber} is read-only. VHC, notes, and documents are preserved for audit.
           </LayerSurface>}
 
+        {/* Read-only banner: explains the job is locked at its current status, though key and car locations can still be updated. */}
         {isInvoiceOrBeyondReadOnly && !isArchiveMode && <LayerSurface as="section" radius="var(--radius-sm)" padding="12px 16px" style={{
         color: "var(--text-1)",
         fontSize: "0.95rem",
@@ -256,7 +260,7 @@ export default function JobCardDetailPageUi(props) {
             Job card is read-only in {jobData.status}. Key/car location updates remain available until archive. Awaiting job to be archived.
           </LayerSurface>}
 
-        {/* ✅ Header Section */}
+        {/* Job header: job number, overall status, division and priority badges, links to related jobs, and the job settings and action buttons. */}
         <LayerTheme as="section" sectionKey="jobcard-header" sectionType="section-header-row" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="20px" gap="12px" style={{
         flexShrink: 0,
         margin: 0
@@ -358,6 +362,7 @@ export default function JobCardDetailPageUi(props) {
         flexShrink: 0,
         margin: 0
       }}>
+          {/* Vehicle summary: registration and editable mileage, with the full available make/model, VIN, year, colour, fuel and engine number in the existing detail row. */}
           <LayerTheme sectionKey="jobcard-summary-vehicle" sectionType="content-card" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           minWidth: 0,
           overflow: "hidden"
@@ -413,14 +418,16 @@ export default function JobCardDetailPageUi(props) {
               }} />
               </div>
             </div>
-            <div style={{
+            <div title={`${vehicleDisplay.summary} · Model source: ${vehicleDisplay.modelSource}`} tabIndex={0} style={{
             ...summarySecondaryTextStyle,
-            color: "var(--accentText)"
+            color: "var(--accentText)",
+            whiteSpace: "nowrap", overflowX: "auto", textOverflow: "clip" // Keep full identifiers accessible without adding a summary line.
           }}>
-              {String(jobData.make || jobData.makeModel || `${jobData.make} ${jobData.model}` || "N/A")}
+              {vehicleDisplay.summary}
             </div>
           </LayerTheme>
 
+          {/* Customer summary: name and phone or email, with a badge showing whether the health check has been sent or viewed; click to open the customer record. */}
           <LayerTheme sectionKey="jobcard-summary-customer" sectionType="content-card" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           minWidth: 0,
           overflow: "hidden",
@@ -462,6 +469,7 @@ export default function JobCardDetailPageUi(props) {
           </div>
           </LayerTheme>
 
+          {/* Health check and money summary: the authorised and declined health check totals for this job. */}
           <LayerTheme sectionKey="jobcard-summary-vhc-financials" sectionType="stat-card" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           minWidth: 0,
           overflow: "hidden",
@@ -534,6 +542,7 @@ export default function JobCardDetailPageUi(props) {
             </div>
           </LayerTheme>
 
+          {/* Locations summary: where the keys and the car currently are, click to update them. */}
           <LayerTheme sectionKey="jobcard-summary-locations" sectionType="content-card" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           flexDirection: "row",
           alignItems: "stretch",
@@ -615,12 +624,13 @@ export default function JobCardDetailPageUi(props) {
           </LayerTheme>
         </div>
 
-        {/* ✅ Tabs Navigation */}
+        {/* Tab navigation: the scrollable row of tabs for switching between the parts of the job card. */}
         <section style={{
         padding: 0,
         margin: 0
       }}>
           <div data-presentation="job-detail-tabs" ref={tabsScrollRef} onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined} onMouseMove={tabsOverflowing ? handleTabsDragMove : undefined} onMouseUp={tabsOverflowing ? handleTabsDragEnd : undefined} onMouseLeave={tabsOverflowing ? handleTabsDragEnd : undefined}>
+          {/* The tab strip itself: one button per tab, with the current tab highlighted. */}
           <LayerTheme
             sectionKey="jobcard-tab-row"
             sectionType="tab-row"
@@ -716,7 +726,7 @@ export default function JobCardDetailPageUi(props) {
           }
         `}</style>
 
-        {/* ✅ Tab Content */}
+        {/* Tab content: shows whichever tab is selected (requests, contact, scheduling, parts, write-up, health check, clocking, messages, documents, invoice and so on). */}
         <LayerTheme as="section" className="app-layout-section-shell" sectionKey="jobcard-tab-content-shell" sectionType="section-shell" parentKey="jobcard-page-shell" shell radius="var(--section-card-radius)" padding="var(--section-card-padding)" gap="var(--space-4)" data-dev-page="Job card detail" data-dev-tab={activeTabLabel} data-dev-card-section="tab content shell" data-dev-text-preview={`Tab content shell: ${activeTabLabel}`} data-dev-active-tab={activeTab} data-dev-active-tab-label={activeTabLabel}>
           {/* Per-tab containers below use the canonical .app-page-stack class
               (CLAUDE.md §3.3) so the in-tab Locked alert and the tab body sit
@@ -763,6 +773,7 @@ export default function JobCardDetailPageUi(props) {
               <strong>Locked: Loan Car</strong>
               <span>{generalReadOnlyLockDescription}</span>
             </div>}
+            {/* Loan car schedule: the loan car booking calendar with this job's vehicle highlighted. */}
             <LoanCarSchedulePanel jobData={jobData} highlightedJobNumber={jobData?.jobNumber || jobNumber} highlightedReg={jobData?.reg || ""} />
           </>}
 
@@ -851,6 +862,7 @@ export default function JobCardDetailPageUi(props) {
             <ClockingTab jobData={jobData} canEdit={canEdit && !isClockingLockedByStatus} disabledMessageOverride={isClockingLockedByStatus ? clockingLockDescription : ""} />
           </div>
 
+          {/* Messages tab: the conversation thread with the customer for this job. */}
           <LayerSurface
             className="app-page-stack"
             sectionKey="jobcard-tab-messages"
@@ -909,6 +921,7 @@ export default function JobCardDetailPageUi(props) {
                   {creatingInvoice ? "Creating Invoice..." : "Create Invoice"}
                 </button>
               </div>}
+            {/* Invoice prerequisites warning: lists the tasks that must be finished before the invoice can be shared with the customer. */}
             {!invoicePrerequisitesMet && <div style={{
             padding: "24px",
             border: "none",

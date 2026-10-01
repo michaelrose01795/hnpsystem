@@ -73,6 +73,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
     onClose?.();
   };
 
+  // Find a customer popup: search existing customers by name, email or mobile, pick one from the results, or start a new customer record.
   return (
     <PopupModal onClose={onClose} cardStyle={{ maxWidth: "650px" }} ariaLabel="Existing customer">
       <div className="app-page-stack" style={{ padding: "var(--section-card-padding)" }}>
@@ -101,6 +102,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
         ) : null}
 
         {customerList.length > 0 ? (
+          // Search results: the matching customers with their name, email and mobile; choosing one selects it.
           <LayerTheme
             sectionKey="existing-customer-results"
             parentKey="shared-popup-card"
@@ -137,6 +139,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
         {noResults ? <StatusMessage tone="info">No existing customers found.</StatusMessage> : null}
 
         {selectedCustomer ? (
+          // Selected customer summary: name, address, email, mobile and telephone.
           <LayerTheme
             sectionKey="existing-customer-summary"
             parentKey="shared-popup-card"

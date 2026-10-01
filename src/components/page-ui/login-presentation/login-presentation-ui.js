@@ -133,6 +133,7 @@ export default function LoginPresentationPageUi(props = {}) {
               <BrandLogo alt="HP Automotive" className="login-logo" />
             </div>
 
+            {/* Presentation mode card: choose which job role to demonstrate (each button shows the role, demo user and number of pages), or go back to the staff login. */}
             <LayerSurface as="div"
 
             style={{

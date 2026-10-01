@@ -10,6 +10,7 @@ import { NotConnectedNotice } from "./analyticsAtoms";
 
 export default function EnquiriesSection() {
   return (
+    // Enquiry and lead data: currently a notice that enquiry tracking is not connected, listing the figures that will appear here.
     <Section
       title="Enquiry & Lead Data"
       subtitle="Enquiries submitted through the public /website and the pages they came from."

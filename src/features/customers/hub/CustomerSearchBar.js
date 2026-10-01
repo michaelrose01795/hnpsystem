@@ -60,6 +60,7 @@ export default function CustomerSearchBar({ currentCustomerId }) {
   }, [term, currentCustomerId]);
 
   return (
+    // Customer search: look up another customer by name, email, phone or postcode and jump to their record.
     <LayerTheme as="section" sectionKey="customer-profile-search" parentKey="app-layout-page-card">
       <InputField
         label="Find another customer"

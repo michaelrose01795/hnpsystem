@@ -57,7 +57,7 @@ import {
   normalizeCustomerRecord,
   buildCustomerUpdatePayload,
 } from "@/lib/customers/customerRecord"; // shared with /new-order
-import { createInitialVehicleState } from "@/lib/vehicles/vehicleFormState"; // shared with /new-order
+import { createInitialVehicleState, vehicleStateFromDvla } from "@/lib/vehicles/vehicleFormState"; // shared with /new-order
 
 // Wait for a pause in typing before looking a registration up in the database.
 const VEHICLE_LOOKUP_DEBOUNCE_MS = 400;
@@ -791,6 +791,7 @@ export default function CreateJobCardPage() {
       setVehicle((prev) => ({ // merge values into form state
         ...prev,
         reg: normalizedReg || prev.reg,
+        identityRegistration: (normalizedReg || "").replace(/\s/g, "").toUpperCase(),
         makeModel: combinedMakeModel || prev.makeModel,
         // Capture make + year for the Mobile Mechanic eligibility rules.
         make: storedVehicle.make || prev.make,
@@ -1326,35 +1327,7 @@ export default function CreateJobCardPage() {
         throw new Error("No vehicle data found for that registration from DVLA"); // throw descriptive error
       }
 
-      const normalizedRegistration = (data.registrationNumber || data.registration || regUpper || "").toString().toUpperCase(); // normalize registration from response
-      const detectedMake = data.make || data.vehicleMake || ""; // detect make field from response variants
-      const detectedModel = data.model || data.vehicleModel || ""; // detect model field from response variants
-      const combinedMakeModel = `${detectedMake} ${detectedModel}`.trim(); // combine make and model into single label
-      const fallbackMakeModel = combinedMakeModel.length > 0 ? combinedMakeModel : detectedMake || "Unknown"; // ensure fallback value
-
-      // DVLA returns yearOfManufacture as an integer and monthOfFirstRegistration
-      // as "YYYY-MM". Either is a valid source — prefer yearOfManufacture, then
-      // fall back to the first-registration year. Needed for the Mobile
-      // Mechanic age rule.
-      const firstRegYear = (() => {
-        const rawFirstReg = data.monthOfFirstRegistration || data.dateOfFirstRegistration || "";
-        const parsedFirstRegYear = Number(String(rawFirstReg).slice(0, 4));
-        return Number.isFinite(parsedFirstRegYear) && parsedFirstRegYear > 1900 ? parsedFirstRegYear : null;
-      })();
-      const detectedYear =
-      (Number.isFinite(Number(data.yearOfManufacture)) ? Number(data.yearOfManufacture) : null) ||
-      firstRegYear;
-
-      const vehicleData = { // build vehicle object for state update
-        reg: normalizedRegistration,
-        makeModel: fallbackMakeModel,
-        make: detectedMake || "", // explicit make for eligibility checks
-        year: detectedYear, // year of manufacture for eligibility checks
-        colour: data.colour || data.vehicleColour || data.bodyColour || "Not provided",
-        chassis: data.vin || data.chassisNumber || data.vehicleIdentificationNumber || "Not provided",
-        engine: data.engineNumber || data.engineCapacity || data.engine || "Not provided",
-        mileage: data.mileage || data.currentMileage || data.motTests && data.motTests[0]?.odometerValue || vehicle.mileage || ""
-      };
+      const vehicleData = vehicleStateFromDvla(data, { registration: regUpper, previous: vehicle, previousMileage: vehicle.mileage });
 
       console.log("Setting vehicle data from DVLA:", vehicleData); // log normalized vehicle data
 

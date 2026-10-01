@@ -880,6 +880,7 @@ function UsagePopup({ itemKey, title, onClose }) {
         padding: "24px"
       }}>
       
+      {/* "Where is this used?" pop-up: lists every known file that uses the chosen component, with a button to copy the suggested fix and another to jump to the page. */}
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -989,6 +990,7 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
   const [noteOpen, setNoteOpen] = useState(false);
   const noteText = typeof noteTextProp === "object" && noteTextProp !== null ? noteTextProp[itemKey] || "" : noteTextProp || "";
   const hasNote = typeof noteText === "string" && noteText.length > 0;
+  // Showcase card: one titled demo of a shared UI component, with a heading that opens the "where used" list and a toggle for a saved developer note.
   return (
     <DevLayoutSection
       as="section"
@@ -1127,6 +1129,7 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
 function NonGlobalSection({ itemKey, title, instead, note, onOpenUsage, noteText, onNoteChange, noteSaving, children }) {
   const audit = NON_GLOBAL_AUDIT[itemKey];
   const usage = audit?.usage || [];
+  // Audit card for a hand-rolled pattern that should be using a shared component: says what to use instead and lists the files still to migrate.
   return (
     <ShowcaseSection
       title={title}
@@ -1807,6 +1810,7 @@ function DevOverlayShowcase({ overlay, registry, computedSections, onOpenUsage }
     return 0;
   });
   const modeLabel = { labels: "Labels", details: "Details", inspect: "Inspect" };
+  // Dev Layout Overlay card: shows whether the overlay is on, its mode and scope, counts of detected sections and issues, and an expandable tree of every section found.
   return (
     <ShowcaseSection title="Dev Layout Overlay" itemKey="dev-layout-overlay" onOpenUsage={onOpenUsage}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px", marginBottom: "10px" }}>
@@ -2376,6 +2380,7 @@ function GlobalUiShowcase() {
         }
       `}</style>
 
+      {/* Library filter card: search box plus category and scope filters for narrowing the component showcase, with a clear-filters button. */}
       <DevLayoutSection
         sectionKey="user-diagnostic/showcase-filters"
         sectionType="filter-row"
@@ -2439,6 +2444,7 @@ function GlobalUiShowcase() {
         }
       </DevLayoutSection>
 
+      {/* Height compare row: a button, dropdown, calendar, search bar and tabs laid side by side so their heights can be checked against each other. */}
       <DevLayoutSection
         sectionKey="user-diagnostic/showcase-height-compare"
         sectionType="content-card"
@@ -2565,6 +2571,7 @@ function GlobalUiShowcase() {
       {/* ── Dev Layout Overlay ────────────────────────────────── */}
       {visibleCategorySet.size === 0 && <p role="status">No sections match these filters. Clear the filters or try another search.</p>}
       <ShowcaseCategoryHeader category="Colours & Tokens" visible={visibleCategorySet.has("Colours & Tokens")}>
+      {/* Colour tokens: swatches for every theme colour, grouped by purpose, so each token can be seen in the current light or dark mode. */}
       {isSectionVisible("colour-tokens") &&
       <ShowcaseSection title="Colour Tokens" itemKey="colour-tokens" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ marginBottom: "14px" }}>
@@ -2700,6 +2707,7 @@ function GlobalUiShowcase() {
           site; use <code>.app-symbol-btn--table</code> by hand for a row-list that is not a
           real table.
         </div>
+        {/* Sample of symbol buttons at full size next to the smaller size they take inside a table row. */}
         <LayerTheme padding="12px" gap="12px">
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <SymbolButton symbol="view" label="View" />
@@ -2745,6 +2753,7 @@ function GlobalUiShowcase() {
         <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Popup header convention — close is top right, everything else to its left
         </div>
+        {/* Example pop-up header showing the house convention: title on the left, actions next, and the close symbol at the far right. */}
         <LayerTheme padding="12px">
           <div className="app-popup-compact-header">
             <h3 style={{ margin: 0, fontSize: "14px" }}>Job 24815 — parts</h3>
@@ -2763,6 +2772,7 @@ function GlobalUiShowcase() {
       }
 
 
+      {/* Section layers: nested boxes showing how card backgrounds alternate between the plain and tinted fill as they nest deeper. */}
       {isSectionVisible("section-layers") &&
       <ShowcaseSection title="Section Layers (surface / theme alternation)" itemKey="section-layers" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ background: "var(--surface)", padding: "10px", borderRadius: "var(--radius-md)", border: "1px solid var(--primary-border)" }}>
@@ -2782,6 +2792,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Audit of colours written as literal codes instead of theme colours, listing the files where they remain. */}
       {isSectionVisible("non-global-colours") &&
       <NonGlobalSection
         itemKey="non-global-colours"
@@ -2802,6 +2813,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Buttons" visible={visibleCategorySet.has("Buttons")}>
+      {/* Buttons: the primary, secondary, ghost and danger button styles together with their size options. */}
       {isSectionVisible("buttons-app-btn") &&
       <ShowcaseSection title="Buttons (.app-btn)" itemKey="buttons-app-btn" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
@@ -2824,6 +2836,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Button interaction states: each button style frozen in its hover, pressed, focused and disabled look for comparison. */}
       {isSectionVisible("interaction-states-buttons") &&
       <ShowcaseSection title="Interaction States — Buttons" itemKey="interaction-states-buttons" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         {/* Simulated state previews use the data-demo-state hooks defined in
@@ -2843,6 +2856,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Audit of hand-built buttons that do not use the shared button, listing the files still to migrate. */}
       {isSectionVisible("non-global-buttons") &&
       <NonGlobalSection
         itemKey="non-global-buttons"
@@ -2858,6 +2872,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Inputs & Fields" visible={visibleCategorySet.has("Inputs & Fields")}>
+      {/* Text field playground: a live text input with controls to switch its label, placeholder, error, disabled and other states. */}
       {isSectionVisible("input-app-input") &&
       <ShowcaseSection title="Text Field (.app-input + InputField)" itemKey="input-app-input" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -2903,6 +2918,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Input interaction states: text inputs shown in default, focused, error, success and disabled appearance. */}
       {isSectionVisible("interaction-states-inputs") &&
       <ShowcaseSection title="Interaction States — Inputs" itemKey="interaction-states-inputs" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -2914,6 +2930,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Checkbox states: unchecked, checked, disabled and related variants of checkboxes and radios. */}
       {isSectionVisible("checkboxes-states") &&
       <ShowcaseSection title="Checkboxes — States" itemKey="checkboxes-states" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px" }}>
@@ -2955,6 +2972,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Focus ring standard: a button and field shown with the keyboard-focus outline applied so its look can be checked. */}
       {isSectionVisible("focus-ring") &&
       <ShowcaseSection title="Focus Ring Standard (--control-ring)" itemKey="focus-ring" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -2971,6 +2989,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Form validation examples: fields with an error message, a success message and helper text beneath them. */}
       {isSectionVisible("form-validation") &&
       <ShowcaseSection title="Form Validation (error / success / helper)" itemKey="form-validation" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -2990,11 +3009,13 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Field group pattern: a single labelled phone input showing the standard stacked label-over-field layout. */}
       {isSectionVisible("field-group") &&
       <ShowcaseSection title="Field Group Pattern (stacked)" itemKey="field-group" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <InputField label="Phone" placeholder="+44 ..." />
       </ShowcaseSection>
       }
+      {/* Audit of text inputs and textareas that do not use the shared input, listing the files still to migrate. */}
       {isSectionVisible("non-global-inputs") &&
       <NonGlobalSection
         itemKey="non-global-inputs"
@@ -3007,6 +3028,7 @@ function GlobalUiShowcase() {
         noteSaving={noteSaving}>
       </NonGlobalSection>
       }
+      {/* Audit of form labels styled locally because no shared label exists yet, listing where they are. */}
       {isSectionVisible("non-global-form-labels") &&
       <NonGlobalSection
         itemKey="non-global-form-labels"
@@ -3022,6 +3044,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Dropdowns & Selects" visible={visibleCategorySet.has("Dropdowns & Selects")}>
+      {/* Dropdown playground: a live single-choice dropdown with controls to change its label, size, options and state. */}
       {isSectionVisible("dropdown-api") &&
       <ShowcaseSection title="Dropdown (.dropdown-api)" itemKey="dropdown-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -3086,6 +3109,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Multi-select dropdown playground: a live multiple-choice dropdown with controls to change its options and state. */}
       {isSectionVisible("multiselect-dropdown") &&
       <ShowcaseSection title="Multi-Select Dropdown (.multiselect-dropdown-api)" itemKey="multiselect-dropdown" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -3175,6 +3199,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
+      {/* Audit of plain browser select boxes that should be the shared dropdown, listing any that remain. */}
       {isSectionVisible("non-global-selects") &&
       <NonGlobalSection
         itemKey="non-global-selects"
@@ -3190,6 +3215,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Calendar & Time" visible={visibleCategorySet.has("Calendar & Time")}>
+      {/* Calendar playground: a live date picker with controls to change its label, selected date and state. */}
       {isSectionVisible("calendar-api") &&
       <ShowcaseSection title="Calendar (.calendar-api)" itemKey="calendar-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -3252,6 +3278,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Month picker playground: a live month selector with controls to change its value and state. */}
       {isSectionVisible("monthpicker-api") &&
       <ShowcaseSection title="Month Picker (.monthpicker-api)" itemKey="monthpicker-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -3284,6 +3311,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Time picker playground: a live time selector with controls to change its value and state. */}
       {isSectionVisible("timepicker-api") &&
       <ShowcaseSection title="Time Picker (.timepicker-api)" itemKey="timepicker-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -3331,6 +3359,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Search" visible={visibleCategorySet.has("Search")}>
+      {/* Search bar playground: a live search field with controls to change its placeholder, value and state. */}
       {isSectionVisible("searchbar-api") &&
       <ShowcaseSection title="Search Bar (.searchbar-api)" itemKey="searchbar-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -3386,6 +3415,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Tabs" visible={visibleCategorySet.has("Tabs")}>
+      {/* Tabs playground: a live tab strip with controls to change its layout, number of tabs and state. */}
       {isSectionVisible("tab-api") &&
       <ShowcaseSection title="Tabs (.tab-api / TabGroup)" itemKey="tab-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div className="showcase-controls">
@@ -3433,6 +3463,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
+      {/* Audit of the competing tab implementations still in the app, listing which pages use each one. */}
       {isSectionVisible("non-global-tabs") &&
       <NonGlobalSection
         itemKey="non-global-tabs"
@@ -3448,6 +3479,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Badges & Labels" visible={visibleCategorySet.has("Badges & Labels")}>
+      {/* Labels and bubbles: every badge colour and size, plus the summary tiles that sit on plain and tinted backgrounds. */}
       {isSectionVisible("app-badge") &&
       <ShowcaseSection title="Labels & Bubbles (.app-badge)" itemKey="app-badge" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
@@ -3477,6 +3509,7 @@ function GlobalUiShowcase() {
         <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", margin: "18px 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Summary tiles (.app-summary-item) — on a --theme layer
         </div>
+        {/* Summary tiles shown on a tinted background, which is where they normally live. */}
         <LayerTheme padding="12px">
           <div className="app-summary-section">
             <div className="app-summary-grid">
@@ -3503,6 +3536,7 @@ function GlobalUiShowcase() {
         <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", margin: "18px 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Summary tiles (.app-summary-item) — on a --surface layer
         </div>
+        {/* Summary tiles shown on a plain background, using the variant made for that case. */}
         <LayerSurface padding="12px">
           <div className="app-summary-section">
             <div className="app-summary-grid">
@@ -3526,6 +3560,7 @@ function GlobalUiShowcase() {
         <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-1)", margin: "18px 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Wrong pairing — bare .app-summary-item on a --surface layer
         </div>
+        {/* Deliberately wrong example: the standard summary tile on a plain background, where it blends in and disappears. */}
         <LayerSurface padding="12px">
           <div className="app-summary-section">
             <div className="app-summary-grid">
@@ -3555,6 +3590,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
+      {/* Audit of status chips built by hand instead of using the shared badge, listing the files still to migrate. */}
       {isSectionVisible("non-global-badges") &&
       <NonGlobalSection
         itemKey="non-global-badges"
@@ -3570,6 +3606,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Spacing & Layout" visible={visibleCategorySet.has("Spacing & Layout")}>
+      {/* Global spacing scale: a bar for each spacing step with its pixel size, plus the page gutter and layout gap values. */}
       {isSectionVisible("spacing-global") &&
       <ShowcaseSection title="Spacing — Global (--space-* / gutters / layout)" itemKey="spacing-global" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
@@ -3602,6 +3639,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Spacing comparison: common hard-coded pixel gaps matched to the nearest step on the shared spacing scale. */}
       {isSectionVisible("spacing-comparison") &&
       <ShowcaseSection title="Spacing Comparison (hardcoded ↔ nearest --space-*)" itemKey="spacing-comparison" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px" }}>
@@ -3625,6 +3663,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Corner radius scale: a sample square for each radius size from extra small to pill. */}
       {isSectionVisible("radius-scale") &&
       <ShowcaseSection title="Radius & Spacing Scale" itemKey="radius-scale" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
@@ -3645,6 +3684,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Non-global spacing: a list of one-off fixed sizes still used by individual modules and where they are. */}
       {isSectionVisible("spacing-non-global") &&
       <ShowcaseSection title="Spacing — Non-Global (per-module hardcoded)" itemKey="spacing-non-global" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px" }}>
@@ -3670,6 +3710,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Tables" visible={visibleCategorySet.has("Tables")}>
+      {/* Data table sample: the standard table with headings and a few example job rows (status, job, registration, customer, vehicle and type). */}
       {isSectionVisible("table-app-data") &&
       <ShowcaseSection title="Table (.app-data-table / .app-table-shell)" itemKey="table-app-data" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div className="app-table-shell-scroll">
@@ -3686,6 +3727,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Table states: how a table looks when empty, loading, hovered and selected, and how row action buttons sit. */}
       {isSectionVisible("table-states") &&
       <ShowcaseSection title="Table States (empty / loading / hover / selected / actions)" itemKey="table-states" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -3721,6 +3763,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
+      {/* Audit of tables that do not use the shared table style, listing the files still to migrate. */}
       {isSectionVisible("non-global-tables") &&
       <NonGlobalSection
         itemKey="non-global-tables"
@@ -3736,6 +3779,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Popups & Modals" visible={visibleCategorySet.has("Popups & Modals")}>
+      {/* Global pop-up styles: previews of the standard backdrop and pop-up card with their size and spacing values. */}
       {isSectionVisible("popup-global") &&
       <ShowcaseSection title="Popup Styles — Global (.popup-backdrop / .popup-card)" itemKey="popup-global" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -3757,6 +3801,7 @@ function GlobalUiShowcase() {
         </p>
       </ShowcaseSection>
       }
+      {/* Confirmation dialog previews: example delete and confirm prompts with their action buttons. */}
       {isSectionVisible("confirm-dialogs") &&
       <ShowcaseSection title="Confirmation Dialogs (preview)" itemKey="confirm-dialogs" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -3777,6 +3822,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Unified pop-up proposal: a mock-up of a single shared pop-up card with its intended width, corners and backdrop. */}
       {isSectionVisible("popup-unified-proposal") &&
       <ShowcaseSection title="Popup — Unified Proposal (one &lt;Popup /&gt; primitive)" itemKey="popup-unified-proposal" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ background: "var(--overlay)", padding: "20px", borderRadius: "var(--radius-md)" }}>
@@ -3797,6 +3843,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
+      {/* Audit of pop-ups that paint their own dimmed backdrop instead of using the shared pop-up, listing any that remain. */}
       {isSectionVisible("non-global-modals") &&
       <NonGlobalSection
         itemKey="non-global-modals"
@@ -3809,6 +3856,7 @@ function GlobalUiShowcase() {
         noteSaving={noteSaving}>
       </NonGlobalSection>
       }
+      {/* Audit of panel names that are referred to as shared pop-up shells but have no styling behind them. */}
       {isSectionVisible("non-global-panels") &&
       <NonGlobalSection
         itemKey="non-global-panels"
@@ -3824,6 +3872,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Cards & Sections" visible={visibleCategorySet.has("Cards & Sections")}>
+      {/* Global cards and sections: a live nested example of the page shell, page card, stack and section cards in their correct order. */}
       {isSectionVisible("global-cards") &&
       <ShowcaseSection title="Global Cards / Sections" itemKey="global-cards" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "10px", lineHeight: 1.5 }}>
@@ -3831,13 +3880,16 @@ function GlobalUiShowcase() {
         </div>
         <div className="app-page-shell" style={{ padding: "8px" }}>
           <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>.app-page-shell</div>
+          {/* Example main page card, holding a stack of section cards. */}
           <div className="app-page-card">
             <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>.app-page-card</div>
             <div className="app-page-stack">
+              {/* Example inner section card, the equivalent of a titled section. */}
               <div className="app-section-card">
                 <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accentText)", marginBottom: "4px" }}>.app-section-card</div>
                 <div style={{ fontSize: "11px", color: "var(--text-1)" }}>Inner section — equivalent to the Section / Card component.</div>
               </div>
+              {/* Second example section card, showing the gap between stacked siblings. */}
               <div className="app-section-card">
                 <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accentText)", marginBottom: "4px" }}>.app-section-card</div>
                 <div style={{ fontSize: "11px", color: "var(--text-1)" }}>Stacked siblings use var(--page-stack-gap).</div>
@@ -3851,6 +3903,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Feedback & Status" visible={visibleCategorySet.has("Feedback & Status")}>
+      {/* Status messages: the info, success and danger message banners. */}
       {isSectionVisible("status-message") &&
       <ShowcaseSection title="Status Messages (.app-status-message)" itemKey="status-message" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -3860,6 +3913,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Empty state pattern: the standard "nothing here" placeholder with icon, title, description and action buttons, in its different variants. */}
       {isSectionVisible("empty-state-standard") &&
       <ShowcaseSection title="Empty State (standard pattern)" itemKey="empty-state-standard" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         {/* The real EmptyState primitive (src/components/ui/EmptyState.js). One
@@ -3886,6 +3940,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Form validation pattern: a working demo form that shows inline field errors and a grouped error summary when submitted empty. */}
       {isSectionVisible("form-validation") &&
       <ShowcaseSection title="Form Validation (standard pattern)" itemKey="form-validation" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         {/* The real useFormValidation hook + InputField/FieldError/FormErrorSummary
@@ -3897,6 +3952,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Toast notifications (proposed): sample success, error, info and warning pop-up messages. */}
       {isSectionVisible("toast-notifications") &&
       <ShowcaseSection title="Toast Notifications (proposed)" itemKey="toast-notifications" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -3917,6 +3973,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
+      {/* Audit of duplicated feedback styles (toasts and empty states) and which version is really in use. */}
       {isSectionVisible("non-global-feedback") &&
       <NonGlobalSection
         itemKey="non-global-feedback"
@@ -3932,6 +3989,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Loading & Skeletons" visible={visibleCategorySet.has("Loading & Skeletons")}>
+      {/* Loading skeletons: placeholder bars and a placeholder metric card shown while content loads. */}
       {isSectionVisible("loading-skeleton") &&
       <ShowcaseSection title="Loading Skeletons" itemKey="loading-skeleton" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -3944,6 +4002,7 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
+      {/* Expanded loading states: a saving button with spinner, an inline loading line and other in-progress indicators. */}
       {isSectionVisible("loading-states-expanded") &&
       <ShowcaseSection title="Loading States (expanded)" itemKey="loading-states-expanded" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -3966,6 +4025,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Navigation" visible={visibleCategorySet.has("Navigation")}>
+      {/* Navigation states: sidebar links in default, hover and active form, plus breadcrumb and pagination samples. */}
       {isSectionVisible("navigation-states") &&
       <ShowcaseSection title="Navigation States (sidebar / breadcrumb / pagination)" itemKey="navigation-states" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "12px" }}>
@@ -3993,6 +4053,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Scroll" visible={visibleCategorySet.has("Scroll")}>
+      {/* Scroll area: a short scrolling list of rows demonstrating the shared scroll container. */}
       {isSectionVisible("scroll-area") &&
       <ShowcaseSection title="Scroll Area (scrollAPI)" itemKey="scroll-area" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <ScrollArea maxHeight="120px" style={{ border: "1px solid var(--primary-border)", borderRadius: "var(--radius-xs)", padding: "8px" }}>
@@ -4008,6 +4069,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Tooltips" visible={visibleCategorySet.has("Tooltips")}>
+      {/* Tooltips: buttons and text that reveal the shared hover tooltip, alongside the browser's built-in one. */}
       {isSectionVisible("tooltips-native") &&
       <ShowcaseSection title="Tooltips (native title=)" itemKey="tooltips-native" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
@@ -4045,6 +4107,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Icons" visible={visibleCategorySet.has("Icons")}>
+      {/* Icon system (proposed): buttons with icons to the left and right, icon-only buttons and the suggested icon sizes. */}
       {isSectionVisible("icon-system") &&
       <ShowcaseSection title="Icon System (proposed wrapper)" itemKey="icon-system" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -4069,6 +4132,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Motion & Transitions" visible={visibleCategorySet.has("Motion & Transitions")}>
+      {/* Motion and transitions: the standard animation durations and easing curves with what each is used for. */}
       {isSectionVisible("motion-transitions") &&
       <ShowcaseSection title="Motion / Transitions" itemKey="motion-transitions" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11px", marginBottom: "10px" }}>
@@ -4101,6 +4165,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Typography" visible={visibleCategorySet.has("Typography")}>
+      {/* Audit of headings that fall back to browser default sizes on desktop, with the type scale that should be used. */}
       {isSectionVisible("non-global-headings") &&
       <NonGlobalSection
         itemKey="non-global-headings"
@@ -4130,6 +4195,7 @@ function GlobalUiShowcase() {
       </ShowcaseCategoryHeader>
 
       <ShowcaseCategoryHeader category="Reference" visible={visibleCategorySet.has("Reference")}>
+      {/* Domain class family index: a reference list of feature-specific style families and what each one covers. */}
       {isSectionVisible("domain-class-families") &&
       <ShowcaseSection title="Domain Class Family Index" itemKey="domain-class-families" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", fontSize: "11px" }}>
@@ -4154,6 +4220,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
 
+      {/* Audit of surface styling that lives in per-component stylesheets rather than the shared families, listing the files involved. */}
       {isSectionVisible("non-global-stylesheets") &&
       <NonGlobalSection
         itemKey="non-global-stylesheets"

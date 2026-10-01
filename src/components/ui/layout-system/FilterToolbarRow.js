@@ -4,6 +4,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 export default function FilterToolbarRow({ sectionKey, parentKey = "", children, className = "", style }) {
   return (
+    // Filter toolbar row: a horizontal strip holding a page's search box, filters and action buttons.
     <DevLayoutSection
       sectionKey={sectionKey}
       parentKey={parentKey}

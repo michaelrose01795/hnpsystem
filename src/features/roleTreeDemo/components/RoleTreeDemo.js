@@ -129,6 +129,7 @@ export default function RoleTreeDemo() {
         <span />
       </div>
 
+      {/* Presentation top bar: the title and current section summary, a row of dots for jumping between sections, and Back, Next and Exit buttons. */}
       <LayerSurface
         as="header"
         className={styles.chrome}
@@ -195,6 +196,7 @@ export default function RoleTreeDemo() {
         </div>
       </LayerSurface>
 
+      {/* Side label showing the current chapter number and section name (decorative only). */}
       <aside className={styles.roleSpine} aria-hidden="true">
         <span className={styles.roleSpineChapter}>{activeSection.chapter}</span>
         <span className={styles.roleSpineLabel}>{activeSection.label}</span>
@@ -202,13 +204,16 @@ export default function RoleTreeDemo() {
 
       <main className={styles.stage} ref={stageRef}>
         <div className={styles.presenterStrip} aria-live="polite">
+          {/* Presenter note: the chapter number and title of the section being shown. */}
           <LayerSurface className={styles.presenterMeta} radius="var(--radius-md)" padding="12px 14px" gap="4px">
             <span className={styles.presenterChapter}>Chapter {activeSection.chapter}</span>
             <span className={styles.presenterTitle}>{activeSection.label}</span>
           </LayerSurface>
+          {/* Presenter note: the key takeaway for the current section. */}
           <LayerSurface className={styles.presenterTakeaway} radius="var(--radius-md)" padding="12px 16px">
             {activeSection.takeaway}
           </LayerSurface>
+          {/* Presenter stats: three headline figures describing the scope of the presentation. */}
           <LayerSurface
             className={styles.presenterStats}
             aria-label="Presentation scope"

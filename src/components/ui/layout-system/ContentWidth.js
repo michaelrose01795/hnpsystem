@@ -4,6 +4,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 export default function ContentWidth({ sectionKey, parentKey = "", widthMode = "content", children, className = "", style, ...rest }) {
   return (
+    // Width wrapper that keeps a page's content to the standard content width.
     <DevLayoutSection
       sectionKey={sectionKey}
       sectionType="section-shell"

@@ -49,6 +49,7 @@ function PhotoHighlightPrompt({ isOpen, file, onYes, onNo, position = null }) {
   );
 
   return (
+    // Pop-up shown after each photo is taken, asking whether the technician wants to highlight (annotate) it or keep the original.
     <PopupModal
       isOpen={isOpen}
       closeOnBackdrop={false}
@@ -74,6 +75,7 @@ function PhotoHighlightPrompt({ isOpen, file, onYes, onNo, position = null }) {
           </div>
         </header>
 
+        {/* Preview of the photo that was just taken. */}
         <LayerTheme
           radius="var(--radius-md)"
           padding="0"
@@ -114,6 +116,7 @@ function CaptureReviewModal({
   const selected = items.find((item) => item.id === selectedId) || items[0] || null;
 
   return (
+    // Review pop-up: lists everything captured in this session so the technician can check, remove, take more or upload it all.
     <PopupModal
       isOpen={isOpen}
       closeOnBackdrop={false}
@@ -147,6 +150,7 @@ function CaptureReviewModal({
           </div>
         </header>
 
+        {/* Thumbnail strip of the captured photos and videos, with buttons to view the selected one full size or remove it. */}
         <LayerTheme
           radius="var(--radius-md)"
           style={{
@@ -244,6 +248,7 @@ function CaptureReviewModal({
           </div>
         ) : null}
 
+        {/* Large preview of the selected photo or video. */}
         <LayerTheme
           radius="var(--radius-md)"
           padding="0"
@@ -611,6 +616,7 @@ export default function SectionCameraButton({
         {iconOnly ? null : uploading ? "Uploading…" : `${label}${countLabel}`}
       </Button>
 
+      {/* Pop-up for choosing which reported concern the new photo or video belongs to. */}
       <ConcernPickerModal
         isOpen={pickerOpen}
         title={sectionLabel ? `Link capture · ${sectionLabel}` : "Link capture to a concern"}
@@ -648,6 +654,7 @@ export default function SectionCameraButton({
         onCancel={() => resolveTrayEdit(null)}
       />
 
+      {/* Pop-up asking whether the photo just taken should be highlighted before it is kept. */}
       <PhotoHighlightPrompt
         isOpen={highlightPromptOpen}
         file={capturedPhoto}
@@ -698,6 +705,7 @@ export default function SectionCameraButton({
         onCancel={discardSession}
       />
 
+      {/* Review pop-up listing the captured media before it is uploaded to the health check. */}
       <CaptureReviewModal
         isOpen={reviewOpen}
         items={pendingMedia}

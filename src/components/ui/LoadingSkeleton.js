@@ -64,6 +64,7 @@ export function InlineLoading({ width = 140, height = 12, label = "Loading", cla
 export function SectionSkeleton({ titleWidth = "180px", subtitleWidth = "240px", rows = 3, showHeader = true, minHeight = "auto", style, layer = "theme" }) {
   const Layer = layer === "surface" ? LayerSurface : LayerTheme;
   return (
+    // Placeholder section card: a shimmering title and subtitle followed by a few grey text lines, shown while a real section loads.
     <Layer style={{ minHeight, minWidth: 0, ...style }}>
       <SkeletonKeyframes />
       {showHeader && <div style={{ display: "grid", gap: "var(--space-sm)" }}>
@@ -78,14 +79,17 @@ export function SectionSkeleton({ titleWidth = "180px", subtitleWidth = "240px",
 }
 
 export function SectionGridSkeleton({ cards = 4, cols = "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", rows = 3, style }) {
+  // Placeholder grid panel: a responsive grid of small placeholder cards shown while a card grid loads.
   return <LayerTheme style={{ display: "grid", gridTemplateColumns: cols, minWidth: 0, ...style }}>
     <SkeletonKeyframes />
+    {/* One placeholder card inside the grid, with header and text-line shimmers. */}
     {Array.from({ length: cards }, (_, index) => <SectionSkeleton key={index} rows={rows} layer="surface" />)}
   </LayerTheme>;
 }
 
 export function SkeletonMetricCard({ layer = "theme" }) {
   const Layer = layer === "surface" ? LayerSurface : LayerTheme;
+  // Placeholder metric card: shimmering label, large figure and helper line shown while a headline figure loads.
   return <Layer style={{ minWidth: 0, flex: 1 }}>
     <SkeletonKeyframes />
     <SkeletonBlock width="60%" height="14px" />
@@ -296,6 +300,7 @@ export function ListLoadingSkeleton({ rows = 6, toolbar = true }) {
   return <div role="status" aria-label="Loading records" aria-busy="true" className="app-page-stack" style={{ minWidth: 0, width: "100%" }}>
     <SkeletonKeyframes />
     {toolbar && <div style={skeletonGrid}><SkeletonBlock height="44px" /><SkeletonBlock width="180px" height="44px" /></div>}
+    {/* Placeholder list row: three shimmering fields and a short line standing in for one record while a list loads. */}
     {Array.from({ length: rows }, (_, index) => <LayerTheme key={index} radius="var(--radius-sm)">
       <div style={skeletonGrid}>
         <SkeletonBlock width="65%" height="18px" />
@@ -311,12 +316,14 @@ export function NextJobsSkeleton() {
   return <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading workshop queue" className="app-page-stack" style={{ width: "100%", minWidth: 0 }}>
     <SkeletonKeyframes />
     <SkeletonBlock height="44px" />
+    {/* Placeholder for the Checked In Jobs and Unassigned Jobs panels of the workshop queue: a heading line and a strip of job card shapes. */}
     {["Checked In Jobs", "Unassigned Jobs"].map((label) => <LayerTheme key={label} as="section" aria-label={label} radius="var(--radius-lg)">
       <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--layout-card-gap)" }}>
         <SkeletonBlock width="180px" height="20px" /><SkeletonBlock width="72px" height="14px" />
       </div>
       {/* Match the planner's compact job cards and horizontal checked-in strip. */}
       <div style={label === "Checked In Jobs" ? { display: "flex", gap: "var(--layout-card-gap)", overflowX: "auto", minWidth: 0 } : { ...skeletonGrid, gridTemplateColumns: "repeat(auto-fill, minmax(min(212px, 100%), 212px))", maxHeight: "280px", overflowY: "auto" }}>
+        {/* Placeholder job card: four shimmering lines standing in for job number, vehicle, description and status. */}
         {Array.from({ length: 4 }, (_, index) => <LayerSurface key={index} radius="var(--radius-sm)" style={label === "Checked In Jobs" ? { flex: "0 0 clamp(184px, 16vw, 212px)" } : undefined}>
           <SkeletonBlock width="42%" height="18px" />
           <SkeletonBlock width="65%" height="14px" />
@@ -325,6 +332,7 @@ export function NextJobsSkeleton() {
         </LayerSurface>)}
       </div>
     </LayerTheme>)}
+    {/* Placeholder for the technician assignments board: a heading and four technician rows. */}
     <LayerTheme as="section" aria-label="Technician assignments">
       <SkeletonBlock width="180px" height="20px" />
       {/* The live board scrolls horizontally below its 680px minimum width. */}
@@ -332,7 +340,9 @@ export function NextJobsSkeleton() {
         <div style={{ minWidth: "680px", display: "grid", gap: "var(--layout-card-gap)" }}>
           {/* Match the planner's 108–150px identity column before its scoped CSS mounts. */}
           {Array.from({ length: 4 }, (_, index) => <div key={index} style={{ display: "grid", gridTemplateColumns: "clamp(108px, 11vw, 150px) minmax(0, 1fr)", gap: "var(--layout-card-gap)" }}>
+            {/* Placeholder for a technician's name and role. */}
             <LayerSurface radius="var(--radius-sm)"><SkeletonBlock width="70%" height="16px" /><SkeletonBlock width="50%" height="12px" /></LayerSurface>
+            {/* Placeholder for that technician's assigned jobs lane. */}
             <LayerSurface radius="var(--radius-sm)"><SkeletonBlock width={index % 2 ? "55%" : "80%"} height="44px" /></LayerSurface>
           </div>)}
         </div>
@@ -352,6 +362,7 @@ export function PageSkeleton({ sections, minHeight, href }) {
   if (sections === undefined && isTable) return <div className="app-page-stack" style={{ width: "100%", minWidth: 0 }}>
     <SkeletonKeyframes />
     <div style={skeletonGrid}><SkeletonBlock height="44px" /><SkeletonBlock width="180px" height="44px" /></div>
+    {/* Placeholder table panel shown while a table-based page (customers, goods in, stock, accounts) loads. */}
     <LayerTheme style={{ overflowX: "auto", minWidth: 0 }}><TableSkeleton columns={pathname === "/customers" ? ["Customer", "Email", "Phone", "Postcode", "Vehicles", "Jobs", "Added"] : 5} rows={8} /></LayerTheme>
   </div>;
   const resolvedSections = sections ?? (isDashboard ? 2 : 3);
@@ -375,9 +386,11 @@ export function PageSkeleton({ sections, minHeight, href }) {
     >
       <SkeletonKeyframes />
       {sections === undefined && isDashboard && <div style={skeletonGrid}>
+        {/* Row of four placeholder metric cards shown on dashboard and report pages. */}
         {Array.from({ length: 4 }, (_, index) => <SkeletonMetricCard key={index} />)}
       </div>}
       {sectionList.map((section, index) => (
+        // One placeholder section card per expected page section.
         <SectionSkeleton key={index} {...section} />
       ))}
     </div>
@@ -425,10 +438,12 @@ export default function PageLoadingSkeleton({
           }}
         >
           {Array.from({ length: metricCards }).map((_, i) => (
+            // Placeholder metric card in the full-screen loading view.
             <SkeletonMetricCard key={i} />
           ))}
         </div>
         <SkeletonBlock width="100%" height="48px" borderRadius="10px" />
+        {/* Placeholder table panel in the full-screen loading view, made of shimmering rows. */}
         <LayerTheme style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>

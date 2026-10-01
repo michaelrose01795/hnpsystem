@@ -29,6 +29,7 @@ export default function KpiPanel({ kpi, filter, withTrend = true, withDrilldown 
   const devSectionKey = reportDevKey("report-kpi-panel", kpi.id || kpi.label);
 
   return (
+    // KPI panel: one figure's name, current value and description, with a trend chart and a button to view the underlying records.
     <LayerSurface
       radius="var(--radius-sm)"
       padding="16px"

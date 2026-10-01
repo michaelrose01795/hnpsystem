@@ -810,6 +810,7 @@ export default function WheelsTyresDetailsModal({
   if (!isOpen) return null;
 
   return (
+    // Wheels & Tyres health check: a tyre diagram for choosing a wheel, with that wheel's tyre details, tread depths and logged concerns alongside.
     <VHCModalShell
       isOpen={isOpen}
       onClose={handleClose}
@@ -835,6 +836,7 @@ export default function WheelsTyresDetailsModal({
               position: "relative",
             }}
           >
+            {/* Tyre diagram: click a wheel or the spare to select it; wheels with missing readings are highlighted. */}
             <div
               data-dev-section="1"
               data-dev-section-key="vhc-wheels-diagram"
@@ -954,11 +956,13 @@ export default function WheelsTyresDetailsModal({
             >
               {activeWheel !== "Spare" ? (
                 <>
+                  {/* Tyre Details: make, size, load and speed rating for the selected tyre. */}
                   <LayerTheme style={sectionCardStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-tyre-details" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
                     <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tyre Details</span>
                     <TyreSpecFields tyre={currentTyre} onFieldChange={updateTyre} />
                   </LayerTheme>
 
+                  {/* Tread Depth: the tread readings in millimetres across the selected tyre. */}
                   <LayerTheme style={sectionCardStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-tread-depth" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
                     <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tread Depth (mm)</span>
                     <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -983,11 +987,13 @@ export default function WheelsTyresDetailsModal({
                 <>
                   {tyres.Spare.type === "spare" ? (
                     <>
+                      {/* Spare Details: make, size, load and speed rating for the spare wheel. */}
                       <LayerTheme style={sectionCardStyle}>
                         <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Details</span>
                         <TyreSpecFields tyre={tyres.Spare.details} onFieldChange={updateTyre} />
                       </LayerTheme>
 
+                      {/* Spare Tread Depth: the tread readings in millimetres for the spare wheel. */}
                       <LayerTheme style={sectionCardStyle}>
                         <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>
                           Spare Tread Depth (mm)
@@ -1013,6 +1019,7 @@ export default function WheelsTyresDetailsModal({
                   ) : null}
 
                   {tyres.Spare.type === "repair_kit" ? (
+                    // Repair Kit Date: the month and year shown on the tyre repair kit.
                     <LayerTheme style={sectionCardStyle}>
                       <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Repair Kit Date</span>
                       <div style={{ display: "flex", gap: "12px" }}>
@@ -1055,6 +1062,7 @@ export default function WheelsTyresDetailsModal({
                   ) : null}
 
                   {tyres.Spare.type === "space_saver" ? (
+                    // Space Saver Condition: mark the space-saver wheel as good or bad.
                     <LayerTheme style={sectionCardStyle}>
                       <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>
                         Space Saver Condition
@@ -1080,6 +1088,7 @@ export default function WheelsTyresDetailsModal({
                   ) : null}
 
                   {tyres.Spare.type === "not_checked" ? (
+                    // Notes: explain why the spare was not checked.
                     <LayerTheme style={sectionCardStyle}>
                       <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Notes</span>
                       <textarea className="app-input"
@@ -1101,6 +1110,7 @@ export default function WheelsTyresDetailsModal({
                   ) : null}
 
                   {tyres.Spare.type === "boot_full" ? (
+                    // Message confirming the boot was too full to inspect the spare and nothing more is needed.
                     <LayerTheme style={sectionCardStyle}>
                       <span style={{ fontSize: "13px", color: palette.textMuted }}>
                         Boot contents prevented inspection. No extra data required.
@@ -1110,6 +1120,7 @@ export default function WheelsTyresDetailsModal({
                 </>
               )}
 
+              {/* Logged Concerns: the concerns recorded against the selected wheel with their severity, and a button to add one; clicking a concern edits it. */}
               <LayerTheme style={{ ...sectionCardStyle, flex: "1 1 auto", minHeight: 0 }} data-dev-section="1" data-dev-section-key="vhc-wheels-concerns" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
                 <div
                   style={{
@@ -1151,6 +1162,7 @@ export default function WheelsTyresDetailsModal({
                   }}
                 >
                   {(currentTyre.concerns ?? []).length === 0 ? (
+                    // Empty message shown when no concerns have been logged for the selected wheel.
                     <div
                       style={{
                         padding: "16px",
@@ -1164,6 +1176,7 @@ export default function WheelsTyresDetailsModal({
                     </div>
                   ) : (
                     currentTyre.concerns.map((concern, idx) => (
+                      // One logged concern: its description and severity badge; click to edit.
                       <div
                         key={`${activeWheel}-concern-${idx}`}
                         style={{
@@ -1197,6 +1210,7 @@ export default function WheelsTyresDetailsModal({
       </div>
 
       {concernTarget ? (
+        // Tyre issue popup: add or update an issue for the chosen wheel, set its severity, attach photos and review or delete the issues already reported.
         <IssueReportPopup
           isOpen={Boolean(concernTarget)}
           title={`${concernTarget} Tyre`}

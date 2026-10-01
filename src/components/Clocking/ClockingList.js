@@ -41,6 +41,7 @@ export default function ClockingList() {
   }
 
   return (
+    // All users clocking: a table of each user's name, whether they are clocked in or out, and the hours they have worked.
     <Card title="All Users Clocking" style={{ width: "100%", maxWidth: "48rem" }}>
       <table className="app-data-table">
         <thead>

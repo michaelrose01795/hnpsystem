@@ -71,6 +71,7 @@ export default function RetentionPage() {
 
   return (
     <ComplianceLayout title="Retention">
+      {/* Retention policies: a table of each data category with its retention period, action, legal basis and notes, plus a button to log a dry-run. */}
       <Section title="Retention Policies">
         <p style={{ margin: "0 0 10px", color: "var(--text-1)" }}>
           One policy per data category. Defaults seeded from the published audit
@@ -127,6 +128,7 @@ export default function RetentionPage() {
         )}
       </Section>
 
+      {/* Recent retention runs: when each run happened, the data category, action, whether it was a dry-run and how many rows were processed and actioned. */}
       <Section title="Recent Retention Runs">
         {runs.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No runs recorded yet.</p>

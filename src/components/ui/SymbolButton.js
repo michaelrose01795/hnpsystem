@@ -498,6 +498,29 @@ export const SYMBOLS = {
       </>
     ),
   },
+  clockIn: {
+    label: "Clock in",
+    // A stopwatch carrying a play mark — start the clock on a job. The crown
+    // is what separates it from the plain clock-face History mark.
+    render: () => (
+      <>
+        <path d="M9.4 1.8h5.2M12 1.8v3" {...S} />
+        <circle cx="12" cy="13.5" r="8.7" {...S} />
+        <path d="M10 9.7v7.6l6.1-3.8Z" {...F} />
+      </>
+    ),
+  },
+  clockOut: {
+    label: "Clock out",
+    // The same stopwatch carrying a stop mark — stop the clock on a job.
+    render: () => (
+      <>
+        <path d="M9.4 1.8h5.2M12 1.8v3" {...S} />
+        <circle cx="12" cy="13.5" r="8.7" {...S} />
+        <rect x="8.8" y="10.3" width="6.4" height="6.4" rx="1.1" {...F} />
+      </>
+    ),
+  },
 
   // ── Status & meta ─────────────────────────────────────────
   status: {

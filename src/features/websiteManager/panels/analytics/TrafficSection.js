@@ -9,6 +9,7 @@ import Section from "@/components/Section";
 import { NotConnectedNotice } from "./analyticsAtoms";
 
 export default function TrafficSection() {
+  // Website traffic overview: explains that visitor tracking is not connected yet and lists the traffic figures that will appear here.
   return (
     <Section
       title="Website Traffic Overview"

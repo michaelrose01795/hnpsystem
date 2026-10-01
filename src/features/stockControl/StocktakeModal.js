@@ -96,6 +96,7 @@ export default function StocktakeModal({ rows, categories, locations, capabiliti
   const hasInput = reading.quantity !== "" || reading.levelBand || reading.dipstickReading !== "";
 
   return (
+    // Stocktake pop-up: choose what to count, enter the actual quantity for each item in turn, then review the differences.
     <PopupModal isOpen onClose={step === "setup" ? onClose : () => setConfirmAbandon(true)} ariaLabel="Stocktake" cardClassName="app-settings-popup-card stock-popup" closeOnBackdrop={step === "setup"}>
       <div className="app-settings-popup stock-form">
         <header className="app-popup-compact-header">
@@ -174,6 +175,7 @@ export default function StocktakeModal({ rows, categories, locations, capabiliti
               </span>
               <span>{results.filter((result) => !result.skipped).length} counted</span>
             </div>
+            {/* The item currently being counted: its name, location, category and a gauge of the recorded stock level. */}
             <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
               <strong className="stock-card__title">{currentRow.item.title}</strong>
               <span className="stock-card__meta">
@@ -197,6 +199,7 @@ export default function StocktakeModal({ rows, categories, locations, capabiliti
         {step === "summary" && (
           <>
             <div className="stock-stocktake__compare">
+              {/* Summary tiles: how many items were counted, how many differed, how many were skipped and the value of the differences. */}
               <div className="app-summary-item app-summary-item--theme">
                 <span className="app-summary-label">Counted</span>
                 <strong className="app-summary-value">{results.length - skipped.length}</strong>
@@ -217,6 +220,7 @@ export default function StocktakeModal({ rows, categories, locations, capabiliti
               )}
             </div>
             {variances.length > 0 ? (
+              // List of items whose counted quantity differed from the record, showing before, after and the change.
               <LayerTheme radius="var(--radius-sm)" padding="12px" gap="6px">
                 {variances.map((result) => (
                   <div key={result.itemId} className="stock-row">
@@ -236,6 +240,7 @@ export default function StocktakeModal({ rows, categories, locations, capabiliti
         )}
       </div>
 
+      {/* Confirmation prompt shown when the user tries to stop the stocktake part-way through. */}
       <ConfirmationDialog
         isOpen={confirmAbandon}
         message="Stop this stocktake? Counts already confirmed stay recorded; the rest are left as they were."

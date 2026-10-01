@@ -26,6 +26,7 @@ export default function TopRolesSection() {
       <div className={styles.topStack}>
         {topRoles.map((role) => {
           const isActive = role.id === activeRole;
+          // One selectable role card (Directors or Managers) showing its badge, title and summary; choosing it changes the focused view below.
           return (
             <LayerSurface
               as="article"
@@ -53,6 +54,7 @@ export default function TopRolesSection() {
         })}
       </div>
 
+      {/* Decorative live scene: the role levels from directors to workshop floor beside the capacity, risk, revenue and flow signals. */}
       <LayerSurface
         className={styles.roleTreeLiveScene}
         aria-hidden="true"
@@ -88,6 +90,7 @@ export default function TopRolesSection() {
         </div>
       </LayerSurface>
 
+      {/* Focused view: what the selected role needs to see, with its list of needs, tailored views, key signals and example dashboard cards. */}
       <LayerSurface
         className={`${styles.glassCard} ${styles.topDetail}`}
         aria-label="What the focused role needs"
@@ -112,6 +115,7 @@ export default function TopRolesSection() {
 
           <div className={styles.roleViewStack}>
             {roleViewStack.map((item) => (
+              // One layer of the role view stack: a label and a line describing how that level sees the data.
               <LayerTheme key={item.id} className={styles.stackLayer} padding="14px" gap="4px">
                 <span className={styles.dashboardCardLabel}>{item.label}</span>
                 <span>{item.line}</span>
@@ -121,14 +125,17 @@ export default function TopRolesSection() {
         </div>
 
         <div className={styles.roleSignalGrid}>
+          {/* Main signal: the single most important indicator for the selected role. */}
           <LayerTheme padding="14px" gap="4px">
             <span className={styles.dashboardCardLabel}>Main signal</span>
             <span>{focused.signal}</span>
           </LayerTheme>
+          {/* Decision rhythm: how often the selected role reviews and acts on its information. */}
           <LayerTheme padding="14px" gap="4px">
             <span className={styles.dashboardCardLabel}>Decision rhythm</span>
             <span>{focused.cadence}</span>
           </LayerTheme>
+          {/* Risk if hidden: what goes wrong when this role cannot see the information. */}
           <LayerTheme padding="14px" gap="4px">
             <span className={styles.dashboardCardLabel}>Risk if hidden</span>
             <span>{focused.risk}</span>
@@ -137,6 +144,7 @@ export default function TopRolesSection() {
 
         <div className={styles.dashboardGrid}>
           {dashboardCards.map((card) => (
+            // One example dashboard card: a title and a one-line description of what it would show.
             <LayerTheme key={card.id} className={styles.dashboardCard} padding="14px 16px" gap="6px">
               <span className={styles.dashboardCardLabel}>{card.title}</span>
               <span>{card.line}</span>

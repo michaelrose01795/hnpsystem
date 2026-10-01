@@ -18,6 +18,7 @@ function PerformanceTrendCard({ kpiId, label, unit, format, filter, granularity,
   const trend = useKpiTrend(kpiId, { ...filter, granularity }, { enabled: true });
   const devSectionKey = reportDevKey("report-trend-card", `${kpiId}-${granularity}`);
   return (
+    // Small trend chart for one measure at one time scale, with its name and whether it is daily, weekly or monthly.
     <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={devSectionKey} data-dev-text-preview={`${label} ${granularityLabel}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)" }}>{label}</span>
@@ -31,6 +32,7 @@ function PerformanceTrendCard({ kpiId, label, unit, format, filter, granularity,
 export default function ServiceOverviewTab({ filter, onDrilldown }) {
   return (
     <>
+      {/* Department scorecard: the headline service advisor figures for the selected period. */}
       <ReportSection
         title="Department scorecard"
         subtitle="Headline Service Advisor KPIs for the selected period (live-correct, exact figures). VHC value and rates come from the shared VHC catalogue — one definition per metric."
@@ -38,11 +40,13 @@ export default function ServiceOverviewTab({ filter, onDrilldown }) {
         <KpiScorecardStrip kpis={OVERVIEW_SCORECARD} filter={filter} onDrilldown={onDrilldown} showProvenance={false} />
       </ReportSection>
 
+      {/* Performance summary: booking volume and authorised health-check value charted daily, weekly and monthly. */}
       <ReportSection
         title="Performance summary"
         subtitle="Booking volume and authorised VHC value, re-bucketed daily, weekly and monthly (advisor activity trends)."
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          {/* Six trend charts: bookings and authorised value, each shown daily, weekly and monthly. */}
           <PerformanceTrendCard kpiId="svc.booking_volume" label="Bookings" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <PerformanceTrendCard kpiId="svc.booking_volume" label="Bookings" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <PerformanceTrendCard kpiId="svc.booking_volume" label="Bookings" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

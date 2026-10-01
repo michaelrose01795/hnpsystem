@@ -20,13 +20,16 @@ export default function ServiceUtilitiesTab({ filter, onApplySavedView }) {
 
   return (
     <>
+      {/* Saved views: save the current report filters and recall them later. */}
       <ReportSection title="Saved views" subtitle="Save and recall a filter set (date range, granularity, search) for this report.">
         <SavedViewsBar targetRef={SERVICE_VIEW_TARGET} currentFilter={filter} onApply={onApplySavedView} />
       </ReportSection>
 
+      {/* Exports and drill-downs: a card per KPI for exploring its underlying records or downloading them as CSV. */}
       <ReportSection title="Exports & drill-downs" subtitle="Download the contributing records behind any drillable Service Advisor KPI (audited CSV), or explore them inline.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
           {ALL_EXPORTABLE.map((kpi) => (
+            // Export card: the KPI name and reference with Explore and Export CSV buttons.
             <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-export-card", kpi.id)} data-dev-text-preview={`${kpi.label} export card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
@@ -44,6 +47,7 @@ export default function ServiceUtilitiesTab({ filter, onApplySavedView }) {
       </ReportSection>
 
       {explore && (
+        // Drill-down: a table of the records behind the KPI chosen with Explore.
         <ReportSection title={`Drill-down: ${explore.label}`}>
           <ReportDrilldownTable kpiId={explore.id} label={explore.label} filter={filter} onClose={() => setExplore(null)} />
         </ReportSection>

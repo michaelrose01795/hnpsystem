@@ -39,6 +39,7 @@ import {
 const URL_PATTERN = /https?:\/\/[^\s<]+[^\s<.,;:!?)\]]/g;
 
 function Section({ title, count, action, children }) {
+  // Titled block used throughout the details panel: a heading with an optional count and action, followed by its content.
   return (
     <section className="app-msg-section">
       <h4 className="app-msg-section__title">
@@ -122,6 +123,7 @@ export function FeedDetails({ feed, onClose }) {
       </div>
 
       <div className="app-msg-details__scroll custom-scrollbar">
+        {/* About: what kind of feed this is, where its entries come from and that it is read only. */}
         <Section title="About">
           <dl className="app-msg-facts">
             <dt>Type</dt>
@@ -133,6 +135,7 @@ export function FeedDetails({ feed, onClose }) {
           </dl>
         </Section>
 
+        {/* Activity: how many entries are shown, how many are new since the last visit, and the latest, oldest and last-viewed times. */}
         <Section title="Activity">
           {loading ? (
             <InlineLoading width={160} label="Loading" />
@@ -156,6 +159,7 @@ export function FeedDetails({ feed, onClose }) {
           )}
         </Section>
 
+        {/* By request type: a count of booking requests for each request type, shown for the bookings feed only. */}
         {isBookings && byType.length > 0 && (
           <Section title="By request type">
             <dl className="app-msg-facts">
@@ -275,6 +279,7 @@ export default function ConversationDetails({
       <div className="app-msg-details__scroll custom-scrollbar">
         {tab === "details" && (
           <>
+            {/* About: conversation type, department, linked job, start date and owner. */}
             <Section title="About">
               <dl className="app-msg-facts">
                 <dt>Type</dt>
@@ -306,6 +311,7 @@ export default function ConversationDetails({
               </dl>
             </Section>
 
+            {/* Workflow: dropdowns to set the conversation's status, priority and owner. */}
             {workflow && (
               <Section title="Workflow">
                 {hubMissing ? (
@@ -349,6 +355,7 @@ export default function ConversationDetails({
               </Section>
             )}
 
+            {/* Customer: the customer's name, phone number, vehicle and latest job, shown for customer conversations. */}
             {type.value === "customer" && customerDetail ? (
               <Section title="Customer">
                 <dl className="app-msg-facts">
@@ -382,12 +389,14 @@ export default function ConversationDetails({
               </Section>
             ) : null}
 
+            {/* Linked records: the system records (jobs, vehicles, customers and so on) attached to this conversation. */}
             {linkedRecords.length > 0 && (
               <Section title="Linked records" count={linkedRecords.length}>
                 <RecordLinks links={linkedRecords} />
               </Section>
             )}
 
+            {/* Members: everyone in the conversation with their role and presence, plus remove buttons and a colleague search for people allowed to manage members. */}
             <Section title="Members" count={members.length}>
               <div className="app-msg-options">
                 {members.map((member) => {
@@ -471,6 +480,7 @@ export default function ConversationDetails({
               )}
             </Section>
 
+            {/* Notifications: radio buttons choosing how much this conversation notifies the user. */}
             <Section title="Notifications">
               {hubMissing ? (
                 <StatusMessage tone="info">
@@ -499,6 +509,7 @@ export default function ConversationDetails({
               )}
             </Section>
 
+            {/* Open tasks and reminders: each outstanding item with its due date, a click-through to the message and a Done button. */}
             <Section title="Open tasks & reminders" count={openItems.length}>
               {openItems.length ? (
                 <div className="app-msg-options">
@@ -554,6 +565,7 @@ export default function ConversationDetails({
 
         {tab === "links" && (
           <>
+            {/* Linked records: the system records attached to this conversation, each with an unlink button. */}
             <Section title="Linked DMS records" count={linkedRecords.length}>
               {linkedRecords.length ? (
                 <RecordLinks
@@ -566,6 +578,7 @@ export default function ConversationDetails({
                 </span>
               )}
             </Section>
+            {/* Web links: every web address shared in the messages, with who posted it and when. */}
             <Section title="Web links" count={webLinks.length}>
               {webLinks.length ? (
                 <div className="app-msg-options">

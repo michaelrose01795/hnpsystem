@@ -52,6 +52,7 @@ export default function ShopPanel() {
   const [tab, setTab] = useState("products");
   return (
     <>
+      {/* Shop: tabs for switching between products, categories and orders. */}
       <Section title="Shop">
         <TabGroup items={TABS} value={tab} onChange={setTab} ariaLabel="Shop sub-sections" />
       </Section>
@@ -127,6 +128,7 @@ function ProductsTab() {
     }
   };
 
+  // Products: add or edit a product and browse the product table (name, SKU, price, stock, status and actions).
   return (
     <Section title="Products">
       <div className="website-manager__actions">
@@ -236,6 +238,7 @@ function CategoriesTab() {
     }
   };
 
+  // Categories: add or edit a category and browse the category table (name, slug, status and actions).
   return (
     <Section title="Categories">
       <div className="website-manager__actions">
@@ -340,6 +343,7 @@ function OrdersTab() {
     }
   };
 
+  // Orders: the table of shop orders (number, date, email, total and a status dropdown), with the selected order's details underneath.
   return (
     <Section title="Orders">
       <PanelError message={error} />
@@ -406,6 +410,7 @@ function OrdersTab() {
         </div>
       )}
 
+      {/* Selected order details: the items and quantities ordered, the order total and the delivery address. */}
       {detail && (
         <LayerTheme gap="var(--space-2)">
           <span className="website-manager__editor-title">{detail.order_number}</span>

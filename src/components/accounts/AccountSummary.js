@@ -20,6 +20,7 @@ const resolveValue = (key, value) => {
 export default function AccountSummary({ summary }) {
   const safeSummary = summary || {};
 
+  // Account snapshot: an overview heading above a grid of headline account figures.
   return (
     <LayerSurface as="section" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
@@ -31,6 +32,7 @@ export default function AccountSummary({ summary }) {
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
+      {/* One tile per figure: open accounts, frozen accounts, total balance, overdue invoices and credit exposure. */}
       {summaryBlueprint.map((card) => {
           const rawValue = safeSummary[card.key];
           const displayValue = card.isCurrency ? currencyFormatter.format(Number(rawValue || 0)) : resolveValue(card.key, rawValue);

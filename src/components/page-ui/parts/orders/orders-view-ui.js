@@ -32,12 +32,14 @@ export default function OrdersViewUi(props) {
     case "section2":
       return <PageShell sectionKey="orders-view-shell">
       <div className="app-page-stack job-cards-view-page-stack">
+          {/* Orders panel: the search and filter controls with the scrolling list of parts orders beneath. */}
           <SectionShell sectionKey="orders-view-list-shell" parentKey="orders-view-shell" style={{
           flex: 1,
           overflow: "hidden",
           padding: "10px",
           minHeight: "0"
         }}>
+            {/* Orders toolbar: search orders and filter them by collection or delivery. */}
             <DevLayoutSection
               sectionKey="orders-view-controls"
               parentKey="orders-view-list-shell"
@@ -78,6 +80,7 @@ export default function OrdersViewUi(props) {
                 </FilterField>
               </FilterButton>
             </DevLayoutSection>
+            {/* Scrolling area that holds the list of orders. */}
             <DevLayoutSection sectionKey="orders-view-list-viewport" parentKey="orders-view-list-shell" sectionType="scroll-region" style={{
             flex: 1,
             minHeight: 0,
@@ -86,6 +89,7 @@ export default function OrdersViewUi(props) {
             flexDirection: "column",
             gap: "10px"
           }}>
+              {/* List contents: a loading placeholder, an empty message when nothing matches, or one card per order that opens the order when clicked. */}
               {ordersLoading ? <ListLoadingSkeleton toolbar={false} /> : sortedOrders.length === 0 ? <LayerTheme sectionKey="orders-view-empty-state" parentKey="orders-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
                   <EmptyState variant="bare" role="status" icon="🔍" title={emptyStateMessage} />
                 </LayerTheme> : sortedOrders.map((order, index) => <OrderListCard key={order.id || order.orderNumber} sectionKey={`orders-view-order-row-${order.id || order.orderNumber || index + 1}`} parentKey="orders-view-list-viewport" order={order} index={index} onNavigate={() => onNavigateToOrder(order.orderNumber)} />)}

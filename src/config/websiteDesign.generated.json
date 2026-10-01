@@ -4,7 +4,7 @@
     "rules": 1478,
     "classes": 892,
     "coveredClasses": 892,
-    "tokens": 147,
+    "tokens": 148,
     "families": 21,
     "sections": 13
   },
@@ -2233,6 +2233,14 @@
       "purpose": "Viewport gap around the Help popup card (mirrors the staff --popup-viewport-gap).",
       "scope": "local",
       "dark": "clamp(10px, 2.5vw, 20px)",
+      "light": null
+    },
+    {
+      "name": "--ws-popup-gap-x",
+      "group": "popup",
+      "purpose": "Left / right viewport gap around the Help popup card (mirrors the staff --popup-viewport-gap-x).",
+      "scope": "local",
+      "dark": "var(--ws-popup-gap)",
       "light": null
     },
     {

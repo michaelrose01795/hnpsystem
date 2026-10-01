@@ -52,6 +52,7 @@ const statusLabel = (value) => RESTOCK_STATUS_BY_VALUE[value]?.label || WARRANTY
 
 function Stat({ label, value }) {
   return (
+    // Summary tile: one labelled figure for the stock item, such as the current quantity.
     <div className="app-summary-item app-summary-item--theme">
       <span className="app-summary-label">{label}</span>
       <strong className="app-summary-value">{value}</strong>
@@ -123,6 +124,7 @@ function CustodyAction({ item, checkout, action, onDone, onCancel }) {
   };
 
   return (
+    // Custody action form: confirms returning an item on someone's behalf, marking it missing or found, or writing it off, with a quantity, reason or note as needed.
     <LayerTheme>
       <strong>
         {labels[action]} — {checkout.holderName}, {formatQuantity(outstandingOnCheckout(checkout), item)}
@@ -200,6 +202,7 @@ export default function ItemDetailModal({ itemId, capabilities, onClose, onEdit,
   const value = item && toNumber(item.unitCost) !== null ? toNumber(item.unitCost) * (toNumber(item.currentQuantity) || 0) : null;
 
   return (
+    // Stock item record popup: the item's figures and details, who currently holds it, restock and warranty records and the full activity timeline, with buttons to receive or adjust stock, edit, print a label and deactivate.
     <PopupModal isOpen onClose={onClose} ariaLabel={item ? `${item.name} record` : "Stock item"} cardClassName="app-settings-popup-card">
       <div className={`app-settings-popup ${styles.sheet}`}>
         <header className="app-popup-compact-header">
@@ -258,6 +261,7 @@ export default function ItemDetailModal({ itemId, capabilities, onClose, onEdit,
             </dl>
 
             {openCheckouts.length > 0 && (
+              // Who has it: each person currently holding the item, how many, when it is due back and the related job, with manager buttons for returned, missing, found and write off.
               <LayerTheme>
                 <h3 className={styles.sectionTitle}>Who has it</h3>
                 <ul className={styles.timeline}>
@@ -298,6 +302,7 @@ export default function ItemDetailModal({ itemId, capabilities, onClose, onEdit,
             {(data.restock?.length > 0 || data.warranty?.length > 0) && (
               <div className={styles.fieldGrid}>
                 {data.restock?.length > 0 && (
+                  // Restock requests: the five most recent requests with status, quantity, requester and date.
                   <LayerTheme>
                     <h3 className={styles.sectionTitle}>Restock requests</h3>
                     {data.restock.slice(0, 5).map((entry) => (
@@ -309,6 +314,7 @@ export default function ItemDetailModal({ itemId, capabilities, onClose, onEdit,
                   </LayerTheme>
                 )}
                 {data.warranty?.length > 0 && (
+                  // Warranty storage: the five most recent warranty records with status, job number, vehicle registration and date stored.
                   <LayerTheme>
                     <h3 className={styles.sectionTitle}>Warranty storage</h3>
                     {data.warranty.slice(0, 5).map((entry) => (

@@ -127,6 +127,7 @@ export default function RopaPage() {
 
   return (
     <ComplianceLayout title="ROPA">
+      {/* Record of Processing Activities: explains the UK GDPR record-keeping duty and offers a button that opens a form to add a new processing activity. */}
       <Section title="Record of Processing Activities">
         <p style={{ margin: "0 0 10px", color: "var(--text-1)" }}>
           Per UK GDPR Art. 30, controllers must maintain a record of processing activities.
@@ -136,6 +137,7 @@ export default function RopaPage() {
         <NewActivityForm onCreated={load} />
       </Section>
 
+      {/* Activities: a table of every recorded processing activity with its name, lawful basis, purpose and last review date. */}
       <Section title="Activities">
         {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>{error}</p>}
         {rows === null ? (

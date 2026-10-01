@@ -50,6 +50,7 @@ function DeliveryInner() {
           <SkeletonBlock width="180px" height="22px" />
           <SkeletonBlock width="64px" height="18px" borderRadius="999px" />
         </header>
+        {/* Loading placeholder card shown while the job details are being fetched. */}
         <LayerSurface as="section" style={cardStyle}>
           <SkeletonBlock width="40%" height="16px" />
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -70,6 +71,7 @@ function DeliveryInner() {
         <ServiceModeBadge mode="mobile" />
       </header>
 
+      {/* Visit summary: job number, outcome of the mobile visit, completion time, vehicle and the site address. */}
       <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>{job.job_number}</h2>
         <p><strong>Outcome:</strong> {OUTCOME_LABEL(job.mobile_outcome)}</p>
@@ -80,6 +82,7 @@ function DeliveryInner() {
         <p><strong>Site:</strong> {job.service_address} {job.service_postcode}</p>
       </LayerSurface>
 
+      {/* Next steps: what happens after this outcome, with a button to redirect the job to the workshop if it could not be completed. */}
       <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Next steps</h2>
         {job.mobile_outcome === "completed_onsite" && <p>All done. Customer notified via the normal status flow.</p>}

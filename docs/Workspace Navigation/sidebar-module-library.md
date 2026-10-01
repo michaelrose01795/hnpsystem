@@ -145,6 +145,23 @@ Current page count: **5**
 
 ---
 
+## Access
+
+Module key: `department-access`  
+Department: `access` (sidebar-only grouping; the pages keep their Workshop/Parts page access)  
+Current page count: **3**  
+Added: 1 October 2026
+
+Held by the All Access login only. No role default includes it; add it to any other user with **Select standard modules** on `/dev/sidebar-access`. Sits after Parts in the rail.
+
+- Stock Access - `/access`
+- Back Shed - `/access/back-shed`
+- Manage Back Shed - `/access/back-shed/manage`
+
+The Stock Access pages are no longer listed in the Workshop or Parts modules.
+
+---
+
 ## Valeting
 
 Module key: `department-valeting`  

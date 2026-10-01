@@ -169,6 +169,7 @@ function useCopyAction() {
 }
 
 function FindingSummary({ finding, itemLink, onViewItem }) {
+  // Finding summary: the finding number, type and review status badges, a button to open the affected item, and its audit ID, route and section.
   return (
     <LayerTheme>
       <div style={SUMMARY_ROW_STYLE}>
@@ -203,6 +204,7 @@ function FindingEvidence({ finding, notes }) {
   // reference — the reference alone gave Codex no instruction to act on.
   const prompt = useMemo(() => buildCodexPrompt(finding, notes), [finding, notes]);
 
+  // Finding evidence: how to see the issue, why it was flagged, the source reference with a copy prompt button, and the full audit record.
   return (
     <LayerTheme>
       <Field label="How to see it" value={finding.visibilityInstructions} />
@@ -243,6 +245,7 @@ function CreatePromptPanel({ finding, notes }) {
   // but the next detail or note change (or Regenerate) restores the generated wording.
   useEffect(() => { setPrompt(generated); }, [generated, regenerationCount]);
 
+  // Create prompt: an editable generated prompt for fixing the finding, with copy and regenerate buttons.
   return (
     <LayerTheme>
       <div style={SUMMARY_ROW_STYLE}>
@@ -362,6 +365,7 @@ function ReviewModal({ finding, onClose, onSaved, onDeleted, onViewItem }) {
         </StaffAlert>
       )}
       <FindingEvidence finding={finding} notes={notes} />
+      {/* Review decision: choose the review status and write developer review notes. */}
       <LayerTheme>
         <DropdownField
           label="Review status"
@@ -381,6 +385,7 @@ function ReviewModal({ finding, onClose, onSaved, onDeleted, onViewItem }) {
           />
         </label>
       </LayerTheme>
+      {/* Decision history: a dated list of earlier status changes and who made them. */}
       <LayerTheme>
         <strong>Decision history</strong>
         {history.length === 0 ? (
@@ -395,6 +400,7 @@ function ReviewModal({ finding, onClose, onSaved, onDeleted, onViewItem }) {
           </ol>
         )}
       </LayerTheme>
+      {/* Prompt builder for this finding, using the notes entered above. */}
       <CreatePromptPanel finding={finding} notes={notes} />
     </StaffModal>
   );
@@ -547,6 +553,7 @@ export default function StaffStyleReviewPage() {
         </label>
       </StaffFilterBar>
 
+      {/* Findings table: the matching findings with their type, route, section, visibility instructions, issue summary, source files, status and actions, with paging. */}
       <LayerTheme>
         <div className="app-layout-toolbar-row app-toolbar--header">
           <strong>{filtered.length} matching findings</strong>

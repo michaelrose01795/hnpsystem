@@ -63,6 +63,7 @@ export default function CustomersIndexUi(props) {
       return (
         <PageShell sectionKey="customers-list-shell">
           <div className="app-page-stack">
+            {/* Toolbar: customer search box, summary counts and the sort filter on one line. */}
             <SectionShell
               sectionKey="customers-list-filter-shell"
               parentKey="customers-list-shell"
@@ -116,6 +117,7 @@ export default function CustomersIndexUi(props) {
                       overflowY: "hidden",
                     }}
                   >
+                    {/* Summary tile: total number of customers, or the number of matches when searching. */}
                     <LayerSurface
                       as="div"
                       className="app-summary-item"
@@ -128,6 +130,7 @@ export default function CustomersIndexUi(props) {
                       </span>
                       <strong className="app-summary-value">{totalCount}</strong>
                     </LayerSurface>
+                    {/* Summary tile: the range of customers currently shown on this page. */}
                     <LayerSurface
                       as="div"
                       className="app-summary-item"
@@ -140,6 +143,7 @@ export default function CustomersIndexUi(props) {
                         {totalCount === 0 ? "0" : `${rangeStart}–${rangeEnd}`}
                       </strong>
                     </LayerSurface>
+                    {/* Summary tile: the current page number out of the total pages. */}
                     <LayerSurface
                       as="div"
                       className="app-summary-item"
@@ -173,6 +177,7 @@ export default function CustomersIndexUi(props) {
               </div>
             </SectionShell>
 
+            {/* Customer list: a table of customers with contact details, counts and date added, plus Previous / Next paging. */}
             <SectionShell
               sectionKey="customers-list-table-shell"
               parentKey="customers-list-shell"
@@ -199,6 +204,7 @@ export default function CustomersIndexUi(props) {
                   }
                 />
               ) : (
+                // Scrolling table of customers: name, email, phone, postcode, vehicle count, job count and date added; clicking a row opens the customer.
                 <DevLayoutSection
                   sectionKey="customers-list-table-viewport"
                   parentKey="customers-list-table-shell"

@@ -79,6 +79,7 @@ const TRACKING_CARD_GRID_TEMPLATE = "repeat(auto-fit, minmax(min(100%, 320px), 1
 const INITIAL_CARD_BATCH = 36;
 
 const renderTrackingSummaryItem = (item) => (
+  // Summary tile: one headline tracking figure, shown as a label with its value.
   <LayerTheme
     key={item.label}
     className="app-summary-item"
@@ -175,6 +176,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
   void isMobileView;
 
   return (
+    // Tracked job card: the job number and vehicle details with where the keys and the car currently are; click it to open the entry.
     <div
       onClick={onClick}
       style={{
@@ -195,6 +197,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         height: "100%"
       }}>
 
+      {/* Job heading: the job number followed by the vehicle and customer details. */}
       <LayerSurface
         radius="var(--radius-sm)"
         padding="10px 12px"
@@ -256,6 +259,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
           minWidth: 0
         }}>
 
+        {/* Key location: where the vehicle's keys are right now, or "Pending" if not yet recorded. */}
         <LayerSurface
           radius="var(--radius-sm)"
           padding="10px 12px"
@@ -276,6 +280,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
             {normalizeKeyLocationLabel(entry.keyLocation) || "Pending"}
           </strong>
         </LayerSurface>
+        {/* Car location: where the vehicle itself is currently parked. */}
         <LayerSurface
           radius="var(--radius-sm)"
           padding="10px 12px"
@@ -305,6 +310,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
 const TrackerGridItem = memo(function TrackerGridItem({ entry, index, isHighlighted, isMobileView, onOpenEntry }) {
   const group = getTrackerGroup(entry);
   return (
+    // One job in the tracking grid, wrapping the tracked job card for that vehicle.
     <DevLayoutSection
       sectionKey={`tracking-active-jobs-card-${group.id}-${index + 1}`}
       parentKey="tracking-active-jobs-list"
@@ -324,6 +330,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
   const [query, setQuery] = useState("");
   const filtered = options.filter((option) => option.label.toLowerCase().includes(query.toLowerCase()));
 
+  // Location search popup: type to filter the list of parking or key locations and pick one.
   return (
     <PopupModal
       isOpen
@@ -366,6 +373,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
 
           {/* Each result is a --theme layer on the popup card's --surface, per
               the layer alternation law. */}
+          {/* Location result: a matching location name with a button to use it. */}
           {filtered.map((option) =>
           <LayerTheme
             key={option.id}
@@ -480,6 +488,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
     onSave({ ...form, actionType, context: "update" });
   };
 
+  // Vehicle and key tracking popup: shows the vehicle record and lets the user add a location for a job or update the vehicle and key locations.
   return (
     <PopupModal
       isOpen
@@ -503,6 +512,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         </header>
 
         {/* Canonical record fields on a --theme layer, per the surface ladder. */}
+        {/* Vehicle record: the job number, registration, make and model, colour and customer for the entry being edited. */}
         <LayerTheme radius="var(--radius-sm)" padding="var(--space-md)">
           <div className="app-record-grid">
             {[
@@ -705,6 +715,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
     onSave({ ...form, actionType, context });
   };
 
+  // Tracking entry popup: log a new entry or edit an existing one, choosing the car's parking location and the key location for a job.
   return (
     <PopupModal
       isOpen
@@ -1246,6 +1257,7 @@ export default function TrackingDashboard() {
 
   const renderTrackerContent = () =>
   <>
+      {/* Tracking summary: a row of headline figures for the jobs currently being tracked. */}
       <DevLayoutSection
       sectionKey="tracking-active-jobs-summary"
       parentKey="tracking-page-body"
@@ -1265,6 +1277,7 @@ export default function TrackingDashboard() {
   const renderTrackerGrid = () =>
   <>
       {entries.length === 0 &&
+    // Empty message shown when there is no tracking data for any active job yet.
     <DevLayoutSection
       sectionKey="tracking-active-jobs-empty-state"
       parentKey="tracking-page-body"
@@ -1280,6 +1293,7 @@ export default function TrackingDashboard() {
         </DevLayoutSection>
     }
       {activeEntries.length === 0 && entries.length > 0 &&
+    // Message shown when tracking entries exist but none are linked to a job yet.
     <DevLayoutSection
       sectionKey="tracking-active-jobs-unmapped-state"
       parentKey="tracking-page-body"
@@ -1295,6 +1309,7 @@ export default function TrackingDashboard() {
         </DevLayoutSection>
     }
       {activeEntries.length > 0 && filteredActiveEntries.length === 0 &&
+    // Message shown when no active jobs match the search or filters.
     <DevLayoutSection
       sectionKey="tracking-active-jobs-filter-empty-state"
       parentKey="tracking-page-body"
@@ -1310,6 +1325,7 @@ export default function TrackingDashboard() {
         </DevLayoutSection>
     }
       {filteredActiveEntries.length > 0 &&
+    // Active jobs grid: one card per tracked job, showing key and car locations.
     <DevLayoutSection
       sectionKey="tracking-active-jobs-list"
       parentKey="tracking-page-body"

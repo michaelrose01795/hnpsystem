@@ -46,6 +46,7 @@ export function ProfilePage({
 
   const content =
   <div className={isEmbedded ? undefined : "max-w-3xl mx-auto px-6 py-8"} style={isEmbedded ? undefined : { width: "100%" }}>
+      {/* Profile page: the tab bar and account shortcuts at the top, with the selected profile tab below. */}
       <DevLayoutSection
       sectionKey="profile-page-content"
       sectionType="page-shell"
@@ -57,6 +58,7 @@ export function ProfilePage({
         padding: "0"
       }}>
       
+        {/* Top bar: the work/personal tab switcher, account shortcut buttons and theme controls. */}
         <DevLayoutSection
         sectionKey="profile-tab-toolbar"
         parentKey="profile-page-content"
@@ -70,6 +72,7 @@ export function ProfilePage({
           width: "100%"
         }}>
         
+          {/* Tab switcher between the Work and Personal profile views. */}
           <DevLayoutSection sectionKey="profile-tab-switcher" parentKey="profile-tab-toolbar" sectionType="tab-row">
             <TabSwitcher
             activeTab={activeTab}
@@ -81,6 +84,7 @@ export function ProfilePage({
           
           </DevLayoutSection>
           {isWorkTab ? (
+            // Account shortcuts: buttons that open the Security, Privacy, Desktop App and Typing settings popups.
             <DevLayoutSection sectionKey="profile-account-links" parentKey="profile-tab-toolbar" sectionType="toolbar">
               <div style={{
                 display: "flex",
@@ -124,6 +128,7 @@ export function ProfilePage({
               </div>
             </DevLayoutSection>
           ) : null}
+          {/* Tab actions: theme controls plus any buttons supplied by the active tab. */}
           <DevLayoutSection sectionKey="profile-tab-actions" parentKey="profile-tab-toolbar" sectionType="toolbar">
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
               <ProfileThemeControls visible={isWorkTab} />
@@ -132,6 +137,7 @@ export function ProfilePage({
           </DevLayoutSection>
         </DevLayoutSection>
 
+        {/* The selected tab's content: either the work profile or the personal profile. */}
         <DevLayoutSection sectionKey="profile-active-tab-panel" parentKey="profile-page-content" sectionType="section-shell" shell style={{
           display: "flex",
           flexDirection: "column",
@@ -153,32 +159,40 @@ export function ProfilePage({
         }
         </DevLayoutSection>
       </DevLayoutSection>
+      {/* Security settings popup, opened from the profile page. */}
       <PopupModal
         isOpen={openPanel === "security"}
         onClose={() => setOpenPanel(null)}
         ariaLabel="Security settings"
       >
+        {/* Security settings, shown in a popup. */}
         <SecurityPanel />
       </PopupModal>
+      {/* Privacy settings popup, opened from the profile page. */}
       <PopupModal
         isOpen={openPanel === "privacy"}
         onClose={() => setOpenPanel(null)}
         ariaLabel="Privacy settings"
       >
+        {/* Privacy settings, shown in a popup. */}
         <PrivacyPanel />
       </PopupModal>
+      {/* Desktop app popup: details for downloading the desktop version of the system. */}
       <PopupModal
         isOpen={openPanel === "desktop-app"}
         onClose={() => setOpenPanel(null)}
         ariaLabel="Desktop app download"
       >
+        {/* Desktop app download details, shown in a popup. */}
         <DesktopAppPanel onClose={() => setOpenPanel(null)} />
       </PopupModal>
+      {/* Typing assistant settings popup, opened from the profile page. */}
       <PopupModal
         isOpen={openPanel === "typing"}
         onClose={() => setOpenPanel(null)}
         ariaLabel="Typing assistant settings"
       >
+        {/* Typing assistant settings, shown in a popup. */}
         <TypingAssistPanel />
       </PopupModal>
     </div>;

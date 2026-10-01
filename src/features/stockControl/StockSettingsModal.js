@@ -74,6 +74,7 @@ export default function StockSettingsModal({ categories, locations, onClose, onS
     }
   };
 
+  // Stock settings popup: tabs for categories and locations, the existing entries to rename or remove, and a form to add a new one.
   return (
     <PopupModal isOpen onClose={onClose} ariaLabel="Stock settings" cardClassName="app-settings-popup-card stock-popup">
       <div className="app-settings-popup stock-form">
@@ -95,6 +96,7 @@ export default function StockSettingsModal({ categories, locations, onClose, onS
           ariaLabel="Stock settings"
         />
         {error && <StatusMessage tone="danger">{error}</StatusMessage>}
+        {/* List of the existing categories or locations, each on an editable row. */}
         <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
           {entries.map((entry) => (
             <EntryRow key={entry.id} kind={tab} entry={entry} onSaved={onSaved} setError={setError} />

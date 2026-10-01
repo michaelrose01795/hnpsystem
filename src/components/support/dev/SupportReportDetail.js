@@ -70,6 +70,7 @@ function List({ items, empty = "None", render }) {
 function InvestigationPanel({ inv }) {
   if (!inv) return null;
   const rc = arr(inv.rootCauses);
+  // Investigation: automatically worked-out findings for developers - an explanation, severity and impact badges, reproducibility confidence, probable causes, debugging order, recommended tests and a summary.
   return (
     <Panel title="Investigation" subtitle="Developer-only · computed server-side at ingest" sectionKey="support-detail-investigation">
       {inv.explanation ? <div style={{ fontSize: "var(--text-body)", color: "var(--text-1)" }}>{inv.explanation}</div> : null}
@@ -84,6 +85,7 @@ function InvestigationPanel({ inv }) {
         <ConfidenceBar value={inv.reproducibleConfidence} label="Reproducible confidence" />
       ) : null}
 
+      {/* Probable root causes, most likely first. */}
       {rc.length ? (
         <SubSurface>
           <div style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" }}>Probable root causes</div>
@@ -99,10 +101,12 @@ function InvestigationPanel({ inv }) {
       ) : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--space-sm)" }}>
+        {/* Debugging order: the suggested steps to work through. */}
         <SubSurface>
           <div style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" }}>Debugging order</div>
           <List items={inv.debuggingOrder} empty="No steps" render={(s, i) => `${i + 1}. ${s}`} />
         </SubSurface>
+        {/* Recommended tests: regression and manual tests to run. */}
         <SubSurface>
           <div style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" }}>Recommended tests</div>
           <List items={inv.regressionTests} empty="None" render={(t) => `• ${t}`} />
@@ -110,6 +114,7 @@ function InvestigationPanel({ inv }) {
         </SubSurface>
       </div>
 
+      {/* Issue-tracker summary with a copy button. */}
       {inv.summary ? (
         <SubSurface>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
@@ -128,6 +133,7 @@ function CodeStatePanel({ inv, build }) {
   const vh = inv?.versionHistory;
   if (!cs && !build && !vh) return null;
   const drift = cs?.drift;
+  // Code state and drift: which build the report was captured on, what is deployed now and whether the code has changed since.
   return (
     <Panel title="Code state & drift" sectionKey="support-detail-codestate">
       <KeyValueGrid>
@@ -136,6 +142,7 @@ function CodeStatePanel({ inv, build }) {
         {build?.deploy_env ? <KeyValue label="Environment" value={build.deploy_env} /> : null}
         {build?.deployed_at ? <KeyValue label="Built at" value={fmt(build.deployed_at)} /> : null}
       </KeyValueGrid>
+      {/* Drift result: whether the code has changed since the report, plus any note. */}
       {drift ? (
         <SubSurface style={{ gap: "4px" }}>
           <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
@@ -145,6 +152,7 @@ function CodeStatePanel({ inv, build }) {
           {drift.note ? <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85 }}>{drift.note}</div> : null}
         </SubSurface>
       ) : null}
+      {/* Affected versions: where the problem was first seen and which versions it touches. */}
       {vh?.firstSeenVersion ? (
         <SubSurface style={{ gap: "4px" }}>
           <div style={{ fontWeight: 700, color: "var(--accentText)", fontSize: "var(--text-body-sm)" }}>Affected versions</div>
@@ -163,6 +171,7 @@ function CodeStatePanel({ inv, build }) {
 function OwnershipPanel({ report, inv, diagnostics }) {
   const own = inv?.ownership || {};
   const co = diagnostics?.code_ownership || {};
+  // Code ownership and affected surface: the route, section and source file involved, plus related API routes, database tables and components.
   return (
     <Panel title="Code ownership & affected surface" sectionKey="support-detail-ownership">
       <KeyValueGrid>
@@ -172,8 +181,11 @@ function OwnershipPanel({ report, inv, diagnostics }) {
         {own.primary ? <KeyValue label="Primary layer" value={<span className="app-badge app-badge--accent-soft">{own.primary}</span>} /> : null}
       </KeyValueGrid>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--space-sm)" }}>
+        {/* API routes involved. */}
         <SubSurface><div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>API routes</div><List items={own.api} empty="None" render={(r) => <code>{r}</code>} /></SubSurface>
+        {/* Database tables involved. */}
         <SubSurface><div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>DB tables</div><List items={own.database} empty="None" render={(t) => <code>{t}</code>} /></SubSurface>
+        {/* Components involved. */}
         <SubSurface><div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Components</div><List items={own.frontend} empty="None" render={(c) => <code>{c}</code>} /></SubSurface>
       </div>
     </Panel>
@@ -182,9 +194,11 @@ function OwnershipPanel({ report, inv, diagnostics }) {
 
 function ScreenshotsPanel({ screenshots }) {
   if (!arr(screenshots).length) return null;
+  // Screenshots attached to the report.
   return (
     <Panel title={`Screenshots (${screenshots.length})`} sectionKey="support-detail-screenshots">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-sm)" }}>
+        {/* One screenshot with its caption, or a note if the image is unavailable. */}
         {screenshots.map((s) => (
           <SubSurface key={s.order}>
             {s.url ? (
@@ -209,6 +223,7 @@ function TimelinePanel({ diagnostics }) {
   const events = timeline.length ? timeline : actions.map((a) => ({ text: a.label || a.type, ts: a.ts, kind: a.type }));
   if (!events.length) return null;
   const shown = expanded ? events : events.slice(0, 8);
+  // Event timeline: the sequence of user actions and events leading up to the report, with a show more/less button.
   return (
     <Panel
       title="Event timeline"
@@ -240,9 +255,11 @@ function DiagnosticsExplorer({ diagnostics }) {
     }
   }, [diagnostics]);
   const providers = diagnostics?.providers && typeof diagnostics.providers === "object" ? diagnostics.providers : {};
+  // Diagnostics explorer: the technical details captured with the report - device, session, errors, failed requests and provider data.
   return (
     <Panel title="Diagnostics explorer" sectionKey="support-detail-diagnostics">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--space-sm)" }}>
+        {/* Device: viewport, platform, mobile and online status, pixel ratio and browser. */}
         <SubSurface>
           <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Device</div>
           <KeyValueGrid>
@@ -254,6 +271,7 @@ function DiagnosticsExplorer({ diagnostics }) {
             <KeyValue label="UA" value={diagnostics?.device?.ua} />
           </KeyValueGrid>
         </SubSurface>
+        {/* Session and flags: sign-in state, roles, user id and feature flags. */}
         <SubSurface>
           <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Session & flags</div>
           <KeyValueGrid>
@@ -266,14 +284,17 @@ function DiagnosticsExplorer({ diagnostics }) {
         </SubSurface>
       </div>
 
+      {/* Console errors captured in the browser. */}
       <SubSurface>
         <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Console errors ({arr(diagnostics?.console_errors).length})</div>
         <List items={diagnostics?.console_errors} empty="None" render={(c) => <span><span className={badgeClass(c.level === "error" ? "danger-base" : "warning-base")}>{c.level}</span> {c.msg}</span>} />
       </SubSurface>
+      {/* Network requests that failed. */}
       <SubSurface>
         <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Failed requests ({arr(diagnostics?.failed_requests).length})</div>
         <List items={diagnostics?.failed_requests} empty="None" render={(r) => <span><span className={badgeClass((r.status || 0) >= 500 || r.status === 0 ? "danger-base" : "warning-base")}>{String(r.status ?? "err")}</span> <code>{r.method} {r.url}</code> {r.ms != null ? `(${r.ms}ms)` : ""}</span>} />
       </SubSurface>
+      {/* Unhandled errors, each expandable to show its component stack. */}
       <SubSurface>
         <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Unhandled errors ({arr(diagnostics?.unhandled_errors).length})</div>
         <List
@@ -288,6 +309,7 @@ function DiagnosticsExplorer({ diagnostics }) {
         />
       </SubSurface>
 
+      {/* One card per diagnostics provider listing the values it captured. */}
       {Object.keys(providers).length ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--space-sm)" }}>
           {Object.entries(providers).map(([id, data]) => (
@@ -303,6 +325,7 @@ function DiagnosticsExplorer({ diagnostics }) {
         </div>
       ) : null}
 
+      {/* Privacy: how the captured data was sanitised and the size of the stored diagnostics. */}
       <SubSurface>
         <div style={{ fontWeight: 700, fontSize: "var(--text-body-sm)", color: "var(--accentText)" }}>Privacy</div>
         <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)", opacity: 0.85 }}>
@@ -334,6 +357,7 @@ function CommentsPanel({ comments, onAdd }) {
     }
   };
 
+  // Support chat: the message thread on this report with a box to send a new message.
   return (
     <Panel title={`Support chat (${messages.length})`} sectionKey="support-detail-comments">
       <div
@@ -390,6 +414,7 @@ function CommentsPanel({ comments, onAdd }) {
                 </div>
               ) : null}
               <div className="support-chat-message-row" style={{ justifyContent: isMine ? "flex-end" : "flex-start" }}>
+                {/* One chat message bubble with its author, time and text. */}
                 <SubSurface
                   className="support-chat-bubble"
                   radius={radius}
@@ -546,6 +571,7 @@ function ActivityPanel({ audit }) {
     support_report_update: "Triage changed",
     support_report_comment: "Note added",
   }[a.action] || a.action);
+  // Activity and audit history: who changed what on this report and when.
   return (
     <Panel title="Activity & audit history" sectionKey="support-detail-activity">
       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -589,6 +615,7 @@ export default function SupportReportDetail({ id }) {
   };
 
   if (loading) {
+    // Loading state: a Back button and placeholder rows while the report loads.
     return (
       <LayerSurface style={{ gap: "var(--page-stack-gap)" }}>
         <button type="button" onClick={() => router.push("/dev/support-reports")} className="app-btn app-btn--secondary">Back</button>
@@ -597,6 +624,7 @@ export default function SupportReportDetail({ id }) {
     );
   }
   if (error || !data) {
+    // Not-found state shown when the report cannot be loaded or has been deleted.
     return (
       <LayerSurface>
         <EmptyState title="Report not found" message={error || "This report may have been deleted."} action={<button type="button" onClick={() => router.push("/dev/support-reports")} className="app-btn app-btn--secondary">Back to list</button>} />
@@ -609,6 +637,7 @@ export default function SupportReportDetail({ id }) {
   const cat = CATEGORY_META[data.category] || { label: data.category, tone: "text-1" };
   const bundle = buildDevBundle(data);
 
+  // Report page: header with copy and export actions, then triage, report facts, the user's text, investigation, code details, screenshots, timeline, diagnostics and chat.
   return (
     <LayerSurface sectionKey="support-detail" style={{ gap: "var(--page-stack-gap)" }}>
       {/* Header */}
@@ -637,6 +666,7 @@ export default function SupportReportDetail({ id }) {
         </div>
       </div>
 
+      {/* Triage controls for this report. */}
       <SupportTriagePanel report={data} patch={patch} />
 
       {/* Reference, page, action, time + timezone, device, plain-language error
@@ -648,19 +678,29 @@ export default function SupportReportDetail({ id }) {
         <div style={{ whiteSpace: "pre-wrap", fontSize: "var(--text-body)", color: "var(--text-1)" }}>{data.description}</div>
       </Panel>
 
+      {/* Investigation findings for developers. */}
       <InvestigationPanel inv={inv} />
+      {/* Assisted investigation generated from the captured diagnostics. */}
       <SupportAssistedPanel report={data} />
       <DashboardGrid min={420}>
+        {/* Code state and drift. */}
         <CodeStatePanel inv={inv} build={diagnostics.build} />
+        {/* Code ownership and affected surface. */}
         <OwnershipPanel report={data} inv={inv} diagnostics={diagnostics} />
       </DashboardGrid>
+      {/* GitHub: create an issue from this report or link existing issues and pull requests. */}
       <SupportGithubPanel reportId={id} report={data} />
+      {/* Screenshots attached to the report. */}
       <ScreenshotsPanel screenshots={screenshots} />
       <DashboardGrid min={420}>
+        {/* Event timeline leading up to the report. */}
         <TimelinePanel diagnostics={diagnostics} />
+        {/* Activity and audit history. */}
         <ActivityPanel audit={audit} />
       </DashboardGrid>
+      {/* Diagnostics explorer with the captured technical details. */}
       <DiagnosticsExplorer diagnostics={diagnostics} />
+      {/* Support chat thread for this report. */}
       <CommentsPanel comments={comments} onAdd={addComment} />
     </LayerSurface>
   );

@@ -16,6 +16,7 @@ import { reportDevKey } from "../reportDevOverlay";
 function PerformanceTrendCard({ kpiId, label, unit, format, filter, granularity, granularityLabel }) {
   const trend = useKpiTrend(kpiId, { ...filter, granularity }, { enabled: true });
   const devSectionKey = reportDevKey("report-trend-card", `${kpiId}-${granularity}`);
+  // Trend card: a measure's name, its time grouping and a small chart of its values over time.
   return (
     <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={devSectionKey} data-dev-text-preview={`${label} ${granularityLabel}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -30,17 +31,25 @@ function PerformanceTrendCard({ kpiId, label, unit, format, filter, granularity,
 export default function PartsOverviewTab({ filter, onDrilldown }) {
   return (
     <>
+      {/* Department scorecard: the headline parts figures for the selected period. */}
       <ReportSection title="Department scorecard" subtitle="Headline Parts KPIs for the selected period (live-correct, exact counts).">
         <KpiScorecardStrip kpis={OVERVIEW_SCORECARD} filter={filter} onDrilldown={onDrilldown} showProvenance={false} />
       </ReportSection>
 
+      {/* Performance summary: parts fitted and parts revenue charted by day, week and month. */}
       <ReportSection title="Performance summary" subtitle="Parts fitted and parts revenue, re-bucketed daily, weekly and monthly.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          {/* Parts fitted, daily trend. */}
           <PerformanceTrendCard kpiId="prt.fitted" label="Parts fitted" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
+          {/* Parts fitted, weekly trend. */}
           <PerformanceTrendCard kpiId="prt.fitted" label="Parts fitted" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
+          {/* Parts fitted, monthly trend. */}
           <PerformanceTrendCard kpiId="prt.fitted" label="Parts fitted" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />
+          {/* Parts revenue, daily trend. */}
           <PerformanceTrendCard kpiId="prt.revenue" label="Parts revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="day" granularityLabel="Daily" />
+          {/* Parts revenue, weekly trend. */}
           <PerformanceTrendCard kpiId="prt.revenue" label="Parts revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="week" granularityLabel="Weekly" />
+          {/* Parts revenue, monthly trend. */}
           <PerformanceTrendCard kpiId="prt.revenue" label="Parts revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="month" granularityLabel="Monthly" />
         </div>
       </ReportSection>

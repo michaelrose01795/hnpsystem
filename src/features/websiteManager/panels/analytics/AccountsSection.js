@@ -10,6 +10,7 @@ import Section from "@/components/Section";
 import { NotConnectedNotice } from "./analyticsAtoms";
 
 export default function AccountsSection() {
+  // Account and login tracking: explains that customer account activity is not connected yet and lists the figures that will appear here.
   return (
     <Section
       title="Account & Login Tracking"

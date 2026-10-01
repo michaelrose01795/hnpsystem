@@ -52,6 +52,7 @@ function splitCountLabel(text) {
 // on the widget shows it; the label's own title= is suppressed when present so it
 // doesn't shadow the richer tooltip (closest() would otherwise match the label).
 function StatWidget({ label, count, truncate = false, tooltip = null }) {
+  // Small topbar figure: a label above a count, with an optional tooltip.
   return (
     <div
       className={`app-summary-item app-topbar-summary-item${tooltip ? " has-tooltip" : ""}`}
@@ -163,6 +164,7 @@ export default function StaffTopbar({
       className={["app-topbar-dock", wrapperClassName].filter(Boolean).join(" ")}
       style={{ overflow: "visible", ...wrapperStyle, ...overlayStyle }}
     >
+    {/* Top bar: live figures, technician job controls, a rotating insight, quick links to most-used pages, search and help. */}
     <DevLayoutSection
       as="section"
       ref={barRef}

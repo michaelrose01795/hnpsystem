@@ -141,6 +141,7 @@ function ProfileCard({
 
   if (sectionKey) {
     return (
+      // Reusable titled profile card: a heading with an optional action on the right, then the content passed in.
       <DevLayoutSection
         as="div"
         sectionKey={sectionKey}
@@ -158,6 +159,7 @@ function ProfileCard({
   }
 
   return (
+    // The same titled profile card, rendered as a plain block.
     <div className={className || undefined} style={cardStyle}>
       {cardContent}
     </div>
@@ -209,6 +211,7 @@ function KpiCard(props) {
 
   if (sectionKey) {
     return (
+      // Headline figure tile: a caption, one large value and an optional line of supporting text.
       <DevLayoutSection
         as="div"
         sectionKey={sectionKey}
@@ -226,6 +229,7 @@ function KpiCard(props) {
   }
 
   return (
+    // The same headline figure tile, rendered as a plain block.
     <div className={className || undefined} style={cardStyle}>
       {cardContent}
     </div>
@@ -309,6 +313,7 @@ function LeaveRequestModal({
     });
   };
 
+  // Leave request popup: choose the leave type, full or half day, start and finish dates, see the total days and add a reason.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -649,6 +654,7 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null, initialM
     }
   };
 
+  // Overtime popup: add a single overtime entry with its date and hours, or manage recurring overtime rules.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -1914,6 +1920,7 @@ export function ProfileWorkTab({
 
   const renderAttendanceBody = ({ records, shouldScroll, keyPrefix, parentKey, emptyLabel }) => (
     isMobile ? (
+      // Mobile attendance list: one stacked entry per clocking with its date, login, logout, hours and type.
       <DevLayoutSection
         as="div"
         sectionKey={`${keyPrefix}-shell`}
@@ -1991,6 +1998,7 @@ export function ProfileWorkTab({
         )}
       </DevLayoutSection>
     ) : (
+      // Desktop attendance table: date, login, logout, total hours and type for each clocking.
       <DevLayoutSection
         as="div"
         sectionKey={`${keyPrefix}-shell`}
@@ -2124,6 +2132,7 @@ export function ProfileWorkTab({
         {isLoading && (
           <>
             <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+            {/* Placeholder tiles shown while the headline figures load. */}
             <section
               style={{
                 display: "grid",
@@ -2137,6 +2146,7 @@ export function ProfileWorkTab({
               <SkeletonMetricCard />
             </section>
 
+            {/* Placeholder attendance history shown while the profile data loads. */}
             <ProfileCard title="Attendance History">
               <SkeletonBlock width="100%" height="48px" borderRadius="10px" />
               <table style={{ width: "100%", marginTop: "12px" }}>
@@ -2150,6 +2160,7 @@ export function ProfileWorkTab({
           </>
         )}
 
+        {/* Error card shown when the profile data fails to load, with advice to contact HR. */}
         {error && (
           <ProfileCard title="Failed to load profile data">
             <span style={{ color: "var(--danger)" }}>{error.message}</span>
@@ -2245,6 +2256,7 @@ export function ProfileWorkTab({
                   profile={profile}
                 />
               ) : null}
+              {/* Total pay after tax for the current period. */}
               <KpiCard
                 sectionKey="profile-work-kpi-estimated-pay"
                 parentKey="profile-active-tab-panel"
@@ -2265,6 +2277,7 @@ export function ProfileWorkTab({
                 secondary="Linked to the Personal tab income widget"
                 accentColor="var(--success)"
               />
+              {/* Leave remaining in days, with how much of the entitlement has been taken. */}
               <KpiCard
                 sectionKey="profile-work-kpi-leave-remaining"
                 parentKey="profile-active-tab-panel"
@@ -2287,6 +2300,7 @@ export function ProfileWorkTab({
               />
             </DevLayoutSection>
 
+            {/* Summary group holding the leave summary and emergency contact cards side by side. */}
             <DevLayoutSection
               as="section"
               sectionKey="profile-work-summary-card-group"
@@ -2302,6 +2316,7 @@ export function ProfileWorkTab({
                 gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
               }}
             >
+              {/* Leave summary: entitlement, taken and remaining days, the user's leave requests, and a button to request leave. */}
               <ProfileCard
                 sectionKey="profile-work-leave-summary"
                 parentKey="profile-active-tab-panel"
@@ -2451,6 +2466,7 @@ export function ProfileWorkTab({
                 isRemoving={leaveRemoving}
               />
 
+              {/* Emergency contact: the saved contact's details, with an Edit button to change the name and phone number. */}
               <ProfileCard
                 sectionKey="profile-work-emergency-contact"
                 parentKey="profile-active-tab-panel"
@@ -2602,6 +2618,7 @@ export function ProfileWorkTab({
               </ProfileCard>
             </DevLayoutSection>
 
+            {/* Attendance group holding the attendance history and overtime history cards. */}
             <DevLayoutSection
               as="section"
               sectionKey="profile-work-attendance-history-group"
@@ -2616,6 +2633,7 @@ export function ProfileWorkTab({
                 gridTemplateColumns: "minmax(0, 1fr)",
               }}
             >
+              {/* Attendance history: the user's normal clock-in and clock-out records. */}
               <ProfileCard
                 sectionKey="profile-work-attendance-history"
                 parentKey="profile-work-attendance-history-group"
@@ -2635,6 +2653,7 @@ export function ProfileWorkTab({
               </ProfileCard>
 
               <div style={{ scrollMarginTop: "80px" }}>
+              {/* Overtime history: the user's overtime records, with a button to log overtime. */}
               <ProfileCard
                 sectionKey="profile-work-attendance-overtime-history"
                 parentKey="profile-work-attendance-history-group"
@@ -2670,6 +2689,7 @@ export function ProfileWorkTab({
               </div>
             </DevLayoutSection>
 
+            {/* Staff vehicles group, shown once the profile has loaded. */}
             {profile && (
               <DevLayoutSection
                 as="section"
@@ -2685,6 +2705,7 @@ export function ProfileWorkTab({
                   gridTemplateColumns: "minmax(0, 1fr)",
                 }}
               >
+                {/* Staff vehicles: the vehicles registered to this employee. */}
                 <StaffVehiclesCard
                   userId={profile.userId}
                   vehicles={profileStaffVehicles}
@@ -2697,6 +2718,7 @@ export function ProfileWorkTab({
           </>
         ) : null}
 
+        {/* Message shown when no employee profile exists for the user, advising them to ask HR. */}
         {!isLoading && !error && !profile && (
           <ProfileCard title="Profile not found">
             <span style={{ color: "var(--info)" }}>

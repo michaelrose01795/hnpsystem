@@ -16,6 +16,7 @@ function TrendCard({ kpiId, label, unit, format, filter, granularity, granularit
   const trend = useKpiTrend(kpiId, { ...filter, granularity }, { enabled: true });
   const devSectionKey = reportDevKey("report-trend-card", `${kpiId}-${granularity}`);
   return (
+    // Trend card: a small chart of one KPI over time, labelled with the KPI name and whether it is daily, weekly or monthly.
     <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={devSectionKey} data-dev-text-preview={`${label} ${granularityLabel}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)" }}>{label}</span>
@@ -29,6 +30,7 @@ function TrendCard({ kpiId, label, unit, format, filter, granularity, granularit
 export default function MotOverviewTab({ filter, onDrilldown }) {
   return (
     <>
+      {/* Department scorecard: the headline MOT figures for the selected period. */}
       <ReportSection
         title="Department scorecard"
         subtitle="Headline MOT KPIs for the selected period. Outcome figures are labelled with their current data-quality caveat until mot_tests lands."
@@ -36,8 +38,10 @@ export default function MotOverviewTab({ filter, onDrilldown }) {
         <KpiScorecardStrip kpis={OVERVIEW_SCORECARD} filter={filter} onDrilldown={onDrilldown} showProvenance={false} />
       </ReportSection>
 
+      {/* Performance summary: MOT volume and MOT revenue charted daily, weekly and monthly. */}
       <ReportSection title="Performance summary" subtitle="MOT volume and MOT revenue, re-bucketed daily, weekly and monthly by the reporting engine.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          {/* Six trend charts: MOT volume and MOT revenue, each shown daily, weekly and monthly. */}
           <TrendCard kpiId="mot.volume" label="MOT volume" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <TrendCard kpiId="mot.volume" label="MOT volume" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <TrendCard kpiId="mot.volume" label="MOT volume" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

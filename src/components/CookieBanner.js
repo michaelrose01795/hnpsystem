@@ -215,8 +215,9 @@ export default function CookieBanner() {
   const containerStyle = useMemo(
     () => ({
       position: "fixed",
-      left: 16,
-      right: 16,
+      // 10px side gap: the same edge gap every staff popup keeps on a phone.
+      left: 10,
+      right: 10,
       bottom: 16,
       zIndex: 1500,
       maxWidth: 720,
@@ -280,6 +281,7 @@ export default function CookieBanner() {
   }
 
   return (
+    // Cookie consent banner: explains how cookies are used and lets the visitor accept all, reject optional ones or customise their choice.
     <LayerSurface as="div" role="dialog" aria-label="Cookie consent" style={containerStyle}>
       <h2 style={{ margin: "0 0 6px", fontSize: "1.05rem" }}>Cookies on this site</h2>
       <p style={{ margin: "0 0 12px", fontSize: "0.9rem", color: "var(--text-1)", lineHeight: 1.5 }}>
@@ -291,6 +293,7 @@ export default function CookieBanner() {
       {showCustomise &&
       <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
           {CATEGORIES.map((cat) =>
+        // One cookie category with a tick box, its name and a description of what it is used for.
         <LayerSurface as="label"
         key={cat.key}
 

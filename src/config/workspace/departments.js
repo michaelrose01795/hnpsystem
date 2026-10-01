@@ -42,6 +42,14 @@ import { STOCK_ACCESS_HUB_HREF, STOCK_ACCESS_STORES, storeHref, storeManageHref 
 // store gets its sidebar buttons, page access and role defaults from here.
 export const STOCK_ACCESS_STORE_HREFS = STOCK_ACCESS_STORES.map(storeHref);
 export const STOCK_ACCESS_MANAGE_HREFS = STOCK_ACCESS_STORES.map(storeManageHref);
+// Every Access page in sidebar order: the hub, each store, then each store's
+// manager view. This is the page list of the Access sidebar module.
+export const ACCESS_MODULE_KEY = "department-access";
+export const ACCESS_MODULE_HREFS = Object.freeze([
+  STOCK_ACCESS_HUB_HREF,
+  ...STOCK_ACCESS_STORE_HREFS,
+  ...STOCK_ACCESS_MANAGE_HREFS,
+]);
 
 // ---------------------------------------------------------------------------
 // Reporting role derivations (moved here from src/config/navigation.js so the
@@ -795,7 +803,9 @@ export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
     items: [
       { label: "Equipment/Tools", href: "/tracking/Equipment-Tools", roles: EQUIPMENT_USER_ROLES },
       // Stock Access: the hub, then one page per store. Roled to the lists
-      // /api/access enforces for that store.
+      // /api/access enforces for that store. Declared here for page access
+      // only — in the sidebar these pages sit in the Access module
+      // (SIDEBAR_MODULE_LIBRARY), not in Workshop.
       { label: "Stock Access", href: STOCK_ACCESS_HUB_HREF, roles: ANY_STORE_USER_ROLES },
       ...STOCK_ACCESS_STORES.map((store) => ({ label: store.label, href: storeHref(store), roles: storeUserRoles(store) })),
     ],
@@ -808,6 +818,8 @@ export const WORKSPACE_CONTEXT_NAV_SECTIONS = Object.freeze([
     flag: null,
     items: [
       { label: "Oil/Stock", href: "/tracking/Oil-Stock", roles: STOCK_ROLES },
+      // Store manager views — page access only; their sidebar home is the
+      // Access module, as above.
       ...STOCK_ACCESS_STORES.map((store) => ({ label: `Manage ${store.label}`, href: storeManageHref(store), roles: storeManagerRoles(store) })),
     ],
   },
@@ -850,10 +862,7 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     key: "department-workshop",
     label: "Workshop",
     department: "workshop",
-    hrefs: [
-      "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools",
-      ...STOCK_ACCESS_STORE_HREFS,
-    ],
+    hrefs: ["/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools"],
   },
   {
     // Technician pages share a dedicated module; workspace access stays unchanged.
@@ -866,7 +875,18 @@ export const SIDEBAR_MODULE_LIBRARY = Object.freeze([
     key: "department-parts",
     label: "Parts",
     department: "parts",
-    hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock", ...STOCK_ACCESS_MANAGE_HREFS],
+    hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock"],
+  },
+  {
+    // Every Access page (the hub, each store and each store's manager view)
+    // in one module. No role default lists it: only the All Access login gets
+    // it automatically, and it is added to anyone else from the Developer
+    // Platform's Sidebar Access editor. "access" is a sidebar-only grouping,
+    // like "tech" — the pages keep their Workshop/Parts page access.
+    key: ACCESS_MODULE_KEY,
+    label: "Access",
+    department: "access",
+    hrefs: [...ACCESS_MODULE_HREFS],
   },
   {
     key: "department-management",
@@ -918,8 +938,8 @@ export const SIDEBAR_LAYOUT_MIGRATION = Object.freeze({
     Object.freeze({ moduleKey: "department-service", href: "/tracking/Loan-car" }),
     Object.freeze({ moduleKey: "department-workshop", href: "/tracking/Equipment-Tools" }),
     Object.freeze({ moduleKey: "department-parts", href: "/tracking/Oil-Stock" }),
-    ...STOCK_ACCESS_STORE_HREFS.map((href) => Object.freeze({ moduleKey: "department-workshop", href })),
-    ...STOCK_ACCESS_MANAGE_HREFS.map((href) => Object.freeze({ moduleKey: "department-parts", href })),
+    // The Stock Access pages are no longer added to saved Workshop/Parts
+    // modules: they live in the Access module, which is assigned per user.
   ]),
 });
 

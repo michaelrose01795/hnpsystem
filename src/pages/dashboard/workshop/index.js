@@ -90,6 +90,7 @@ const ProgressBar = ({ completed, target }) => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "10px" }}>
+        {/* Three small tiles showing jobs completed, jobs scheduled and the completion rate. */}
         {[
           ["Completed", completed],
           ["Scheduled", target],

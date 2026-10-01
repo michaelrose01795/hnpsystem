@@ -15,7 +15,7 @@ import styles from "@/components/GlobalNotesWidget.module.css";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
-import SymbolButton from "@/components/ui/SymbolButton";
+import SymbolButton, { Symbol } from "@/components/ui/SymbolButton";
 import ShareNotePopup from "@/components/GlobalNotes/ShareNotePopup";
 import { isPublicVhcReportPath } from "@/config/routeAccess";
 import useIsMobile from "@/hooks/useIsMobile";
@@ -1211,6 +1211,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
       </button>
 
       {isPanelMounted && (
+        // Floating notes panel: a movable, resizable window with a tab for the in-app help chat and a tab per personal note, where notes can be created, renamed, edited, shared and deleted.
         <LayerSurface
           as="section"
           className={`${styles.panel} ${isPanelVisible ? styles.panelEnter : styles.panelExit}`}
@@ -1311,7 +1312,8 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
                   aria-label="Add tab"
                   title="Add tab"
                 >
-                  </button>
+                  <Symbol symbol="add" className={styles.tabAddGlyph} />
+                </button>
               )}
             </div>
 
@@ -1338,6 +1340,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
             {activeView === "notes" && isLoading && <NotesLoadingSkeleton />}
 
             {activeView === "notes" && !isLoading && notes.length === 0 && (
+              // Empty state shown when the user has no notes yet, with a button to create the first one.
               <LayerTheme
                 className={styles.emptyState}
                 radius="var(--control-radius)"
@@ -1445,6 +1448,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         </LayerSurface>
       )}
       {isShareModalOpen && (
+        // Share note popup: pick which colleagues the current note is shared with.
         <ShareNotePopup
           users={shareUsers}
           selectedUserIds={selectedShareUserIds}

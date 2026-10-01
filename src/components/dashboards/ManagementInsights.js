@@ -16,6 +16,7 @@ const jobLink = (job) => job?.job_number
   : "No linked job";
 
 function Section({ title, subtitle, children }) {
+  // Titled dashboard panel: a heading with an optional subtitle, followed by whatever chart, list or table is passed in.
   return <LayerTheme as="section">
     <header className="management-row">
       <div><h2>{title}</h2>{subtitle && <p className="management-muted">{subtitle}</p>}</div>
@@ -31,6 +32,7 @@ function Metric({ label, value, helper, delta, better = "up" }) {
   const change = delta?.change ?? 0;
   const direction = change > 0 ? "up" : change < 0 ? "down" : "flat";
   const tone = direction === "flat" ? "flat" : direction === better ? "good" : "bad";
+  // Headline figure card: a label, a large value, the movement against the previous period and an optional helper line.
   return <LayerTheme className="management-metric" gap="4px">
     <span className="management-muted">{label}</span>
     <strong className="management-value">{value}</strong>
@@ -51,6 +53,7 @@ function Metrics({ items }) {
 }
 
 function Chart({ title, subtitle, series, unit = "count", formatValue = number }) {
+  // Trend chart panel: a line chart of a daily series with an expandable table of the daily figures underneath.
   return <Section title={title} subtitle={subtitle}>
     <KpiTrendChart series={series} unit={unit} height={180} />
     <details><summary>View daily figures</summary>
@@ -68,6 +71,7 @@ function Chart({ title, subtitle, series, unit = "count", formatValue = number }
 function Bars({ title, subtitle, items, formatValue = number, empty = "No records to display." }) {
   const max = Math.max(1, ...items.map((item) => item.value));
   const total = items.reduce((sum, item) => sum + item.value, 0);
+  // Ranked bars panel: each item shown as a labelled horizontal bar with its value and share of the total.
   return <Section title={title} subtitle={subtitle}>
     {items.length ? <ul className="management-bars">{items.map((item, index) => <li key={item.label}>
       <div className="management-row">
@@ -86,6 +90,7 @@ function Bars({ title, subtitle, items, formatValue = number, empty = "No record
 // the sequence matters more than the ranking.
 function Columns({ title, subtitle, items, empty = "No records to display." }) {
   const max = Math.max(1, ...items.map((item) => item.value));
+  // Column chart panel: vertical bars for a fixed scale such as hour of day or day of week.
   return <Section title={title} subtitle={subtitle}>
     {items.length ? <>
       <ul className="management-columns" role="img" aria-label={`${title}: ${items.map((item) => `${item.label} ${item.value}`).join(", ")}`}>
@@ -112,6 +117,7 @@ function Donut({ title, subtitle, items, formatValue = number, empty = "No recor
     offset += slice.dash;
     return slice;
   });
+  // Donut panel: a ring chart of a small mix with the total in the centre and a legend of values and percentages.
   return <Section title={title} subtitle={subtitle}>
     {total > 0 ? <div className="management-donut">
       <svg viewBox="0 0 160 160" width="160" height="160" role="img" aria-label={`${title}: ${items.map((item) => `${item.label} ${item.value}`).join(", ")}`}>
@@ -150,6 +156,7 @@ function Table({ title, subtitle, columns, rows, empty, pageSize = 10 }) {
   const lastPage = Math.max(0, Math.ceil(rows.length / pageSize) - 1);
   const currentPage = Math.min(page, lastPage);
   const visible = rows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  // Table panel: a paged table of records with a 'showing x of y' line and Previous / Next buttons.
   return <Section title={title} subtitle={subtitle}>
     {rows.length ? <>
       <div className="management-scroll" tabIndex={0} role="region" aria-label={title}>
@@ -168,6 +175,7 @@ function Table({ title, subtitle, columns, rows, empty, pageSize = 10 }) {
 }
 
 function Notices({ items }) {
+  // Latest notices: the five most recent notifications with their target role and time.
   return <Section title="Latest notices" subtitle="Latest five notifications">
     {items == null ? <p>Notices are unavailable.</p> : items.length ? <ul className="management-notices">
       {items.map((item) => <li key={item.notification_id}><p>{String(item.message || "").replace(/^\s*(?:ℹ️?|ⓘ)\s*/, "")}</p>
@@ -194,6 +202,7 @@ function managerTabs(data) {
       value: "overview",
       label: "Overview",
       render: () => <>
+        {/* Manager headline figures: open jobs, completions, vehicles in, average turnaround, overdue customer updates and jobs awaiting assignment. */}
         <Metrics items={[
           { label: "Open jobs", value: number(data.openCount), helper: `${number(data.onSiteCount)} on site now` },
           { label: "Completed", value: number(data.completedCount), helper: period, delta: data.completedDelta, better: "up" },
@@ -202,6 +211,7 @@ function managerTabs(data) {
           { label: "Customer updates overdue", value: number(data.overdueCount), helper: "Open jobs past their next update time" },
           { label: "Awaiting assignment", value: number(data.unassignedCount), helper: "Checked in, no technician assigned" },
         ]} />
+        {/* Today at a glance: live counts for arrivals, completions, updates due, waiting customers, incomplete VHCs and pending parts requests. */}
         <Section title="Today at a glance" subtitle="Live counts for the current day only">
           <div className="management-inline-stats">
             <div><span className="management-muted">Arrived today</span><strong>{number(data.checkedInToday)}</strong></div>
@@ -213,14 +223,19 @@ function managerTabs(data) {
           </div>
         </Section>
         <div className="management-grid">
+          {/* Jobs completed: daily completions across the selected period. */}
           <Chart title="Jobs completed" subtitle={`${number(data.completedCount)} completed · ${period}`} series={data.completionSeries} />
+          {/* Vehicle arrivals: daily check-ins across the selected period. */}
           <Chart title="Vehicle arrivals" subtitle={`${number(data.checkedInCount)} checked in · ${period}`} series={data.arrivalSeries} />
         </div>
+        {/* Where open work is held up: open jobs counted by the furthest stage each has reached. */}
         <Bars title="Where open work is held up" subtitle="Every open job placed at the furthest stage it has reached" items={data.stageMix} />
+        {/* Work requiring attention: up to 15 open jobs with registration, stage, technician, days on site and the reason for follow-up. */}
         <Table title="Work requiring attention" subtitle={`Up to 15 open jobs: overdue updates first, then longest on site. ${number(data.openCount)} open in total.`}
           columns={["Job", "Registration", "Stage", "Technician", "Days on site", "Follow-up"]}
           rows={data.attention.map((job) => ({ key: job.id, cells: [jobLink(job), job.vehicle_reg || "Not recorded", job.stage, job.technician, job.ageDays ?? "Not checked in", job.reason] }))}
           empty="No open jobs require attention." pageSize={15} />
+        {/* Latest escalation notices for the manager. */}
         <Notices items={data.escalations} />
       </>,
     },
@@ -228,6 +243,7 @@ function managerTabs(data) {
       value: "workload",
       label: "Workload",
       render: () => <>
+        {/* Workload headline figures: open jobs, vehicles on site, jobs aged four days or more and jobs awaiting allocation. */}
         <Metrics items={[
           { label: "Open jobs", value: number(data.openCount), helper: "Excludes completed and cancelled work" },
           { label: "On site", value: number(data.onSiteCount), helper: "Checked in and not yet completed" },
@@ -235,12 +251,18 @@ function managerTabs(data) {
           { label: "Awaiting allocation", value: number(data.unassignedCount), helper: "Checked in, no technician assigned" },
         ]} />
         <div className="management-grid">
+          {/* Open workload by status: current open jobs counted by job status. */}
           <Bars title="Open workload by status" subtitle="Current snapshot, across all job dates" items={data.statusMix} />
+          {/* Time since check-in: open jobs grouped by how many days they have been on site. */}
           <Bars title="Time since check-in" subtitle="Elapsed days; booked jobs shown separately" items={data.ageing} />
+          {/* Work type mix: open jobs split by job type. */}
           <Donut title="Work type mix" subtitle="Open jobs by job type" items={data.typeMix} />
+          {/* Division mix: open jobs split by division. */}
           <Donut title="Division mix" subtitle="Open jobs by division" items={data.divisionMix} />
         </div>
+        {/* Where the work comes from: open jobs counted by booking source. */}
         <Bars title="Where the work comes from" subtitle="Open jobs by booking source" items={data.sourceMix} />
+        {/* Longest on site: the ten open jobs that have been here longest, with vehicle, stage, technician and days on site. */}
         <Table title="Longest on site" subtitle="The ten open jobs that have been here the longest"
           columns={["Job", "Registration", "Vehicle", "Stage", "Technician", "Days on site"]}
           rows={data.longestOpen.map((job) => ({ key: job.id, cells: [jobLink(job), job.vehicle_reg || "Not recorded", job.vehicle_make_model || "Not recorded", job.stage, job.technician, job.ageDays] }))}
@@ -251,18 +273,24 @@ function managerTabs(data) {
       value: "team",
       label: "Team",
       render: () => <>
+        {/* Team headline figures: hours clocked, technicians carrying work, average turnaround and unassigned work. */}
         <Metrics items={[
           { label: "Hours clocked", value: hours(data.clockedHours), helper: `Job clocking · ${period}` },
           { label: "Technicians carrying work", value: number(data.technicians.filter((tech) => tech.openJobs > 0).length), helper: `${number(data.technicians.length)} in the workload list` },
           { label: "Average turnaround", value: hours(data.avgTurnaroundHours), helper: "Arrival to completion", delta: data.turnaroundDelta, better: "down" },
           { label: "Unassigned work", value: number(data.unassignedCount), helper: "Checked in, no technician assigned" },
         ]} />
+        {/* Warning shown when clocking data could not be loaded, explaining that hours appear as zero. */}
         {!data.hasClockingData && <Section title="Clocked hours" subtitle="Unavailable"><p className="management-muted">Clocking data could not be loaded, so hours are shown as zero.</p></Section>}
+        {/* Hours clocked to jobs: daily clocked hours across the period. */}
         <Chart title="Hours clocked to jobs" subtitle={`${hours(data.clockedHours)} across the period`} series={data.clockedHoursSeries} unit="hours" formatValue={hours} />
+        {/* Technician workload: one row per technician with open, overdue and completed jobs, hours, hours per job and average turnaround. */}
         <Table title="Technician workload" subtitle="Open jobs are current; completions, hours and turnaround cover the selected period"
           columns={["Technician", "Role", "Open", "Overdue", "Completed", "Hours", "Hours / job", "Avg turnaround"]}
           rows={technicianRows} empty="No technician workload to display." pageSize={12} />
+        {/* Average turnaround by completion day: hours from arrival to completion for jobs finished each day. */}
         <Chart title="Average turnaround by completion day" subtitle="Hours from arrival to completion, averaged over the jobs completed that day" series={data.turnaroundSeries} unit="hours" formatValue={hours} />
+        {/* Turnaround spread: completed jobs grouped by how long they took from arrival to completion. */}
         <Bars title="Turnaround spread" subtitle={`How long the ${number(data.completedCount)} completed jobs took, arrival to completion`} items={data.turnaroundBuckets} />
       </>,
     },
@@ -270,20 +298,25 @@ function managerTabs(data) {
       value: "vhc",
       label: "VHC & parts",
       render: () => <>
+        {/* VHC headline figures: health checks completed and sent, and the value of work authorised and declined. */}
         <Metrics items={[
           { label: "VHCs completed", value: number(data.vhcCompletedCount), helper: period },
           { label: "VHCs sent to customers", value: number(data.vhcSentCount), helper: period },
           { label: "Work authorised", value: money(data.vhcAuthorisedTotal), helper: "Value approved from VHCs sent in the period" },
           { label: "Work declined", value: money(data.vhcDeclinedTotal), helper: "Value declined from the same VHCs" },
         ]} />
+        {/* VHC authorisation rate: the share of offered work value that customers authorised, shown as a filled bar. */}
         <Section title="VHC authorisation rate" subtitle="Share of the value offered to customers that came back authorised">
           <Ratio label="Authorised share of offered work" value={data.vhcConversionRate}
             leftLabel={`Authorised ${money(data.vhcAuthorisedTotal)}`} rightLabel={`Declined ${money(data.vhcDeclinedTotal)}`}
             caption={`${number(data.pendingVhcCount)} checked-in jobs still have a VHC outstanding. This measures money, not the number of checks.`} />
         </Section>
+        {/* VHCs completed: daily count of completed vehicle health checks. */}
         <Chart title="VHCs completed" subtitle={period} series={data.vhcSeries} />
         <div className="management-grid">
+          {/* Parts requests by age: pending parts requests grouped by how long they have waited. */}
           <Bars title="Parts requests by age" subtitle={`${number(data.pendingParts)} pending requests, by how long they have waited`} items={data.partsAgeing} />
+          {/* Oldest pending parts requests: waiting time, job, description and quantity, oldest first. */}
           <Table title="Oldest pending parts requests" subtitle="Jobs held up waiting for parts, oldest first"
             columns={["Waiting", "Job", "Description", "Qty"]}
             rows={data.partsQueue.map((request) => ({ key: request.request_id, cells: [hours(request.ageHours), jobLink(request.job), request.description || "No description recorded", request.quantity ?? "—"] }))}
@@ -295,18 +328,23 @@ function managerTabs(data) {
       value: "revenue",
       label: "Revenue",
       render: () => data.hasRevenueData === false
+        // Message shown in place of the revenue tab when invoicing data could not be loaded.
         ? <Section title="Invoiced value" subtitle="Unavailable"><p className="management-muted">Invoicing data could not be loaded. Try refreshing the dashboard.</p></Section>
         : <>
+          {/* Revenue headline figures: total invoiced, average invoice, labour value and parts value. */}
           <Metrics items={[
             { label: "Invoiced", value: money(data.invoicedTotal), helper: `${number(data.invoicedCount)} invoices · ${period}`, delta: data.invoicedDelta, better: "up" },
             { label: "Average invoice", value: money(data.averageInvoice), helper: "Invoiced value divided by invoice count" },
             { label: "Labour", value: money(data.labourTotal), helper: "Labour lines across the period" },
             { label: "Parts", value: money(data.partsTotal), helper: "Parts lines across the period" },
           ]} />
+          {/* Invoiced value: daily invoiced totals across the period. */}
           <Chart title="Invoiced value" subtitle={`${money(data.invoicedTotal)} raised · ${period}`} series={data.invoicedSeries} unit="currency" formatValue={money} />
+          {/* Labour and parts split: invoiced value divided between labour and parts lines. */}
           <Donut title="Labour and parts split" subtitle="Invoiced value by line type, across the period"
             items={[{ label: "Labour", value: Math.round(data.labourTotal) }, { label: "Parts", value: Math.round(data.partsTotal) }]}
             formatValue={money} />
+          {/* Work authorised through VHC: authorised and declined value from health checks sent in the period. */}
           <Bars title="Work authorised through VHC" subtitle="Authorised and declined value from VHCs sent in the period"
             items={[{ label: "Authorised", value: Math.round(data.vhcAuthorisedTotal) }, { label: "Declined", value: Math.round(data.vhcDeclinedTotal) }]}
             formatValue={money} empty="No VHCs were sent in this period." />
@@ -327,6 +365,7 @@ function adminTabs(data) {
       value: "overview",
       label: "Overview",
       render: () => <>
+        {/* Admin headline figures: appointments today and ahead, bookings in the period, cancellation rate, pending parts requests and new accounts. */}
         <Metrics items={[
           { label: "Appointments today", value: number(data.appointmentsToday), helper: "All booking statuses" },
           { label: "Appointments ahead", value: number(data.appointmentsUpcoming), helper: "Today and the next six days" },
@@ -336,13 +375,17 @@ function adminTabs(data) {
           { label: "New accounts", value: number(data.newUsers), helper: `Created in the last ${data.days} days` },
         ]} />
         <div className="management-grid">
+          {/* Daily appointment volume: appointments per day across the period. */}
           <Chart title="Daily appointment volume" subtitle={`${period} · all statuses`} series={data.appointmentSeries} />
+          {/* Upcoming booking demand: appointments booked for today and the next six days. */}
           <Chart title="Upcoming booking demand" subtitle="Today and the next six days · all statuses, not a capacity forecast" series={data.bookingForecast} />
         </div>
+        {/* Today's appointment diary: time, job, registration and booking status for each of today's appointments. */}
         <Table title="Today's appointment diary" subtitle="Ordered by scheduled time; includes cancelled bookings so status changes remain visible"
           columns={["Time", "Job", "Registration", "Booking status"]}
           rows={data.appointments.map((item) => ({ key: item.appointment_id, cells: [date(item.scheduled_time, "HH:mm"), jobLink(item.job), item.job?.vehicle_reg || "Not recorded", item.status || "Unknown"] }))}
           empty="No appointments scheduled for today." />
+        {/* Latest notices for the admin team. */}
         <Notices items={data.notices} />
       </>,
     },
@@ -350,23 +393,30 @@ function adminTabs(data) {
       value: "bookings",
       label: "Bookings",
       render: () => <>
+        {/* Bookings headline figures: bookings in the period, cancellations, jobs created and total job records. */}
         <Metrics items={[
           { label: "Booked this period", value: number(data.appointmentsPeriod), helper: period, delta: data.appointmentsDelta, better: "up" },
           { label: "Cancelled", value: number(data.cancelledCount), helper: percent(data.cancellationRate) + " of bookings in the period" },
           { label: "Jobs created", value: number(data.jobIntakeCount), helper: `New job records · ${period}` },
           { label: "Total job records", value: number(data.totalJobs), helper: "All-time, including closed jobs" },
         ]} />
+        {/* Demand by time of day: upcoming appointments counted by scheduled hour. */}
         <Columns title="Demand by time of day" subtitle="Appointments today and over the next six days, by scheduled hour" items={data.bookingHours} />
         <div className="management-grid">
+          {/* Demand by day of week: appointments in the period counted by weekday. */}
           <Columns title="Demand by day of week" subtitle={`Appointments scheduled in the period · ${period}`} items={data.bookingWeekdays} />
+          {/* Today's booking status: today's appointments split by status. */}
           <Donut title="Today's booking status" subtitle="Status of today's scheduled appointment records" items={data.appointmentStatuses} />
         </div>
+        {/* Upcoming appointments: the next bookings after today with time, job, registration and status. */}
         <Table title="Upcoming appointments" subtitle="The next bookings after today, ordered by scheduled time"
           columns={["When", "Job", "Registration", "Booking status"]}
           rows={data.upcomingAppointments.map((item) => ({ key: item.appointment_id, cells: [date(item.scheduled_time, "ddd D MMM, HH:mm"), jobLink(item.job), item.job?.vehicle_reg || "Not recorded", item.status || "Unknown"] }))}
           empty="No appointments are scheduled beyond today." />
         <div className="management-grid">
+          {/* Job records created: new jobs per day across the period. */}
           <Chart title="Job records created" subtitle={`${number(data.jobIntakeCount)} created · ${period}`} series={data.jobIntakeSeries} />
+          {/* Where jobs come from: jobs created in the period counted by source. */}
           <Bars title="Where jobs come from" subtitle={`Job records created in the period, by source`} items={data.jobSourceMix} />
         </div>
       </>,
@@ -375,21 +425,27 @@ function adminTabs(data) {
       value: "revenue",
       label: "Invoicing",
       render: () => data.hasRevenueData === false
+        // Message shown in place of the invoicing tab when invoicing data could not be loaded.
         ? <Section title="Invoicing" subtitle="Unavailable"><p className="management-muted">Invoicing data could not be loaded. Try refreshing the dashboard.</p></Section>
         : <>
+          {/* Invoicing headline figures: total invoiced, average invoice, outstanding value and draft invoices. */}
           <Metrics items={[
             { label: "Invoiced", value: money(data.invoicedTotal), helper: `${number(data.invoicedCount)} invoices · ${period}`, delta: data.invoicedDelta, better: "up" },
             { label: "Average invoice", value: money(data.averageInvoice), helper: "Invoiced value divided by invoice count" },
             { label: "Outstanding", value: money(data.outstandingTotal), helper: `${number(data.outstandingCount)} issued and unpaid · last ${data.ledgerDays} days` },
             { label: "Draft invoices", value: money(data.draftTotal), helper: `${number(data.draftCount)} not yet issued` },
           ]} />
+          {/* Invoiced value: daily invoiced totals across the period. */}
           <Chart title="Invoiced value" subtitle={`${money(data.invoicedTotal)} raised · ${period}`} series={data.invoicedSeries} unit="currency" formatValue={money} />
+          {/* Outstanding debt by age: unpaid issued invoices grouped by how far past due they are. */}
           <Bars title="Outstanding debt by age" subtitle={`Unpaid issued invoices from the last ${data.ledgerDays} days, aged against their due date`}
             items={data.debtAgeing} formatValue={number} empty="Nothing is outstanding." />
+          {/* Oldest outstanding invoices: invoice, job, account, due date, days overdue and value. */}
           <Table title="Oldest outstanding invoices" subtitle="Issued, unpaid and furthest past their due date"
             columns={["Invoice", "Job", "Account", "Due", "Days overdue", "Value"]}
             rows={data.oldestOutstanding.map((invoice) => ({ key: invoice.invoice_id, cells: [invoice.invoice_number || "Not numbered", invoice.job_number || "No linked job", invoice.account_number || "Retail", date(invoice.due_date || invoice.invoice_date, "D MMM YYYY"), invoice.daysOverdue > 0 ? number(invoice.daysOverdue) : "Not yet due", money(invoice.value)] }))}
             empty="No invoices are outstanding." />
+          {/* How settled invoices were paid: settled invoices counted by payment method. */}
           <Bars title="How settled invoices were paid" subtitle={`Payment method on settled invoices from the last ${data.ledgerDays} days`} items={data.paymentMix} />
         </>,
     },
@@ -397,24 +453,30 @@ function adminTabs(data) {
       value: "people",
       label: "People",
       render: () => <>
+        {/* People headline figures: staff on site, staff away today, active accounts and new accounts. */}
         <Metrics items={[
           { label: "On site now", value: number(data.onSiteCount), helper: `${number(data.onBreakCount)} on a break` },
           { label: "Away today", value: number(data.absentTodayCount), helper: "Approved absence covering today" },
           { label: "Active accounts", value: number(data.activeStaffCount), helper: `${number(data.inactiveStaffCount)} deactivated` },
           { label: "New accounts", value: number(data.newUsers), helper: `Created in the last ${data.days} days` },
         ]} />
+        {/* Attendance today: each colleague's role, state, clock-in and clock-out times and hours. */}
         <Table title="Attendance today" subtitle={data.hasAttendanceData === false ? "Attendance could not be loaded." : "Clocking records for today, by colleague"}
           columns={["Colleague", "Role", "State", "Clocked in", "Clocked out", "Hours"]}
           rows={data.attendance.map((row) => ({ key: row.id, cells: [row.name, row.role, row.state, date(row.clock_in, "HH:mm"), date(row.clock_out, "HH:mm"), row.total_hours == null ? "—" : hours(row.total_hours)] }))}
           empty="No clocking records for today." pageSize={12} />
         <div className="management-grid">
+          {/* Active accounts by role: staff counted by role. */}
           <Bars title="Active accounts by role" subtitle="Everyone with an active account" items={data.roleMix} />
+          {/* Active accounts by department: staff counted by department. */}
           <Bars title="Active accounts by department" subtitle="Everyone with an active account" items={data.departmentMix} />
         </div>
+        {/* Upcoming holiday cover: approved holidays overlapping today and the next six days. */}
         <Table title="Upcoming holiday cover" subtitle="Approved holidays overlapping today and the next six days"
           columns={["Colleague", "From", "To"]}
           rows={(data.holidays || []).map((item) => ({ key: item.absence_id, cells: [item.userName || "Unknown user", date(item.start_date, "D MMM"), date(item.end_date, "D MMM")] }))}
           empty={data.holidays == null ? "Holiday cover is unavailable." : "No approved holidays in this period."} />
+        {/* Recently created accounts: name, role, account status and creation date of the latest new users. */}
         <Table title="Recently created accounts" subtitle={`Latest 10 of ${number(data.newUsers)} accounts created in the last ${data.days} days; review roles and activation`}
           columns={["Name", "Role", "Account status", "Created"]}
           rows={data.recentUsers.map((item) => ({ key: item.user_id, cells: [[item.first_name, item.last_name].filter(Boolean).join(" ") || "Unknown user", item.role || "Not recorded", item.is_active === true ? "Active" : item.is_active === false ? "Inactive" : "Unknown", date(item.created_at)] }))}
@@ -425,15 +487,18 @@ function adminTabs(data) {
       value: "queue",
       label: "Admin queue",
       render: () => <>
+        {/* Admin queue headline figures: pending parts requests, draft invoices and cancelled bookings. */}
         <Metrics items={[
           { label: "Pending parts requests", value: number(data.partsRequests), helper: "Requests with pending status" },
           { label: "Draft invoices", value: number(data.draftCount), helper: `${money(data.draftTotal)} not yet issued` },
           { label: "Cancelled bookings", value: number(data.cancelledCount), helper: `${period} · review before rebooking` },
         ]} />
+        {/* Oldest pending parts requests: request date, job, description and quantity for the ten oldest. */}
         <Table title="Oldest pending parts requests" subtitle={`Showing the oldest 10 of ${number(data.partsRequests)} pending requests`}
           columns={["Requested", "Job", "Description", "Quantity"]}
           rows={data.pendingParts.map((item) => ({ key: item.request_id, cells: [date(item.created_at), jobLink(item.job), item.description || "No description recorded", item.quantity ?? "Not recorded"] }))}
           empty="No parts requests are pending." />
+        {/* Latest notices for the admin team. */}
         <Notices items={data.notices} />
       </>,
     },
@@ -448,6 +513,7 @@ export default function ManagementInsights({ mode, data, error, loading, refresh
 
   return <PageShell sectionKey={`${mode}-dashboard-shell`}>
     <ContentWidth sectionKey={`${mode}-dashboard-content`} widthMode="content">
+      {/* Dashboard card: page title, refresh button, 7 / 30 day period switch, last-updated line, tab bar and the content of the selected tab. */}
       <LayerSurface className="management-dashboard">
         <header className="management-row">
           <div><h1>{admin ? "Admin overview" : "Manager overview"}</h1>

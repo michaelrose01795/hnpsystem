@@ -55,6 +55,7 @@ export default function VhcCustomerDescriptionModal({
   };
 
   return (
+    // Pop-up for rewording a health-check item for the customer, with Save, 'Use technician's text' and Close buttons.
     <PopupModal
       isOpen
       onClose={saving ? undefined : onClose}
@@ -91,6 +92,7 @@ export default function VhcCustomerDescriptionModal({
       </p>
 
       {technicianDescription ? (
+        // The technician's original description, shown for reference.
         <LayerTheme radius="var(--radius-sm)" padding="12px 14px" gap="4px">
           <strong>Technician&apos;s description</strong>
           <span>{technicianDescription}</span>

@@ -25,6 +25,7 @@ export default function ValetingDashboardUi(props) {
         style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}
       >
         {/* Wash bay overview — outer LayerTheme (tinted) so MetricCards inside flip to LayerSurface */}
+        {/* Wash bay overview: headline counts of cars waiting for a wash, washed, delayed and in the queue. */}
         <LayerTheme
           as="section"
           sectionKey="dashboard-valeting-wash-overview"
@@ -56,6 +57,7 @@ export default function ValetingDashboardUi(props) {
         gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
         gap: "16px"
       }}>
+              {/* Four metric tiles: cars waiting wash, cars washed, cars delayed and cars in queue. */}
               <MetricCard sectionKey="dashboard-valeting-cars-waiting-wash" parentKey="dashboard-valeting-wash-metrics" label="Cars waiting wash" value={data.waitingCount} helper="Checked in but not started" />
               <MetricCard sectionKey="dashboard-valeting-cars-washed" parentKey="dashboard-valeting-wash-metrics" label="Cars washed" value={data.washedCount} helper="Wash completed" />
               <MetricCard sectionKey="dashboard-valeting-cars-delayed" parentKey="dashboard-valeting-wash-metrics" label="Cars delayed" value={data.delayedCount} helper="Includes delay flag" />
@@ -79,6 +81,7 @@ export default function ValetingDashboardUi(props) {
           }}
         >
           {/* Queue trend — outer LayerTheme; trend rows inside flip to LayerSurface */}
+          {/* Valet volume trend: a chart of cars washed over the last 7 days. */}
           <LayerTheme
             as="section"
             sectionKey="dashboard-valeting-queue-trend"
@@ -108,6 +111,7 @@ export default function ValetingDashboardUi(props) {
           </LayerTheme>
 
           {/* Queue board — outer LayerTheme uses --theme; rows inside flip to LayerSurface */}
+          {/* Queue board: the list of cars checked in and ready to be valeted. */}
           <LayerTheme
             as="section"
             sectionKey="dashboard-valeting-queue-board"

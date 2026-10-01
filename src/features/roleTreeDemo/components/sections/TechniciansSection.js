@@ -21,6 +21,7 @@ export default function TechniciansSection() {
       </header>
 
       <div className={styles.technicianScene}>
+        {/* Apprentice technician card: an avatar and label with the workflow steps that start at this level. */}
         <LayerSurface className={styles.technicianPedestal} radius="var(--radius-lg)" padding="28px 22px">
           <div className={styles.technicianLiveRig} aria-hidden="true">
             <span />
@@ -32,6 +33,7 @@ export default function TechniciansSection() {
           <p className={styles.technicianSub}>The starting point of every job that leaves the workshop.</p>
           <div className={styles.technicianWorkflow}>
             {technicianWorkflow.map((step) => (
+              // One workflow step: its label and a short description.
               <LayerTheme key={step.id} padding="12px" gap="4px">
                 <span className={styles.dashboardCardLabel}>{step.label}</span>
                 <span>{step.line}</span>
@@ -42,6 +44,7 @@ export default function TechniciansSection() {
 
         <div className={styles.technicianTools}>
           {technicianTools.map((tool) => (
+            // Tool card: the name of a tool available to technicians and what it is for.
             <LayerSurface
               key={tool.id}
               className={styles.glassCard}
@@ -54,6 +57,7 @@ export default function TechniciansSection() {
               <p className={styles.cardBody}>{tool.line}</p>
             </LayerSurface>
           ))}
+          {/* Footnote explaining that problems visible at technician level affect the whole business. */}
           <LayerSurface className={styles.technicianFootnote} radius="var(--radius-md)" padding="14px 18px">
             If these problems are visible from the apprentice technician level, they affect the
             whole business.

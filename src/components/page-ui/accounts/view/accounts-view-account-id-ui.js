@@ -46,6 +46,7 @@ export default function ViewAccountPageUi(props) {
     case "section1":
       return <ProtectedRoute allowedRoles={VIEW_ROLES}>
       <>
+        {/* Whole account page: wraps the loading placeholders, the account header, the overview and the transaction and invoice tables. */}
         <DevLayoutSection sectionKey="account-view-page-shell" sectionType="page-shell" shell>
         <div style={{
         display: "flex",
@@ -80,6 +81,7 @@ export default function ViewAccountPageUi(props) {
             gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
             gap: 16
           }}>
+                {/* Loading placeholders for the four account figures (balance, credit limit, credit terms and created date). */}
                 {Array.from({
               length: 4
             }).map((_, i) => <LayerSurface key={i} radius="var(--radius-sm)" padding="16px" gap="8px">
@@ -120,8 +122,9 @@ export default function ViewAccountPageUi(props) {
                   </div>
                 </div>
               </LayerTheme>
-              {/* Overview — --theme card holding three --surface sections. */}
+              {/* Account overview: groups the key figures, the billing details and the internal notes for this account. */}
               <LayerTheme as="section" sectionKey="account-view-overview-card" sectionType="content-card" parentKey="account-view-page-shell" gap="16px">
+                {/* Key figures: balance, credit limit, credit terms and the date the account was created. */}
                 <LayerSurface
               as="section"
               sectionKey="account-view-metrics-grid"
@@ -140,6 +143,7 @@ export default function ViewAccountPageUi(props) {
                     {detailCard("Created", account.created_at ? new Date(account.created_at).toLocaleDateString("en-GB") : "—")}
                   </div>
                 </LayerSurface>
+                {/* Billing information: the billing name, email, phone number and full address held for the account. */}
                 <LayerSurface
               as="section"
               sectionKey="account-view-billing-section"
@@ -204,6 +208,7 @@ export default function ViewAccountPageUi(props) {
                   }}>{[account.billing_address_line1, account.billing_address_line2, account.billing_city, account.billing_postcode, account.billing_country].filter(Boolean).join(", ") || "—"}</strong></div>
                   </div>
                 </LayerSurface>
+                {/* Internal notes: free-text notes staff have recorded against the account, or a message when there are none. */}
                 <LayerSurface
               as="section"
               sectionKey="account-view-notes-section"
@@ -224,6 +229,7 @@ export default function ViewAccountPageUi(props) {
               }}>{account.notes || "No notes recorded."}</p>
                 </LayerSurface>
               </LayerTheme>
+              {/* Transactions: filterable table of this account's transactions, with a link through to the full transactions page. */}
               <DevLayoutSection sectionKey="account-view-transactions" sectionType="data-table" parentKey="account-view-page-shell">
               <TransactionTable transactions={transactions} loading={loading} filters={filters} onFilterChange={setFilters} pagination={{
               page: 1,
@@ -231,6 +237,7 @@ export default function ViewAccountPageUi(props) {
               total: transactions.length || 0
             }} onPageChange={handleTransactionsPage} onExport={() => router.push(`/accounts/transactions/${account.account_id}`)} accentSurface />
               </DevLayoutSection>
+              {/* Invoices: filterable table of invoices raised against this account, with a link through to the full invoices page. */}
               <DevLayoutSection sectionKey="account-view-invoices" sectionType="data-table" parentKey="account-view-page-shell">
               <InvoiceTable invoices={invoices} filters={invoiceFilters} onFilterChange={setInvoiceFilters} pagination={{
               page: 1,

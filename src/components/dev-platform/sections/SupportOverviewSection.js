@@ -37,6 +37,7 @@ function JumpTile({ tab, onSelect }) {
         cursor: "pointer",
       }}
     >
+      {/* Tile naming one support area; clicking it jumps to that tab. */}
       <LayerSurface style={{ gap: "6px", height: "100%", minHeight: 44 }}>
         <div style={{ fontWeight: 700, fontSize: "var(--text-h4, 15px)", color: "var(--accentText)" }}>
           {tab.label}
@@ -48,6 +49,7 @@ function JumpTile({ tab, onSelect }) {
 
 export default function SupportOverviewSection({ onSelectTab }) {
   const select = typeof onSelectTab === "function" ? onSelectTab : () => {};
+  // Support hub overview: an introduction and a grid of tiles that jump to each of the other support tabs.
   return (
     <Panel
       title="Support hub"

@@ -200,6 +200,7 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
     <>
 
       {error && <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p>}
+      {/* Message feed: a scrolling list of messages exchanged with the customer, or a note when there are none. */}
       <div
         data-dev-section="1"
         data-dev-section-key="customer-profile-messages-feed"
@@ -225,6 +226,7 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         {messages.map((message) => {
           const mine = Number(message.senderId) === Number(dbUserId);
           return (
+            // One message bubble: who sent it and when, followed by the message text; the user's own messages sit on the right.
             <LayerSurface as="div"
             key={message.id}
 
@@ -241,6 +243,7 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
 
         })}
       </div>
+      {/* Composer: a text box for writing a message to the customer and a Send button. */}
       <div
         data-dev-section="1"
         data-dev-section-key="customer-profile-messages-composer"
@@ -618,6 +621,7 @@ export default function CustomerDetailWorkspace() {
       renderTabContent={renderTabContent}
       search={<CustomerSearchBar currentCustomerId={customer?.id} />}
       alerts={
+        // Alerts panel: outstanding items and possible duplicate records for this customer, each linking to the relevant tab.
         <CustomerAlertsPanel
           alerts={alerts}
           duplicates={duplicates}
@@ -625,6 +629,7 @@ export default function CustomerDetailWorkspace() {
         />
       }
       header={
+        // Customer header card: the customer's name and key details, contact preference and summary figures, with editing for staff who are allowed.
         <CustomerHeaderCard
           customer={customer}
           summary={summary}

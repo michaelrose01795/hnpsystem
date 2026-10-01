@@ -28,12 +28,11 @@
 // or Parts module AND may open the page (its API role list). Saved per-user
 // layouts receive the same additions through SIDEBAR_LAYOUT_MIGRATION.
 
-import {
-  SIDEBAR_MODULE_LIBRARY,
-  STOCK_ACCESS_MANAGE_HREFS,
-  STOCK_ACCESS_STORE_HREFS,
-  sortModulesByLibraryOrder,
-} from "@/config/workspace/departments";
+// The Access module (Stock Access pages) is deliberately in NO role default: it
+// is given to the All Access login only, and added to other users one by one
+// from the Developer Platform's Sidebar Access editor.
+
+import { SIDEBAR_MODULE_LIBRARY, sortModulesByLibraryOrder } from "@/config/workspace/departments";
 
 const LIBRARY_BY_KEY = new Map(
   SIDEBAR_MODULE_LIBRARY.map((navigationModule) => [navigationModule.key, navigationModule])
@@ -122,7 +121,7 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
     mod("department-general", ["/newsfeed", "/messages", "/tracking/Key-Parking"]),
     mod("department-management", ["/dashboard/managers", "/archive"]),
     mod("department-service", ["/new-job", "/appointments", "/jobs", "/tracking/Loan-car"]),
-    mod("department-workshop", ["/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools", ...STOCK_ACCESS_STORE_HREFS]),
+    mod("department-workshop", ["/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools"]),
     mod("department-reports", ["/reports/workshop", "/reports/mot", "/reports/paint", "/reports/valeting"]),
   ),
   "after sales director": layout(
@@ -132,12 +131,12 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   ),
   "techs": layout(
     mod("department-general", ["/newsfeed", "/messages", "/tracking/Key-Parking"]),
-    mod("department-workshop", ["/dashboard/workshop", "/tracking/Equipment-Tools", ...STOCK_ACCESS_STORE_HREFS]),
+    mod("department-workshop", ["/dashboard/workshop", "/tracking/Equipment-Tools"]),
     mod("department-tech", ["/dashboard/tech", "/tech", "/tech/efficiency", "/consumables-request"]),
   ),
   "technician": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
-    mod("department-workshop", ["/dashboard/workshop", "/tracking/Equipment-Tools", ...STOCK_ACCESS_STORE_HREFS]),
+    mod("department-workshop", ["/dashboard/workshop", "/tracking/Equipment-Tools"]),
   ),
   "tech": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
@@ -151,12 +150,12 @@ export const ROLE_WORKSPACE_DEFAULTS = Object.freeze({
   "parts": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-management", ["/archive"]),
-    mod("department-parts", ["/dashboard/parts", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock", ...STOCK_ACCESS_MANAGE_HREFS]),
+    mod("department-parts", ["/dashboard/parts", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock"]),
   ),
   "parts manager": layout(
     mod("department-general", ["/newsfeed", "/messages"]),
     mod("department-management", ["/dashboard/managers", "/archive"]),
-    mod("department-parts", ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock", ...STOCK_ACCESS_MANAGE_HREFS]),
+    mod("department-parts", ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock"]),
     mod("department-reports", ["/reports/parts"]),
   ),
   "parts driver": layout(

@@ -45,6 +45,7 @@ export default function PageContentPanel({
 
   return (
     <>
+      {/* Pages and sections: choose which website page to edit and see its status and the sections it contains. */}
       <Section title="Pages and sections">
         <div className="website-manager__toolbar">
           <DropdownField
@@ -83,6 +84,7 @@ export default function PageContentPanel({
       </Section>
 
       {sections.length === 0 ? (
+        // Empty message shown when the chosen page has no editable sections.
         <Section title="Sections">
           <EmptyState
             variant="bare"
@@ -92,6 +94,7 @@ export default function PageContentPanel({
         </Section>
       ) : (
         sections.map((sectionKey) => (
+          // One editing panel per section of the chosen page.
           <SectionPanel key={sectionKey} sectionKey={sectionKey} />
         ))
       )}
@@ -109,6 +112,7 @@ function SectionPanel({ sectionKey }) {
   if (isCodeOwnedSection(sectionKey)) {
     const entry = CODE_OWNED_SECTIONS[sectionKey];
     return (
+      // Notice for a section whose content is set in code, explaining that a developer has to change it.
       <Section title={schema.label}>
         <EmptyState
           variant="bare"
@@ -119,6 +123,7 @@ function SectionPanel({ sectionKey }) {
     );
   }
   return schema.kind === "singleton" ? (
+    // Editor for a single-record section: a read-only summary that opens into a form when Edit is pressed.
     <SingletonPanel sectionKey={sectionKey} schema={schema} />
   ) : (
     <CollectionManager sectionKey={sectionKey} schema={schema} />
@@ -158,6 +163,7 @@ function SingletonPanel({ sectionKey, schema }) {
   };
 
   return (
+    // Single-record section: shows the current content, loading and error states, and an edit form for its fields.
     <Section title={schema.label}>
       {error && (
         <div className="website-manager__notice website-manager__notice--warning" role="alert">

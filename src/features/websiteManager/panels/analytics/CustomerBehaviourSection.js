@@ -10,6 +10,7 @@ import { NotConnectedNotice } from "./analyticsAtoms";
 
 export default function CustomerBehaviourSection() {
   return (
+    // Customer behaviour: explains that these insights are not connected yet and lists the measures that will appear once tracking is in place.
     <Section
       title="Customer Behaviour"
       subtitle="What customers look at, save, search for and do on their way to an enquiry."

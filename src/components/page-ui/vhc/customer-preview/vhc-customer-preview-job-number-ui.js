@@ -48,11 +48,13 @@ export default function CustomerPreviewPageUi(props) {
       }} />
             <SkeletonBlock width="120px" height="32px" borderRadius="999px" />
           </div>
+          {/* Loading placeholder for the report heading while the health check is fetched. */}
           <LayerSurface padding="20px" gap="10px">
             <SkeletonBlock width="60%" height="22px" />
             <SkeletonBlock width="80%" height="12px" />
             <SkeletonBlock width="50%" height="12px" />
           </LayerSurface>
+          {/* Three loading placeholder cards standing in for the health check sections. */}
           {Array.from({
       length: 3
     }).map((_, i) => <LayerSurface key={i} padding="20px" gap="10px">
@@ -72,6 +74,7 @@ export default function CustomerPreviewPageUi(props) {
   justifyContent: "center",
   background: "var(--surface)"
 }}>
+        {/* Error panel: tells the customer the job could not be loaded and offers a Go Back button. */}
         <div style={{
     textAlign: "center",
     padding: "24px"
@@ -112,7 +115,7 @@ export default function CustomerPreviewPageUi(props) {
     minHeight: "100vh",
     background: "var(--surface)"
   }}>
-        {/* Header */}
+        {/* Report header: company logo, the Vehicle Health Check title, job number, registration, vehicle and customer name, with a Back button. */}
         <header style={{
       background: "var(--surface)",
       padding: "16px 24px",

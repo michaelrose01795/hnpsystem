@@ -277,6 +277,7 @@ export default function GoodsInPageUi(props) {
             {toast.message}
           </div>}
 
+        {/* Invoice details: supplier, invoice and delivery note numbers, price level, franchise, contact and notes for the delivery being booked in, with buttons to pick a supplier or scan a document. */}
         <LayerTheme
           as="section"
           data-presentation="goods-in-invoice"
@@ -392,6 +393,7 @@ export default function GoodsInPageUi(props) {
           </div>
         </LayerTheme>
 
+        {/* Add part: enter a part number, prices, quantity, bin location and description to add a line to the delivery, with a catalogue search and optional advanced detail tabs. */}
         <LayerTheme
           as="section"
           data-presentation="goods-in-add-part"
@@ -509,7 +511,9 @@ export default function GoodsInPageUi(props) {
           </div>
 
           <div className="goods-in-context-grid" aria-live="polite">
+            {/* Context cards for the chosen catalogue part (stock, job demand and price check); if no part or an unknown part is entered, a single message card is shown instead. */}
             {selectedCatalogPart ? <>
+              {/* Live stock preview: on hand, reserved, available and on-order quantities for the selected part. */}
               <LayerSurface as="section" className="goods-in-context-block" padding="12px">
                 <div style={{ fontWeight: 700 }}>Live stock preview</div>
                 <div className="goods-in-summary-strip" style={{ marginTop: 8 }}>
@@ -520,6 +524,7 @@ export default function GoodsInPageUi(props) {
                   <span>After receipt <strong>{Number(selectedCatalogPart.qty_in_stock || 0) + Number(partForm.quantity || 0)}</strong></span>
                 </div>
               </LayerSurface>
+              {/* Job demand: how many units open jobs are waiting for, with links to up to four of those job cards. */}
               <LayerSurface as="section" className="goods-in-context-block" padding="12px">
                 <div style={{ fontWeight: 700 }}>
                   Job demand · {Number(selectedCatalogPart.open_job_quantity || 0)} units
@@ -535,6 +540,7 @@ export default function GoodsInPageUi(props) {
                   </div>)}
                 </div> : <div style={{ color: "var(--text-1)", marginTop: 8 }}>No open job requirement is linked to this catalogue part.</div>}
               </LayerSurface>
+              {/* Price and margin check: compares the new cost with the previous cost and shows the resulting margin against the retail price. */}
               <LayerSurface as="section" className="goods-in-context-block" padding="12px">
                 <div style={{ fontWeight: 700 }}>Price and margin check</div>
                 {(() => {
@@ -565,6 +571,7 @@ export default function GoodsInPageUi(props) {
               <div style={{
           marginTop: "14px"
         }}>
+                {/* Global details tab: surcharge, VAT rate, sale prices, purchase costs, receiving discrepancy and notes for the part. */}
                 {activeTab === "global" && <LayerSurface
                   as="section"
                   sectionKey="goods-in-global-details"
@@ -748,6 +755,7 @@ export default function GoodsInPageUi(props) {
           </div>
         </LayerTheme>
 
+        {/* Invoice lines: table of every part added to this delivery with a remove button per line, plus refresh and complete goods-in buttons. */}
         <LayerTheme
           as="section"
           sectionKey="goods-in-invoice-lines"
@@ -831,12 +839,14 @@ export default function GoodsInPageUi(props) {
             </ScrollArea></div>}
         </LayerTheme>
 
+        {/* Completion result: how many lines were booked in and a warning listing any that failed. */}
         {completionSummary && <LayerTheme as="section" sectionKey="goods-in-completion-summary" parentKey="app-layout-page-card" style={sectionCardStyle}>
           <h2 style={{ margin: 0 }}>Completion result</h2><div className="goods-in-summary-strip"><span>Lines <strong>{completionSummary.lines}</strong></span><span>Units <strong>{completionSummary.units}</strong></span><span>Updated <strong>{completionSummary.updated}</strong></span><span>Created <strong>{completionSummary.created}</strong></span><span>Failed <strong>{completionSummary.failed.length}</strong></span><span>Cost received <strong>{currencyFormatter.format(completionSummary.totalCost)}</strong></span></div>
           {completionSummary.failed.length > 0 && <div className="app-status-message app-status-message--warning">{completionSummary.failed.map(item => <div key={`${item.partNumber}-${item.error}`}><strong>{item.partNumber || "Unknown part"}:</strong> {item.error}</div>)}</div>}
         </LayerTheme>}
       </div>
 
+      {/* Goods in settings pop-up: save the current delivery as a draft and reopen recent deliveries or drafts. */}
       <PopupModal
         isOpen={settingsOpen}
         onClose={savingDraft ? undefined : () => setSettingsOpen(false)}
@@ -865,6 +875,7 @@ export default function GoodsInPageUi(props) {
             </div>
           </header>
 
+          {/* Recent goods in and drafts: a searchable list of previous deliveries that can be reopened, with a refresh button. */}
           <LayerTheme
             as="section"
             sectionKey="goods-in-recent"

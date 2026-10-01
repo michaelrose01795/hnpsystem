@@ -44,6 +44,7 @@ export default function AccountsReportsPageUi(props) {
     case "section1":
       return <ProtectedRoute allowedRoles={REPORT_ROLES}>
       <>
+        {/* Accounts reports page: period controls and export at the top, then headline figures and a written highlights summary. */}
         <DevLayoutSection as="div" sectionKey="accounts-reports-page-shell" sectionType="page-shell" backgroundToken="page-card-bg" shell className="app-layout-page-shell" style={{
       gap: isVerticalPhone ? "var(--space-2)" : "20px"
     }}>
@@ -124,6 +125,7 @@ export default function AccountsReportsPageUi(props) {
           </ToolbarRow>
 
           {loading && <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading reports" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {/* Loading placeholder for the four headline figures. */}
               <LayerTheme style={metricsShellStyle}>
                 <div style={metricsGridStyle}>
                   {Array.from({ length: 4 }, (_, index) => <SkeletonMetricCard key={index} layer="surface" />)}
@@ -133,6 +135,7 @@ export default function AccountsReportsPageUi(props) {
             </div>}
 
           {!loading && <>
+              {/* Headline figures for the selected period, such as new accounts, total invoiced and overdue invoices. */}
               <LayerTheme as="section" sectionKey="accounts-reports-metrics-shell" sectionType="content-card" parentKey="accounts-reports-page-shell" style={metricsShellStyle}>
                 <div style={metricsGridStyle}>
                   {metricCard("accounts-reports-auto-content-card-2", "New Accounts", current.newAccounts ?? 0)}
@@ -148,6 +151,7 @@ export default function AccountsReportsPageUi(props) {
                 </div>
               </LayerTheme>
 
+              {/* Highlights: a short bullet-point summary of new accounts, invoicing, overdue follow-ups and average balance for the period. */}
               <LayerTheme as="section" sectionKey="accounts-reports-highlights-card" sectionType="content-card" parentKey="accounts-reports-page-shell" style={{
           gap: "12px"
         }}>

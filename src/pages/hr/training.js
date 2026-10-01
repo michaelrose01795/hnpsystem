@@ -46,6 +46,7 @@ function TrainingContent() {
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+        {/* Error card shown when the training data cannot be loaded, with the error message. */}
         <SectionCard layer="theme"
           sectionKey="hr-training-error" parentKey="hr-manager-tab-training" title="Unable to load training data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
@@ -74,8 +75,10 @@ function TrainingContent() {
         </p>
       </header>
 
+      {/* Headline training figures shown as a strip of summary tiles once the data has loaded. */}
       {isLoading ? null : <HrSummaryStrip items={summary} parentKey="hr-manager-tab-training" />}
 
+      {/* Upcoming expiries: certificates due for renewal, with a button to notify the employees concerned. */}
       <SectionCard layer="theme"
         sectionKey="hr-training-upcoming-expiries" parentKey="hr-manager-tab-training"
         title="Upcoming Expiries"
@@ -86,6 +89,7 @@ function TrainingContent() {
           </Button>
         }>
         
+        {/* Table of renewals showing course, employee, due date and status. */}
         <LayerSurface padding="var(--space-3)" gap="0">
           <DataTableShell>
             <table className="app-data-table">
@@ -129,12 +133,14 @@ function TrainingContent() {
         </LayerSurface>
       </SectionCard>
 
+      {/* Training catalogue: the courses available to assign to employees. */}
       <SectionCard layer="theme"
         sectionKey="hr-training-catalogue" parentKey="hr-manager-tab-training"
         title="Training Catalogue"
         subtitle="Courses available to assign">
         
         {showPresentationMock ? (
+          // Demonstration catalogue table: course, duration, who it is mandatory for and status.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">
@@ -160,6 +166,7 @@ function TrainingContent() {
             </DataTableShell>
           </LayerSurface>
         ) : trainingCourses.length ? (
+          // Catalogue table: course, category, renewal interval and description.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">
@@ -197,6 +204,7 @@ function TrainingContent() {
         )}
       </SectionCard>
 
+      {/* Assign training form: choose an employee, course and due date, add notes, then assign or attach a supporting file. */}
       <SectionCard layer="theme"
         sectionKey="hr-training-assign-training" parentKey="hr-manager-tab-training" title="Assign Training" subtitle="Send employees on mandatory or optional courses.">
         <form
@@ -241,9 +249,11 @@ function TrainingContent() {
         </form>
       </SectionCard>
 
+      {/* Training compliance snapshot: completion rates by department. */}
       <SectionCard layer="theme"
         sectionKey="hr-training-compliance-snapshot" parentKey="hr-manager-tab-training" title="Training Compliance Snapshot" subtitle="High-level view of overall compliance rates.">
         {showPresentationMock ? (
+          // Table of departments with their compliance percentage and status.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">

@@ -24,6 +24,7 @@ function ReportsContent() {
         </p>
       </header>
 
+      {/* Report metrics: headline figures on report activity, or an empty message when there has been none. */}
       <SectionCard layer="theme"
         sectionKey="hr-reports-report-metrics"
         parentKey="hr-manager-tab-reports"
@@ -48,6 +49,7 @@ function ReportsContent() {
         )}
       </SectionCard>
 
+      {/* Quick export: pick a report and the format to export it in, or an empty message when nothing is available. */}
       <SectionCard layer="theme"
         sectionKey="hr-reports-quick-export"
         parentKey="hr-manager-tab-reports"
@@ -55,6 +57,7 @@ function ReportsContent() {
         subtitle="Choose a report and export format.">
         
         {showPresentationMock ? (
+          // Table of the first few exportable reports: name, description and available formats.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">
@@ -86,6 +89,7 @@ function ReportsContent() {
         )}
       </SectionCard>
 
+      {/* Report catalogue: every HR report template that is available, or an empty message when there are none. */}
       <SectionCard layer="theme"
         sectionKey="hr-reports-report-catalogue"
         parentKey="hr-manager-tab-reports"
@@ -93,6 +97,7 @@ function ReportsContent() {
         subtitle="Available HR reporting templates.">
         
         {showPresentationMock ? (
+          // Table of all report templates: name, description and available formats.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">

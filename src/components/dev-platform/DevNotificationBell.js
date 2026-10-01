@@ -72,6 +72,7 @@ export default function DevNotificationBell() {
       </button>
 
       {open && (
+        // Notifications dropdown: the latest developer notifications with a mark-all-read button and a link to the full list.
         <LayerSurface
           role="dialog"
           aria-label="Notifications"

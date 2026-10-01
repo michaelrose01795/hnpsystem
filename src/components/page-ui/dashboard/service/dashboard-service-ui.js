@@ -5,6 +5,7 @@
 // this page so the whole grid sits on a consistent `--theme` background.
 function ThemeCard({ LayerTheme, title, subtitle, children, sectionKey, parentKey }) {
   return (
+    // Dashboard card: a tinted box with an optional title and subtitle above its content.
     <LayerTheme
       radius="var(--radius-md)"
       padding="var(--section-card-padding)"
@@ -69,6 +70,7 @@ export default function ServiceDashboardUi(props) {
               width: "100%",
             }}
           >
+            {/* Appointments today: how many customers are booked in today. */}
             <ThemeCard
               LayerTheme={LayerTheme}
               sectionKey="dashboard-service-appointments-today"
@@ -80,6 +82,7 @@ export default function ServiceDashboardUi(props) {
               ) : error ? (
                 <p style={{ margin: 0, color: "var(--accent-text-on-tint)" }}>{error}</p>
               ) : (
+                // The number of appointments scheduled for today.
                 <MetricCard
                   label="Appointments today"
                   value={data.appointmentsToday}
@@ -88,6 +91,7 @@ export default function ServiceDashboardUi(props) {
               )}
             </ThemeCard>
 
+            {/* Progress: a bar comparing jobs completed with jobs checked in. */}
             <ThemeCard
               LayerTheme={LayerTheme}
               sectionKey="dashboard-service-progress"
@@ -98,6 +102,7 @@ export default function ServiceDashboardUi(props) {
               <ProgressBar completed={data.progress.completed} target={data.progress.scheduled} />
             </ThemeCard>
 
+            {/* Waiting mix: a pie chart of customers who are waiting, have a loan car or are collecting later. */}
             <ThemeCard
               LayerTheme={LayerTheme}
               sectionKey="dashboard-service-waiting-mix"
@@ -121,6 +126,7 @@ export default function ServiceDashboardUi(props) {
               width: "100%",
             }}
           >
+            {/* Booking volume trend: a chart of how many appointments have been booked over time. */}
             <ThemeCard
               LayerTheme={LayerTheme}
               sectionKey="dashboard-service-appointment-trends"
@@ -131,6 +137,7 @@ export default function ServiceDashboardUi(props) {
               <TrendBlock data={data.appointmentTrends} />
             </ThemeCard>
 
+            {/* VHC severity: a weekly breakdown of red, amber and green vehicle health check results. */}
             <ThemeCard
               LayerTheme={LayerTheme}
               sectionKey="dashboard-service-vhc-severity"
@@ -190,6 +197,7 @@ export default function ServiceDashboardUi(props) {
               )}
             </ThemeCard>
 
+            {/* Upcoming jobs: the next jobs due in, or a message when there are none. */}
             <ThemeCard
               LayerTheme={LayerTheme}
               sectionKey="dashboard-service-upcoming-jobs"
@@ -207,6 +215,7 @@ export default function ServiceDashboardUi(props) {
               )}
             </ThemeCard>
 
+            {/* VHCs awaiting approval: jobs whose health check is waiting for the customer's decision. */}
             <ThemeCard
               LayerTheme={LayerTheme}
               sectionKey="dashboard-service-vhc-approvals"

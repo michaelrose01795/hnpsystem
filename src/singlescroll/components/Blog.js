@@ -10,6 +10,7 @@ import SceneShell from "./SceneShell";
 import styles from "../styles/singlescroll.module.css";
 
 export default function Blog() {
+  // Blog section: heading and introduction above a grid of blog post previews.
   return (
     <SceneShell
       id="blog"
@@ -24,6 +25,7 @@ export default function Blog() {
       <div className={styles.blogGrid}>
         {blogPosts.map((post) => (
           <div key={post.id} data-reveal>
+            {/* One preview card per blog post: image, date, title and a short excerpt. */}
             <Card3D intensity={0.7}>
               <LayerSurface className={styles.blogCard} padding="14px" gap="10px">
                 <div className={styles.blogImageWrap}>

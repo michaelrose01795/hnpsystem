@@ -8582,6 +8582,9 @@ html.website-scope button.ws-help-more {
    pinned footer whose actions are right-aligned.                            */
 html.website-scope .ws-article-backdrop {
   --ws-popup-gap: clamp(10px, 2.5vw, 20px);
+  /* Left / right gap. Equal to the top / bottom gap until the portrait rule
+     below, where only the top / bottom one grows to clear the notch. */
+  --ws-popup-gap-x: var(--ws-popup-gap);
   position: fixed;
   top: 0;
   left: 0;
@@ -8593,7 +8596,7 @@ html.website-scope .ws-article-backdrop {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--ws-popup-gap);
+  padding: var(--ws-popup-gap) var(--ws-popup-gap-x);
   overflow: hidden;
   overscroll-behavior: contain;
   /* Above the cart drawer (9000/8999) so a popup opened with the basket on
@@ -8631,7 +8634,7 @@ html.website-scope .ws-article-card {
   position: relative;
   z-index: 1;
   width: min(100%, 960px);
-  max-width: calc(100vw - (var(--ws-popup-gap) * 2));
+  max-width: calc(100vw - (var(--ws-popup-gap-x) * 2));
   max-height: calc(100dvh - (var(--ws-popup-gap) * 2));
   margin: auto;
   min-height: 0;
@@ -8806,14 +8809,16 @@ html.website-scope .ws-article-note {
 
 /* ── Mobile / portrait ──────────────────────────────────────────────────
    Mirrors the staff portrait rule: keep the card a fixed gap from every
-   viewport edge and let it take the width it is given. Unlike staff, the gap
-   also clears the notch. */
+   viewport edge and let it take the width it is given. The top / bottom gap
+   clears the notch; the side gap stays 10px (it clears only the left / right
+   insets, which are 0 on a portrait phone) so the card uses the full width. */
 @media (orientation: portrait), (max-width: 768px) {
   html.website-scope .ws-article-backdrop {
     --ws-popup-gap: max(10px, env(safe-area-inset-top), env(safe-area-inset-bottom));
+    --ws-popup-gap-x: max(10px, env(safe-area-inset-left), env(safe-area-inset-right));
   }
   html.website-scope .ws-article-card {
-    width: min(100%, calc(100vw - (var(--ws-popup-gap) * 2)));
+    width: min(100%, calc(100vw - (var(--ws-popup-gap-x) * 2)));
   }
   html.website-scope .ws-article-header,
   html.website-scope .ws-article-footer {

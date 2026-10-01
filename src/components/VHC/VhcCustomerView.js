@@ -234,6 +234,7 @@ function Section({ title, items, severity, interactive, onUpdateStatus, onReques
   // Page background is --surface, so a section card is the next rung down:
   // LayerSurface here, LayerTheme for anything nested inside it.
   return (
+    // Severity section card: a coloured heading (red, amber, green, authorised or declined) with running authorised and declined totals, then one row per health-check item.
     <LayerSurface
       radius="var(--radius-md)"
       padding="0"
@@ -304,6 +305,7 @@ function TotalsGrid({ totals }) {
     { label: "Declined", value: totals.declined, color: "var(--danger-text)", statusClass: "app-status-message--danger" }
   ];
   return (
+    // Work summary card: the total cost of red work, amber work, authorised work and declined work.
     <LayerSurface radius="var(--radius-md)" padding="0" gap="0" style={{ overflow: "hidden" }}>
       <div
         style={{
@@ -326,6 +328,7 @@ function TotalsGrid({ totals }) {
         }}
       >
         {items.map((it) => (
+          // One summary tile showing a category of work and its total price.
           <div
             key={it.label}
             className={`app-status-message ${it.statusClass}`}
@@ -379,6 +382,7 @@ function PhotosTab({ photoFiles }) {
       {photoFiles.map((file) => (
         // Media tiles sit on the page's --surface background, so the tile is a
         // LayerSurface and the letterbox behind the image is its --theme nest.
+        // Photo tile: one photo taken by the technician with its file name underneath.
         <LayerSurface
           key={file.file_id}
           radius="var(--radius-sm)"
@@ -393,6 +397,7 @@ function PhotosTab({ photoFiles }) {
               `optimisedPhotoSrc` returns null for any URL outside the host
               configured in next.config.mjs `images.remotePatterns`, in which case
               we fall back to the plain <img> rather than throwing. */}
+          {/* Picture area of the photo tile, cropped to a fixed shape. */}
           <LayerTheme radius="0" padding="0" gap="0" style={{ position: "relative", paddingTop: "75%" }}>
             {optimisedPhotoSrc(file.file_url) ? (
               <Image
@@ -456,6 +461,7 @@ function VideosTab({ videoFiles }) {
       }}
     >
       {videoFiles.map((file) => (
+        // Video tile: one video recorded by the technician, playable in place, with its file name underneath.
         <LayerSurface
           key={file.file_id}
           radius="var(--radius-sm)"
@@ -463,6 +469,7 @@ function VideosTab({ videoFiles }) {
           gap="0"
           style={{ overflow: "hidden" }}
         >
+          {/* Player area of the video tile. */}
           <LayerTheme radius="0" padding="0" gap="0" style={{ position: "relative", paddingTop: "56.25%" }}>
             <video
               src={file.file_url}
@@ -511,6 +518,7 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
   const reportedDescription = detailContent || detailLabel;
 
   return (
+    // Confirmation pop-up shown before work is authorised: the item, the running totals and buttons to confirm, decline or go back.
     <PopupModal
       isOpen
       onClose={onClose}
@@ -540,12 +548,14 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
             </div>
           </div>
 
+          {/* The work item the customer is about to authorise. */}
           <LayerTheme radius="var(--radius-sm)" padding="14px" gap="8px">
             <div style={{ fontSize: "var(--text-body)", color: "var(--text-1)", fontWeight: 700 }}>
               {reportedDescription}
             </div>
           </LayerTheme>
 
+          {/* Cost breakdown: the amount already authorised, the price of this item and the new total. */}
           <LayerTheme radius="var(--radius-sm)" padding="14px" gap="10px">
             <div style={{ fontSize: "var(--text-caption)", color: "var(--surfaceTextMuted)", fontWeight: 700 }}>
               Total to authorise
@@ -787,10 +797,12 @@ export default function VhcCustomerView({
               aria-labelledby="vhc-tab-summary"
               className="app-page-stack"
             >
+              {/* Work summary: totals for red, amber, authorised and declined work. */}
               <TotalsGrid totals={totals} />
 
               {severitySections.map(({ key, title }) =>
                 severityLists[key]?.length > 0 ? (
+                  // One card per severity group that has items, where the customer can authorise or decline each piece of work.
                   <Section
                     key={key}
                     title={title}
@@ -829,6 +841,7 @@ export default function VhcCustomerView({
       </div>
 
       {pendingAuthoriseItem && (
+        // Pop-up asking the customer to confirm the item they chose to authorise.
         <AuthoriseConfirmModal
           item={pendingAuthoriseItem}
           authorizedTotal={totals?.authorized}

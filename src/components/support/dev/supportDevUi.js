@@ -69,8 +69,10 @@ export function Panel({
 }) {
   void subtitle;
   return (
+    // Titled panel: a heading with optional action buttons on the right, followed by the panel's content.
     <LayerTheme sectionKey={sectionKey} parentKey={parentKey} style={{ gap: "var(--space-md)", ...style }}>
       {(title || actions) && (
+        // Panel header row: the title on the left and any action buttons on the right.
         <DevLayoutSection
           sectionKey={headerSectionKey}
           parentKey={sectionKey}
@@ -85,6 +87,7 @@ export function Panel({
           {actions ? <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>{actions}</div> : null}
         </DevLayoutSection>
       )}
+      {/* Panel body: the content passed in, stacked vertically. */}
       <DevLayoutSection
         sectionKey={contentSectionKey}
         parentKey={sectionKey}
@@ -99,6 +102,7 @@ export function Panel({
 
 export function SubSurface({ children, sectionKey, parentKey, sectionType, style, as, onClick, ...props }) {
   return (
+    // Inner card used inside a panel to group related content; it can also act as a clickable button.
     <LayerSurface
       as={as}
       onClick={onClick}
@@ -167,6 +171,7 @@ export function KeyValueGrid({ children, style }) {
 // ---------------------------------------------------------------------------
 export function StatCard({ label, value, tone = "accentText", hint, onClick, active = false }) {
   return (
+    // Statistic tile: a large number with its label and optional hint, which can be clicked to filter the dashboard and is outlined when selected.
     <LayerSurface
       as={onClick ? "button" : "div"}
       onClick={onClick}

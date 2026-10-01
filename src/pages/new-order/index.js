@@ -491,6 +491,7 @@ export default function PartsCreateOrderPage() {
       }
 
       setVehicle(vehicleStateFromDvla(payload, {
+        previous: vehicle,
         registration: requestedRegistration,
         previousMileage: vehicle.mileage,
       }));

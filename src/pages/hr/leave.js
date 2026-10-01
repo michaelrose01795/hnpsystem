@@ -32,6 +32,7 @@ function TableRowsSkeleton({ rows = 5, cols = 5 }) {return (
 function ListRowsSkeleton({ rows = 3 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      {/* Placeholder cards shown while the team availability list is loading. */}
       {Array.from({ length: rows }).map((_, i) =>
       <LayerSurface
         key={i}
@@ -61,6 +62,7 @@ function LeaveContent() {
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+        {/* Error card shown when the leave data could not be loaded. */}
         <SectionCard layer="theme"
           sectionKey="hr-leave-error" parentKey="hr-manager-tab-leave" title="Unable to load leave data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
@@ -79,8 +81,10 @@ function LeaveContent() {
         <Button variant="primary">New Leave Request</Button>
       </header>
 
+      {/* Summary strip: the approval queue, cover risk and remaining entitlement at a glance. */}
       {isLoading ? null : <HrSummaryStrip items={summary} parentKey="hr-manager-tab-leave" />}
 
+      {/* Pending and recent leave requests, with Export and Configure approvers buttons. */}
       <SectionCard layer="theme"
         sectionKey="hr-leave-pending-requests" parentKey="hr-manager-tab-leave"
         title="Pending & Recent Leave Requests"
@@ -96,6 +100,7 @@ function LeaveContent() {
           </div>
         }>
         
+        {/* Leave requests table: employee, leave type, dates, status and approver. */}
         <LayerSurface padding="var(--space-3)" gap="0">
           <DataTableShell>
             <table className="app-data-table">
@@ -149,12 +154,14 @@ function LeaveContent() {
         </LayerSurface>
       </SectionCard>
 
+      {/* Team availability: a list of upcoming absences so managers can see who is away and when. */}
       <SectionCard layer="theme"
         sectionKey="hr-leave-team-availability" parentKey="hr-manager-tab-leave" title="Team Availability" subtitle="Upcoming leave by date range">
         {isLoading ?
         <ListRowsSkeleton rows={3} /> :
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {/* One card per upcoming absence: employee, department, leave type and the from/to dates. */}
             {upcomingAbsences.map((absence) =>
           <LayerSurface
             key={absence.id}
@@ -175,8 +182,10 @@ function LeaveContent() {
         }
       </SectionCard>
 
+      {/* Leave balances: each employee's entitlement compared with the time off already taken. */}
       <SectionCard layer="theme"
         sectionKey="hr-leave-balances" parentKey="hr-manager-tab-leave" title="Leave Balances" subtitle="Entitlement vs. taken time off">
+        {/* Leave balances table: employee, department, entitlement, days taken and days remaining. */}
         <LayerSurface padding="var(--space-3)" gap="0">
           <DataTableShell>
             <table className="app-data-table">
@@ -216,6 +225,7 @@ function LeaveContent() {
         </LayerSurface>
       </SectionCard>
 
+      {/* Calendar sync and notifications: notes on pushing approved leave to shared calendars, with buttons for calendar settings and notification rules. */}
       <SectionCard layer="theme"
         sectionKey="hr-leave-calendar-sync" parentKey="hr-manager-tab-leave"
         title="Calendar Sync & Notifications"

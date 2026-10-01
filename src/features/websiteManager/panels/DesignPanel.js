@@ -79,6 +79,7 @@ export default function DesignPanel() {
 
   return (
     <>
+      {/* Design and layout: tabs for switching between the site's style settings, top bar links and page sections. */}
       <Section title="Design and layout">
         <TabGroup
           items={SUB_TABS}
@@ -91,6 +92,7 @@ export default function DesignPanel() {
       {tab === "style" && <StyleTab />}
 
       {tab === "nav" && (
+        // Top bar links: manage the navigation links shown on the public website, including where each one goes.
         <CollectionManager
           sectionKey="nav"
           schema={BUILDER_SCHEMAS.nav}
@@ -111,6 +113,7 @@ export default function DesignPanel() {
       )}
 
       {tab === "sections" && (
+        // Page sections: choose which blocks appear on the public home page, their order, heading and tint, and see whether each one can be displayed.
         <CollectionManager
           sectionKey="section-layout"
           schema={BUILDER_SCHEMAS["section-layout"]}
@@ -206,6 +209,7 @@ function StyleTab() {
   };
 
   return (
+    // Style: the form for the site's accent colour, spacing, corners and top bar options, beside a live preview of the public website.
     <Section title="Style">
       {error && (
         <div className="website-manager__notice website-manager__notice--warning" role="alert">
@@ -215,6 +219,7 @@ function StyleTab() {
       {loading ? (
         <div className="website-manager__design-split" role="status" aria-live="polite" aria-busy="true" aria-label="Loading">
           <SkeletonKeyframes />
+          {/* Loading placeholder for the style form: grey bars standing in for the fields and the save button. */}
           <LayerTheme className="website-manager__editor" gap="var(--space-3)">
             <SkeletonBlock width="120px" height="16px" />
             {["36%", "50%", "42%", "30%", "46%"].map((width) => (

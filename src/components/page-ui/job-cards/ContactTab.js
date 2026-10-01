@@ -156,6 +156,7 @@ function ContactActionPopup({ action, contact = {}, onClose }) {
     onClose?.();
   };
 
+  // Contact customer popup: shows the customer's name and the phone number or email address on file, with a button to open the matching call, text, email or WhatsApp app.
   return (
     <PopupModal
       isOpen={Boolean(action)}
@@ -286,6 +287,7 @@ function ManageTemplatesPopup({ isOpen, templates = [], updatedBy = null, onClos
 
   if (!isOpen) return null;
 
+  // Manage templates popup: search saved message templates by title and edit each template's title and message.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -409,6 +411,7 @@ function buildInitialForm(jobData) {
 
 function DisplayField({ label, value, sectionKey }) {
   return (
+    // Read-only tile showing one labelled customer detail.
     <LayerTheme
       sectionKey={sectionKey}
       parentKey="jobcard-contact-customer"
@@ -485,6 +488,7 @@ function CustomerContactSection({
   const hasWorkAddress = Boolean(jobData.customerWorkAddress || jobData.customerWorkPostcode);
 
   return (
+    // Customer contact: name, phone numbers, email, contact preference and addresses, with an edit mode and buttons to call, text, email or WhatsApp.
     <LayerSurface
       sectionKey="jobcard-contact-customer"
       sectionType="section-shell"
@@ -566,6 +570,7 @@ function CustomerContactSection({
               gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
             }}
           >
+            {/* Tiles for the customer's name, mobile, landline, email and contact preference. */}
             <DisplayField sectionKey="jobcard-contact-customer-name" label="Customer name" value={name} />
             <DisplayField sectionKey="jobcard-contact-customer-mobile" label="Mobile phone" value={mobile} />
             <DisplayField sectionKey="jobcard-contact-customer-landline" label="Landline phone" value={jobData.customerTelephone} />
@@ -580,6 +585,7 @@ function CustomerContactSection({
               gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
             }}
           >
+            {/* Primary address with a button to open it on a map. */}
             <LayerTheme
               sectionKey="jobcard-contact-address-primary"
               parentKey="jobcard-contact-customer"
@@ -603,6 +609,7 @@ function CustomerContactSection({
               </Button>
             </LayerTheme>
 
+            {/* Work address with a button to open it on a map. */}
             <LayerTheme
               sectionKey="jobcard-contact-address-work"
               parentKey="jobcard-contact-customer"
@@ -713,6 +720,7 @@ function CustomerPreferencesSection({
   };
 
   return (
+    // Notes and preferences: choose the customer's preferences from a list and record free-text customer notes.
     <LayerSurface
       sectionKey="jobcard-contact-preferences"
       sectionType="section-shell"
@@ -816,7 +824,7 @@ function TimelineEntry({ entry, isLast }) {
         )}
       </div>
 
-      {/* Entry body */}
+      {/* One history entry: the message title and channel, its text, and when and by whom it was sent. */}
       <LayerTheme
         sectionKey={`jobcard-contact-history-${entry.id}`}
         parentKey="jobcard-contact-history-list"
@@ -850,6 +858,7 @@ function CommunicationHistorySection({ messages = [], loading = false }) {
   }, [messages]);
 
   return (
+    // Communication history: a timeline of the messages sent to the customer about this job.
     <LayerSurface
       sectionKey="jobcard-contact-history"
       sectionType="section-shell"
@@ -940,6 +949,7 @@ function QuickMessageTemplatesSection({
   };
 
   return (
+    // Quick message templates: ready-made messages that can be sent to the customer, with a link to manage the templates.
     <LayerSurface
       sectionKey="jobcard-contact-templates"
       sectionType="section-shell"
@@ -985,6 +995,7 @@ function QuickMessageTemplatesSection({
           }}
         >
           {templates.map((tpl) => (
+            // One message template with its title and a Send button.
             <LayerTheme
               key={tpl.templateKey}
               sectionKey={`jobcard-contact-template-${tpl.templateKey}`}
@@ -1154,19 +1165,23 @@ export default function ContactTab({
 
   return (
     <>
+      {/* Customer contact details with map links and call, text, email and WhatsApp actions. */}
       <CustomerContactSection
         jobData={jobData}
         canEdit={canEdit}
         onSaveCustomerDetails={onSaveCustomerDetails}
         customerSaving={customerSaving}
       />
+      {/* Customer preferences and notes. */}
       <CustomerPreferencesSection
         jobData={jobData}
         canEdit={canEdit}
         onSaveCustomerDetails={onSaveCustomerDetails}
         customerSaving={customerSaving}
       />
+      {/* Timeline of messages already sent to the customer. */}
       <CommunicationHistorySection messages={messages} loading={loadingHistory} />
+      {/* Ready-made message templates that can be sent to the customer. */}
       <QuickMessageTemplatesSection
         templates={templates}
         loading={loadingTemplates}

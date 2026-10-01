@@ -546,6 +546,7 @@ export default function StaffStyleReviewHighlighter() {
       </button>
 
       {panelOpen && (
+        // Style review command panel: a floating, movable panel showing the finding under review, with buttons to highlight the audited element, copy a prompt, return to the review table or finish.
         <LayerSurface
           as="section"
           ref={panelRef}
@@ -560,6 +561,7 @@ export default function StaffStyleReviewHighlighter() {
           aria-label={`Review ${context.auditId} command panel`}
           data-style-review-panel="true"
         >
+          {/* Panel header: the review number, a drag handle, badges for the finding's type and status, and a status line. */}
           <LayerTheme radius="var(--radius-sm)" padding="var(--space-sm)" gap="var(--space-xs)">
             <div className={styles.headerRow}>
               <strong className={styles.title}>Review {context.auditId}</strong>
@@ -584,6 +586,7 @@ export default function StaffStyleReviewHighlighter() {
             <p className={styles.statusLine} role="status" aria-live="polite">{statusLine}</p>
           </LayerTheme>
 
+          {/* Finding details: the section or item, audited route, how to see it, audit rationale, source reference and reviewer notes. */}
           <LayerTheme radius="var(--radius-sm)" padding="var(--space-sm)" gap="var(--space-sm)">
             <PanelField label="Section / item" value={context.sectionName} />
             <PanelField label="Audited route" value={context.route} />

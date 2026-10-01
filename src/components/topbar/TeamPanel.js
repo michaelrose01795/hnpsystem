@@ -157,6 +157,7 @@ function DepartmentGroup({ group, onNavigate }) {
   const shown = group.members.slice(0, WORKSPACE_LIMITS.presencePerDepartment);
   const extra = group.total - shown.length;
   return (
+    // Department block: the department name with how many people are free, a contact shortcut and a row per team member.
     <LayerTheme radius="var(--radius-md)" gap="6px" padding="12px">
       <BlockHeading
         icon="👥"
@@ -211,6 +212,7 @@ export default function TeamPanel({
   const otherDepts = (presence.departments || []).filter((d) => d.code !== department);
   const selfState = selfAvailability?.state;
 
+  // Team workspace side panel: who in the department is available now, items needing attention, recent team activity and ways to coordinate with other departments.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -270,7 +272,7 @@ export default function TeamPanel({
           gap: "12px",
         }}
       >
-        {/* 4.5 — Escalations needing attention (top when present) */}
+        {/* Needs attention: urgent escalations for the team, shown at the top whenever there are any. */}
         {escalations.length > 0 && (
           <LayerTheme radius="var(--radius-md)" gap="6px" padding="14px">
             <BlockHeading icon="🚨" title="Needs attention" />
@@ -291,7 +293,7 @@ export default function TeamPanel({
           </LayerTheme>
         )}
 
-        {/* 4.2 — My availability */}
+        {/* My availability: shows the user's current status and lets them set or clear it. */}
         {selfAvailability && (
           <LayerTheme radius="var(--radius-md)" gap="8px" padding="14px">
             <BlockHeading
@@ -334,7 +336,7 @@ export default function TeamPanel({
         {/* 4.1 — My department presence, then other departments */}
         {myDept && myDept.total > 0 && <DepartmentGroup group={myDept} onNavigate={go} />}
 
-        {/* 4.3 — Shared department activity */}
+        {/* Recent team activity: a live feed of what is happening on the floor, such as jobs completing and technicians freeing up. */}
         <LayerTheme radius="var(--radius-md)" gap="6px" padding="14px">
           <BlockHeading icon="📡" title="Recent team activity" />
           {activity.length === 0 ? (
@@ -358,7 +360,7 @@ export default function TeamPanel({
           )}
         </LayerTheme>
 
-        {/* 4.6 — Manager collaboration tools (manager-only) */}
+        {/* Manager tools: one block per manager-only section, each listing items that link through to the relevant page. */}
         {managerTools.isManager &&
           managerTools.sections.map((section) => (
             <LayerTheme key={section.id} radius="var(--radius-md)" gap="6px" padding="14px">
@@ -399,7 +401,7 @@ export default function TeamPanel({
           </>
         )}
 
-        {/* 4.7 — Cross-department coordination */}
+        {/* Coordinate across departments: shortcut links to related work in other teams. */}
         {coordination.length > 0 && (
           <LayerTheme radius="var(--radius-md)" gap="6px" padding="14px">
             <BlockHeading icon="🔗" title="Coordinate across departments" />

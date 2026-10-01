@@ -132,6 +132,7 @@ export default function TrackingSiteMap({
   ) : null;
 
   return (
+    // Site map view: a plan of the parking areas with vehicle counts, beside a panel listing the vehicles in the selected area.
     <LayerTheme
       className="tracking-map"
       sectionKey="tracking-map-view"
@@ -153,6 +154,7 @@ export default function TrackingSiteMap({
           </div>
         </div>
 
+        {/* Selected area panel: the vehicles parked in the chosen area, with options to open or move each one. */}
         <SectionPanel
           selectedSection={selectedSection}
           entries={entries}

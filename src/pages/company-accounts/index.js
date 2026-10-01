@@ -166,6 +166,7 @@ export default function CompanyAccountsIndexPage() {
   );
 
   const renderLedgerTab = () =>
+  // Ledgers tab: a search box and the sortable, paged table of ledger accounts.
   <LayerSurface
     as="section"
     sectionKey="company-accounts-ledger-panel"
@@ -173,6 +174,7 @@ export default function CompanyAccountsIndexPage() {
     parentKey="company-accounts-page-shell"
     gap="16px">
 
+      {/* Ledger search toolbar: a search box that filters the ledger accounts. */}
       <DevLayoutSection sectionKey="company-accounts-ledger-toolbar" sectionType="filter-row" parentKey="company-accounts-ledger-panel">
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <SearchBar
@@ -189,6 +191,7 @@ export default function CompanyAccountsIndexPage() {
       {ledgerFeedback && !ledgerAccounts.length && !ledgerLoading &&
     <p className="app-status-message app-status-message--info" style={{ margin: 0 }}>{ledgerFeedback}</p>
     }
+      {/* Ledger accounts table: paged and sortable; selecting an account opens its view or edit page. */}
       <DevLayoutSection sectionKey="company-accounts-ledger-table" sectionType="data-table" parentKey="company-accounts-ledger-panel">
         <AccountTable
         accounts={ledgerAccounts}
@@ -232,6 +235,7 @@ export default function CompanyAccountsIndexPage() {
       );
     }
     return (
+      // Company accounts list: a table of account number, company, trading name, contact, email, phone, city and linked ledger. Clicking a row opens that company account.
       <LayerTheme sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
         <div className="app-table-shell-scroll">
           <table className="app-data-table app-table-shell app-table-shell--with-headings">

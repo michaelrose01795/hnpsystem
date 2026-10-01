@@ -148,6 +148,7 @@ function WarrantyLinkPanel({
   };
 
   return (
+    // Link prompt shown when no warranty job card is linked yet: explains what linking does and lets permitted users start it.
     <LayerTheme
       sectionKey="jobcard-tab-warranty-link"
       parentKey="jobcard-tab-warranty-panel"
@@ -181,6 +182,7 @@ function WarrantyLinkPanel({
         </div>
       )}
 
+      {/* Link form: pick a warranty job from the dropdown, then confirm or cancel the link. */}
       {canEdit && linkMode && (
         <LayerSurface
           sectionKey="jobcard-tab-warranty-link-form"
@@ -251,6 +253,7 @@ const AUTH_LABEL = Object.fromEntries(AUTH_OPTIONS.map((o) => [o.value, o.label]
 // Stat tile — a depth-1 LayerTheme card inside the warranty panel.
 function StatTile({ label, sectionKey, children }) {
   return (
+    // Small summary tile showing a caption with a single value or control beneath it.
     <LayerTheme
       sectionKey={sectionKey}
       parentKey="jobcard-tab-warranty-panel"
@@ -318,6 +321,7 @@ function WarrantySummary({
 
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+      {/* Linked warranty job: its job number, registration and make/model. */}
       <StatTile label="Warranty Job Linked" sectionKey="jobcard-tab-warranty-linked-job-stat">
         <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--accentText)" }}>
           #{linkedJob?.jobNumber || "—"}
@@ -328,6 +332,7 @@ function WarrantySummary({
         </span>
       </StatTile>
 
+      {/* Claim value including VAT for the linked warranty job. */}
       <StatTile label="Claim Value (inc VAT)" sectionKey="jobcard-tab-warranty-claim-value-stat">
         <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>
           {claimValue === null ? "—" : formatCurrency(claimValue)}
@@ -337,6 +342,7 @@ function WarrantySummary({
         </span>
       </StatTile>
 
+      {/* Warranty authorisation status, which permitted users can change from a dropdown. */}
       <StatTile
         label="Warranty Authorisation"
         sectionKey="jobcard-tab-warranty-authorisation-stat"
@@ -360,6 +366,7 @@ function WarrantySummary({
         )}
       </StatTile>
 
+      {/* Customer liability amount, which permitted users can edit and save. */}
       <StatTile
         label="Customer Liability"
         sectionKey="jobcard-tab-warranty-customer-liability-stat"
@@ -458,6 +465,7 @@ function WarrantyTimeline({
   const currentIndex = resolved.findIndex((stage) => !stage.done);
 
   return (
+    // Warranty timeline: the claim stages in order, each showing when it was completed or a button to mark it done.
     <LayerTheme
       sectionKey="jobcard-tab-warranty-timeline"
       parentKey="jobcard-tab-warranty-panel"
@@ -616,6 +624,7 @@ function WarrantyRequestsTable({
   );
 
   return (
+    // Warranty requests and authorisations: every request raised against the claim with its type and status, plus an Add Request button.
     <LayerTheme
       sectionKey="jobcard-tab-warranty-requests"
       parentKey="jobcard-tab-warranty-panel"
@@ -641,6 +650,7 @@ function WarrantyRequestsTable({
         )}
       </div>
 
+      {/* New request form: choose the request type and enter its details before saving or cancelling. */}
       {canEdit && adding && (
         <LayerSurface
           sectionKey="jobcard-tab-warranty-requests-form"
@@ -826,6 +836,7 @@ function WarrantyPartsLabourSummary({ totals, style }) {
   ];
 
   return (
+    // Parts and labour summary for the warranty claim.
     <LayerTheme
       sectionKey="jobcard-tab-warranty-parts-labour"
       parentKey="jobcard-tab-warranty-panel"
@@ -836,6 +847,7 @@ function WarrantyPartsLabourSummary({ totals, style }) {
         Parts &amp; Labour Summary (Warranty)
       </h3>
 
+      {/* Ring chart of the labour and parts split with the total in the centre, beside a table of net and gross figures. */}
       <LayerSurface
         sectionKey="jobcard-tab-warranty-parts-labour-body"
         parentKey="jobcard-tab-warranty-parts-labour"
@@ -963,6 +975,7 @@ function WarrantyLinkedJobSection({ jobData, linkedJob, style }) {
   };
 
   return (
+    // Linked warranty job: its job number and status with a button to open it, and the work lines recorded on it.
     <LayerTheme
       sectionKey="jobcard-tab-warranty-linked-job"
       parentKey="jobcard-tab-warranty-panel"
@@ -997,6 +1010,7 @@ function WarrantyLinkedJobSection({ jobData, linkedJob, style }) {
         </button>
       </div>
 
+      {/* Work lines recorded on the linked warranty job, or a message when there are none yet. */}
       <LayerSurface
         sectionKey="jobcard-tab-warranty-linked-job-lines"
         parentKey="jobcard-tab-warranty-linked-job"
@@ -1108,6 +1122,7 @@ function WarrantyNotesPanel({
   };
 
   return (
+    // Warranty notes: write a new note and read the notes already saved against the linked warranty job.
     <LayerTheme
       sectionKey="jobcard-tab-warranty-notes"
       parentKey="jobcard-tab-warranty-panel"
@@ -1122,6 +1137,7 @@ function WarrantyNotesPanel({
         </p>
       </div>
 
+      {/* Note composer: a text box and button for adding a new warranty note. */}
       {canEdit && (
         <LayerSurface
           sectionKey="jobcard-tab-warranty-notes-composer"
@@ -1175,6 +1191,7 @@ function WarrantyNotesPanel({
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {notes.map((note) => (
+            // One saved warranty note with its text and who added it and when.
             <LayerSurface
               key={note.note_id}
               radius="var(--radius-sm)"
@@ -1300,6 +1317,7 @@ export default function WarrantyTab({
   );
 
   return (
+    // Warranty tab: shows the link prompt when no warranty job is linked, otherwise the claim summary, timeline, requests, parts and labour, linked job and notes.
     <LayerSurface
       sectionKey="jobcard-tab-warranty-panel"
       sectionType="section-shell"

@@ -129,7 +129,7 @@ export default function MyJobsPageUi(props) {
           </div>
         </div>
 
-        {/* Job Count Summary */}
+        {/* Job count summary: four totals for the technician's jobs - all, in progress, waiting and complete. */}
         <LayerTheme sectionKey="myjobs-summary" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-summary-card">
           <div data-dev-section="1" data-dev-section-key="myjobs-summary-grid" data-dev-section-type="content-card" data-dev-section-parent="myjobs-summary" style={{
         display: "grid",
@@ -137,6 +137,7 @@ export default function MyJobsPageUi(props) {
         gap: "16px",
         textAlign: "center"
       }}>
+            {/* Total number of jobs assigned to the technician. */}
             <div data-dev-section="1" data-dev-section-key="myjobs-summary-total" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
               <div style={{
             fontSize: "28px",
@@ -155,6 +156,7 @@ export default function MyJobsPageUi(props) {
             color: "var(--grey-accent)"
           }}>Total Jobs</div>
             </div>
+            {/* Number of jobs currently in progress. */}
             <div data-dev-section="1" data-dev-section-key="myjobs-summary-in-progress" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
               <div style={{
             fontSize: "28px",
@@ -175,6 +177,7 @@ export default function MyJobsPageUi(props) {
             color: "var(--grey-accent)"
           }}>In Progress</div>
             </div>
+            {/* Number of jobs waiting. */}
             <div data-dev-section="1" data-dev-section-key="myjobs-summary-waiting" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
               <div style={{
             fontSize: "28px",
@@ -195,6 +198,7 @@ export default function MyJobsPageUi(props) {
             color: "var(--grey-accent)"
           }}>Waiting</div>
             </div>
+            {/* Number of completed jobs. */}
             <div data-dev-section="1" data-dev-section-key="myjobs-summary-complete" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
               <div style={{
             fontSize: "28px",
@@ -218,7 +222,7 @@ export default function MyJobsPageUi(props) {
           </div>
         </LayerTheme>
 
-        {/* Jobs List */}
+        {/* Jobs list: table of the technician's jobs showing status, job number, registration, customer, make/model and type, with loading and empty states. */}
         <LayerTheme data-presentation="my-jobs-results" sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-results-card" style={{
       flex: 1,
       display: "flex",

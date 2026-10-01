@@ -6,6 +6,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import SymbolButton from "@/components/ui/SymbolButton";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
 import { DropdownField } from "@/components/ui/dropdownAPI";
@@ -32,6 +34,8 @@ import {
 } from "@/lib/jobCards/requestHelpers";
 import { logFailure } from "@/lib/utils/logFailure";
 
+const TechnicalInfoPopup = dynamic(() => import("@/components/page-ui/job-cards/TechnicalInfoPopup"), { ssr: false });
+
 // Customer Requests Tab
 export function CustomerRequestsTab({
   jobData,
@@ -47,6 +51,7 @@ export function CustomerRequestsTab({
   notes = [],
   partsJobItems = []
 }) {
+  const [technicalRequest, setTechnicalRequest] = useState(null);
   const buildEditRequests = useCallback(() => {
     const source = Array.isArray(jobData?.jobRequests) ?
     jobData.jobRequests :
@@ -1078,6 +1083,19 @@ export function CustomerRequestsTab({
   const detailCardStyle = { backgroundColor: "var(--theme)", borderRadius: "var(--radius-sm)", padding: "12px 14px" };
   const detailCardLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", marginBottom: "6px" };
 
+  // Cosmetic damage is listed as a concern row at the foot of the requests
+  // table: highlighted, not selectable, and only the Request column is filled.
+  const cosmeticNotes = String(jobData?.cosmeticNotes || "").trim();
+  const cosmeticConcernRow = cosmeticNotes ?
+  <tr style={{ backgroundColor: "var(--warning-surface)" }}>
+      <td></td>
+      <td><div style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}><strong>Cosmetic Damage Notes:</strong> {cosmeticNotes}</div></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr> :
+  null;
+
   return (
     <div className="jc-customer-requests">
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -1086,6 +1104,7 @@ export function CustomerRequestsTab({
             responsive .app-summary-grid (auto-fit, minmax(130px, 1fr)) and each tile
             is a bare .app-summary-item, so this row renders identically to every
             other stat row in the app (e.g. the Parts tab metrics). */}
+        {/* Summary row: counts of total requests, total hours, clocked hours, pre-picked, in progress and complete, with the Edit Requests button (or Save / Cancel while editing). */}
         <div className="app-summary-section">
           <div className="app-summary-grid">
             <div className="app-summary-item"><span className="app-summary-label">Total Requests</span><span className="app-summary-value">{requestStats.totalRequests}</span></div>
@@ -1187,6 +1206,7 @@ export function CustomerRequestsTab({
                 })}
                 {requests.length === 0 &&
                 <tr><td colSpan={5} style={{ color: "var(--grey-accent)", fontStyle: "italic" }}>No requests yet.</td></tr>}
+                {cosmeticConcernRow}
               </tbody>
             </table>
             <div style={{ marginTop: "12px", paddingInline: "var(--layout-card-gap)" }}>
@@ -1216,7 +1236,7 @@ export function CustomerRequestsTab({
             </div>}
           </div>
 
-          {/* RIGHT: per-request editor */}
+          {/* Request editor: change the selected request's description, labour time, account type, prices, discount, special labour rate and internal notes, or remove the request. */}
           <div style={detailPanelStyle}>
             {requests[selectedEditIndex] ?
             <>
@@ -1263,8 +1283,9 @@ export function CustomerRequestsTab({
           </div>
         </div> :
 
-        (combinedRequestRows.length > 0 ?
+        (combinedRequestRows.length > 0 || cosmeticNotes ?
         <div className="jc-req-split">
+          {/* Requests table: every customer request and authorised health-check item with who is billed, hours and status; selecting a row shows its details alongside. Any cosmetic damage noted on the vehicle is listed last as a highlighted concern. */}
           <DevLayoutSection
             sectionKey={`job-cards-${jobData?.jobNumber || "unknown"}-customer-requests-table`}
             sectionType="data-table"
@@ -1299,16 +1320,20 @@ export function CustomerRequestsTab({
                     </tr>
                   );
                 })}
+                {cosmeticConcernRow}
               </tbody>
             </table>
           </DevLayoutSection>
 
-          {/* RIGHT: selected request detail */}
+          {/* Selected request details: technical information for this vehicle and request, status, hours, pre-pick location, billing, notes, parts and time clocked. */}
           <div style={detailPanelStyle}>
             {selectedRow ?
             <>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                 <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-1)" }}>{selectedRow.title}</h3>
+                <SymbolButton symbol="info" label="Technical information for this request" aria-haspopup="dialog" onClick={() => setTechnicalRequest(selectedRow)} />
+                {/* Technical information scoped to the selected customer or authorised workshop request. */}
+                {technicalRequest && <TechnicalInfoPopup key={jobData.jobNumber} jobNumber={jobData.jobNumber} initialRequest={technicalRequest} onClose={() => setTechnicalRequest(null)} />}
                 {/* Authorised (additional work) rows show only the 44px-high
                     "Authorised" status chip — never the small workflow status
                     pill. Customer-request rows keep their normal status pill. */}
@@ -1324,13 +1349,13 @@ export function CustomerRequestsTab({
                 {selectedRow.jobType && <span><strong>Billed to:</strong> {selectedRow.jobType}</span>}
               </div>
 
-              {/* Description */}
+              {/* Description of the selected request. */}
               <div style={detailCardStyle}>
                 <div style={detailCardLabelStyle}>Description</div>
                 <div style={{ fontSize: "14px", color: "var(--text-1)" }}>{selectedRow.description || "—"}{selectedRow.detailLine ? ` — ${selectedRow.detailLine}` : ""}</div>
               </div>
 
-              {/* Internal notes */}
+              {/* Internal Notes: staff notes recorded against the selected request. */}
               <div style={detailCardStyle}>
                 <div style={detailCardLabelStyle}>Internal Notes</div>
                 {selectedRow.noteText || selectedRow.linkedNoteTexts.length > 0 ?
@@ -1341,7 +1366,7 @@ export function CustomerRequestsTab({
                 <div style={{ fontSize: "13px", color: "var(--grey-accent)", fontStyle: "italic" }}>No notes added.</div>}
               </div>
 
-              {/* Linked parts */}
+              {/* Linked Parts: a table of the parts allocated to the selected request. */}
               <div style={detailCardStyle}>
                 <div style={detailCardLabelStyle}>Linked Parts</div>
                 {selectedRow.linkedParts.length > 0 ?
@@ -1367,7 +1392,7 @@ export function CustomerRequestsTab({
                 <div style={{ fontSize: "13px", color: "var(--grey-accent)", fontStyle: "italic" }}>No linked parts.</div>}
               </div>
 
-              {/* Total clocked time */}
+              {/* Time Clocked: hours clocked on the selected request against the hours assigned. */}
               <div style={detailCardStyle}>
                 <div style={detailCardLabelStyle}>Time Clocked</div>
                 <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-1)" }}>{formatHoursDisplay(selectedRow.clockedHours)}</div>
@@ -1427,26 +1452,6 @@ export function CustomerRequestsTab({
             html.staff-scope .jc-customer-requests .jc-req-split { grid-template-columns: minmax(0, 1fr); }
           }
         `}</style>
-      </div>
-
-      {/* Cosmetic damage belongs only to the first/customer-requests tab. */}
-      <div style={{ marginTop: "0", paddingTop: "0", borderTop: "none" }}>
-        {jobData.cosmeticNotes &&
-        <div style={{ marginBottom: "16px" }}>
-            <strong style={{ fontSize: "14px", color: "var(--grey-accent)", display: "block", marginBottom: "8px" }}>
-              Cosmetic Damage Notes:
-            </strong>
-            <div style={{
-            padding: "12px",
-            backgroundColor: "var(--warning-surface)",
-            borderRadius: "var(--control-radius)"
-          }}>
-              <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>
-                {jobData.cosmeticNotes}
-              </p>
-            </div>
-          </div>
-        }
       </div>
     </div>);
 

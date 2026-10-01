@@ -146,6 +146,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
     }
   };
 
+  // New customer popup: a form for personal, address and contact details with Add customer and Close buttons.
   return (
     <PopupModal onClose={onClose} cardStyle={{ maxWidth: "650px" }} ariaLabel="New customer">
       <form
@@ -164,6 +165,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
           </div>
         </header>
 
+        {/* Personal information: first name and last name. */}
         <LayerTheme sectionKey="new-customer-personal-details" parentKey="shared-popup-card" sectionType="content-card">
           <h4 className="app-staff-card__title">Personal information</h4>
           <div className="app-card-grid">
@@ -176,6 +178,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
           </div>
         </LayerTheme>
 
+        {/* Address: house number, street, town, county, postcode with a lookup button, and country. */}
         <LayerTheme sectionKey="new-customer-address" parentKey="shared-popup-card" sectionType="content-card">
           <h4 className="app-staff-card__title">Address</h4>
           <div className="app-card-grid">
@@ -204,6 +207,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
           </div>
 
           {lookupState.error ? <StatusMessage tone="danger">{lookupState.error}</StatusMessage> : null}
+          {/* Address suggestions returned by the postcode lookup; choosing one fills in the address fields. */}
           {lookupState.suggestions.length > 0 ? (
             <LayerSurface className="app-dropdown-menu" padding="var(--space-sm)" gap="var(--space-sm)" style={{ maxHeight: "200px", overflowY: "auto" }}>
               {lookupState.suggestions.map((suggestion) => (
@@ -215,6 +219,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
           ) : null}
         </LayerTheme>
 
+        {/* Contact information: email, mobile and telephone. */}
         <LayerTheme sectionKey="new-customer-contact-details" parentKey="shared-popup-card" sectionType="content-card">
           <h4 className="app-staff-card__title">Contact information</h4>
           <div className="app-card-grid">

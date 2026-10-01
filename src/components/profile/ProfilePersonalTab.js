@@ -105,6 +105,7 @@ function PasscodeModal({
   };
 
   return (
+    // Passcode popup: create a 4-digit passcode for the personal dashboard, or enter it to unlock.
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}
@@ -186,6 +187,7 @@ function InsightCard({ insight, onAction }) {
   const hasAction = action && typeof action === "object" && action.label;
 
   return (
+    // Insight card: a tone badge, a short personalised finance message and an optional action button.
     <div
       style={{
         display: "grid",
@@ -230,6 +232,7 @@ function InsightPanel({ finance, onAction }) {
   const headline = useMemo(() => generateHeadline(insights), [insights]);
 
   return (
+    // Insights panel: a headline for the selected month and a grid of insight cards, or a prompt to add pay settings and outgoings.
     <div
       style={{
         ...widgetAccentSurfaceStyle,
@@ -297,6 +300,7 @@ function AddWidgetModal({
   if (!isOpen) return null;
 
   return (
+    // Edit widgets popup: tap a widget to show or hide it on the personal dashboard.
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}
@@ -503,7 +507,7 @@ function PersonalDashboard({ dashboard, finance }) {
 
   return (
     <div style={{ display: "grid", gap: isMobile ? "10px" : "14px" }}>
-      {/* ── Insights ── */}
+      {/* Insights: personalised observations about this month's finances. */}
       <DevLayoutSection
         sectionKey="profile-personal-dashboard-insights"
         parentKey="profile-personal-dashboard-unlocked"
@@ -514,8 +518,9 @@ function PersonalDashboard({ dashboard, finance }) {
         </div>
       </DevLayoutSection>
 
-      {/* ── Widget grid ── */}
+      {/* Widgets: the grid of visible personal dashboard widgets, or a prompt when none are shown. */}
       {visibleWidgets.length === 0 ? (
+        // Empty state: tells the user no widgets are visible and to use Edit to show some.
         <DevLayoutSection
           sectionKey="profile-personal-dashboard-empty-state"
           parentKey="profile-personal-dashboard-unlocked"
@@ -532,6 +537,7 @@ function PersonalDashboard({ dashboard, finance }) {
           No widgets visible. Use <strong>Edit</strong> above to show some.
         </DevLayoutSection>
       ) : (
+        // Widget grid: every visible personal widget laid out two across.
         <DevLayoutSection
           sectionKey="profile-personal-dashboard-widget-grid"
           parentKey="profile-personal-dashboard-unlocked"
@@ -545,6 +551,7 @@ function PersonalDashboard({ dashboard, finance }) {
               const widgetData = dashboard.widgetDataMap[widget.widgetType]?.data || {};
 
               return (
+                // Widget card: one personal finance widget, such as bills, savings or notes, with access to its settings.
                 <DevLayoutSection
                   as="div"
                   sectionKey={`profile-personal-widget-${widget.widgetType}-${widget.id}`}
@@ -589,6 +596,7 @@ function PersonalDashboard({ dashboard, finance }) {
         }}
       />
 
+      {/* Widget settings popup: adjust or hide the selected widget. */}
       <DevLayoutSection
         as="div"
         sectionKey="profile-personal-widget-settings-modal"
@@ -669,6 +677,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
     }
 
     return (
+      // Header actions: a month picker with Edit and Lock buttons for the personal dashboard.
       <DevLayoutSection sectionKey="profile-personal-header-actions" parentKey="profile-tab-actions" sectionType="toolbar">
         <div
           style={{
@@ -776,6 +785,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
 
   if (disabled) {
     return (
+      // Unavailable notice: explains that the personal dashboard can only be opened from your own profile.
       <DevLayoutSection
         sectionKey="profile-personal-disabled-state"
         parentKey="profile-active-tab-panel"
@@ -798,6 +808,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
   return (
     <>
       {dashboard.isUnlocked ? (
+        // Unlocked personal dashboard: the insights and widgets.
         <DevLayoutSection
           sectionKey="profile-personal-dashboard-unlocked"
           parentKey="profile-active-tab-panel"
@@ -818,6 +829,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
           />
         </DevLayoutSection>
       ) : (
+        // Locked state: says the personal dashboard is locked, with buttons to unlock, set up or reset the passcode.
         <DevLayoutSection
           sectionKey="profile-personal-locked-state"
           parentKey="profile-active-tab-panel"

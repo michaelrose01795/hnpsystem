@@ -32,6 +32,7 @@ export default function WorkspaceCustomiseOverlay({
   const hiddenQuick = new Set(prefs?.hiddenQuickActions || []);
 
   return (
+    // Customise workspace popup: choose which panel widgets and quick actions to show, reorder the widgets, or reset to the defaults.
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}
@@ -53,7 +54,7 @@ export default function WorkspaceCustomiseOverlay({
         </button>
       </div>
 
-      {/* Widgets: visibility + order */}
+      {/* Panel widgets: tick to show or hide each widget and use the arrows to change their order. */}
       <LayerTheme radius="var(--radius-md)" gap="8px" padding="14px">
         <h3 style={sectionTitleStyle}>Panel widgets</h3>
         {orderedWidgets.map((widget, index) => {
@@ -102,7 +103,7 @@ export default function WorkspaceCustomiseOverlay({
         })}
       </LayerTheme>
 
-      {/* Quick actions: which to show */}
+      {/* Quick actions: tick to show or hide each shortcut. */}
       {quickActions.length > 0 && (
         <LayerTheme radius="var(--radius-md)" gap="8px" padding="14px">
           <h3 style={sectionTitleStyle}>Quick actions</h3>

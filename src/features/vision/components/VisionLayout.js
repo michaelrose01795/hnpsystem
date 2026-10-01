@@ -40,6 +40,7 @@ export default function VisionLayout({ slug, children }) {
     return (
       <div style={styles.shell}>
         <div style={styles.gridPhone}>
+          {/* Phone navigation: a dropdown for jumping between the Vision pages. */}
           <LayerTheme as="nav" aria-label="Vision navigation">
             <DropdownField
               label="Vision page"
@@ -58,6 +59,7 @@ export default function VisionLayout({ slug, children }) {
   return (
     <div style={styles.shell}>
       <div style={styles.grid}>
+        {/* Side navigation: a link to Vision home followed by the Vision pages grouped under headings. */}
         <LayerTheme as="nav" aria-label="Vision navigation">
           <Link className={`app-btn app-btn--nav app-btn--secondary ${router.pathname === "/vision" ? "is-active" : ""}`} href="/vision">
             Vision home

@@ -12,6 +12,7 @@ export default function WorkspaceBreadcrumbs({
   if (!trail?.length) return null;
 
   return (
+    // Breadcrumb trail: links back up through the workspace to the current page, which is shown last as plain text.
     <DevLayoutSection
       as="nav"
       sectionKey="workspace-breadcrumbs"

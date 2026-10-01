@@ -63,6 +63,7 @@ export default function TypingAssistPanel() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap)" }}>
+      {/* Typing assistant settings: explains what the assistant checks and lets the user switch it and its individual options on or off. */}
       <LayerTheme gap="var(--layout-card-gap)">
         <h2>Typing assistant</h2>
         <p className="app-field-hint">
@@ -90,6 +91,7 @@ export default function TypingAssistPanel() {
         ))}
       </LayerTheme>
 
+      {/* Keyboard help: the shortcuts for accepting predictions and choosing corrections. */}
       <LayerTheme gap="var(--layout-card-gap)">
         <h3>Keyboard</h3>
         <p className="app-field-hint">Tab accepts the grey predicted word. Esc dismisses it or closes suggestions.</p>
@@ -97,6 +99,7 @@ export default function TypingAssistPanel() {
         <p className="app-field-hint">Use the arrow keys and Enter to choose a correction.</p>
       </LayerTheme>
 
+      {/* My dictionary: the user's saved words, each with a remove button. */}
       <LayerTheme gap="var(--layout-card-gap)">
         <h3>My dictionary</h3>
         {dictionary.length ? (

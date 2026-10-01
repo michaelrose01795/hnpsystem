@@ -69,6 +69,7 @@ function ChecklistEditor({ checklist, onSaved, onCancel }) {
   };
 
   return (
+    // Checklist editor: name, the equipment type it applies to, description and in-use switch, then the list of check items (pass/fail or a reading with unit and limits) that can be reordered, removed or added to before saving.
     <LayerTheme radius="var(--radius-sm)" padding="12px" gap="12px">
       {error && <StatusMessage tone="danger">{error}</StatusMessage>}
       <div className="equipment-form__grid">
@@ -144,6 +145,7 @@ export default function EquipmentChecklistDrawer({ checklists, onChecklistSaved,
   const [editing, setEditing] = useState(null); // checklist object, "new", or null
 
   return (
+    // Inspection checklists drawer: lists the reusable checklists by equipment type and lets a manager create a new one or edit an existing one.
     <EquipmentDrawer
       title="Inspection checklists"
       description="Reusable checklists by equipment type. An asset uses its own, then its category's, then the general one."
@@ -170,6 +172,7 @@ export default function EquipmentChecklistDrawer({ checklists, onChecklistSaved,
       {!editing && checklists.length === 0 && <p className="app-record-note">No checklists yet.</p>}
       {!editing &&
         checklists.map((checklist) => (
+          // One checklist: its name, the equipment type it covers, number of items and whether it is switched off, with an Edit button.
           <LayerTheme key={checklist.id} radius="var(--radius-sm)" padding="12px" gap="6px">
             <div className="equipment-drawer__list-item">
               <div className="equipment-table__name">

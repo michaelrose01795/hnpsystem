@@ -41,6 +41,7 @@ function Thumbnail({ asset }) {
   }
   const ext = (asset.name.split(".").pop() || "file").toUpperCase();
   return (
+    // Placeholder tile for a non-image file, showing its file extension as a badge.
     <LayerSurface
       className="website-manager__media-placeholder"
       padding="0"
@@ -109,7 +110,9 @@ export default function MediaPanel({
 
   return (
     <>
+      {/* Upload media: choose image or PDF files to add to the website media library. */}
       <Section title="Upload media">
+        {/* Upload controls: the file chooser button, the accepted formats and size limit, and a message confirming the upload or explaining why it failed. */}
         <LayerTheme gap="var(--space-3)">
           {/* Label-wrapped input keeps the native file picker without extra refs. */}
           <div className="website-manager__actions">
@@ -143,6 +146,7 @@ export default function MediaPanel({
         </LayerTheme>
       </Section>
 
+      {/* Media library: a searchable grid of every uploaded image and document. */}
       <Section title="Media library">
         <div className="website-manager__toolbar">
           <input
@@ -169,6 +173,7 @@ export default function MediaPanel({
         ) : (
           <div className="website-manager__media-grid">
             {filtered.map((asset) => (
+              // One media asset: thumbnail, file name, type and size, the page it is used on and who uploaded it, with Replace and Delete buttons.
               <LayerTheme key={asset.id} className="website-manager__media-card">
                 <Thumbnail asset={asset} />
                 <span className="website-manager__media-name">{asset.name}</span>

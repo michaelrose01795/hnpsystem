@@ -92,6 +92,7 @@ export default function AccountTransactionsPageUi(props) {
           </DevLayoutSection>
 
           {/* Table card — --theme background (accentSurface), headerless. */}
+          {/* Transactions table: every transaction on this account matching the filters above, with paging. */}
           <DevLayoutSection
             sectionKey="account-transactions-table"
             parentKey="account-transactions-page-shell"

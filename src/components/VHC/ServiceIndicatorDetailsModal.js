@@ -168,6 +168,7 @@ export default function ServiceIndicatorDetailsModal({
     const amberCount = concernsList.filter((concernItem) => concernItem.status === "Amber").length;
     const greenCount = concernsList.filter((concernItem) => concernItem.status === "Green").length;
     return (
+      // Concerns summary: the number of concerns raised for this area with red, amber and green counts, an 'Add Concern' button and the list of concerns.
       <LayerTheme style={concernCardStyle}>
         <div
           style={{
@@ -389,6 +390,7 @@ export default function ServiceIndicatorDetailsModal({
   );
 
   return (
+    // Service indicator and under-bonnet check window, with camera, Close and Complete buttons in the footer.
     <VHCModalShell
       isOpen={isOpen}
       title="Service Indicator & Under Bonnet"
@@ -420,6 +422,7 @@ export default function ServiceIndicatorDetailsModal({
               Complete all highlighted sections to continue.
             </div>
           ) : null}
+          {/* Service reminder: the technician picks whether the reminder was reset, not required, absent or showing; any concerns are listed below. */}
           <LayerTheme data-dev-section="1" data-dev-section-key="vhc-service-reminder" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={showValidation && missingServiceChoice ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Service Reminder
@@ -459,6 +462,7 @@ export default function ServiceIndicatorDetailsModal({
             />
           </LayerTheme>
 
+          {/* Oil level: the technician marks the oil as Good, Bad or EV; any concerns are listed below. */}
           <LayerTheme data-dev-section="1" data-dev-section-key="vhc-service-oil" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={showValidation && missingOilStatus ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Oil Level
@@ -498,6 +502,7 @@ export default function ServiceIndicatorDetailsModal({
             />
           </LayerTheme>
 
+          {/* Under-bonnet items: a grid of checks (coolant, leaks, belts, fluids and so on), each opening a pop-up to report issues and showing its issue counts. */}
           <LayerTheme data-dev-section="1" data-dev-section-key="vhc-service-underbonnet" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={{ ...cardShellStyle, gap: "16px" }}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Under Bonnet Items
@@ -573,6 +578,7 @@ export default function ServiceIndicatorDetailsModal({
       </div>
 
       {showConcernModal ? (
+        // Pop-up for reporting issues against the chosen area: add a description and severity, then edit, photograph or delete existing issues.
         <IssueReportPopup
           isOpen={showConcernModal}
           title={activeConcernLabel}

@@ -6,6 +6,7 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 // strict alternation rule (CLAUDE.md §3.0) it renders as a LayerSurface.
 function MetricTile({ sectionKey, parentKey, label, children }) {
   return (
+    // Metric tile: a small card with an uppercase label and a single invoice figure beneath it.
     <LayerSurface
       sectionKey={sectionKey}
       parentKey={parentKey}
@@ -67,6 +68,7 @@ export default function InvoiceDetailPageUi(props) {
     <ProtectedRoute allowedRoles={DETAIL_ROLES}>
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         {/* Header — Theme section directly under app-layout-page-card (Surface). Single row. */}
+        {/* Invoice header: the invoice number with its payment status badge, and a button back to the list of all invoices. */}
         <LayerTheme
           as="section"
           sectionKey="invoice-detail-header"
@@ -131,6 +133,7 @@ export default function InvoiceDetailPageUi(props) {
         {(loading || (!invoice && !notFound)) && (
           <>
             <SkeletonKeyframes />
+            {/* Loading placeholder for the summary figures: six blank metric tiles shown while the invoice loads. */}
             <LayerTheme
               as="section"
               sectionKey="invoice-detail-summary-grid"
@@ -143,6 +146,7 @@ export default function InvoiceDetailPageUi(props) {
               }}
             >
               {Array.from({ length: 6 }).map((_, i) => (
+                // Placeholder metric tile: two grey bars standing in for the label and the value.
                 <LayerSurface
                   key={i}
                   sectionKey={`invoice-detail-summary-skeleton-${i}`}
@@ -157,6 +161,7 @@ export default function InvoiceDetailPageUi(props) {
                 </LayerSurface>
               ))}
             </LayerTheme>
+            {/* Loading placeholder for the invoice body: a few grey lines standing in for the payment and job details. */}
             <LayerTheme
               as="section"
               sectionKey="invoice-detail-body-skeleton"
@@ -176,6 +181,7 @@ export default function InvoiceDetailPageUi(props) {
         {!loading && invoice && (
           <>
             {/* Summary grid — Theme directly under page-card, with Surface metric cards inside */}
+            {/* Invoice summary: tiles for the grand total, due date, account, customer and linked job number. */}
             <LayerTheme
               as="section"
               sectionKey="invoice-detail-summary-grid"
@@ -187,6 +193,7 @@ export default function InvoiceDetailPageUi(props) {
                 gap: "16px",
               }}
             >
+              {/* Grand total tile: the full amount of the invoice. */}
               <MetricTile
                 sectionKey="invoice-detail-summary-grand-total"
                 parentKey="invoice-detail-summary-grid"
@@ -197,6 +204,7 @@ export default function InvoiceDetailPageUi(props) {
                 </strong>
               </MetricTile>
 
+              {/* Due date tile: when payment is due. */}
               <MetricTile
                 sectionKey="invoice-detail-summary-due-date"
                 parentKey="invoice-detail-summary-grid"
@@ -207,6 +215,7 @@ export default function InvoiceDetailPageUi(props) {
                 </strong>
               </MetricTile>
 
+              {/* Account tile: the account the invoice is billed to. */}
               <MetricTile
                 sectionKey="invoice-detail-summary-account"
                 parentKey="invoice-detail-summary-grid"
@@ -217,6 +226,7 @@ export default function InvoiceDetailPageUi(props) {
                 </strong>
               </MetricTile>
 
+              {/* Customer tile: the customer named on the invoice. */}
               <MetricTile
                 sectionKey="invoice-detail-summary-customer"
                 parentKey="invoice-detail-summary-grid"
@@ -227,6 +237,7 @@ export default function InvoiceDetailPageUi(props) {
                 </strong>
               </MetricTile>
 
+              {/* Job tile: the job number the invoice relates to, or a dash if there is none. */}
               <MetricTile
                 sectionKey="invoice-detail-summary-job"
                 parentKey="invoice-detail-summary-grid"
@@ -246,6 +257,7 @@ export default function InvoiceDetailPageUi(props) {
                 gap: "20px",
               }}
             >
+              {/* Payment history: every payment recorded against this invoice, or a message when there are none. */}
               <LayerTheme
                 as="section"
                 sectionKey="invoice-detail-payment-history"
@@ -258,6 +270,7 @@ export default function InvoiceDetailPageUi(props) {
                   <p style={{ margin: 0, color: "var(--text-1)" }}>No payments recorded.</p>
                 )}
                 {payments.map((payment) => (
+                  // Payment row: amount and method on the left, payment date and reference on the right.
                   <LayerSurface
                     key={payment.payment_id}
                     sectionKey={`invoice-detail-payment-row-${payment.payment_id}`}
@@ -288,6 +301,7 @@ export default function InvoiceDetailPageUi(props) {
                 ))}
               </LayerTheme>
 
+              {/* Linked job card: details of the workshop job this invoice was raised for, or a message when none is linked. */}
               <LayerTheme
                 as="section"
                 sectionKey="invoice-detail-linked-job"
@@ -297,6 +311,7 @@ export default function InvoiceDetailPageUi(props) {
               >
                 <h2 style={{ margin: 0, color: "var(--text-1)", fontSize: "1.2rem" }}>Linked Job Card</h2>
                 {job ? (
+                  // Job details: job number, status, vehicle and advisor.
                   <LayerSurface
                     sectionKey="invoice-detail-linked-job-card"
                     parentKey="invoice-detail-linked-job"

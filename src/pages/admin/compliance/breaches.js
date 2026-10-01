@@ -176,10 +176,12 @@ export default function BreachesPage() {
 
   return (
     <ComplianceLayout title="Breaches">
+      {/* Report a breach: a button that opens a short form for the category, severity and what happened. */}
       <Section title="Report a Breach">
         <NewBreachForm onCreated={load} />
       </Section>
 
+      {/* Breach register: a table of every recorded breach with hours elapsed, editable severity, status and ICO reference, and a button to close it. */}
       <Section title="Breach Register">
         {error && (
           <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>

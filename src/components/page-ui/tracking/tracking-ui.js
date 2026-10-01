@@ -76,6 +76,7 @@ export default function TrackingDashboardUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
+      {/* Tracking page: the shared header row and body used by the Key/Parking, Loan car, Equipment and Oil/Stock tracker pages. */}
       <DevLayoutSection sectionKey="tracking-page" parentKey="app-layout-page-card" sectionType="section-shell" backgroundToken="surface" className="app-page-stack" style={{
     display: "flex",
     flexDirection: "column",
@@ -85,6 +86,7 @@ export default function TrackingDashboardUi(props) {
     minWidth: 0,
     padding: "8px 0"
   }}>
+        {/* Page body: the search and action header, any error message, and the content of the tracker currently open. */}
         <DevLayoutSection sectionKey="tracking-page-body" parentKey="tracking-page" sectionType="section-shell" style={{
       display: "flex",
       flexDirection: "column",
@@ -112,6 +114,7 @@ export default function TrackingDashboardUi(props) {
         overflowY: "visible",
         scrollbarWidth: "thin"
       }}>
+              {/* Search and filters: the search box plus the location and status filters for whichever tracker is open. */}
               <DevLayoutSection sectionKey="tracking-page-shared-search" parentKey="tracking-page-body" sectionType="toolbar" style={{
           display: "flex",
           gap: "var(--space-sm)",
@@ -260,6 +263,7 @@ export default function TrackingDashboardUi(props) {
                   )}
                 </div>
             </div>
+          {/* Error banner shown when the tracking data could not be loaded. */}
           {error && <DevLayoutSection sectionKey="tracking-page-error" parentKey="tracking-page-body" sectionType="banner">
               <StatusMessage tone="danger">{error}</StatusMessage>
             </DevLayoutSection>}

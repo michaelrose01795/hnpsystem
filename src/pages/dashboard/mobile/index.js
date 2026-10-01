@@ -218,6 +218,7 @@ function MobileDashboardInner() {
 
   if (error) {
     return (
+      // Error state shown when the mobile jobs fail to load, with a Try Again button.
       <SectionShell
         sectionKey="mobile-dashboard-error"
         parentKey="app-layout-page-card"
@@ -238,6 +239,7 @@ function MobileDashboardInner() {
 
   return (
     <>
+      {/* Mobile technician dashboard: headline counts, the next visit, the list of assigned visits and quick actions. */}
       <DevLayoutSection
         sectionKey="mobile-dashboard-page"
         parentKey="app-layout-page-card"
@@ -247,6 +249,7 @@ function MobileDashboardInner() {
         className="app-layout-page-shell"
         style={pageShellStyle}
       >
+        {/* Headline counts: visits today, upcoming visits, follow-ups and total mobile jobs. */}
         <DevLayoutSection
           sectionKey="mobile-dashboard-stats-grid"
           parentKey="mobile-dashboard-page"
@@ -260,6 +263,7 @@ function MobileDashboardInner() {
           <MobileStatCard label="Mobile Jobs" value={jobs.length} sectionKey="total" />
         </DevLayoutSection>
 
+        {/* Next mobile visit: the upcoming job's details with a button to open the visit. */}
         {nextVisit && (
           <SectionShell
             sectionKey="mobile-dashboard-next-visit"
@@ -303,6 +307,7 @@ function MobileDashboardInner() {
           </SectionShell>
         )}
 
+        {/* My assigned mobile visits: every mobile job assigned to the technician. */}
         <SectionShell
           sectionKey="mobile-dashboard-assigned-visits"
           parentKey="mobile-dashboard-page"
@@ -319,6 +324,7 @@ function MobileDashboardInner() {
           </DevLayoutSection>
 
           {visibleJobs.length === 0 ? (
+            // Message shown when no mobile visits are assigned.
             <DevLayoutSection
               sectionKey="mobile-dashboard-assigned-visits-empty"
               parentKey="mobile-dashboard-assigned-visits"
@@ -334,6 +340,7 @@ function MobileDashboardInner() {
               <p style={detailLabelStyle}>No mobile visits are currently assigned.</p>
             </DevLayoutSection>
           ) : (
+            // Table of assigned visits with their status, each row opening the visit.
             <DevLayoutSection
               sectionKey="mobile-dashboard-assigned-visits-rows"
               parentKey="mobile-dashboard-assigned-visits"
@@ -388,6 +395,7 @@ function MobileDashboardInner() {
           )}
         </SectionShell>
 
+        {/* Quick actions: shortcut buttons to the technician's most-used mobile pages. */}
         <SectionShell
           sectionKey="mobile-dashboard-actions-card"
           parentKey="mobile-dashboard-page"
@@ -479,6 +487,7 @@ function MobileDashboardInner() {
 
 function MobileStatCard({ label, value, sectionKey }) {
   return (
+    // Single headline tile showing a large number above its caption.
     <StatCard
       sectionKey={`mobile-dashboard-stat-${sectionKey}`}
       parentKey="mobile-dashboard-stats-grid"

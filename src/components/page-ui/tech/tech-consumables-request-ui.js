@@ -99,11 +99,13 @@ export default function TechConsumableRequestPageUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
+        {/* Access-denied page wrapper, shown when the signed-in user is not a workshop technician. */}
         <DevLayoutSection sectionKey="tech-consumables-access-shell" sectionType="page-shell" shell widthMode="page" style={{
     padding: "40px",
     maxWidth: "720px",
     margin: "0 auto"
   }}>
+          {/* Access-denied card: explains that this page is only for technicians requesting consumables. */}
           <LayerSurface as="section" sectionKey="tech-consumables-access-card" parentKey="tech-consumables-access-shell" sectionType="content-card" style={{
       ...cardStyle,
       textAlign: "center"
@@ -122,6 +124,7 @@ export default function TechConsumableRequestPageUi(props) {
               consumables. Please navigate back to the news feed if this was in
               error.
             </p>
+            {/* Action area holding the link that takes the user back to the news feed. */}
             <DevLayoutSection as="div" sectionKey="tech-consumables-access-action" parentKey="tech-consumables-access-card" sectionType="floating-action" backgroundToken="transparent">
               <Link href="/newsfeed" style={{
           display: "inline-block",
@@ -142,8 +145,11 @@ export default function TechConsumableRequestPageUi(props) {
     case "section2":
       return <>
       <div style={pageWrapperStyle}>
+        {/* Stock check panel: search the consumables stock, pick items and set quantities ready to send as a request. */}
         <LayerTheme as="section" sectionKey="tech-consumables-request-panel" sectionType="content-card" style={requestPanelStyle}>
+          {/* Stock check workspace stacking the search block, the optional full stock list and the table of selected items. */}
           <DevLayoutSection as="div" sectionKey="tech-consumables-stock-workspace" parentKey="tech-consumables-request-panel" sectionType="form-grid" backgroundToken="transparent" style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
+            {/* Search block: stock check heading with the item count, the consumables search box and the Search, Show/Hide list and Send buttons. */}
             <DevLayoutSection as="div" sectionKey="tech-consumables-item-field" parentKey="tech-consumables-stock-workspace" sectionType="form-block" backgroundToken="surface" style={{
           display: "flex",
           flexDirection: "column",
@@ -176,6 +182,7 @@ export default function TechConsumableRequestPageUi(props) {
                   Send
                 </Button>
               </div>
+              {/* Search suggestions, shown once something is typed: matching stock items as quick-add buttons, an option to add the typed name to stock, and any stock error. */}
               {requestForm.partName.trim() && <DevLayoutSection as="div" sectionKey="tech-consumables-stock-suggestions" parentKey="tech-consumables-item-field" sectionType="content-card" backgroundToken="surface-light" style={{
             marginTop: "4px",
             border: "none",
@@ -220,6 +227,7 @@ export default function TechConsumableRequestPageUi(props) {
                 </DevLayoutSection>}
             </DevLayoutSection>
 
+            {/* Full stock list, shown when toggled on: a scrollable set of add buttons for every consumable matching the search. */}
             {showStockList && (
               <DevLayoutSection as="div" sectionKey="tech-consumables-stock-list" parentKey="tech-consumables-stock-workspace" sectionType="list" backgroundToken="transparent" style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "280px", overflowY: "auto" }}>
                 {visibleStockItems.length > 0 ? visibleStockItems.map((item) => (
@@ -232,6 +240,7 @@ export default function TechConsumableRequestPageUi(props) {
               </DevLayoutSection>
             )}
 
+            {/* Selected items table: each chosen consumable with a tick box to remove it and minus/plus buttons to change the quantity. */}
             <LayerSurface as="div" sectionKey="tech-consumables-selected-table-shell" parentKey="tech-consumables-stock-workspace" sectionType="data-table-shell" padding="0" style={{ overflowX: "auto" }}>
               <table className="app-data-table" style={{ width: "100%", minWidth: "520px" }}>
                 <thead>
@@ -269,13 +278,16 @@ export default function TechConsumableRequestPageUi(props) {
           </DevLayoutSection>
         </LayerTheme>
 
+        {/* Requests panel: the consumable requests already raised, with filters, status messages and the request list or table. */}
         <DevLayoutSection as="section" sectionKey="tech-consumables-requests-panel" sectionType="section-shell" shell backgroundToken="accent" className="app-layout-surface-accent">
+          {/* Requests toolbar: the Requests heading alongside the month and search filters. */}
           <DevLayoutSection as="div" sectionKey="tech-consumables-requests-toolbar" parentKey="tech-consumables-requests-panel" sectionType="toolbar" backgroundToken="transparent" style={requestsToolbarStyle}>
             <h2 style={{
           margin: 0,
           fontSize: "1.2rem",
           color: "var(--primary-selected)"
         }}>Requests</h2>
+            {/* Filter group for the requests list, stacked on mobile and in a row on desktop. */}
             <DevLayoutSection as="div" sectionKey="tech-consumables-requests-filters" parentKey="tech-consumables-requests-toolbar" sectionType="filter-row" backgroundToken="transparent" style={{
           display: "flex",
           flexDirection: isMobile ? "column" : "row",
@@ -284,6 +296,7 @@ export default function TechConsumableRequestPageUi(props) {
           gap: "10px",
           width: isMobile ? "100%" : "auto"
         }}>
+              {/* Month picker that limits the requests shown to a single month. */}
               <DevLayoutSection as="div" sectionKey="tech-consumables-requests-month" parentKey="tech-consumables-requests-filters" sectionType="filter-row" backgroundToken="search-surface" style={{
             width: isMobile ? "100%" : "320px"
           }}>
@@ -293,6 +306,7 @@ export default function TechConsumableRequestPageUi(props) {
                   aria-label="Filter requests by month"
                 />
               </DevLayoutSection>
+              {/* Search box that filters the requests by text. */}
               <DevLayoutSection as="div" sectionKey="tech-consumables-requests-search" parentKey="tech-consumables-requests-filters" sectionType="filter-row" backgroundToken="search-surface" style={{
             maxWidth: isMobile ? "100%" : "240px",
             width: "100%"
@@ -303,12 +317,14 @@ export default function TechConsumableRequestPageUi(props) {
               </DevLayoutSection>
             </DevLayoutSection>
           </DevLayoutSection>
+          {/* Success banner confirming that a request was sent. */}
           {successMessage && <DevLayoutSection as="p" sectionKey="tech-consumables-success-banner" parentKey="tech-consumables-requests-panel" sectionType="state-banner" backgroundToken="success-surface" style={{
         margin: "0 0 12px",
         color: "var(--success-dark)"
       }}>
               {successMessage}
             </DevLayoutSection>}
+          {/* Error banner shown when requests could not be loaded or sent. */}
           {requestError && <DevLayoutSection as="p" sectionKey="tech-consumables-error-banner" parentKey="tech-consumables-requests-panel" sectionType="state-banner" backgroundToken="danger-surface" style={{
         margin: "0 0 12px",
         color: "var(--primary-selected)"
@@ -316,6 +332,7 @@ export default function TechConsumableRequestPageUi(props) {
               {requestError}
             </DevLayoutSection>}
 
+          {/* Mobile request list: one card per request showing the item, status, quantity, date and who asked for it, or an empty message. On wider screens the same requests appear in a table with Status, Part Name, Quantity, Requested and Requested By columns. */}
           {isMobile ? <DevLayoutSection as="div" sectionKey="tech-consumables-request-mobile-list" parentKey="tech-consumables-requests-panel" sectionType="list" backgroundToken="surface" style={{
         display: "flex",
         flexDirection: "column",
@@ -327,6 +344,7 @@ export default function TechConsumableRequestPageUi(props) {
           gap: "12px"
         }}>
                   <SkeletonKeyframes />
+                  {/* Placeholder cards shown while the requests are still loading. */}
                   {["60%", "48%", "70%"].map((width, index) => <LayerSurface key={index} padding="14px" gap="12px" style={requestCardStyle}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
                         <SkeletonBlock width={width} height="16px" />
@@ -459,6 +477,7 @@ export default function TechConsumableRequestPageUi(props) {
             </DevLayoutSection>}
         </DevLayoutSection>
       </div>
+      {/* Send popup: lists the selected consumables and quantities, with buttons to send them to Requests, send by email or close. */}
       <PopupModal
         isOpen={showSendPopup}
         onClose={sendLoading ? undefined : () => setShowSendPopup(false)}

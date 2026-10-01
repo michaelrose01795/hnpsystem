@@ -2003,7 +2003,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           }
         }
       `}</style>
-      {/* ===== Parts Metrics ===== */}
+      {/* Parts summary: counts of parts allocated, on order, on back order, returned, removed and in total. */}
       <div className="app-summary-section">
         <ul
           className="app-summary-grid"
@@ -2021,6 +2021,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             { label: "Removed", value: partsSummary.removed },
             { label: "Total Parts", value: partsSummary.total },
           ].map((item) => (
+            // Summary tile: the number of this job's parts in one state.
             <li
               key={item.label}
               data-dev-section="1"
@@ -2036,7 +2037,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         </ul>
       </div>
 
-      {/* ===== Parts Table Section ===== */}
+      {/* Parts section: status filters, a search box and the Book Part button, the stock search panel and the table of parts on this job. */}
       <LayerSurface
         sectionKey="jobcard-parts-table-section"
         sectionType="section-shell"
@@ -2207,6 +2208,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               </div>
             )}
             {selectedCatalogPart && (
+              // Selected part: its name, number and location, a quantity field, the stock available and sell price, with buttons to add it to the job or to an order.
               <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
@@ -2401,7 +2403,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         </div>
       </LayerSurface>
 
-      {/* Part Removal Popup Modal */}
+      {/* Set picked location popup: choose a part on this job and the location it has been picked to. */}
       {showPrePickPopup && (
         <PopupModal
           isOpen
@@ -2468,6 +2470,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       />
 
       {partPopup.open && partPopup.part && (
+        // Part details popup: edit a part's status, linked request, locations, quantities, price, supplier reference and expected arrival, or remove it from the job.
         <PopupModal
           isOpen
           onClose={() => setPartPopup({ open: false, part: null })}
@@ -2542,6 +2545,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 </div>
               </div>
 
+              {/* Part heading: the part number and description with its quantity. */}
               <LayerTheme radius="var(--radius-xs)" padding="14px" gap="8px">
                 <div
                   style={{

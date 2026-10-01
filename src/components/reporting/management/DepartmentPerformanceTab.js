@@ -38,10 +38,12 @@ export default function DepartmentPerformanceTab({ filter }) {
 
   return (
     <>
+      {/* Department comparison: every operational department's headline figures side by side. */}
       <ReportSection
         title="Department comparison"
         subtitle="Every operational department's headline KPIs side by side — composed from each department package's own resolvers. A single normalised performance index / ranking needs the dim_kpi weighting model and targets (declared); the live composed values are shown for direct comparison."
       >
+        {/* Comparison table card: shows the table, a loading placeholder or an error, plus where the data came from. */}
         <LayerSurface radius="var(--radius-sm)" padding="16px" gap="12px" sectionKey="report-department-comparison-table-card" data-dev-text-preview="Department comparison table card">
           {error && <div style={{ color: "var(--danger-base)", fontSize: "0.82rem" }}>{error}</div>}
           {loading && (
@@ -50,6 +52,7 @@ export default function DepartmentPerformanceTab({ filter }) {
             </div>
           )}
           {!loading && departments.length > 0 && (
+            // Scrollable table of departments with their throughput and quality measures, values and reporting health.
             <DevLayoutSection
               as="div"
               className="app-table-shell-scroll"
@@ -99,11 +102,16 @@ export default function DepartmentPerformanceTab({ filter }) {
         </LayerSurface>
       </ReportSection>
 
+      {/* Department throughput trends: weekly trend charts for the operational departments. */}
       <ReportSection title="Department throughput trends" subtitle="Throughput history for the operational departments, built by the shared trend framework.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          {/* Weekly trend of workshop jobs completed. */}
           <ExecutiveTrendCard kpiId="wsh.jobs_completed" label="Workshop jobs completed" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
+          {/* Weekly trend of parts fitted. */}
           <ExecutiveTrendCard kpiId="prt.fitted" label="Parts fitted" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
+          {/* Weekly trend of MOT volume. */}
           <ExecutiveTrendCard kpiId="mot.volume" label="MOT volume" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
+          {/* Weekly trend of valeting throughput (cars washed). */}
           <ExecutiveTrendCard kpiId="val.cars_washed" label="Valeting throughput" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
         </div>
       </ReportSection>

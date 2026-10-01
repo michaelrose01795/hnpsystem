@@ -29,6 +29,18 @@ export function isAllAccessUser(user = null) {
   return hasAllAccessRole(user.roles || []);
 }
 
+// Job numbers the All Access demo login always sees on My Jobs, on top of
+// anything genuinely assigned to the demo account. The demo account is rarely
+// the assigned technician on a real job, so without a pin the list is empty and
+// there is no job card to open from it. Pinning does not touch the job's real
+// technician assignment.
+export const ALL_ACCESS_PINNED_JOB_NUMBERS = Object.freeze(["03972"]);
+
+export function isAllAccessPinnedJobNumber(jobNumber) {
+  const candidate = String(jobNumber ?? "").trim();
+  return candidate !== "" && ALL_ACCESS_PINNED_JOB_NUMBERS.includes(candidate);
+}
+
 export function isAllAccessSession(session = null) {
   return isAllAccessUser(session?.user || null);
 }

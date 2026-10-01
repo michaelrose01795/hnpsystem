@@ -228,6 +228,7 @@ const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), {
             gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))"
           }}>
 
+          {/* Placeholder cards: four grey loading blocks shown while the write-up form is being loaded. */}
           {Array.from({ length: 4 }).map((_, i) =>
           <LayerSurface
             key={i}
@@ -5145,6 +5146,7 @@ class JobCardErrorBoundary extends React.Component {
 
     return (
       <>
+        {/* Error panel: tells the user the job card failed to display, shows the error message and points to the console for details. */}
         <div style={{
           padding: "40px",
           textAlign: "center",
@@ -5212,6 +5214,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
     onSave({ ...form, actionType, context });
   };
 
+  // Tracking entry popup: log or edit where a vehicle and its keys are, with the job number, registration, customer, service type and the car and key locations.
   return (
     <PopupModal
       isOpen
@@ -5707,7 +5710,7 @@ function SchedulingTab({
       <div style={schedulingThreeColumnRowStyle}>
         <TechnicianAssignmentSection jobData={jobData} canEdit={canEdit} jobNumber={jobNumber} onRefreshJob={onRefreshJob} />
         <JobProgressSection jobData={jobData} />
-        {/* Section: Appointment Information (moved here from the bottom row) */}
+        {/* Appointment information: the booked date, time, status and collection type, with buttons to rebook, save or cancel the appointment. */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-appointment"
           sectionType="content-card"
@@ -5896,7 +5899,7 @@ function SchedulingTab({
       <div style={schedulingThreeColumnRowStyle}>
         <CustomerUpdatesSection jobData={jobData} jobNumber={jobNumber} canEdit={canEdit} onRefreshJob={onRefreshJob} />
 
-        {/* ── Section 2: Customer Reported Issues ── */}
+        {/* Customer reported issues: a scrollable list of the problems the customer described when the job was booked. */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-reported-issues"
           sectionType="content-card"
@@ -5942,7 +5945,7 @@ function SchedulingTab({
           </div>
         </DevLayoutSection>
 
-        {/* Section: Customer & Vehicle (moved here from the full-width row) */}
+        {/* Customer and vehicle: shows whether the booking is approved and lets staff pick which of the customer's stored vehicles the job is for. */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-customer-vehicle"
           sectionType="content-card"
@@ -6017,7 +6020,7 @@ function SchedulingTab({
         </DevLayoutSection>
       </div>
 
-      {/* ── Section 5: Actions ── */}
+      {/* Booking actions bar: holds the customer-details confirmation and the button that saves the booking. */}
       <DevLayoutSection
         sectionKey="jobcard-tab-scheduling-actions"
         sectionType="toolbar"
@@ -6025,6 +6028,7 @@ function SchedulingTab({
         backgroundToken="surface"
         style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: "14px", marginBottom: 0 }}>
 
+        {/* Confirmation tick box: staff confirm the customer's contact details are correct before the booking can be saved. */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-confirmation"
           sectionType="content-card"
@@ -6070,6 +6074,7 @@ function SchedulingTab({
           }
         </DevLayoutSection>
 
+        {/* Save controls: the Save Booking Details button and the success messages shown after saving. */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-action-buttons"
           sectionType="toolbar"
@@ -6137,6 +6142,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
   const allocateDisabled = !hasParts;
 
   return (
+    // Parts added to job: a table of the parts booked in against this job, with a button to allocate them.
     <div style={{ marginBottom: "24px" }}>
       <div
         style={{
@@ -6522,6 +6528,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      {/* Add part from stock: search the parts catalogue and allocate a part directly to this job, which reduces stock straight away. */}
       <div
         style={{
           background: "var(--surface)",
@@ -6616,6 +6623,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           </div>
         }
         {selectedCatalogPart &&
+        // Selected part details: stock information for the chosen catalogue part and the quantity to allocate.
         <div
           style={{
             border: "none",
@@ -6731,6 +6739,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
       </div>
       {hasParts ?
       <>
+          {/* Parts pipeline: a count of this job's part lines at each stage of the parts process. */}
           <div
           style={{
             background: "var(--surface)",
@@ -6759,6 +6768,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             }}>
 
               {pipelineStages.map((stage) =>
+            // Pipeline stage tile: the number of part lines at one stage, with the stage name and a short description.
             <div
               key={stage.id}
               style={{
@@ -6783,6 +6793,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               {pipelineSummary.totalCount === 1 ? "" : "s"} currently tracked across these stages.
             </p>
           </div>
+          {/* VHC linked parts: the parts created from vehicle health check items, or a message when there are none. */}
           <div>
             <h2 style={{ margin: "0 0 12px 0", fontSize: "18px", fontWeight: "600", color: "var(--info-dark)" }}>
               VHC Linked Parts
@@ -6803,6 +6814,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                 {vhcParts.map((part) => {
               const statusMeta = getPartStatusMeta(part.status);
               return (
+                // VHC part card: part number, name, description, status, quantities and any technician note for one part.
                 <div
                   key={part.id}
                   style={{
@@ -6895,6 +6907,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           }
           </div>
 
+          {/* Manual requests: parts the technician asked for in the write-up, or a message when none have been logged. */}
           <div>
             <h2 style={{ margin: "12px 0", fontSize: "18px", fontWeight: "600", color: "var(--info-dark)" }}>
               Manual Requests (Write-up)
@@ -6915,6 +6928,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                 {manualRequests.map((request) => {
               const statusMeta = getPartStatusMeta(request.status);
               return (
+                // Manual request card: part number, name, description and current status for one requested part.
                 <div
                   key={request.requestId}
                   style={{
@@ -6984,6 +6998,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           </p>
         </> :
 
+      // Parts overview empty state: shown when no parts at all are linked to this job.
       <div>
           <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-1)" }}>
             Parts Overview
@@ -7026,6 +7041,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 
   return (
     <div>
+      {/* Job notes: a free-text box for notes about the job, saved automatically as the user types. */}
       <div style={{
         padding: "20px",
         backgroundColor: "var(--surface)",
@@ -7285,6 +7301,7 @@ function VHCTab({
 
 
   return (
+    // Vehicle health check panel: the full VHC checklist, findings and costs for this job, with the send-to-customer controls.
     <DevLayoutSection
       sectionKey="jobcard-tab-vhc-panel"
       sectionType="section-shell"
@@ -7473,6 +7490,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
   }, [activeCustomerThread?.id, chatSending, dbUserId, loadCustomerConversation, messageDraft, normalizedJobNumber]);
 
   return (
+    // Customer conversation: the message thread with the customer for this job - header, message feed and reply box.
     <DevLayoutSection
       data-presentation="messages-conversation"
       sectionKey="jobcard-customer-conversation-panel"
@@ -7487,6 +7505,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
         gap: "16px"
       }}>
 
+      {/* Conversation header: the thread title and the customer's email address, with a loading indicator. */}
       <DevLayoutSection
         sectionKey="jobcard-customer-conversation-header"
         parentKey="jobcard-customer-conversation-panel"
@@ -7509,6 +7528,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
         {chatLoading && <InlineLoading width={80} label="Loading" />}
       </DevLayoutSection>
 
+      {/* Message feed: the scrolling list of messages exchanged with the customer, newest at the bottom. */}
       <DevLayoutSection
         ref={customerScrollerRef}
         sectionKey="jobcard-customer-conversation-feed"
@@ -7586,6 +7606,7 @@ function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, db
         })}
       </DevLayoutSection>
 
+      {/* Reply box: type a message to the customer and send it. */}
       <DevLayoutSection
         as="form"
         sectionKey="jobcard-customer-conversation-composer"
@@ -8537,6 +8558,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
 
 
   return (
+    // Clocking tab: time-on-job totals, a form to add a clocking entry by hand, and the history of who has clocked onto this job.
     <DevLayoutSection
       sectionKey="jobcard-tab-clocking-panel"
       sectionType="content-card"
@@ -8561,6 +8583,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           gap: "16px"
         }}>
 
+          {/* Clocking figures: one tile per headline number, such as hours sold against hours actually worked. */}
           {clockingKpiCards.map((card) =>
         <div
           key={card.key}
@@ -8667,6 +8690,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         </div>
       }
 
+      {/* Manual clocking form: enter clock-in and clock-out dates and times, pick the job request and technician, then save the entry. */}
       <DevLayoutSection
         as="form"
         sectionKey="jobcard-tab-clocking-form"
@@ -8783,6 +8807,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           </div>
         </DevLayoutSection>
 
+        {/* Form actions: buttons to save the clocking entry and open the technician list, alongside status badges. */}
         <DevLayoutSection
           sectionKey="jobcard-tab-clocking-actions"
           sectionType="toolbar"
@@ -8847,6 +8872,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         </DevLayoutSection>
       </DevLayoutSection>
 
+      {/* Clocking history: every clocking entry recorded against this job. */}
       {jobId && normalizedJobNumber &&
       <DevLayoutSection
         id="clocking-history"
@@ -8874,6 +8900,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           className="popup-backdrop"
           onClick={() => setShowTechsPopup(false)}>
 
+          {/* Technicians popup: today's technicians and who is off; click an available technician to clock them onto this job. */}
           <div
             className="popup-card"
             role="dialog"
@@ -9475,6 +9502,7 @@ function DocumentsTab({
               )}
             </header>
 
+            {/* Preview area: displays the selected document as an image, video or embedded file. */}
             <LayerTheme
               radius="var(--radius-md)"
               padding="0"
@@ -9514,6 +9542,7 @@ function DocumentsTab({
 
       {/* Valet upload strip */}
       {valetMode &&
+      // Valet upload: lets valeters add wash and valet photos to the job and clock on or off it.
       <div
         style={{
           padding: "14px",
@@ -9632,6 +9661,7 @@ function DocumentsTab({
           const dateStr = formatDate(doc.uploadedAt || doc.uploaded_at);
 
           return (
+            // Document card: a thumbnail or file-type icon, the file name and upload date, with buttons to open it and, where allowed, delete it.
             <div
               key={doc.id || doc.file_id || docUrl}
               style={{

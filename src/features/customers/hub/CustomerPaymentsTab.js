@@ -32,6 +32,7 @@ function InvoiceRow({ invoice, access, onAction, busy, layer = "surface" }) {
   const invoiceId = invoice.id || invoice.invoice_id;
 
   return (
+    // One invoice: number, job, vehicle and date with a status badge, the total / paid / outstanding figures and buttons to view it, take payment or log a payment link or receipt.
     <Layer as="article" sectionKey={`customer-profile-invoice-${invoiceId}`} parentKey="customer-profile-payments">
       <div className="app-page-header">
         <div className="app-page-header__text">
@@ -129,7 +130,7 @@ export default function CustomerPaymentsTab({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap)", minWidth: 0 }}>
-      {/* Account position */}
+      {/* Account position: totals for outstanding, paid, invoiced and overdue amounts, plus the on-account balance and remaining credit for account customers. */}
       <LayerTheme as="section" sectionKey="customer-profile-payments" parentKey="customer-profile-tab-payments">
         <RecordHeading>Account position</RecordHeading>
 
@@ -169,6 +170,7 @@ export default function CustomerPaymentsTab({
         </div>
 
         {summary?.accountNumbers?.length > 0 && (
+          // Trade account details: account number, type, status and credit limit, with buttons to open the ledger or log a statement as sent.
           <LayerSurface as="div" sectionKey="customer-profile-account" parentKey="customer-profile-payments">
             <RecordFieldGrid
               wide
@@ -201,7 +203,7 @@ export default function CustomerPaymentsTab({
         )}
       </LayerTheme>
 
-      {/* Outstanding */}
+      {/* Outstanding invoices: every unpaid invoice for this customer, or a message confirming nothing is owed. */}
       <LayerTheme
         as="section"
         sectionKey="customer-profile-payments-outstanding"
@@ -217,6 +219,7 @@ export default function CustomerPaymentsTab({
           />
         ) : (
           outstanding.map((invoice) => (
+            // One unpaid invoice with its amounts and payment actions.
             <InvoiceRow
               key={invoice.id || invoice.invoice_id}
               invoice={invoice}
@@ -228,7 +231,7 @@ export default function CustomerPaymentsTab({
         )}
       </LayerTheme>
 
-      {/* Previous payments */}
+      {/* Payments received: a table of every payment captured against this customer. */}
       <LayerTheme
         as="section"
         sectionKey="customer-profile-payments-received"
@@ -238,6 +241,7 @@ export default function CustomerPaymentsTab({
         {payments.length === 0 ? (
           <EmptyState variant="bare" title="No payments recorded" description="Nothing has been captured against this customer yet." />
         ) : (
+          // Payments table: date, amount, method, reference and the invoice each payment was made against.
           <LayerSurface as="div" sectionKey="customer-profile-payments-list" parentKey="customer-profile-payments-received">
             <div style={{ width: "100%", overflowX: "auto" }}>
               <table className="app-data-table app-data-table--compact">
@@ -267,7 +271,7 @@ export default function CustomerPaymentsTab({
         )}
       </LayerTheme>
 
-      {/* Settled invoices */}
+      {/* Settled invoices: the ten most recent fully paid invoices, shown only when there are some. */}
       {settled.length > 0 && (
         <LayerTheme
           as="section"
@@ -276,6 +280,7 @@ export default function CustomerPaymentsTab({
         >
           <RecordHeading>{`Settled invoices (${settled.length})`}</RecordHeading>
           {settled.slice(0, 10).map((invoice) => (
+            // One fully paid invoice with its amounts and a button to log the receipt as sent.
             <InvoiceRow
               key={invoice.id || invoice.invoice_id}
               invoice={invoice}
@@ -290,7 +295,7 @@ export default function CustomerPaymentsTab({
         </LayerTheme>
       )}
 
-      {/* Account ledger */}
+      {/* Account movements: the ledger of transactions on the customer's account, shown only when there are some. */}
       {transactions.length > 0 && (
         <LayerTheme
           as="section"
@@ -298,6 +303,7 @@ export default function CustomerPaymentsTab({
           parentKey="customer-profile-tab-payments"
         >
           <RecordHeading>{`Account movements (${transactions.length})`}</RecordHeading>
+          {/* Ledger table: date, type, amount, description and job number for up to 50 transactions. */}
           <LayerSurface as="div" sectionKey="customer-profile-ledger-list" parentKey="customer-profile-payments-ledger">
             <div style={{ width: "100%", overflowX: "auto" }}>
               <table className="app-data-table app-data-table--compact">
@@ -327,7 +333,7 @@ export default function CustomerPaymentsTab({
         </LayerTheme>
       )}
 
-      {/* Stored payment methods — provider reference only */}
+      {/* Saved payment methods: the cards held with the payment provider, shown by brand, last four digits and expiry only. */}
       <LayerTheme
         as="section"
         sectionKey="customer-profile-payment-methods"
@@ -342,6 +348,7 @@ export default function CustomerPaymentsTab({
           />
         ) : (
           paymentMethods.map((method) => (
+            // One saved card: nickname or brand, last four digits, expiry date and a badge if it is the default.
             <LayerSurface
               key={method.method_id}
               as="div"

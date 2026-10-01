@@ -86,6 +86,7 @@ export default function UserClockingHistoryUi(props) {
               {error}
             </div>}
 
+          {/* Live technician activity: a table of today's clocking entries with status, job number, start, finish and duration, plus a Back link. */}
           <DevLayoutSection
             as="section"
             id="live-technician-activity"
@@ -191,6 +192,7 @@ export default function UserClockingHistoryUi(props) {
             </div>
           </DevLayoutSection>
 
+          {/* Manual clocking entry (managers only): choose clock-in and clock-out dates and times, a job number and a request, then save or reset the form. */}
           {isManager && <ManualEntryLayer
             as="section"
             sectionKey="clocking-technician-manual-entry"
@@ -344,6 +346,7 @@ export default function UserClockingHistoryUi(props) {
               </form>
             </ManualEntryLayer>}
 
+          {/* Clocking history for the job that was most recently clocked through the manual form. */}
           {isManager && lastClockedJobId && lastClockedJobNumber && <ClockingHistorySection jobId={lastClockedJobId} jobNumber={lastClockedJobNumber} requests={[]} jobAllocatedHours={null} refreshSignal={historyRefreshSignal} enableRequestClick={false} title="Clocking history" />}
           </div>
         </PageContainer>

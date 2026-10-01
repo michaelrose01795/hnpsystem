@@ -45,6 +45,7 @@ const inputStyle = {
 // Standard --theme section card for a group of form fields. Sits inside the
 // modal surface, so per the layer-alternation rule it is a LayerTheme.
 function FieldGroup({ children, columns }) {
+  // Field group card: a tinted panel that lays out a related set of payslip fields in a grid.
   return (
     <LayerTheme
       style={{
@@ -245,6 +246,7 @@ export default function PayslipUpsertModal({
     }
   };
 
+  // Payslip popup: the form for creating or editing a payslip, split into the field groups below.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -272,7 +274,7 @@ export default function PayslipUpsertModal({
         </div>
 
         <div style={{ padding: "20px 24px", overflowY: "auto", display: "grid", gap: "16px" }}>
-          {/* Person + status */}
+          {/* Person and status: the employee the payslip is for, its status and a reference. */}
           <FieldGroup columns="repeat(auto-fit, minmax(min(100%, 220px), 1fr))">
             <label style={labelStyle}>
               User
@@ -302,7 +304,7 @@ export default function PayslipUpsertModal({
             </label>
           </FieldGroup>
 
-          {/* Dates */}
+          {/* Dates: the paid date and the pay period the payslip covers. */}
           <FieldGroup columns="repeat(auto-fit, minmax(min(100%, 220px), 1fr))">
             <label style={labelStyle}>
               Paid date
@@ -341,7 +343,7 @@ export default function PayslipUpsertModal({
             </label>
           </FieldGroup>
 
-          {/* Headline figures */}
+          {/* Headline figures: gross pay, net pay, taxable pay, tax, National Insurance, employee and employer pension, and other deductions. */}
           <FieldGroup columns="repeat(auto-fit, minmax(160px, 1fr))">
             <label style={labelStyle}>Gross pay
               <NumberField
@@ -381,7 +383,7 @@ export default function PayslipUpsertModal({
             </label>
           </FieldGroup>
 
-          {/* Pay context */}
+          {/* Pay context: hourly rate, contracted hours, tax code and National Insurance number. */}
           <FieldGroup columns="repeat(auto-fit, minmax(160px, 1fr))">
             <label style={labelStyle}>Hourly rate
               <NumberField value={draft.hourlyRate} onChange={(value) => update({ hourlyRate: value })} />
@@ -397,7 +399,7 @@ export default function PayslipUpsertModal({
             </label>
           </FieldGroup>
 
-          {/* YTD */}
+          {/* Year-to-date totals: gross, net, tax, National Insurance and pension. */}
           <FieldGroup columns="repeat(auto-fit, minmax(140px, 1fr))">
             <label style={labelStyle}>YTD gross
               <NumberField value={draft.ytdGross} onChange={(value) => update({ ytdGross: value })} />
@@ -416,7 +418,7 @@ export default function PayslipUpsertModal({
             </label>
           </FieldGroup>
 
-          {/* Earnings rows */}
+          {/* Earnings rows: an editable list of the individual earnings lines on the payslip. */}
           <FieldGroup>
             <RowsEditor
               title="Earnings rows"
@@ -426,7 +428,7 @@ export default function PayslipUpsertModal({
             />
           </FieldGroup>
 
-          {/* Deduction rows */}
+          {/* Deduction rows: an editable list of the individual deduction lines on the payslip. */}
           <FieldGroup>
             <RowsEditor
               title="Deduction rows"
@@ -436,7 +438,7 @@ export default function PayslipUpsertModal({
             />
           </FieldGroup>
 
-          {/* Notes */}
+          {/* Notes: free-text notes stored with the payslip. */}
           <FieldGroup>
             <label style={labelStyle}>
               Notes

@@ -79,6 +79,7 @@ export default function SectionEditor({
   };
 
   return (
+    // Section editor: the section name with an unsaved marker and Delete button, one input per field, any error and Save / Cancel buttons.
     <LayerTheme className="website-manager__editor" gap="var(--space-3)">
       <div className="website-manager__editor-header">
         <span className="website-manager__editor-title">{schema.label}</span>

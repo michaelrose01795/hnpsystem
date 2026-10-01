@@ -5408,6 +5408,7 @@ function DocumentsTab({
   };
 
   return (
+    // Documents tab: a toolbar with the file count, search and upload button, then a grid of document cards with a preview popup.
     <DevLayoutSection
       as="div"
       className="app-page-stack"
@@ -5422,6 +5423,7 @@ function DocumentsTab({
       data-dev-auto-outline="cards">
       
       {previewDoc ? (
+        // Document preview popup: shows the image, video or file at full size, with buttons to edit, rename or close.
         <PopupModal
           isOpen
           onClose={() => { setPreviewDoc(null); setIsRenamingPreview(false); }}
@@ -5510,6 +5512,7 @@ function DocumentsTab({
               )}
             </header>
 
+            {/* Preview area: the document itself, shown as an image, a video player or an embedded file. */}
             <LayerTheme
               radius="var(--radius-md)"
               padding="0"
@@ -5547,6 +5550,7 @@ function DocumentsTab({
         </PopupModal>
       ) : null}
 
+      {/* Documents toolbar: the number of files, a search box and the Upload Documents button. */}
       <DevLayoutSection
         as="div"
         sectionKey="myjob-documents-toolbar"
@@ -5590,6 +5594,7 @@ function DocumentsTab({
       </DevLayoutSection>
 
       {sortedDocuments.length === 0 ?
+      // Empty state: prompts the user to upload check-sheets, paperwork or photos when the job has no documents.
       <LayerSurface
         as="div"
         sectionKey="myjob-documents-empty"
@@ -5612,6 +5617,7 @@ function DocumentsTab({
           Upload check-sheets, signed paperwork, or photos to keep everything in one place.
         </LayerSurface> :
       filteredDocuments.length === 0 ?
+      // No matches: says no documents match the search text.
       <LayerSurface
         as="div"
         sectionKey="myjob-documents-no-matches"
@@ -5652,6 +5658,7 @@ function DocumentsTab({
               onMouseEnter={(e) => {e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)";}}
               onMouseLeave={(e) => {e.currentTarget.style.boxShadow = "none";}}
               style={{ transition: "box-shadow 0.15s ease" }}>
+              {/* Document card: a thumbnail or file-type icon that opens the preview, the file name and upload date, and View and Delete buttons. */}
               <LayerSurface
                 radius="var(--radius-md)"
                 gap={undefined}

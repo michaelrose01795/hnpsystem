@@ -82,6 +82,7 @@ export function StatusBadge({ status }) {
 // <Section> (which is a LayerSurface) — see CLAUDE.md §3.0.
 export function StatCard({ label, value, hint }) {
   return (
+    // Headline figure tile: a label, a large value and an optional hint line underneath.
     <LayerTheme gap="var(--space-1)">
       <span className="website-manager__stat-label">{label}</span>
       <span className="website-manager__stat-value">{value}</span>

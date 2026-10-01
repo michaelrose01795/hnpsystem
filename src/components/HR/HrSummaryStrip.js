@@ -37,6 +37,7 @@ export default function HrSummaryStrip({ items = [], parentKey, minTileWidth = "
   const rowKey = parentKey ? `${parentKey}-summary-strip` : "";
 
   return (
+    // At-a-glance strip: a row of headline HR figures shown above the tables on each HR manager tab.
     <DevLayoutSection
       sectionKey={rowKey}
       parentKey={parentKey}
@@ -49,6 +50,7 @@ export default function HrSummaryStrip({ items = [], parentKey, minTileWidth = "
       }}
     >
       {tiles.map((tile) => (
+        // One headline figure with its icon, caption, main value, supporting text and trend.
         <MetricCard
           key={tile.label}
           icon={tile.icon}

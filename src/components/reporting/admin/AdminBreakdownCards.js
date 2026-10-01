@@ -21,6 +21,7 @@ export default function AdminBreakdownCards({ filter, kpiId, cards = [], keys = 
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Breakdown grid: a responsive set of figure cards splitting one Admin measure into its component parts. */}
       <DevLayoutSection
         sectionKey={gridKey}
         sectionType="section-shell"
@@ -28,6 +29,7 @@ export default function AdminBreakdownCards({ filter, kpiId, cards = [], keys = 
         data-dev-text-preview={`${kpiId} breakdown grid`}
         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 12 }}
       >
+        {/* One figure card per breakdown item, showing its label and value. */}
         {wanted.map((card) => (
           <KpiValueCard
             key={card.key}

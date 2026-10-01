@@ -33,6 +33,7 @@ export default function ValetDashboardUi(props) {
     case "section1":
       return <>
         <DevLayoutSection sectionKey="valet-loading-shell" sectionType="page-shell" shell>
+          {/* Centred loading indicator shown while the signed-in user is being checked. */}
           <DevLayoutSection sectionKey="valet-loading-panel" parentKey="valet-loading-shell" sectionType="content-card" style={{
       display: "flex",
       justifyContent: "center",
@@ -49,6 +50,7 @@ export default function ValetDashboardUi(props) {
     case "section2":
       return <>
         <DevLayoutSection sectionKey="valet-auth-shell" sectionType="page-shell" shell>
+          {/* Message telling the visitor they must be logged in to view valet jobs. */}
           <DevLayoutSection sectionKey="valet-auth-message" parentKey="valet-auth-shell" sectionType="content-card" style={{
       padding: "24px"
     }}>
@@ -65,6 +67,7 @@ export default function ValetDashboardUi(props) {
     case "section3":
       return <>
         <DevLayoutSection sectionKey="valet-no-access-shell" sectionType="page-shell" shell>
+          {/* Message telling the user they do not have access to the valet dashboard. */}
           <DevLayoutSection sectionKey="valet-no-access-message" parentKey="valet-no-access-shell" sectionType="content-card" style={{
       padding: "24px"
     }}>
@@ -80,7 +83,9 @@ export default function ValetDashboardUi(props) {
 
     case "section4":
       return <div className="app-page-stack">
+        {/* Controls area holding the valet filters and any error message. */}
         <DevLayoutSection sectionKey="valet-controls-shell" parentKey="app-layout-page-card" sectionType="section-shell" className="app-page-stack">
+          {/* Filter row: search box, day picker, Today / All days switch and a count of the jobs being shown. */}
           <DevLayoutSection data-presentation="valet-filters" sectionKey="valet-filter-row" parentKey="valet-controls-shell" sectionType="filter-row" style={{
         display: "flex",
         gap: "12px",
@@ -158,6 +163,7 @@ export default function ValetDashboardUi(props) {
               border-end-start-radius: 0;
             }
           `}</style>
+          {/* Error banner shown when the valet jobs fail to load or save. */}
           {error && <DevLayoutSection sectionKey="valet-error-banner" parentKey="valet-controls-shell" sectionType="content-card" style={{
         padding: "12px 16px",
         borderRadius: "var(--radius-xs)",
@@ -170,6 +176,7 @@ export default function ValetDashboardUi(props) {
             </DevLayoutSection>}
         </DevLayoutSection>
 
+        {/* Valet jobs area: a loading placeholder, a message when no jobs match, or the table of jobs with their vehicle-here, workshop, MOT and wash checks and estimated technician completion. */}
         {loading ? <LayerTheme sectionKey="valet-jobs-loading" parentKey="app-layout-page-card" sectionType="content-card">
             <div className="app-table-shell-wrap app-table-shell-scroll">
               <TableSkeleton

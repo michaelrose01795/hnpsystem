@@ -93,6 +93,7 @@ function useTweenedNumber(target, animate) {
 // surface so padding, radius and backdrop match the loaded chart exactly.
 function TrendSkeleton({ height, sectionKey, parentKey, sectionType }) {
   return (
+    // Loading placeholder shown while the trend chart's data is being fetched.
     <DevLayoutSection
       sectionKey={sectionKey}
       parentKey={parentKey}
@@ -143,6 +144,7 @@ export default function KpiTrendChart({
 
   if (points.length === 0) {
     return (
+      // Empty message shown when there is no trend data for the chosen period.
       <DevLayoutSection
         sectionKey={sectionKey}
         parentKey={parentKey}
@@ -197,6 +199,7 @@ export default function KpiTrendChart({
   const markerY = hover != null ? pts[hover][1] : 0;
 
   return (
+    // Trend chart: a line graph of the figure over time; hovering or touching a point shows that date's value.
     <DevLayoutSection
       sectionKey={sectionKey}
       parentKey={parentKey}
@@ -271,6 +274,7 @@ export default function KpiTrendChart({
         )}
       </div>
 
+      {/* Chart footer: the first date on the left and the hovered (or latest) value on the right. */}
       <div className="report-graph__panel">
         <span>{formatAxisLabel(points[0].key)}</span>
         <span style={{ textAlign: "center", flex: 1 }}>

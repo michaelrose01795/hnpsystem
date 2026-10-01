@@ -49,6 +49,7 @@ export default function TimelineHistory() {
     };
   }, []);
 
+  // Our Story section: a short introduction followed by a vertical timeline of company milestones.
   return (
     <section ref={sectionRef} className={`${styles.section} ${styles.timelineSection}`} aria-label="Our story">
       <header className={styles.subSceneHead} data-reveal>
@@ -69,6 +70,7 @@ export default function TimelineHistory() {
             data-reveal
           >
             <span className={styles.timelineDot} aria-hidden="true" />
+            {/* One milestone card per timeline entry, showing the year, a title and a short description. */}
             <Card3D intensity={0.6} className={styles.timelineCardWrap}>
               <LayerSurface className={styles.timelineCard} padding="22px">
                 <span className={styles.timelineYear}>{entry.year}</span>

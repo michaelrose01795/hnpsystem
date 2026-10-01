@@ -110,6 +110,7 @@ export default function DeliveryRoutePageUi(props) {
           </p>
         </div>
 
+        {/* Route overview: driver, vehicle, fuel type, editable diesel price and vehicle MPG, plus stops planned, total mileage and the fuel estimate for the route. */}
         <LayerSurface as="section" radius="var(--radius-lg)" padding="22px" gap="10px">
           <p style={{
         margin: 0,
@@ -271,6 +272,7 @@ export default function DeliveryRoutePageUi(props) {
           </span>
         </div>
 
+        {/* Add stop popup: search for a customer, optionally enter a job number, then the address and postcode, with Save stop and Close buttons. */}
         {modalOpen && <PopupModal
           isOpen
           onClose={savingStop ? undefined : handleCloseModal}
@@ -352,6 +354,7 @@ export default function DeliveryRoutePageUi(props) {
           }}>{modalError}</p>}
           </PopupModal>}
 
+        {/* Route actions: buttons to start the route, mark the current stop as delivered and complete the route, with any error shown underneath. */}
         <section style={{
       display: "flex",
       flexDirection: "column",
@@ -400,6 +403,7 @@ export default function DeliveryRoutePageUi(props) {
       gap: 10
     }}>
             <SkeletonKeyframes />
+            {/* Placeholder cards shown in place of the stops while the route is loading. */}
             {Array.from({
         length: 3
       }).map((_, i) => <LayerSurface key={i} padding="12px" gap="0" style={{
@@ -439,6 +443,7 @@ export default function DeliveryRoutePageUi(props) {
           listStyle: "none",
           cursor: "grab"
         }} draggable onDragStart={handleDragStart(stop.id)} onDragOver={handleDragOver(stop.id)} onDrop={handleDrop(stop.id)} onDragEnd={handleDragEnd}>
+                  {/* Delivery stop card: customer and status, job number, mileage and estimated fuel for the leg, any note, and controls to update the status, add delivery notes, confirm delivery or delete the stop. Stops can be dragged to reorder. */}
                   <LayerSurface padding="18px" gap="0" style={{
             ...stopCardStyle,
             // Drop-target highlight is a state ring, not a card border, so use outline.

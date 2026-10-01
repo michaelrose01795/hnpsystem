@@ -27,6 +27,7 @@ export default function DeliveryFailureModal({ delivery, saving, error, onCancel
 
   if (!delivery) return null;
 
+  // Failed delivery popup: shows the customer and address, and records why the delivery could not be made.
   return (
     <PopupModal
       isOpen
@@ -54,6 +55,7 @@ export default function DeliveryFailureModal({ delivery, saving, error, onCancel
           <div className="app-status-message app-status-message--danger">{error}</div>
         ) : null}
 
+        {/* Failure details: a reason dropdown and a free-text box describing what happened. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
           <DropdownField
             label="Reason *"

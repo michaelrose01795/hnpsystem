@@ -129,6 +129,7 @@ export default function CompanyAccountDetailPage() {
   // LayerTheme (--theme background) per the strict layer-alternation rule.
   const renderOverviewTab = () =>
   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* Contact details: primary contact, email, phone, city, postcode and country for the company account. */}
       <LayerTheme
       sectionKey="company-account-detail-overview-contact"
       parentKey="company-account-detail-card"
@@ -151,6 +152,7 @@ export default function CompanyAccountDetailPage() {
           {detailRow("Country", account.billing_country)}
         </div>
       </LayerTheme>
+      {/* Billing address: the full postal address invoices are sent to (only shown when one is recorded). */}
       {(account.billing_address_line1 || account.billing_address_line2) &&
     <LayerTheme
       sectionKey="company-account-detail-overview-address"
@@ -180,6 +182,7 @@ export default function CompanyAccountDetailPage() {
     }
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* Linked ledger account: the accounts ledger record this company account is tied to. */}
         {hasLinked &&
         <LayerTheme
           sectionKey="company-account-detail-billing-linked"
@@ -192,6 +195,7 @@ export default function CompanyAccountDetailPage() {
             <strong>{account.linked_account_label || account.linked_account_id}</strong>
           </LayerTheme>
         }
+        {/* Notes: free-text notes held against the company account. */}
         {account.notes &&
         <LayerTheme
           sectionKey="company-account-detail-billing-notes"
@@ -241,6 +245,7 @@ export default function CompanyAccountDetailPage() {
                 transition: "transform 0.2s ease"
               }}>
 
+                  {/* One card per job for this account: job number, status, customer, vehicle, source and the created and completed dates; click to open the job card. */}
                   <LayerTheme
                 sectionKey={`company-account-detail-job-${index}`}
                 parentKey="company-account-detail-card"
@@ -313,6 +318,7 @@ export default function CompanyAccountDetailPage() {
                   transition: "transform 0.2s ease"
                 }}>
 
+                  {/* One card per invoice for this account: invoice number, payment status, who it was invoiced to, linked job and order, total and invoice date; click to open the invoice. */}
                   <LayerTheme
                   sectionKey={`company-account-detail-invoice-${index}`}
                   parentKey="company-account-detail-card"

@@ -180,6 +180,7 @@ const LoginCard = ({
   className={["login-card", className].filter(Boolean).join(" ")}
   style={{ width: "100%", display: "flex", justifyContent: "center" }}>
   
+    {/* Login card: a centred panel with a title, an optional subtitle and the sign-in content placed inside it. */}
     <LayerSurface
     radius="var(--radius-xl)"
     padding="var(--space-xl)"

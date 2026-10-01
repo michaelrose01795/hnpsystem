@@ -39,11 +39,13 @@ function RecruitmentContent() {
 
       <HrSummaryStrip items={summary} parentKey="hr-manager-tab-recruitment" />
 
+      {/* Open roles: the jobs currently being advertised, with department, number of applicants and pipeline stage. */}
       <SectionCard layer="theme"
         sectionKey="hr-recruitment-open-roles" parentKey="hr-manager-tab-recruitment"
         title="Open Roles"
         subtitle="Current postings and their pipeline status">
         
+        {/* Table of open roles (role, department, applicants, stage); a "no roles advertised" message is shown when there are none. */}
         {showPresentationMock ? (
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
@@ -78,11 +80,13 @@ function RecruitmentContent() {
         )}
       </SectionCard>
 
+      {/* Recruitment tasks: the outstanding hiring jobs such as screening, scheduling and references. */}
       <SectionCard layer="theme"
         sectionKey="hr-recruitment-tasks" parentKey="hr-manager-tab-recruitment"
         title="Recruitment Tasks"
         subtitle="Keep the hiring pipeline moving">
         
+        {/* Table of hiring tasks (task, role, owner, status); a "no hiring tasks" message is shown when there are none. */}
         {showPresentationMock ? (
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
@@ -117,11 +121,13 @@ function RecruitmentContent() {
         )}
       </SectionCard>
 
+      {/* Applicants pipeline: every candidate and how far they have got through screening, interview and offer. */}
       <SectionCard layer="theme"
         sectionKey="hr-recruitment-applicants-pipeline" parentKey="hr-manager-tab-recruitment"
         title="Applicants Pipeline"
         subtitle="Track candidates across the recruitment workflow">
         
+        {/* Table of applicants (applicant, role, stage, owner); a "no applicants" message is shown when there are none. */}
         {showPresentationMock ? (
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
@@ -156,11 +162,13 @@ function RecruitmentContent() {
         )}
       </SectionCard>
 
+      {/* Onboarding checklist: the tasks to complete once a candidate accepts an offer, such as IT access, PPE and induction. */}
       <SectionCard layer="theme"
         sectionKey="hr-recruitment-onboarding-checklist" parentKey="hr-manager-tab-recruitment"
         title="Onboarding Checklist"
         subtitle="Tasks to complete once a candidate accepts an offer.">
         
+        {/* Table of onboarding tasks (task, owner, status); a "no checklist yet" message is shown when there are none. */}
         {showPresentationMock ? (
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>

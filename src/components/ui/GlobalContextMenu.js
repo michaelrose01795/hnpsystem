@@ -627,6 +627,7 @@ export default function GlobalContextMenu() {
   // ------------------------------------------------------------ staff skin
   if (!menu.website) {
     return createPortal(
+      // Right-click menu for staff pages: a list of actions grouped under labels, some opening a submenu.
       <LayerSurface
         padding="var(--space-sm)"
         gap="var(--space-sm)"

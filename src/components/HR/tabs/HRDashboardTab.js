@@ -55,6 +55,7 @@ export default function HRDashboardTab() {
   }
 
   if (error) {
+    // Error card shown when the HR dashboard figures fail to load, with the error message.
     return (
       <SectionCard
         sectionKey="hr-manager-dashboard-error"
@@ -71,7 +72,7 @@ export default function HRDashboardTab() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      {/* Metrics Overview */}
+      {/* Metrics overview: a row of headline HR figures for the business. */}
       <DevLayoutSection
         sectionKey="hr-manager-dashboard-metrics-row"
         parentKey="hr-manager-tab-dashboard"
@@ -79,6 +80,7 @@ export default function HRDashboardTab() {
         data-dev-card-section="Dashboard metrics row"
         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "10px" }}
       >
+        {/* One metric card per headline HR figure, showing its label, value and trend. */}
         {formattedMetrics.map((metric) => (
           <MetricCard
             key={metric.label}
@@ -93,6 +95,7 @@ export default function HRDashboardTab() {
 
       {/* Department Performance & Training */}
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "2fr 1.2fr" }}>
+        {/* Department performance snapshot: productivity, quality and teamwork scores for each department over the last 30 days. */}
         <SectionCard
           sectionKey="hr-manager-dashboard-department-performance"
           parentKey="hr-manager-tab-dashboard"
@@ -102,6 +105,7 @@ export default function HRDashboardTab() {
           title="Department Performance Snapshot"
           subtitle="Productivity, quality, and teamwork scoring (rolling 30 days)"
         >
+          {/* Table of departments with their productivity, quality and teamwork scores. */}
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">
@@ -128,6 +132,7 @@ export default function HRDashboardTab() {
           </LayerSurface>
         </SectionCard>
 
+        {/* Training renewals: mandatory certificates that are due or overdue, with the employee, course, due date and status. */}
         <SectionCard
           sectionKey="hr-manager-dashboard-training-renewals"
           parentKey="hr-manager-tab-dashboard"
@@ -177,6 +182,7 @@ export default function HRDashboardTab() {
 
       {/* Absences & Warnings */}
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "1.4fr 1fr" }}>
+        {/* Upcoming holidays and absences: who is off in the next 14 days across the business. */}
         <SectionCard
           sectionKey="hr-manager-dashboard-upcoming-absences"
           parentKey="hr-manager-tab-dashboard"
@@ -186,6 +192,7 @@ export default function HRDashboardTab() {
           title="Upcoming Holidays & Absences"
           subtitle="Next 14 days across the business"
         >
+          {/* Table of upcoming absences (employee, department, type and dates). */}
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">
@@ -215,6 +222,7 @@ export default function HRDashboardTab() {
           </LayerSurface>
         </SectionCard>
 
+        {/* Active warnings: open disciplinary notices with the employee, warning level, department, issue date and notes. */}
         <SectionCard
           sectionKey="hr-manager-dashboard-active-warnings"
           parentKey="hr-manager-tab-dashboard"

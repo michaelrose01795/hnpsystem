@@ -117,6 +117,7 @@ export function CommandPaletteProvider({ children }) {
             padding: "10vh 16px 16px",
           }}
         >
+          {/* Command palette dialog: a search box above a keyboard-navigable list of matching commands. */}
           <LayerSurface
             role="dialog"
             aria-label="Command palette"

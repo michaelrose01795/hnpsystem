@@ -100,6 +100,7 @@ export default function CustomerHeaderCard({
   }
 
   return (
+    // Customer header: name, status and account facts, the edit, create job and book appointment actions, then contact details, headline figures and recent activity.
     <LayerTheme
       as="section"
       data-presentation="customer-hero"
@@ -162,7 +163,7 @@ export default function CustomerHeaderCard({
         />
       )}
 
-      {/* Contact details */}
+      {/* Contact details: each phone number, email and address with copy buttons, the preferred channel marked, and the contact preference selector. */}
       <LayerSurface as="div" sectionKey="customer-profile-contact" parentKey="customer-profile-summary">
         <div className="app-page-header">
           <div className="app-page-header__text">
@@ -201,7 +202,7 @@ export default function CustomerHeaderCard({
         />
       </LayerSurface>
 
-      {/* Figures */}
+      {/* Headline figures: vehicles, total jobs and open jobs, plus lifetime spend and outstanding balance for users allowed to see financials. */}
       <div className="app-summary-section">
         <div className="app-summary-grid">
           {stats.map((stat) => (
@@ -213,7 +214,7 @@ export default function CustomerHeaderCard({
         </div>
       </div>
 
-      {/* Recency */}
+      {/* Recent activity: last contact, last visit, next booking and, where permitted, the account balance. */}
       <LayerSurface as="div" sectionKey="customer-profile-recency" parentKey="customer-profile-summary">
         <RecordFieldGrid
           wide

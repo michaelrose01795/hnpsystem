@@ -228,6 +228,7 @@ function FieldLabel({ children }) {
 
 function Section({ title, description = "", children }) {
   return (
+    // Settings group: a titled box holding one set of related options for the dashboard card.
     <section
       style={{
         display: "grid",
@@ -391,6 +392,7 @@ function MortgageModeEditor({ finance, isMobile, settings, updateSetting }) {
   ];
 
   return (
+    // Mortgage mode: switch between saving for a mortgage (goal, amount saved, monthly contribution, target date) and mortgage bills (monthly payment, interest rate, term, remaining balance), with calculated figures underneath.
     <Section title="Mortgage mode" description="Only one mortgage mode is active at a time.">
       <SegmentedTabs
         value={mode}
@@ -458,16 +460,19 @@ function MortgageModeEditor({ finance, isMobile, settings, updateSetting }) {
           </div>
 
           <div style={{ display: "grid", gap: "8px", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
+            {/* Remaining amount still to save towards the goal. */}
             <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
               <FieldLabel>Remaining amount</FieldLabel>
               <div style={{ fontSize: "0.92rem", fontWeight: 700 }}>{formatCurrency(remainingAmount)}</div>
             </div>
+            {/* Timeline: the number of months until the savings goal is reached. */}
             <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
               <FieldLabel>Timeline</FieldLabel>
               <div style={{ fontSize: "0.92rem", fontWeight: 700 }}>
                 {monthsToGoal === null ? "No estimate" : `${monthsToGoal} month${monthsToGoal === 1 ? "" : "s"}`}
               </div>
             </div>
+            {/* Projected date the savings goal will be reached. */}
             <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
               <FieldLabel>Projected date</FieldLabel>
               <div style={{ fontSize: "0.92rem", fontWeight: 700 }}>{projectedDate ? formatDate(projectedDate) : "No projection"}</div>
@@ -516,16 +521,19 @@ function MortgageModeEditor({ finance, isMobile, settings, updateSetting }) {
           </div>
 
           <div style={{ display: "grid", gap: "8px", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
+            {/* Breakdown of the monthly payment into interest and capital. */}
             <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
               <FieldLabel>Breakdown</FieldLabel>
               <div style={{ fontSize: "0.84rem", lineHeight: 1.5 }}>
                 {formatCurrency(paymentBreakdown.interestPayment)} interest / {formatCurrency(paymentBreakdown.capitalPayment)} capital
               </div>
             </div>
+            {/* Mortgage balance left after this month's payment. */}
             <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
               <FieldLabel>Balance after payment</FieldLabel>
               <div style={{ fontSize: "0.92rem", fontWeight: 700 }}>{formatCurrency(paymentBreakdown.remainingAfterPayment)}</div>
             </div>
+            {/* Payoff timeline: how many months until the mortgage is cleared, or a warning that the payment is too low. */}
             <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
               <FieldLabel>Payoff timeline</FieldLabel>
               <div style={{ fontSize: "0.84rem", lineHeight: 1.5 }}>
@@ -562,14 +570,17 @@ function FinanceCollectionEditor({
   );
 
   return (
+    // Editable list of named amounts (used for fixed outgoings and one-off payments), with an Add row button.
     <Section title={title}>
       {rows.length === 0 ? (
+        // Message shown when the list has no rows yet.
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           {emptyLabel}
         </div>
       ) : (
         <div style={{ display: "grid", gap: "8px" }}>
           {rows.map((entry) => (
+            // One row: name, amount and optional category, with a Remove button.
             <div
               key={entry.id}
               style={{
@@ -609,6 +620,7 @@ function CreditCardEditor({ finance, isMobile }) {
   const accountOptions = accounts.map((entry) => ({ value: entry.id, label: entry.name || "Card" }));
 
   return (
+    // Credit cards: manage the list of card names, then enter each card's balance and monthly payment for the selected month.
     <Section
       title="Credit cards"
     >
@@ -635,12 +647,14 @@ function CreditCardEditor({ finance, isMobile }) {
         Credit card names
       </div>
       {accounts.length === 0 ? (
+        // Message shown when no credit card names have been added.
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No credit card names added yet.
         </div>
       ) : (
         <div style={{ display: "grid", gap: "8px" }}>
           {accounts.map((entry) => (
+            // One credit card name with a Remove button.
             <div
               key={entry.id}
               style={{
@@ -671,12 +685,14 @@ function CreditCardEditor({ finance, isMobile }) {
         {formatMonthLabel(finance?.model?.selectedMonthKey || getCurrentMonthKey())} balances
       </div>
       {rows.length === 0 ? (
+        // Message shown when no credit card balances have been added for the month.
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No credit cards added yet.
         </div>
       ) : (
         <div style={{ display: "grid", gap: "8px" }}>
           {rows.map((entry) => (
+            // One credit card for the month: which card, its balance, monthly payment and a paid-off tick box, with a Remove button.
             <div
               key={entry.id}
               style={{
@@ -755,6 +771,7 @@ function PayAndWorkEditor({ finance, isMobile }) {
   const monthLabel = formatMonthLabel(finance.model.selectedMonthKey);
 
   return (
+    // Pay and Work: contracted hours, hourly and overtime rates, annual salary and other income, optional fixed tax and NI for the selected month, and the resulting hours, base pay, tax and NI.
     <Section
       title="Pay and Work"
       description="Your contracted hours, pay rates, and salary. These values are used across all income and work calculations."
@@ -871,6 +888,7 @@ function IncomeAdjustmentsEditor({ finance, isMobile }) {
   const month = finance.model.currentMonth;
 
   return (
+    // Income Adjustments: a one-off income adjustment for the month, the work deduction, and the resulting total in and after-tax income.
     <Section
       title="Income Adjustments"
       description="One-off income adjustments for this month."
@@ -907,6 +925,7 @@ function OvertimeEditor({ finance, isMobile }) {
   const month = finance.model.currentMonth;
 
   return (
+    // Overtime: totals for attendance and manual overtime and overtime pay, with a list of extra-hours entries that can be added or removed.
     <Section
       title="Overtime"
       description="Log extra hours worked on specific days. Attendance overtime from the Work tab is included automatically."
@@ -919,6 +938,7 @@ function OvertimeEditor({ finance, isMobile }) {
 
       <div style={{ display: "grid", gap: "8px" }}>
         {month.monthState.overtimeEntries.map((entry) => (
+          // One overtime entry: date, hours and a note, with a Remove button.
           <div
             key={entry.id}
             style={{
@@ -1078,6 +1098,7 @@ function RecurringRulesEditor({ isMobile }) {
   };
 
   return (
+    // Recurring Overtime Rules: the days and hours that should log overtime automatically, with buttons to add a rule and save.
     <Section
       title="Recurring Overtime Rules"
       description="Add the days and hours that should auto-log overtime."
@@ -1093,6 +1114,7 @@ function RecurringRulesEditor({ isMobile }) {
           <SkeletonKeyframes />
           {/* Mirrors a recurring rule row: day, hours, pattern, parity and a Remove pill. */}
           {[0, 1].map((rowIndex) => (
+            // Placeholder row shown while the recurring rules are loading.
             <LayerSurface
               key={rowIndex}
               radius="var(--radius-sm)"
@@ -1121,6 +1143,7 @@ function RecurringRulesEditor({ isMobile }) {
           ) : (
             <div style={{ display: "grid", gap: "8px" }}>
               {rules.map((rule) => (
+                // One recurring rule: day of the week, hours, weekly or alternate-week pattern and which weeks, with a Remove button.
                 <div
                   key={rule.rule_id}
                   style={{
@@ -1210,6 +1233,7 @@ function LeaveEditor({ finance, isMobile }) {
   const leaveStats = finance.derived.leaveStats;
 
   return (
+    // Leave and Calendar: days of leave taken and remaining, followed by the list of approved leave requests.
     <Section
       title="Leave and Calendar"
       description="Holiday and leave balances pulled from the Work tab. Approved leave requests are shown below."
@@ -1225,6 +1249,7 @@ function LeaveEditor({ finance, isMobile }) {
       ) : (
         <div style={{ display: "grid", gap: "6px", maxHeight: "200px", overflowY: "auto" }}>
           {leaveStats.approvedRequests.map((request) => (
+            // One approved leave request: leave type, start and end dates and total days.
             <div
               key={request.id}
               style={{
@@ -1270,6 +1295,7 @@ function HolidayPaymentLinkEditor({ finance, isMobile, settings = {}, updateSett
   }));
 
   return (
+    // Linked Holiday Costs: tick the payment schedules that pay for a holiday and choose which holiday each belongs to, with totals for the linked schedules.
     <Section
       title="Linked Holiday Costs"
       description="Tick a payment schedule, then choose which holiday from Leave and Calendar it belongs to."
@@ -1284,6 +1310,7 @@ function HolidayPaymentLinkEditor({ finance, isMobile, settings = {}, updateSett
             const isLinked = linkedIds.includes(plan.id);
             const selectedLeaveId = holidayLinks[plan.id] || "";
             return (
+              // One payment schedule: its name, date range and amounts, a tick box to link it, and a dropdown to pick the holiday once linked.
               <div
                 key={plan.id}
                 style={{
@@ -1358,11 +1385,13 @@ function PlannedPaymentPlansEditor({ finance, isMobile }) {
   const monthOptions = buildMonthOptions(finance.model.selectedMonthKey, 18);
 
   return (
+    // Payment Schedules: recurring payments with a start and end month and an amount for each month in between, plus a button to add a schedule.
     <Section
       title="Payment Schedules"
       description="Recurring payments with start and end months. Set a different amount for each month within the range."
     >
       {plans.length === 0 ? (
+        // Message shown when no payment schedules have been added.
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No payment schedules added yet.
         </div>
@@ -1374,6 +1403,7 @@ function PlannedPaymentPlansEditor({ finance, isMobile }) {
             const isExpanded = expandedId === plan.id;
 
             return (
+              // One payment schedule: name, start month and end month, an expandable list of monthly amounts, and its total.
               <div
                 key={plan.id}
                 style={{
@@ -1554,6 +1584,7 @@ function FuelEntriesEditor({ finance, isMobile }) {
   };
 
   return (
+    // Add Fuel: this month's fuel totals, a form to add a fill-up by cost, litres and cost per litre, and the list of entries so far.
     <Section
       title="Add Fuel"
       description="Enter any two values and the third will be calculated automatically."
@@ -1589,6 +1620,7 @@ function FuelEntriesEditor({ finance, isMobile }) {
       ) : (
         <div style={{ display: "grid", gap: "8px", maxHeight: "280px", overflowY: "auto", paddingRight: "4px" }}>
           {entries.map((entry) => (
+            // One fuel entry: cost, litres and cost per litre, with a Remove button.
             <div
               key={entry.id}
               style={{
@@ -1618,6 +1650,7 @@ function OutgoingAdjustmentEditor({ finance, isMobile }) {
   const month = finance.model.currentMonth;
 
   return (
+    // Outgoing Adjustments: a one-off outgoing adjustment for the month, with totals for fixed outgoings, planned payments and everything going out.
     <Section
       title="Outgoing Adjustments"
       description="One-off outgoing adjustments for this month."
@@ -1648,6 +1681,7 @@ function SavingsAccountsEditor({ finance, isMobile }) {
   const accountGroups = finance.model.savingsAccountGroups || [];
 
   return (
+    // Savings Accounts: each account's name, interest rate, opening balance and optional main group, followed by current balances.
     <Section
       title="Savings Accounts"
       description="Your savings accounts with interest rates, opening balances, and optional main savings groups. These persist across all months."
@@ -1672,6 +1706,7 @@ function SavingsAccountsEditor({ finance, isMobile }) {
         </div>
       ) : null}
       {accounts.length === 0 ? (
+        // Message shown when no savings accounts have been added.
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No savings accounts added yet.
         </div>
@@ -1680,6 +1715,7 @@ function SavingsAccountsEditor({ finance, isMobile }) {
           {accounts.map((account) => {
             const bal = accountBalances.find((b) => b.id === account.id);
             return (
+              // One savings account: name, interest rate, opening balance and main group, with a Remove button.
               <div
                 key={account.id}
                 style={{
@@ -1736,6 +1772,7 @@ function SavingsAccountsEditor({ finance, isMobile }) {
           </div>
           <div style={{ display: "grid", gap: "10px" }}>
             {accountGroups.map((group) => (
+              // One savings group: the group total followed by the balance of each account in it.
               <div key={group.id} style={{ display: "grid", gap: "8px", ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-1)" }}>
@@ -1775,6 +1812,7 @@ function SavingsTransactionsEditor({ finance, isMobile }) {
   const accountOptions = accounts.map((a) => ({ value: a.id, label: a.name || "Unnamed" }));
 
   return (
+    // Monthly Savings Activity: totals saved this month and this year, with a list of deposits, interest and withdrawals that can be added to.
     <Section
       title="Monthly Savings Activity"
       description="Add deposits, interest, or withdrawals for this month. Select the account and enter the amount."
@@ -1785,18 +1823,21 @@ function SavingsTransactionsEditor({ finance, isMobile }) {
       </StatGrid>
 
       {accounts.length === 0 ? (
+        // Message asking the user to add a savings account before logging transactions.
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           Add a savings account first before logging transactions.
         </div>
       ) : (
         <>
           {transactions.length === 0 ? (
+            // Message shown when there are no savings transactions this month.
             <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
               No savings transactions this month.
             </div>
           ) : (
             <div style={{ display: "grid", gap: "8px" }}>
               {transactions.map((txn) => (
+                // One savings transaction: account, type (deposit, interest or withdrawal) and amount, with a Remove button.
                 <div
                   key={txn.id}
                   style={{
@@ -1901,6 +1942,7 @@ function UserAccountsEditor({ finance, isMobile }) {
   };
 
   return (
+    // Accounts: bank accounts and credit cards with their type, balance and whether they show in the finance overview, plus optional credit limits.
     <Section title="Accounts" description="Add bank accounts and credit cards. These are snapshot balances for the Finance Overview widget only — they do not affect income or outgoing totals.">
       {!isMobile && accounts.length > 0 ? (
         <div
@@ -1922,12 +1964,14 @@ function UserAccountsEditor({ finance, isMobile }) {
         </div>
       ) : null}
       {accounts.length === 0 ? (
+        // Message shown when no accounts have been added.
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No accounts added yet.
         </div>
       ) : (
         <div style={{ display: "grid", gap: "8px" }}>
           {accounts.map((account) => (
+            // One account: name, type, balance and a tick box for showing it in the overview, with a Remove button.
             <div
               key={account.id}
               style={{
@@ -1978,6 +2022,7 @@ function UserAccountsEditor({ finance, isMobile }) {
             Credit limits (optional)
           </div>
           {accounts.filter((a) => a.type === "credit-card").map((account) => (
+            // Credit limit for one credit card account.
             <div
               key={account.id}
               style={{
@@ -2119,6 +2164,7 @@ export default function WidgetSettingsModal({
   const monthOptions = buildMonthOptions(settings.monthKey || activeMonthKey, 12);
 
   return (
+    // Widget settings popup: visibility and date options for the dashboard card, the settings specific to that card type, and Cancel / Save buttons.
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}
@@ -2148,7 +2194,7 @@ export default function WidgetSettingsModal({
           }}
         >
           <div style={{ display: "grid", gap: "14px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-            {/* Visibility */}
+            {/* Visibility: a tick box to show or hide this card on the dashboard. */}
             <Section title="Visibility">
               <CheckboxRow
                 label="Show this card on the dashboard"
@@ -2157,7 +2203,7 @@ export default function WidgetSettingsModal({
               />
             </Section>
 
-            {/* Date view */}
+            {/* Date view: follow the dashboard month, or pick a specific month or day for this card. */}
             <Section title="Date view" description="Control which month or day this card uses.">
               <CheckboxRow
                 label="Follow the dashboard month"
@@ -2208,6 +2254,7 @@ export default function WidgetSettingsModal({
                 updateSetting={updateSetting}
               />
             ) : (
+            // Widget options: the settings that apply to this type of card, such as income, mileage, targets, planned hours, chart source, custom title and notes, and what to include in the net position.
             <Section title="Widget options">
               <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(min(100%, 200px), 1fr))" }}>
               {"baseMonthlyIncome" in settings ? (

@@ -55,6 +55,7 @@ function ItemTile({ item, status, detail, onOpen }) {
 
 function TileSection({ title, count, children }) {
   return (
+    // Titled group of item tiles, with an optional count beside the heading.
     <LayerTheme>
       <div className={styles.sectionHead}>
         <h2 className={styles.sectionTitle}>{title}</h2>
@@ -211,6 +212,7 @@ export default function AccessQuickScreen({ store }) {
         <StatusMessage tone="warning">Stock Access needs its database migration before items can be recorded. Ask an admin to apply 20260928140000_stock_access_stores.sql.</StatusMessage>
       )}
 
+      {/* Find an item: a search box with a Scan button, shortcuts to the warranty store and store management, category tabs and any warnings. */}
       <LayerTheme>
         <div className={styles.searchRow}>
           <div className={styles.searchField}>
@@ -254,6 +256,7 @@ export default function AccessQuickScreen({ store }) {
       </LayerTheme>
 
       {myCheckouts.length > 0 && !browsing && (
+        // Items you have: the items currently checked out to you; tap one to return it.
         <TileSection title="Items you have" count={myCheckouts.length}>
           {myCheckouts.map((checkout) => {
             const item = itemsById.get(checkout.itemId);
@@ -272,6 +275,7 @@ export default function AccessQuickScreen({ store }) {
       )}
 
       {browsing ? (
+        // Search or category results: the matching items, or a message when nothing matches.
         <TileSection title={search.trim() ? "Results" : CATEGORY_TABS.find((tab) => tab.value === category)?.label} count={results.length}>
           {results.length ? (
             results.map((item) => <ItemTile key={item.id} item={item} status={statusFor(item)} detail={detailFor(item)} onOpen={openItem} />)
@@ -282,15 +286,18 @@ export default function AccessQuickScreen({ store }) {
       ) : (
         <>
           {recent.length > 0 && (
+            // Your recent items: items you have used lately, for quick access.
             <TileSection title="Your recent items">
               {recent.map((item) => <ItemTile key={item.id} item={item} status={statusFor(item)} detail={detailFor(item)} onOpen={openItem} />)}
             </TileSection>
           )}
           {common.length > 0 && (
+            // Commonly used: the store's most frequently used items.
             <TileSection title="Commonly used">
               {common.map((item) => <ItemTile key={item.id} item={item} status={statusFor(item)} detail={detailFor(item)} onOpen={openItem} />)}
             </TileSection>
           )}
+          {/* All items: every item in this store, or a message when none have been added yet. */}
           <TileSection title="All items" count={items.length}>
             {items.length ? (
               items.map((item) => <ItemTile key={item.id} item={item} status={statusFor(item)} detail={detailFor(item)} onOpen={openItem} />)

@@ -432,6 +432,7 @@ export default function AddNewJobPartPopup({
     return <div style={fieldGridStyle}><Field label="Visible in online store"><input className="app-toggle app-toggle--checkbox" type="checkbox" checked={partForm.onlineStore.isListed} onChange={(event) => setNestedPartField("onlineStore", "isListed", event.target.checked)} /></Field><Field label="Web title"><input className="app-input" value={partForm.onlineStore.webTitle} onChange={(event) => setNestedPartField("onlineStore", "webTitle", event.target.value)} /></Field><Field label="Web description"><textarea className="app-input" rows={3} value={partForm.onlineStore.webDescription} onChange={(event) => setNestedPartField("onlineStore", "webDescription", event.target.value)} /></Field><Field label="Online SKU"><input className="app-input" value={partForm.onlineStore.onlineSku} onChange={(event) => setNestedPartField("onlineStore", "onlineSku", event.target.value)} /></Field></div>;
   };
 
+  // Add new part pop-up: books a newly received part in from a supplier invoice and adds it straight to this job, with save and close buttons at the top.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -453,12 +454,14 @@ export default function AddNewJobPartPopup({
         <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: "var(--page-stack-gap)" }}>
           {error && <div className="app-status-message app-status-message--warning" role="alert">{error}</div>}
 
+          {/* Invoice details: supplier search, invoice and delivery note numbers, invoice date, price level, supplier contact and address, and invoice notes. */}
           <LayerTheme as="section" sectionKey="jobcard-parts-new-part-invoice" parentKey="shared-popup-card" gap="var(--layout-card-gap)">
             <h3 style={{ margin: 0 }}>Invoice details</h3>
             <div style={fieldGridStyle}>
               <Field label="Supplier">
                 <input className="app-input" value={supplierQuery} onChange={(event) => { setSupplierQuery(event.target.value); setInvoiceForm((current) => ({ ...current, supplierAccountId: "", supplierAccountNumber: "", supplierName: "" })); }} placeholder="Search supplier accounts" autoComplete="off" />
                 {supplierLoading && <small>Searching suppliers...</small>}
+                {/* Supplier search results: a short list of matching suppliers to pick from. */}
                 {supplierResults.length > 0 && <LayerSurface radius="var(--radius-sm)" padding="var(--space-2)" gap="var(--space-1)" style={{ marginTop: "var(--space-2)", maxHeight: "180px", overflowY: "auto" }}>{supplierResults.map((supplier) => <Button key={supplier.account_number} type="button" variant="secondary" size="sm" disabled={!supplier.linked_account_id} onClick={() => selectSupplier(supplier)} style={{ width: "100%", textAlign: "left", justifyContent: "flex-start" }}>{supplier.company_name || supplier.trading_name || supplier.account_number}{supplier.linked_account_id ? "" : " (ledger link required)"}</Button>)}</LayerSurface>}
                 {invoiceForm.supplierAccountNumber && <small>Account #{invoiceForm.supplierAccountNumber}</small>}
               </Field>
@@ -472,6 +475,7 @@ export default function AddNewJobPartPopup({
             </div>
           </LayerTheme>
 
+          {/* Part details: part number, description, quantity, retail and cost prices, bin location, discount code and franchise. */}
           <LayerTheme as="section" sectionKey="jobcard-parts-new-part-details" parentKey="shared-popup-card" gap="var(--layout-card-gap)">
             <h3 style={{ margin: 0 }}>Part details</h3>
             <div style={fieldGridStyle}>
@@ -487,9 +491,11 @@ export default function AddNewJobPartPopup({
             </div>
           </LayerTheme>
 
+          {/* Additional part information: tabs for the less common part fields such as stock, dealer, links and online store details. */}
           <LayerTheme as="section" sectionKey="jobcard-parts-new-part-advanced" parentKey="shared-popup-card" gap="var(--layout-card-gap)">
             <h3 style={{ margin: 0 }}>Additional part information</h3>
             <TabGroup className="tab-api--wrap" devSectionKey="jobcard-parts-new-part-tabs" devSectionParent="jobcard-parts-new-part-advanced" items={ADVANCED_TABS} value={activeTab} onChange={setActiveTab} ariaLabel="Additional part information" />
+            {/* The fields for whichever additional-information tab is selected. */}
             <LayerSurface radius="var(--radius-sm)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">{renderAdvancedFields()}</LayerSurface>
           </LayerTheme>
         </div>

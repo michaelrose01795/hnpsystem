@@ -62,6 +62,7 @@ export default function CustomerActivityTab({
         onAddEntry={onAddLogEntry}
       />
 
+      {/* Customer and staff activity: a searchable, filterable feed of portal requests, approvals, payments and staff changes. */}
       <LayerTheme as="section" sectionKey="customer-profile-activity" parentKey="customer-profile-tab-activity">
         <RecordHeading>{`Customer and staff activity (${filtered.length} of ${entries.length})`}</RecordHeading>
 
@@ -131,6 +132,7 @@ export default function CustomerActivityTab({
                 description="Try a different source, or clear the search."
               />
             ) : (
+              // Timeline of activity entries, each with its title, time, source and any action needed.
               <LayerSurface
                 as="div"
                 sectionKey="customer-profile-activity-timeline"

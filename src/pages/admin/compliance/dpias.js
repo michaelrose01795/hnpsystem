@@ -158,6 +158,7 @@ export default function DpiasPage() {
 
   return (
     <ComplianceLayout title="DPIAs">
+      {/* New DPIA: explains when an assessment is required and opens the form to record one. */}
       <Section title="New DPIA">
         <p style={{ margin: "0 0 10px", color: "var(--text-1)" }}>
           Required for high-risk processing: employee monitoring, CCTV, AI-assisted features
@@ -167,6 +168,7 @@ export default function DpiasPage() {
         <NewDpiaForm onCreated={load} />
       </Section>
 
+      {/* DPIA register: a table of assessments with system or feature, status, risk and next review date. */}
       <Section title="DPIA Register">
         {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>{error}</p>}
         {rows === null ? (

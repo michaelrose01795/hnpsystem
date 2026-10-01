@@ -21,13 +21,16 @@ export default function AccountsUtilitiesTab({ filter, onApplySavedView }) {
 
   return (
     <>
+      {/* Saved views: save the current report filters and recall them later. */}
       <ReportSection title="Saved views" subtitle="Save and recall a filter set (date range, granularity, search) for this report.">
         <SavedViewsBar targetRef={ACCOUNTS_VIEW_TARGET} currentFilter={filter} onApply={onApplySavedView} />
       </ReportSection>
 
+      {/* Exports and drill-downs: one card per accounts figure, for downloading or exploring the records behind it. */}
       <ReportSection title="Exports & drill-downs" subtitle="Download the contributing records behind any drillable Accounts KPI (audited CSV — financial-gated), or explore them inline.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
           {ALL_EXPORTABLE.map((kpi) => (
+            // Export card: the figure's name and identifier with Explore and download buttons.
             <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-export-card", kpi.id)} data-dev-text-preview={`${kpi.label} export card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
@@ -45,6 +48,7 @@ export default function AccountsUtilitiesTab({ filter, onApplySavedView }) {
       </ReportSection>
 
       {explore && (
+        // Drill-down results: a table of the records behind the chosen figure, shown once one has been picked.
         <ReportSection title={`Drill-down: ${explore.label}`}>
           <ReportDrilldownTable kpiId={explore.id} label={explore.label} filter={filter} onClose={() => setExplore(null)} />
         </ReportSection>

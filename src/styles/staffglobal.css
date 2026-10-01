@@ -1189,14 +1189,14 @@ html.staff-scope .app-phone-search-trigger.has-value::after {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* The tab is a solid theme-coloured stem: the --theme tint composited over
-     --surface so it stays opaque over the page, running straight down through
-     the 10px gap (::after) to join the top of the panel. */
+  /* The tab is a solid --surface stem — the same fill as the sidebar panel it
+     opens — running straight down through the 10px gap (the base ::after
+     bridge, also --surface) to join the top of the panel as one shape. */
   html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn,
   html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn:hover,
   html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn:focus-visible {
-    --btn-bg: linear-gradient(var(--theme), var(--theme)), var(--surface);
-    --btn-color: var(--accent-text-on-tint);
+    --btn-bg: var(--surface);
+    --btn-color: var(--accentText);
   }
 
   html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn {
@@ -1208,8 +1208,12 @@ html.staff-scope .app-phone-search-trigger.has-value::after {
     padding: 0;
   }
 
-  html.staff-scope .app-portrait-sidebar-assembly--compact .app-portrait-sidebar__close-tab.app-btn::after {
-    background: linear-gradient(var(--theme), var(--theme)), var(--surface);
+  /* Menu only: its tab sits over the panel's rounded top-left corner, so the
+     stem runs 5px further down to cover the notch where that curve starts. */
+  html.staff-scope
+    .app-portrait-sidebar-assembly--compact:not(.app-portrait-sidebar-assembly--status)
+    .app-portrait-sidebar__close-tab.app-btn::after {
+    height: 16px; /* 11px bridge + 5px over the panel corner curve. */
   }
 
   /* The panel runs out to the page gutter, so no tab sits on one of its corners
@@ -6942,7 +6946,12 @@ html.staff-scope .app-mobile-sidebar-backdrop {
 }
 
 html.staff-scope .popup-backdrop {
+  /* Two gaps, not one: --popup-viewport-gap is the top / bottom gap (and what
+     every popup height is measured against); --popup-viewport-gap-x is the
+     left / right gap. They are equal here and only part company on a phone,
+     where the top / bottom gap grows to clear the notch and the sides must not. */
   --popup-viewport-gap: clamp(10px, 2.5vw, 20px);
+  --popup-viewport-gap-x: var(--popup-viewport-gap);
   position: fixed;
   top: 0;
   left: 0;
@@ -6959,7 +6968,7 @@ html.staff-scope .popup-backdrop {
   z-index: var(--z-modal) !important;
   overflow: hidden;
   overscroll-behavior: contain;
-  padding: var(--popup-viewport-gap);
+  padding: var(--popup-viewport-gap) var(--popup-viewport-gap-x);
 }
 
 html.staff-scope .app-section-card,
@@ -6987,7 +6996,7 @@ html.staff-scope .popup-card {
   box-shadow: none;
   position: relative;
   width: min(100%, 960px);
-  max-width: calc(100vw - (var(--popup-viewport-gap) * 2));
+  max-width: calc(100vw - (var(--popup-viewport-gap-x) * 2));
   max-height: calc(100dvh - (var(--popup-viewport-gap) * 2));
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -6996,7 +7005,7 @@ html.staff-scope .popup-card {
 }
 
 html.staff-scope .popup-backdrop > * {
-  max-width: calc(100vw - (var(--popup-viewport-gap) * 2));
+  max-width: calc(100vw - (var(--popup-viewport-gap-x) * 2));
   max-height: calc(100dvh - (var(--popup-viewport-gap) * 2));
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -7007,21 +7016,26 @@ html.staff-scope .popup-backdrop > * {
   html.staff-scope .popup-backdrop,
   html.staff-scope [aria-modal="true"].popup-backdrop,
   html.staff-scope [data-modal-portal="true"] > .popup-backdrop {
-    /* Keep every shared popup card at least 10px from a portrait viewport edge. */
+    /* Keep every shared popup card 10px from a portrait viewport edge. Only the
+       top / bottom gap takes the notch / home-indicator inset: fed into the side
+       gap as well, a 47–59px status bar became a 47–59px margin down each side
+       and the card lost a quarter of a phone's width. The sides clear the
+       left / right insets instead, which are 0 on a portrait phone. */
     --popup-viewport-gap: max(10px, env(safe-area-inset-top), env(safe-area-inset-bottom));
+    --popup-viewport-gap-x: max(10px, env(safe-area-inset-left), env(safe-area-inset-right));
     width: 100vw !important;
     height: 100dvh !important;
     max-height: 100dvh !important;
     align-items: center !important;
     justify-content: center !important;
     overflow: hidden !important;
-    padding: var(--popup-viewport-gap) !important;
+    padding: var(--popup-viewport-gap) var(--popup-viewport-gap-x) !important;
   }
 
   html.staff-scope .popup-card,
   html.staff-scope .popup-backdrop > * {
-    width: min(100%, calc(100vw - (var(--popup-viewport-gap) * 2))) !important;
-    max-width: calc(100vw - (var(--popup-viewport-gap) * 2)) !important;
+    width: min(100%, calc(100vw - (var(--popup-viewport-gap-x) * 2))) !important;
+    max-width: calc(100vw - (var(--popup-viewport-gap-x) * 2)) !important;
     max-height: calc(100dvh - (var(--popup-viewport-gap) * 2)) !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
@@ -7038,7 +7052,7 @@ html.staff-scope .video-editor-backdrop {
 
 html.staff-scope .video-editor-popup {
   width: min(100%, var(--video-editor-max-width, 520px));
-  max-width: min(var(--video-editor-max-width, 520px), calc(100vw - (var(--popup-viewport-gap) * 2)));
+  max-width: min(var(--video-editor-max-width, 520px), calc(100vw - (var(--popup-viewport-gap-x) * 2)));
   background: var(--surface);
   color: var(--surfaceText);
   border: 1px solid transparent;
@@ -10523,9 +10537,11 @@ html.staff-scope .app-filter__label {
    time pickers, the modal and drawer family — takes the whole screen, less one
    gap on every side so it still reads as a floating card.
 
-   The gap is --popup-viewport-gap (10px, or the notch / home-indicator inset
-   when that is larger), the same token .popup-backdrop already pads with. Change
-   it there and here and every popup follows.
+   The gap is the pair .popup-backdrop already pads with: --popup-viewport-gap-x
+   on the left and right (10px — the full width of the phone, less 10px a side)
+   and --popup-viewport-gap on the top and bottom (10px, or the notch /
+   home-indicator inset when that is larger). Change them there and here and
+   every popup follows.
 
    Several of these surfaces are placed by JS with inline left / top / width /
    height / max-height (Notes remembers where you dragged it; Filter anchors to
@@ -10547,6 +10563,7 @@ html.staff-scope .app-filter__label {
 @media (max-width: 640px) and (orientation: portrait) {
   html.staff-scope {
     --popup-viewport-gap: max(10px, env(safe-area-inset-top), env(safe-area-inset-bottom));
+    --popup-viewport-gap-x: max(10px, env(safe-area-inset-left), env(safe-area-inset-right));
   }
 
   /* Popup cards sit in the .popup-backdrop flex box, which already pads by the
@@ -10591,7 +10608,7 @@ html.staff-scope .app-filter__label {
   html.staff-scope .app-drawer__panel,
   html.staff-scope [data-phone-popup="fill"] {
     position: fixed;
-    inset: var(--popup-viewport-gap) !important;
+    inset: var(--popup-viewport-gap) var(--popup-viewport-gap-x) !important;
     width: auto !important;
     height: auto !important;
     min-width: 0;
@@ -10709,6 +10726,13 @@ html.staff-scope .app-filter__label {
     flex: 1 1 auto;
     max-height: none;
     min-height: 0;
+  }
+
+  /* Toasts are not popups — they keep their own height and their place under
+     the topbar — but they float over the page, so they share the side gap. */
+  html.staff-scope .app-toast-stack {
+    right: var(--popup-viewport-gap-x);
+    left: var(--popup-viewport-gap-x);
   }
 }
 

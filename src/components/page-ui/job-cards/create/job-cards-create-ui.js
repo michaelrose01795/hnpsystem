@@ -138,6 +138,7 @@ export default function CreateJobCardPageUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
+      {/* Create Job Card page: the header, the job, vehicle and customer cards, the job requests list and the extra options along the bottom. */}
       <DevLayoutSection sectionKey="job-cards-create-page-shell" sectionType="page-shell" shell widthMode="page" style={{
     height: "100%",
     display: "flex",
@@ -145,7 +146,7 @@ export default function CreateJobCardPageUi(props) {
     padding: 0,
     overflow: "hidden"
   }}>
-        {/* ✅ Header Section - Modern Design */}
+        {/* Header bar: tabs for each linked job card being created (with add and remove), a summary of the detected request types, the job source badge and the Save button. */}
         <DevLayoutSection sectionKey="job-cards-create-header" sectionType="toolbar" parentKey="job-cards-create-page-shell" style={{
       display: "flex",
       justifyContent: "space-between",
@@ -270,7 +271,7 @@ export default function CreateJobCardPageUi(props) {
           </div>
         </DevLayoutSection>
 
-        {/* ✅ Sub-job Mode Banner */}
+        {/* Sub-job banner: explains that this job is being created as a sub-job of an existing job and inherits its customer and vehicle, with a button to view the prime job. */}
         {isSubJobMode && primeJobData && <LayerTheme sectionKey="job-cards-create-subjob-banner" sectionType="status-banner" parentKey="job-cards-create-page-shell" padding="12px 16px" radius="var(--radius-xs)" style={{
       marginBottom: "8px",
       flexDirection: "row",
@@ -297,21 +298,21 @@ export default function CreateJobCardPageUi(props) {
             </Button>
           </LayerTheme>}
 
-        {/* ✅ Content Area */}
+        {/* Main content: the three detail cards, the job requests and the bottom row of options. */}
         <DevLayoutSection sectionKey="job-cards-create-content" sectionType="section-shell" parentKey="job-cards-create-page-shell" shell style={{
       flex: 1,
       display: "flex",
       flexDirection: "column",
       gap: "16px"
     }}>
-          {/* ✅ NEW LAYOUT: Top Row - Job Information, Vehicle Details, Customer Details (all 33% width) */}
+          {/* Top row: the Job Information, Vehicle Details and Customer Details cards side by side. */}
           <DevLayoutSection sectionKey="job-cards-create-top-row" sectionType="section-shell" parentKey="job-cards-create-content" shell className="job-cards-create-aligned-top-row" style={{
         display: "flex",
         flexWrap: "wrap",
         gap: "16px",
         width: "100%"
       }}>
-            {/* Job Information Section - responsive, min 260px */}
+            {/* Job Information: choose the customer status (waiting, loan car, collection or neither), the job source (retail or warranty) and whether the job suits a mobile mechanic. */}
             <LayerTheme sectionKey="job-cards-create-job-information" sectionType="content-card" parentKey="job-cards-create-top-row" className="job-cards-create-aligned-card job-cards-create-aligned-card--job" radius="var(--radius-md)" gap="16px" style={{
           flex: "1 1 260px",
           minWidth: 0,
@@ -370,6 +371,7 @@ export default function CreateJobCardPageUi(props) {
 
             {/* Vehicle Details Section - responsive, min 260px. Outer ref div hosts the ResizeObserver target; inner VehicleDetailsCard paints the surface. */}
             <div ref={vehicleSectionRef} className="job-cards-create-aligned-card-wrap job-cards-create-aligned-card-wrap--vehicle" style={{ flex: "1 1 260px", minWidth: 0, display: "flex" }}>
+              {/* Vehicle Details: enter a registration to look up the vehicle and show its details. */}
               <VehicleDetailsCard
                 sectionKey="job-cards-create-vehicle-details"
                 parentKey="job-cards-create-top-row"
@@ -385,7 +387,7 @@ export default function CreateJobCardPageUi(props) {
               />
             </div>
 
-            {/* Customer Details Section - responsive, min 260px */}
+            {/* Customer Details: pick an existing customer or add a new one, then view or edit their contact details. */}
             <CustomerDetailsCard
               sectionKey="job-cards-create-customer-details"
               parentKey="job-cards-create-top-row"
@@ -409,7 +411,7 @@ export default function CreateJobCardPageUi(props) {
             />
           </DevLayoutSection>
 
-          {/* ✅ Job Requests Section - Full Width */}
+          {/* Job Requests: the list of work the customer has asked for, with a button to add another request. */}
           <LayerTheme sectionKey="job-cards-create-job-requests" sectionType="section-shell" parentKey="job-cards-create-content" radius="var(--radius-md)">
             <div style={{
           display: "flex",
@@ -430,6 +432,7 @@ export default function CreateJobCardPageUi(props) {
           overflowY: "auto",
           paddingRight: "4px"
         }}>
+              {/* One request row: the request text with suggestions, labour hours and cost, plus buttons for question prompts and more details. */}
               {requests.map((req, i) => <LayerSurface key={`job-request-row-${i}`} sectionKey={`job-cards-create-job-request-${i + 1}`} sectionType="content-card" parentKey="job-cards-create-job-requests" radius="var(--radius-sm)" padding="10px" style={{
             marginBottom: "10px"
           }}>
@@ -527,8 +530,9 @@ export default function CreateJobCardPageUi(props) {
             </div>
           </LayerTheme>
 
-          {/* ✅ Bottom Row: Cosmetic Damage, Add VHC, Full Car Details */}
+          {/* Bottom row: cards for cosmetic damage, wash, health check and documents. */}
           <DevLayoutSection sectionKey="job-cards-create-bottom-row" sectionType="section-shell" parentKey="job-cards-create-content" shell className="job-cards-create-bottom-row">
+            {/* Cosmetic Damage: a yes/no choice, with a notes box for describing scratches or dents when yes. */}
             <LayerTheme sectionKey="job-cards-create-cosmetic-damage" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px">
               <div className="job-cards-create-bottom-card-header" style={{
             display: "flex",
@@ -548,6 +552,7 @@ export default function CreateJobCardPageUi(props) {
               </div>
               {cosmeticDamagePresent && <BufferedInput as="textarea" value={cosmeticNotes} onChange={next => setCosmeticNotes(next)} placeholder="Describe any scratches, dents, or cosmetic damage..." className="app-input app-input--textarea cosmetic-notes-active" />}
             </LayerTheme>
+            {/* Wash: a yes/no choice for whether the vehicle should be washed. */}
             <LayerTheme sectionKey="job-cards-create-wash" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px" style={{
           justifyContent: "space-between"
         }}>
@@ -567,6 +572,7 @@ export default function CreateJobCardPageUi(props) {
                 </div>
               </div>
             </LayerTheme>
+            {/* VHC Required?: a yes/no choice for whether a vehicle health check is needed. */}
             <LayerTheme sectionKey="job-cards-create-vhc-required" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px">
               <div className="job-cards-create-bottom-card-header" style={{
             display: "flex",
@@ -584,6 +590,7 @@ export default function CreateJobCardPageUi(props) {
                 </div>
               </div>
             </LayerTheme>
+            {/* Documents: a button that opens the popup for uploading and managing files for the job. */}
             <LayerTheme sectionKey="job-cards-create-documents" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px" style={{
           justifyContent: "space-between"
         }}>
@@ -619,6 +626,7 @@ export default function CreateJobCardPageUi(props) {
         {/* Question Prompts popup — rendered once per page, opens for the
             request row whose index is stored in questionPromptsIndex. */}
         <QuestionPromptsPopup open={questionPromptsIndex !== null} onClose={() => setQuestionPromptsIndex(null)} requestText={questionPromptsIndex !== null ? String(requests?.[questionPromptsIndex]?.text || "") : ""} requestIndex={questionPromptsIndex} />
+        {/* Request details popup: edit one request's description, labour time, prices, discount, account type, special labour rate and internal notes, or remove it. */}
         {moreRequestIndex !== null && moreRequest && <PopupModal
           isOpen
           onClose={() => setMoreRequestIndex(null)}
@@ -684,6 +692,7 @@ export default function CreateJobCardPageUi(props) {
                 </div>
               </div>
           </PopupModal>}
+        {/* Job Requests popup: lists every entered request with the job types detected for it. */}
         {showDetectedRequestsPopup && <PopupModal
           isOpen
           onClose={() => setShowDetectedRequestsPopup(false)}
@@ -710,6 +719,7 @@ export default function CreateJobCardPageUi(props) {
           }}>
                   {populatedRequests.map(request => {
               const requestDetections = visibleJobDetections.filter(detection => Number(detection.requestIndex) === request.index);
+              // One request in the popup: its number, detected job type badges and the request text.
               return <LayerTheme key={`detected-request-popup-${request.index}`} radius="var(--radius-sm)" padding="14px 16px" style={{
                 display: "grid",
                 gap: "10px"

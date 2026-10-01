@@ -16,6 +16,7 @@ import { reportDevKey } from "../reportDevOverlay";
 function PerformanceTrendCard({ kpiId, label, unit, format, filter, granularity, granularityLabel }) {
   const trend = useKpiTrend(kpiId, { ...filter, granularity }, { enabled: true });
   const devSectionKey = reportDevKey("report-trend-card", `${kpiId}-${granularity}`);
+  // Trend card: a small chart of one workshop measure over time, labelled with the measure and whether it is daily, weekly or monthly.
   return (
     <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={devSectionKey} data-dev-text-preview={`${label} ${granularityLabel}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -30,12 +31,15 @@ function PerformanceTrendCard({ kpiId, label, unit, format, filter, granularity,
 export default function WorkshopOverviewTab({ filter, onDrilldown }) {
   return (
     <>
+      {/* Department scorecard: the headline workshop figures for the selected period, each of which can be clicked to see the records behind it. */}
       <ReportSection title="Department scorecard" subtitle="Headline Workshop KPIs for the selected period (live-correct, exact counts).">
         <KpiScorecardStrip kpis={OVERVIEW_SCORECARD} filter={filter} onDrilldown={onDrilldown} showProvenance={false} />
       </ReportSection>
 
+      {/* Performance summary: jobs completed and labour sales charted by day, week and month. */}
       <ReportSection title="Performance summary" subtitle="Jobs completed and labour sales, re-bucketed daily, weekly and monthly.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          {/* Six trend charts: jobs completed and labour sales, each shown daily, weekly and monthly. */}
           <PerformanceTrendCard kpiId="wsh.jobs_completed" label="Jobs completed" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <PerformanceTrendCard kpiId="wsh.jobs_completed" label="Jobs completed" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <PerformanceTrendCard kpiId="wsh.jobs_completed" label="Jobs completed" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

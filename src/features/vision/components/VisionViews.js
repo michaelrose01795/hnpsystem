@@ -43,6 +43,7 @@ function KpiStrip() {
   return (
     <div style={styles.sectionGrid}>
       {mockKpis.map((kpi) => (
+        // Headline figure tile: one mock KPI with its label, current value and trend badge.
         <LayerTheme key={kpi.label} padding="var(--section-card-padding-sm)">
           <span style={styles.small}>{kpi.label}</span>
           <strong style={{ fontSize: "1.7rem" }}>{kpi.value}</strong>
@@ -56,6 +57,7 @@ function KpiStrip() {
 export function VisionHome() {
   return (
     <>
+      {/* Overview panel: introduces the mock-only dealership operating system concept and shows the strip of headline KPI tiles. */}
       <LayerSurface>
         <div style={styles.between}>
           <div>
@@ -66,11 +68,13 @@ export function VisionHome() {
         </div>
         <KpiStrip />
       </LayerSurface>
+      {/* System map preview: the layers of the system shown as a left-to-right flow, with a button to open the full system map. */}
       <LayerSurface>
         <h2 style={styles.h2}>System Map</h2>
         <div style={styles.flow}>
           {visionLayers.map((layer, index) => (
             <React.Fragment key={layer.title}>
+              {/* One layer in the flow: its title, a short description and its first three items as badges. */}
               <LayerTheme padding="var(--section-card-padding-sm)">
                 <h3 style={styles.h3}>{layer.title}</h3>
                 <p style={styles.small}>{layer.description}</p>
@@ -82,11 +86,13 @@ export function VisionHome() {
         </div>
         <Link className="app-btn app-btn--primary" href="/vision/system-map">Open system map</Link>
       </LayerSurface>
+      {/* Department cards panel: a grid of links, one per department, leading to that department's Vision page. */}
       <LayerSurface>
         <h2 style={styles.h2}>Department Cards</h2>
         <div style={styles.sectionGrid}>
           {visionDepartments.map((department) => (
             <Link key={department.slug} href={`/vision/${department.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
+              {/* Department card: the department name, its pressure badge, headline metric and a short summary. */}
               <LayerTheme padding="var(--section-card-padding-sm)">
                 <div style={styles.between}>
                   <h3 style={styles.h3}>{department.title}</h3>
@@ -99,6 +105,7 @@ export function VisionHome() {
           ))}
         </div>
       </LayerSurface>
+      {/* Layer cards panel: four cards introducing the intelligence, workflow, communication and management layers. */}
       <LayerSurface>
         <h2 style={styles.h2}>Layer Cards</h2>
         <div style={styles.wideGrid}>
@@ -108,6 +115,7 @@ export function VisionHome() {
             ["Communication layer", "Drafts, mentions, importance, trigger messages, and timelines.", "/vision/communication-layer"],
             ["Management layer", "Pressure, capacity, revenue opportunity, forecasts, and daily summary.", "/vision/management"],
           ].map(([title, description, href]) => (
+            // Layer card: the layer's name, a one-line description and an Explore button that opens its page.
             <LayerTheme key={title}>
               <h3 style={styles.h3}>{title}</h3>
               <p style={styles.small}>{description}</p>
@@ -122,10 +130,12 @@ export function VisionHome() {
 
 export function SystemMapView() {
   return (
+    // Full system map: every layer of the proposed dealership operating system laid out as a grid of cards.
     <LayerSurface>
       <h2 style={styles.h2}>Layered Dealership Operating System</h2>
       <div style={styles.wideGrid}>
         {visionLayers.map((layer, index) => (
+          // Layer card: the layer's title, a mock status badge, description and the complete list of items it covers.
           <LayerTheme key={layer.title}>
             <div style={styles.between}>
               <h3 style={styles.h3}>{layer.title}</h3>
@@ -146,10 +156,12 @@ export function WorkflowCoordinationView() {
   const selected = mockWorkflowEvents.find((event) => event.id === selectedId);
   return (
     <>
+      {/* Mock workflow events: a grid of example events to pick from, each of which can be opened in the detail panel below. */}
       <LayerSurface>
         <h2 style={styles.h2}>Mock Workflow Events</h2>
         <div style={styles.wideGrid}>
           {mockWorkflowEvents.map((event) => (
+            // Workflow event card: the event title, vehicle, current status and an Open detail button.
             <LayerTheme key={event.id}>
               <h3 style={styles.h3}>{event.title}</h3>
               <p style={styles.small}>{event.vehicle}</p>
@@ -161,6 +173,7 @@ export function WorkflowCoordinationView() {
           ))}
         </div>
       </LayerSurface>
+      {/* Selected event detail: the chosen event's department and vehicle, what it triggered, and buttons to move it through mock statuses. */}
       <LayerSurface>
         <div style={styles.between}>
           <div>
@@ -170,8 +183,11 @@ export function WorkflowCoordinationView() {
           <span style={styles.badge}>{status}</span>
         </div>
         <div style={styles.sectionGrid}>
+          {/* Tasks created: the list of tasks this event would raise. */}
           <LayerTheme><h3 style={styles.h3}>Tasks Created</h3><ul style={styles.list}>{selected.created.map((item) => <li key={item}>{item}</li>)}</ul></LayerTheme>
+          {/* Messages: the list of messages this event would send. */}
           <LayerTheme><h3 style={styles.h3}>Messages</h3><ul style={styles.list}>{selected.messages.map((item) => <li key={item}>{item}</li>)}</ul></LayerTheme>
+          {/* Dependency checks: the list of checks this event would run. */}
           <LayerTheme><h3 style={styles.h3}>Dependency Checks</h3><ul style={styles.list}>{selected.checks.map((item) => <li key={item}>{item}</li>)}</ul></LayerTheme>
         </div>
         <div style={styles.row}>
@@ -190,12 +206,14 @@ export function WorkflowCoordinationView() {
 export function OperationalArchitectureView() {
   const group = featureGroups["operational-intelligence"];
   return (
+    // Shared intelligence architecture: an introduction followed by the intelligence features shown as a connected flow.
     <LayerSurface>
       <h2 style={styles.h2}>Shared Intelligence Architecture</h2>
       <p style={styles.muted}>{group.intro}</p>
       <div style={styles.flow}>
         {group.features.map((feature, index) => (
           <React.Fragment key={feature}>
+            {/* One intelligence feature in the flow, with a note that it is a mock service boundary. */}
             <LayerTheme padding="var(--section-card-padding-sm)">
               <h3 style={styles.h3}>{feature}</h3>
               <p style={styles.small}>Mock service boundary with reviewable outputs and stable UI labels.</p>
@@ -214,6 +232,7 @@ export function CommunicationLayerView() {
   const selected = mockCustomerMessages[messageIndex];
   return (
     <>
+      {/* Mock message composer: choose a customer, edit the suggested draft message, then reset, mark as reviewed or clear it. */}
       <LayerSurface>
         <div style={styles.between}>
           <div>
@@ -250,6 +269,7 @@ export function GenericFeatureView({ slug, compact = false }) {
   const visibleSummaries = compact ? mockSummaries.slice(0, 1) : mockSummaries.slice(0, 2);
   if (!group) return null;
   return (
+    // Feature area panel: the area's title and introduction with four cards covering its features, mock records, alerts and summaries.
     <LayerSurface padding={compact ? "var(--section-card-padding-sm)" : "var(--section-card-padding)"}>
       {!compact && (
         <div>
@@ -258,6 +278,7 @@ export function GenericFeatureView({ slug, compact = false }) {
         </div>
       )}
       <div style={styles.sectionGrid}>
+        {/* Features: buttons for the planned capabilities in this area; selecting one shows an example of how it would surface. */}
         <LayerTheme padding="var(--section-card-padding-sm)">
           <h3 style={styles.h3}>Features</h3>
           <p style={styles.small}>The planned capability set for this area, shown as short reviewable feature signals.</p>
@@ -278,10 +299,12 @@ export function GenericFeatureView({ slug, compact = false }) {
           {focusedFeature && <p style={styles.small}>Example: {focusedFeature} would surface as Analysis, Review, and Suggested Actions inside the future workflow.</p>}
         </LayerTheme>
 
+        {/* Mock records: example jobs, enquiries, parts or stock records used only to illustrate this area. */}
         <LayerTheme padding="var(--section-card-padding-sm)">
           <h3 style={styles.h3}>Mock Records</h3>
           <p style={styles.small}>Example jobs, enquiries, parts, VHC items, or stock records used only for this Vision area.</p>
           {records.map((record) => (
+            // One mock record: its title, status badge and a line of detail.
             <LayerSurface key={record.title} padding="var(--space-3)" radius="var(--radius-sm)">
               <div style={styles.between}>
                 <strong>{record.title}</strong>
@@ -292,12 +315,14 @@ export function GenericFeatureView({ slug, compact = false }) {
           ))}
         </LayerTheme>
 
+        {/* Alerts: short operational warnings that can be acknowledged or reopened in the mock. */}
         <LayerTheme padding="var(--section-card-padding-sm)">
           <h3 style={styles.h3}>Alerts</h3>
           <p style={styles.small}>Short operational warnings with a mock acknowledgement state.</p>
           {visibleAlerts.map((alert, index) => {
             const isAcknowledged = acknowledgedAlerts.includes(alert);
             return (
+              // One alert: its open or acknowledged state, the warning text, a suggested action and the acknowledge button.
               <LayerSurface key={alert} padding="var(--space-3)" radius="var(--radius-sm)">
                 <div style={styles.between}>
                   <strong>Example alert</strong>
@@ -318,14 +343,17 @@ export function GenericFeatureView({ slug, compact = false }) {
           })}
         </LayerTheme>
 
+        {/* Summary: example generated summaries for managers, advisors and department leads. */}
         <LayerTheme padding="var(--section-card-padding-sm)">
           <h3 style={styles.h3}>Summary</h3>
           <p style={styles.small}>Generated mock summaries for managers, advisors, and department leads.</p>
           {visibleSummaries.map((summary) => (
+            // One generated summary paragraph.
             <LayerSurface key={summary} padding="var(--space-3)" radius="var(--radius-sm)">
               <p style={styles.small}>{summary}</p>
             </LayerSurface>
           ))}
+          {/* Manager summary: the daily manager summary title and its first line. */}
           <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)">
             <strong>{mockManagerSummary.title}</strong>
             <p style={styles.small}>{mockManagerSummary.lines[0]}</p>
@@ -338,11 +366,13 @@ export function GenericFeatureView({ slug, compact = false }) {
 
 export function FuturePlatformView() {
   return (
+    // Future architecture vision board: an introduction and a grid of longer-term platform concepts.
     <LayerSurface>
       <h2 style={styles.h2}>Future Architecture Vision Board</h2>
       <p style={styles.muted}>{featureGroups["future-platform"].intro}</p>
       <div style={styles.wideGrid}>
         {featureGroups["future-platform"].features.map((feature, index) => (
+          // Platform concept card: its number, name and description.
           <LayerTheme key={feature}>
             <span style={styles.badge}>Platform concept {index + 1}</span>
             <h3 style={styles.h3}>{feature}</h3>
@@ -357,10 +387,12 @@ export function FuturePlatformView() {
 export function RoadmapView() {
   const [activeStage, setActiveStage] = useState(0);
   return (
+    // Staged roadmap: the delivery stages as a grid of cards, with one stage highlighted for review.
     <LayerSurface>
       <h2 style={styles.h2}>Staged Roadmap</h2>
       <div style={styles.wideGrid}>
         {roadmapStages.map((stage, index) => (
+          // Roadmap stage card: the stage name, whether it is in view or later, what it involves and a Review stage button.
           <LayerTheme key={stage}>
             <div style={styles.between}>
               <h3 style={styles.h3}>{stage}</h3>

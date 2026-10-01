@@ -58,6 +58,7 @@ export default function ComplianceDashboardPage() {
   const draftDpias = dpias.filter((d) => d.status === "draft" || d.status === "in_review");
 
   const card = (label, count, hint) => (
+    // Count tile: a label, a large number and an optional hint about the deadline that applies.
     <LayerSurface
       radius="var(--radius-sm, 8px)"
       padding="16px"
@@ -76,6 +77,7 @@ export default function ComplianceDashboardPage() {
 
   return (
     <ComplianceLayout title="Dashboard">
+      {/* At a glance: counts of open subject access requests, open data breaches and impact assessments in draft or review. */}
       <Section title="At a Glance">
         {error && (
           <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>
@@ -89,6 +91,7 @@ export default function ComplianceDashboardPage() {
         </div>
       </Section>
 
+      {/* Nearest deadlines: the eight open subject access requests due soonest, with their type, due date and status. */}
       <Section title="Nearest SAR Deadlines">
         {openSars.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No open subject requests.</p>
@@ -107,6 +110,7 @@ export default function ComplianceDashboardPage() {
         )}
       </Section>
 
+      {/* Open breaches: each unresolved data breach, when it was detected and how many hours of the 72-hour reporting window have passed. */}
       <Section title="Open Breaches — ICO 72h Window">
         {openBreaches.length === 0 ? (
           <p style={{ margin: 0, color: "var(--text-1)" }}>No open breaches.</p>

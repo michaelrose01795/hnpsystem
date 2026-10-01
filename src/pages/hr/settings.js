@@ -25,6 +25,7 @@ function SettingsContent() {
         </p>
       </header>
 
+      {/* Company policies: a form to upload a policy document with a title and category, plus the list of existing policies. */}
       <SectionCard layer="theme"
         sectionKey="hr-settings-company-policies" parentKey="hr-manager-tab-settings"
         title="Company Policies"
@@ -55,6 +56,7 @@ function SettingsContent() {
           </div>
         </form>
         {showPresentationMock ? (
+          // Policies table: each policy's name, category, last update and status.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell style={{ marginTop: "var(--space-md)" }}>
               <table className="app-data-table">
@@ -82,6 +84,7 @@ function SettingsContent() {
         ) : null}
       </SectionCard>
 
+      {/* Shift patterns and break rules: default shift length, break entitlement and the weekly overtime threshold. */}
       <SectionCard layer="theme"
         sectionKey="hr-settings-shift-patterns" parentKey="hr-manager-tab-settings"
         title="Shift Patterns & Break Rules"
@@ -117,12 +120,14 @@ function SettingsContent() {
         </div>
       </SectionCard>
 
+      {/* Role-based access: which staff roles can use which HR modules. */}
       <SectionCard layer="theme"
         sectionKey="hr-settings-role-based-access" parentKey="hr-manager-tab-settings"
         title="Role-Based Access"
         subtitle="Control which roles can access HR functionality.">
         
         {showPresentationMock ? (
+          // Access table: role, modules and level of access.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">
@@ -154,6 +159,7 @@ function SettingsContent() {
         )}
       </SectionCard>
 
+      {/* Notification settings: switches for email alerts on overtime, leave approvals, training expiries, disciplinary follow-ups and recruitment. */}
       <SectionCard layer="theme"
         sectionKey="hr-settings-notifications" parentKey="hr-manager-tab-settings"
         title="Notification Settings"
@@ -192,6 +198,7 @@ export default function HrSettingsPolicies() {
 // row back on --surface (CLAUDE.md 3.0a-2).
 function ToggleSetting({ label, defaultChecked }) {
   return (
+    // A single notification switch: a tick box with its label.
     <LayerSurface
       as="label"
       radius="var(--radius-sm)"

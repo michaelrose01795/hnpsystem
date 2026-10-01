@@ -22,6 +22,7 @@ import { logFailure } from "@/lib/utils/logFailure";
 // MetricCard — single stat tile. Lives inside a themed section (LayerTheme)
 // on this dashboard, so per the strict alternation rule it renders as a LayerSurface.
 const MetricCard = ({ label, value, helper }) => (
+  // Metric card: one headline parts figure with its label and an optional helper line.
   <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 180 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
@@ -56,6 +57,7 @@ const humanizeStatusLabel = (value) => {
 
 // ListBlock — list block inside a themed section (LayerTheme), renders as LayerSurface.
 const ListBlock = ({ title, items }) => (
+  // List block: a titled list of parts requests showing each request number and its status, or "No records yet".
   <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
     <p style={{ margin: 0, fontWeight: 600, color: "var(--text-accent)" }}>{title}</p>
     {(items || []).length === 0 ?

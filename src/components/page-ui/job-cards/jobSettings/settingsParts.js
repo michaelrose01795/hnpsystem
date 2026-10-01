@@ -14,6 +14,7 @@ import { SETTINGS_REASON_MIN_LENGTH } from "@/features/jobCards/workflow/jobSett
 
 /** One titled card inside a settings section. */
 export function SettingsCard({ sectionKey, title, actions, children }) {
+  // Titled settings card: a heading with optional action buttons, followed by the settings content it is given.
   return (
     <LayerTheme
       as="section"

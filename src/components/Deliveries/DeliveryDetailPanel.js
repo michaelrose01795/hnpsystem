@@ -108,6 +108,7 @@ export default function DeliveryDetailPanel({
 
   if (!delivery) {
     return (
+      // Empty detail panel: shows the route map and prompts the user to choose a stop to see its details.
       <LayerTheme
         as="section"
         sectionKey="parts-deliveries-detail"
@@ -148,6 +149,7 @@ export default function DeliveryDetailPanel({
   ];
 
   return (
+    // Delivery detail panel: everything about the selected stop - contact, items, driver assignment, picking, proof of delivery and history.
     <LayerTheme
       as="section"
       sectionKey="parts-deliveries-detail"
@@ -175,7 +177,7 @@ export default function DeliveryDetailPanel({
       </div>
 
       <div style={deliveryStyles.detailScroll}>
-        {/* Contact + address */}
+        {/* Delivery summary: reference, date, time window, value and address, with buttons to call the customer or open directions. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
           <div style={deliveryStyles.detailGrid}>
             <Field label="Reference">{deliveryReference(delivery)}</Field>
@@ -241,7 +243,7 @@ export default function DeliveryDetailPanel({
           </div>
         </LayerSurface>
 
-        {/* Items */}
+        {/* Items: the parts or packages included in this delivery. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
           <span style={deliveryText.label}>Items</span>
           {items.length === 0 ? (
@@ -285,7 +287,7 @@ export default function DeliveryDetailPanel({
           ) : null}
         </LayerSurface>
 
-        {/* Assignment */}
+        {/* Assignment: choose the driver and vehicle for this delivery (or view them if the user cannot assign). */}
         {canAssign ? (
           <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
             <span style={deliveryText.label}>Assignment</span>
@@ -360,7 +362,7 @@ export default function DeliveryDetailPanel({
           </LayerSurface>
         )}
 
-        {/* Picking + notes */}
+        {/* Picking and notes: record the number of packages and any missing items, and add delivery notes such as a gate code. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
           <span style={deliveryText.label}>Picking and notes</span>
           {canPick ? (
@@ -420,7 +422,7 @@ export default function DeliveryDetailPanel({
           </label>
         </LayerSurface>
 
-        {/* Proof of delivery */}
+        {/* Proof of delivery: who received the goods and when it was captured. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
           <span style={deliveryText.label}>Proof of delivery</span>
           {delivery.pod_recipient_name ? (
@@ -467,7 +469,7 @@ export default function DeliveryDetailPanel({
           ) : null}
         </LayerSurface>
 
-        {/* History */}
+        {/* History: the timestamps for each step the delivery has passed through. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-sm)" radius="var(--radius-sm)">
           <span style={deliveryText.label}>History</span>
           <div style={deliveryStyles.cellInline}>

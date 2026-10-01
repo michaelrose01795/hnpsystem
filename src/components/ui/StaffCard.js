@@ -32,6 +32,7 @@ export default function StaffCard({
   const cardClassName = `app-staff-card app-staff-card--${resolvedVariant} ${className}`.trim();
 
   return (
+    // Staff card: an optional title, subtitle and action in the header, followed by the card's content.
     <LayerComponent className={cardClassName} style={style} {...rest}>
       {(title || subtitle || action) && (
         <div className="app-staff-card__header">

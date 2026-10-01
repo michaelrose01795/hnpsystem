@@ -103,24 +103,36 @@ export default function OverviewPanel({
 
   return (
     <>
+      {/* Publish and status: headline counts for the website's pages, media, stock and orders, plus low-stock and draft-page warnings. */}
       <Section title="Publish and status">
         <div className="website-manager__stat-grid">
+          {/* Total number of website pages. */}
           <StatCard label="Total pages" value={pages.length} />
+          {/* Number of pages currently published. */}
           <StatCard label="Published" value={stats.published} />
+          {/* Number of pages still in draft. */}
           <StatCard label="In draft" value={stats.drafts} />
+          {/* Number of media files in the library. */}
           <StatCard label="Media assets" value={media.length} />
+          {/* Number of content changes made today. */}
           <StatCard label="Changes today" value={stats.changesToday} />
+          {/* Number of pages hidden from search engines. */}
           <StatCard label="Not indexed" value={stats.notIndexed} />
         </div>
 
         <div className="website-manager__stat-grid">
+          {/* Number of vehicles currently listed on the website. */}
           <StatCard label="Vehicles live" value={count(stock.vehicles)} />
+          {/* Number of offers currently live. */}
           <StatCard label="Offers live" value={count(stock.offers)} />
+          {/* Number of shop products currently live. */}
           <StatCard label="Products live" value={count(stock.products)} />
+          {/* Number of customer orders waiting to be fulfilled. */}
           <StatCard label="Orders to fulfil" value={count(stock.pendingOrders)} />
         </div>
 
         {stock.lowStock.length > 0 && (
+          // Low stock: a list of products that are running low.
           <LayerTheme gap="var(--space-2)">
             <span className="website-manager__editor-title">Low stock</span>
             <div className="website-manager__chip-row">
@@ -138,6 +150,7 @@ export default function OverviewPanel({
         )}
 
         {draftPages.length > 0 && (
+          // Pages needing attention: a list of pages that are still in draft.
           <LayerTheme gap="var(--space-2)">
             <span className="website-manager__editor-title">Pages needing attention</span>
             <div className="website-manager__chip-row">
@@ -151,6 +164,7 @@ export default function OverviewPanel({
         )}
       </Section>
 
+      {/* Website pages: a searchable, filterable table of every page with its route, section count, search-engine status, publish status and last edit, plus publish and edit actions. */}
       <Section title="Website pages">
         <div className="website-manager__toolbar">
           <input

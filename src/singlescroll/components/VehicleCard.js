@@ -9,6 +9,7 @@ import styles from "../styles/singlescroll.module.css";
 export default function VehicleCard({ vehicle }) {
   return (
     <Card3D className={styles.vCard3dShell}>
+      {/* Vehicle tile: photo with an optional badge, then the year, brand, model name and price. */}
       <LayerSurface className={styles.vCard} padding="10px" gap="0px">
         <div className={styles.vImageWrap}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

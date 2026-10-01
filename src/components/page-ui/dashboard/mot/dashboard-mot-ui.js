@@ -26,6 +26,7 @@ export default function MotDashboardUi(props) {
   // --surface, so every card here is a --theme layer and everything nested in
   // one flips back to --surface (CLAUDE.md §3.0).
   const ThemeCard = ({ sectionKey, title, subtitle, children }) => (
+    // Titled dashboard card: a heading with an optional subtitle, followed by its content.
     <LayerTheme
       as="section"
       sectionKey={sectionKey}
@@ -45,6 +46,7 @@ export default function MotDashboardUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return (
+        // MOT dashboard: an activity card on top, then the volume trend and recent MOT jobs side by side.
         <DevLayoutSection
           sectionKey="dashboard-mot-shell"
           parentKey="app-layout-page-card"
@@ -69,6 +71,7 @@ export default function MotDashboardUi(props) {
                   gap: "12px"
                 }}
               >
+                {/* Headline tiles: tests today, passed, failed and retests. */}
                 <MetricCard label="Tests today" value={data.testsToday} helper="Checked in since midnight" />
                 <MetricCard label="Passed" value={data.passCount} helper="All recorded MOT jobs" />
                 <MetricCard label="Failed" value={data.failCount} helper="All recorded MOT jobs" />
@@ -88,6 +91,7 @@ export default function MotDashboardUi(props) {
               width: "100%"
             }}
           >
+            {/* MOT volume trend: a chart of MOT tests over the last seven days. */}
             <ThemeCard
               sectionKey="dashboard-mot-auto-content-card-2"
               title="MOT volume trend"
@@ -96,6 +100,7 @@ export default function MotDashboardUi(props) {
               <TrendBlock data={data.trends} />
             </ThemeCard>
 
+            {/* Recent MOT jobs: the latest six vehicles checked in for a test. */}
             <ThemeCard
               sectionKey="dashboard-mot-auto-content-card-3"
               title="Recent MOT jobs"

@@ -70,6 +70,7 @@ function SummaryStatsRow({ analytics }) {
       }}
     >
       {tiles.map((tile) => (
+        // Summary tile: one headline figure for the vehicle's history, such as total jobs, average spend or last service.
         <div key={tile.label} className="app-summary-item">
           <span className="app-summary-label">{tile.label}</span>
           <span className="app-summary-value">{tile.value ?? DASH}</span>
@@ -93,6 +94,7 @@ const treeMetaStyle = {
 function JobHistoryTree({ history = [], selectedJobId, onSelect }) {
   if (!history.length) {
     return (
+      // Job history panel (empty state): tells the user this vehicle has no previous service history.
       <LayerSurface
         sectionKey="jobcard-service-history-tree"
         parentKey="jobcard-tab-service-history"
@@ -107,6 +109,7 @@ function JobHistoryTree({ history = [], selectedJobId, onSelect }) {
   }
 
   return (
+    // Job history panel: a vertical timeline of the vehicle's previous jobs; clicking one selects it for the detail panel.
     <LayerSurface
       sectionKey="jobcard-service-history-tree"
       parentKey="jobcard-tab-service-history"
@@ -158,6 +161,7 @@ function JobHistoryTree({ history = [], selectedJobId, onSelect }) {
                 />
               </div>
 
+              {/* Job entry on the timeline: job number, status badge, appointment date, mileage and a one-line list of requests. Click to select. */}
               <LayerTheme
                 as="button"
                 type="button"
@@ -325,6 +329,7 @@ function PartsTallyList({ parts }) {
 
 function SelectedJobDetail({ job }) {
   return (
+    // Selected job panel: full details of the job picked in the timeline, or a prompt to pick one.
     <LayerSurface
       sectionKey="jobcard-service-history-selected"
       parentKey="jobcard-tab-service-history"
@@ -336,12 +341,15 @@ function SelectedJobDetail({ job }) {
 
       {job ? (
         <>
+          {/* Job facts: appointment date, mileage, status, advisor, technician and parts user. */}
           <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)">
             <JobFieldsGrid job={job} />
           </LayerTheme>
+          {/* Requests and work carried out on the selected job, one per line. */}
           <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)">
             <WorkCarriedOutList job={job} />
           </LayerTheme>
+          {/* Parts tally for the selected job: allocated, on order, back order and total. */}
           <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)">
             <PartsTallyList parts={job.parts} />
           </LayerTheme>
@@ -373,6 +381,7 @@ function MileageTrendChart({ points = [] }) {
   );
 
   return (
+    // Mileage trend panel: a line chart of the recorded mileage at each appointment.
     <LayerSurface
       sectionKey="jobcard-service-history-trend"
       parentKey="jobcard-tab-service-history"
@@ -424,6 +433,7 @@ function ComparePicker({ label, value, onChange, history }) {
 function CompareColumn({ job }) {
   if (!job) {
     return (
+      // Comparison column (empty state): shown when no job has been chosen for this side.
       <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" style={{ flex: 1, minWidth: 0 }}>
         <p style={{ color: "rgba(var(--text-1-rgb), 0.6)", margin: 0 }}>
           No job selected.
@@ -432,6 +442,7 @@ function CompareColumn({ job }) {
     );
   }
   return (
+    // Comparison column: one job's number, key facts, work carried out and parts tally, for side-by-side comparison.
     <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-4)" style={{ flex: 1, minWidth: 0 }}>
       <p style={titleStyle}>{formatText(job.jobNumber)}</p>
       <JobFieldsGrid job={job} />
@@ -461,6 +472,7 @@ function CompareJobsModal({ isOpen, onClose, history = [], initialJobId }) {
   if (!isOpen) return null;
 
   return (
+    // Compare jobs popup: pick Job A and Job B from the history and view their details side by side.
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}
@@ -570,6 +582,7 @@ function ExportHistoryModal({ isOpen, onClose, history = [], selectedJob }) {
   if (!isOpen) return null;
 
   return (
+    // Export history popup: choose to export the selected job, the full history or hand-picked jobs, then download a CSV file.
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}
@@ -585,6 +598,7 @@ function ExportHistoryModal({ isOpen, onClose, history = [], selectedJob }) {
         {EXPORT_MODES.map((option) => {
           const disabled = option.id === "selected" && !selectedJob;
           return (
+            // Export option: a radio choice with its label and a hint explaining what will be exported.
             <LayerTheme
               key={option.id}
               as="label"

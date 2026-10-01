@@ -340,6 +340,7 @@ function ObjectList({ value, onChange, disabled, itemSchema }) {
   return (
     <div className="website-manager__repeater">
       {list.map((item, i) => (
+        // One list entry: a small card with an input for each of the entry's fields and buttons to move it up, move it down or remove it.
         <LayerSurface
           key={i}
           className="website-manager__list-item"

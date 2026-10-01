@@ -106,6 +106,7 @@ export default function InteractiveDemoSection() {
               style={{ transform: `translate3d(${offset}px, 0, 0)` }}
             >
               {demoSteps.map((step, index) => (
+                // One level of the role tree in the moving track, highlighted when it is the current step.
                 <LayerSurface
                   key={step.id}
                   className={`${styles.demoLevel} ${index === activeIndex ? styles.demoLevelActive : ""}`}
@@ -119,6 +120,7 @@ export default function InteractiveDemoSection() {
             </div>
           </div>
 
+          {/* Callout text for the level currently in view. */}
           <LayerSurface
             className={styles.demoCallout}
             radius="var(--radius-md)"
@@ -129,6 +131,7 @@ export default function InteractiveDemoSection() {
           </LayerSurface>
         </div>
 
+        {/* Current level panel: the level name, step count, its callout and the list of guiding principles. */}
         <LayerSurface className={styles.demoInsight} radius="var(--radius-lg)">
           <div className={styles.detailHeader}>
             <div>
@@ -140,6 +143,7 @@ export default function InteractiveDemoSection() {
           <p className={styles.cardBody}>{activeStep.callout}</p>
           <div className={styles.principleList}>
             {demoPrinciples.map((principle, index) => (
+              // One numbered guiding principle.
               <LayerTheme key={principle} padding="12px" gap="4px">
                 <span className={styles.dashboardCardLabel}>Principle {index + 1}</span>
                 <span>{principle}</span>

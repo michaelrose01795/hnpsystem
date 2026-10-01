@@ -290,6 +290,7 @@ export default function DeliveryRow({
     ? "2px solid var(--accent-strong)"
     : "none";
 
+  // One delivery stop: timing, customer, reference, payment, linked job and status, with a drag handle and row actions such as navigate, call and invoice.
   return (
     <LayerSurface
       as="article"

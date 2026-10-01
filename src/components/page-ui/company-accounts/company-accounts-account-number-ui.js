@@ -42,7 +42,7 @@ export default function CompanyAccountDetailPageUi(props) {
     case "section1":
       return <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
       <>
-        {/* Page shell — transparent; named so the dev overlay shows a clean hierarchy. */}
+        {/* Company account page: a top row with the back link, account name and actions, followed by the account details. */}
         <DevLayoutSection
           sectionKey="company-account-detail-shell"
           parentKey="app-layout-page-card"
@@ -122,7 +122,7 @@ export default function CompanyAccountDetailPageUi(props) {
             </div>
           </DevLayoutSection>
 
-          {/* Body */}
+          {/* Account body: a loading placeholder, a not-found message, the edit form, or the card of tabbed account details. */}
           {loading ?
             <LayerSurface
               as="div"
@@ -156,6 +156,7 @@ export default function CompanyAccountDetailPageUi(props) {
               onSubmit={async (values) => { await handleUpdate(values); fetchAccount(); }}
               onCancel={() => setMode("view")} /> :
 
+            // Account details card: tabs for each area of the company account, with the chosen tab's content shown underneath.
             <LayerSurface
               as="div"
               sectionKey="company-account-detail-card"
@@ -178,6 +179,7 @@ export default function CompanyAccountDetailPageUi(props) {
               <div style={{ minHeight: "200px" }}>{renderTabContent()}</div>
             </LayerSurface>}
         </DevLayoutSection>
+        {/* Confirmation prompt shown before a company account is deleted. */}
         <ConfirmationDialog
           isOpen={!!confirmDialog}
           message={confirmDialog?.message}

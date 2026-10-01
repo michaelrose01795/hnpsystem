@@ -72,6 +72,7 @@ export default function WebsiteHelpQueue({ onJoined }) {
   if (!queue.length && !error) return null;
 
   return (
+    // Website chat queue: customers waiting to chat from the public website, with what they asked, how long each has waited and a Join button to pick up the conversation.
     <LayerSurface
       sectionKey="messages-website-help-queue"
       parentKey="messages-thread-list"

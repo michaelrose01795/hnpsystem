@@ -16,6 +16,7 @@ export default function StatusSnapshotDevPageUi(props) {
     case "section1":
       return (
         <div style={{ padding: "8px 8px 32px" }}>
+          {/* Notice card shown outside development mode, saying the status snapshot page is unavailable. */}
           <LayerSurface style={{ width: "100%" }} gap="8px">
             <h1 style={{ margin: 0 }}>Status Snapshot</h1>
             <p style={{ margin: 0, color: "var(--text-1)" }}>
@@ -28,6 +29,7 @@ export default function StatusSnapshotDevPageUi(props) {
     case "section2":
       return (
         <div style={{ padding: "8px 8px 32px" }}>
+          {/* Status snapshot tool: enter a job number or id and view the raw snapshot the system returns for it. */}
           <LayerSurface style={{ width: "100%" }} gap="12px">
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <h1 style={{ margin: 0 }}>Status Snapshot (Dev)</h1>
@@ -36,6 +38,7 @@ export default function StatusSnapshotDevPageUi(props) {
               </p>
             </div>
 
+            {/* Lookup form: a job number or id field with a fetch button, and any error message. */}
             <LayerTheme padding="12px" gap="8px" style={{ width: "100%" }}>
               <div
                 style={{
@@ -85,6 +88,7 @@ export default function StatusSnapshotDevPageUi(props) {
               )}
             </LayerTheme>
 
+            {/* Result panel: the snapshot response printed as formatted text. */}
             {snapshot && (
               <LayerTheme padding="12px" style={{ width: "100%" }}>
                 <pre

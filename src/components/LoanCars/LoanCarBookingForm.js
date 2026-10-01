@@ -284,6 +284,7 @@ export default function LoanCarBookingForm({
 
   return (
     <form id={formId} className="loan-car-form" onSubmit={handleSubmit} noValidate>
+      {/* Find in DMS: search by job number, registration, customer, phone or email to fill the booking from an existing record. */}
       <LayerTheme as="section" radius="var(--radius-sm)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">
         <h3 className="app-record-heading">Find in DMS</h3>
         <div ref={firstFieldRef}>
@@ -301,6 +302,7 @@ export default function LoanCarBookingForm({
         <LookupResults results={lookupResults} onPick={applyLookup} />
       </LayerTheme>
 
+      {/* Loan: choose the loan car, the from and to dates with collection and return times, and an optional external reference. */}
       <LayerTheme as="section" radius="var(--radius-sm)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">
         <h3 className="app-record-heading">Loan</h3>
         <DropdownField
@@ -349,6 +351,7 @@ export default function LoanCarBookingForm({
         ) : null}
       </LayerTheme>
 
+      {/* Customer: the borrower's details, with a button to show more fields in the quick version of the form. */}
       <LayerTheme as="section" radius="var(--radius-sm)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">
         <div className="loan-car-section-head">
           <h3 className="app-record-heading">Customer</h3>

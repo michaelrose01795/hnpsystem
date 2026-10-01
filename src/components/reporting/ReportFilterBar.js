@@ -105,6 +105,7 @@ export default function ReportFilterBar({
     onPatch({ range: DEFAULT_RANGE, from: null, to: null, granularity: DEFAULT_GRANULARITY });
 
   return (
+    // Report toolbar: the report's tabs alongside a search box and a filter button for date range and trend granularity.
     <LayerSurface
       radius="var(--radius-sm)"
       padding="0"

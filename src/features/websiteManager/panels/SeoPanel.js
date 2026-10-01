@@ -63,6 +63,7 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
 
   return (
     <>
+      {/* SEO and sharing: choose a website page and edit the details search engines and social networks show for it. */}
       <Section title="SEO and sharing">
         <div className="website-manager__toolbar">
           <DropdownField
@@ -74,6 +75,7 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
           />
         </div>
 
+        {/* Meta details form for the chosen page: title, description, URL slug, canonical URL, share image and an indexing tick box, with Save and Reset buttons. A prompt is shown instead when no page is selected. */}
         {!selectedPage ? (
           <EmptyState
             variant="bare"
@@ -81,6 +83,7 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
             description="Choose a website page above to edit the meta details search engines and social networks show for it."
           />
         ) : (
+          // Search and sharing details for the chosen page: meta title and description, URL slug, canonical URL, social share image and whether search engines may index it.
           <LayerTheme gap="var(--space-3)">
             <label className="website-manager__field">
               <span className="website-manager__label">
@@ -150,6 +153,7 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
               <span>Allow search engines to index this page</span>
             </label>
 
+            {/* Search result preview: how the page's address, title and description would appear in search results. */}
             <LayerSurface
               className="website-manager__search-preview"
               radius="var(--radius-sm)"
@@ -183,6 +187,7 @@ export default function SeoPanel({ pages, seo, onUpdateSeo }) {
         )}
       </Section>
 
+      {/* SEO overview: a searchable table of every page with its meta title, slug and whether it is indexed. */}
       <Section title="SEO overview">
         <div className="website-manager__toolbar">
           <input

@@ -26,6 +26,7 @@ export default function HrDashboardUi(props) {
 }}>
       {isLoading && <HrTabLoadingSkeleton variant="dashboard" />}
 
+      {/* Error card shown when HR data fails to load, with the error message. */}
       {error && <SectionCard title="Failed to load HR data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>}
@@ -36,6 +37,7 @@ export default function HrDashboardUi(props) {
       gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
       gap: "var(--layout-card-gap)"
     }}>
+            {/* Headline HR figure cards, one per metric. */}
             {formattedMetrics.map(metric => <MetricCard key={metric.label} {...metric} accentColor="var(--primary)" />)}
           </section>
 
@@ -44,7 +46,9 @@ export default function HrDashboardUi(props) {
       gap: "var(--layout-card-gap)",
       gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
     }}>
+            {/* Department performance: productivity, quality and teamwork scores for each department over the last 30 days. */}
             <SectionCard title="Department Performance Snapshot" subtitle="Productivity, quality, and teamwork scoring (rolling 30 days)">
+              {/* Table of departments with their three percentage scores. */}
               <LayerTheme padding="var(--space-3)" gap="0">
                 <DataTableShell>
                   <table className="app-data-table">
@@ -71,6 +75,7 @@ export default function HrDashboardUi(props) {
               </LayerTheme>
             </SectionCard>
 
+            {/* Training renewals: upcoming certificate expiries with the course, employee, due date and status, plus a link to all training. */}
             <SectionCard title="Training Renewals" subtitle="Upcoming expiries across mandatory certifications" action={<Link href="/hr/training" style={{
         fontSize: "var(--text-label)",
         fontWeight: 600,
@@ -134,6 +139,7 @@ export default function HrDashboardUi(props) {
       gap: "var(--layout-card-gap)",
       gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
     }}>
+            {/* Upcoming holidays and absences for the next 14 days, with a link to manage leave. */}
             <SectionCard title="Upcoming Holidays & Absences" subtitle="Next 14 days across the business" action={<Link href="/hr/leave" style={{
         fontSize: "var(--text-label)",
         fontWeight: 600,
@@ -141,6 +147,7 @@ export default function HrDashboardUi(props) {
       }}>
                   Manage leave
                 </Link>}>
+              {/* Table of absences: employee, department, type and dates. */}
               <LayerTheme padding="var(--space-3)" gap="0">
                 <DataTableShell>
                   <table className="app-data-table">
@@ -170,6 +177,7 @@ export default function HrDashboardUi(props) {
               </LayerTheme>
             </SectionCard>
 
+            {/* Active warnings: open disciplinary notices with employee, level, department, issue date and notes, plus a link to the full log. */}
             <SectionCard title="Active Warnings" subtitle="Summary of open disciplinary notices" action={<Link href="/hr/disciplinary" style={{
         fontSize: "var(--text-label)",
         fontWeight: 600,

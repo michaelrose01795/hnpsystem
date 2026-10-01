@@ -35,6 +35,7 @@ export default function ActivityPanel({ activity }) {
   }, [activity, query, pageFilter]);
 
   return (
+    // Recent website activity: a searchable table of changes showing when, what action, which item and page, and who made it.
     <Section title="Recent website activity">
       <div className="website-manager__toolbar">
         <input

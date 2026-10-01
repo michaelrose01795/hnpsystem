@@ -145,6 +145,7 @@ const ALL_CONCERN_TARGETS = [
   { key: "rearDrums", label: "Rear Drum" },
 ];
 
+// Brake pads card: enter the pad measurement in millimetres and pick a red, amber or green status for one axle.
 const PadsSection = ({
   title,
   padData = {},
@@ -213,6 +214,7 @@ const DiscsSection = ({
   panelStyle,
 }) => {
   const activeTab = discData.tab || "measurements";
+  // Brake discs card: choose between measuring or visually inspecting the discs, then enter the disc thickness or a visual verdict with a red, amber or green status.
   return (
     <LayerTheme data-dev-section="1" data-dev-section-key={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}`} data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
       <div data-dev-section="1" data-dev-section-key={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}-toolbar`} data-dev-section-type="toolbar" data-dev-section-parent={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
@@ -300,6 +302,7 @@ const DiscsSection = ({
   );
 };
 
+// Drum brakes card: mark the rear drums as Good, Monitor or Replace, with a button to switch back to disc brakes.
 const DrumBrakesSection = ({
   status,
   onStatusChange,
@@ -879,6 +882,7 @@ export default function BrakesHubsDetailsModal({
 
   const rearDiscChecks = (
     <>
+      {/* Rear brake pads: pad measurement and status for the rear axle. */}
       <PadsSection
         title={padLabels.rearPads}
         padData={data.rearPads}
@@ -892,6 +896,7 @@ export default function BrakesHubsDetailsModal({
         resetFocus={resetFocus}
         panelStyle={showValidation && missingSections.rearPads ? requiredPanelStyle : null}
       />
+      {/* Rear brake discs: thickness or visual inspection result for the rear axle. */}
       <DiscsSection
         title={discLabels.rearDiscs}
         discData={data.rearDiscs}
@@ -917,6 +922,7 @@ export default function BrakesHubsDetailsModal({
     </>
   );
 
+  // Brakes and hubs inspection window: front and rear brake checks, logged issues and the camera, save and close buttons.
   return (
     <VHCModalShell
       isOpen={isOpen}
@@ -1043,6 +1049,7 @@ export default function BrakesHubsDetailsModal({
             >
               {activeSide === "front" && (
                 <>
+                  {/* Front brake pads: pad measurement and status for the front axle. */}
                   <PadsSection
                     title={padLabels.frontPads}
                     padData={data.frontPads}
@@ -1056,6 +1063,7 @@ export default function BrakesHubsDetailsModal({
                     resetFocus={resetFocus}
                     panelStyle={showValidation && missingSections.frontPads ? requiredPanelStyle : null}
                   />
+                  {/* Front brake discs: thickness or visual inspection result for the front axle. */}
                   <DiscsSection
                     title={discLabels.frontDiscs}
                     discData={data.frontDiscs}
@@ -1082,6 +1090,7 @@ export default function BrakesHubsDetailsModal({
 
               {activeSide === "rear" && !showDrum ? rearDiscChecks : null}
 
+              {/* Rear drum brakes: shown instead of the rear pads and discs when the vehicle has drums. */}
               {activeSide === "rear" && showDrum && (
                 <DrumBrakesSection
                   status={data.rearDrums.status}
@@ -1100,6 +1109,7 @@ export default function BrakesHubsDetailsModal({
                 />
               )}
 
+              {/* Issues logged: the list of brake concerns recorded for the selected axle, with a button to add another and options to edit or remove each one. */}
               <LayerTheme data-dev-section="1" data-dev-section-key="vhc-brakes-issues" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, flex: "1 1 auto", minHeight: 0 }}>
                 <div
                   data-dev-section="1"
@@ -1162,6 +1172,7 @@ export default function BrakesHubsDetailsModal({
             </div>
           </div>
 
+          {/* Add or update issue pop-up: describe a brake concern and set its severity before saving it to the list. */}
           {concernPopup.open ? (
             <IssueReportPopup
               isOpen={concernPopup.open}

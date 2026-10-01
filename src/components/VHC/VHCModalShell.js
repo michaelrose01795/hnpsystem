@@ -148,6 +148,7 @@ export default function VHCModalShell({
               pointerEvents: "auto",
             }}
           >
+            {/* Locked notice: tells the user this health check section is locked (for example already authorised) and offers a Close button. */}
             <div
               style={{
                 padding: "16px 20px",
@@ -185,6 +186,7 @@ export default function VHCModalShell({
 
   if (inlineMode) {
     return (
+      // Inline version: the health check section's title, actions and form shown in place on the job card rather than in a popup.
       <LayerSurface
         data-dev-section="1"
         data-dev-section-key={sectionKey ? `${sectionKey}-container` : undefined}
@@ -203,6 +205,7 @@ export default function VHCModalShell({
   }
 
   return (
+    // Popup version: the health check section's title, form and footer buttons in a popup that can only be closed with its own buttons.
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}

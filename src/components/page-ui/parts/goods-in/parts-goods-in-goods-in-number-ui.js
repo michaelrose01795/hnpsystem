@@ -45,6 +45,7 @@ export default function GoodsInDetailPageUi(props) {
     gap: "18px",
     padding: "12px"
   }}>
+        {/* Goods-in header: the goods-in number, status and invoice date, with supplier, invoice, delivery note and price level details. */}
         <LayerSurface as="section" style={sectionCardStyle}>
           <div style={{
         display: "flex",
@@ -110,6 +111,7 @@ export default function GoodsInDetailPageUi(props) {
             </div>}
         </LayerSurface>
 
+        {/* Invoice lines: a table of each part received with line, part number, description, quantity, cost, retail price and the job it is for. */}
         <LayerSurface as="section" style={sectionCardStyle}>
           <h3 style={{
         margin: 0
@@ -162,6 +164,7 @@ export default function GoodsInDetailPageUi(props) {
             </ScrollArea>}
         </LayerSurface>
 
+        {/* Totals: the total cost and total retail value of the delivery. */}
         <LayerSurface as="section" style={sectionCardStyle}>
           <h3 style={{
         margin: 0
@@ -184,6 +187,7 @@ export default function GoodsInDetailPageUi(props) {
           </div>
         </LayerSurface>
 
+        {/* History: which parts were allocated to jobs and which were added to stock. */}
         <LayerSurface as="section" style={sectionCardStyle}>
           <h3 style={{
         margin: 0

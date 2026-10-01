@@ -87,6 +87,7 @@ export default function AccountUpsertModal({ isOpen, mode, accountId, onClose, o
   };
 
   return (
+    // Create or edit account popup: shows the account form, a loading placeholder while an existing account is fetched, and any error message.
     <PopupModal
       isOpen={isOpen}
       onClose={saving ? undefined : onClose}
@@ -108,6 +109,7 @@ export default function AccountUpsertModal({ isOpen, mode, accountId, onClose, o
             <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading account" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <SkeletonKeyframes />
               {[{ fields: 6, notes: true }, { fields: 8, notes: false }].map((group, groupIndex) => (
+                // Loading placeholder for one group of form fields: grey bars standing in for the heading, inputs and notes box.
                 <LayerTheme key={groupIndex} radius="var(--section-card-radius)" gap="var(--space-md)" style={{ flexDirection: "row", flexWrap: "wrap" }}>
                   <div style={{ flexBasis: "100%" }}>
                     <SkeletonBlock width={groupIndex === 0 ? "220px" : "160px"} height="22px" />

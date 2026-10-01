@@ -40,6 +40,7 @@ function formatTimestamp(iso) {
 
 function SecuritySection({ title, sectionKey, children }) {
   return (
+    // Titled security panel: a heading followed by the form or table passed in.
     <LayerTheme
       as="section"
       sectionKey={sectionKey}
@@ -305,6 +306,7 @@ function RecentActivity() {
 
 export function SecurityPanel() {
   return (
+    // Security settings card holding the change-password form and the recent sign-in activity.
     <LayerSurface
       as="div"
       sectionKey={SECURITY_PAGE_KEY}
@@ -316,9 +318,11 @@ export function SecurityPanel() {
       gap="var(--page-stack-gap)"
     >
       <div className="app-page-stack">
+        {/* Change password: current password, new password and confirmation, with an Update Password button. */}
         <SecuritySection title="Change Password" sectionKey="account-security-change-password">
           <PasswordChangeForm />
         </SecuritySection>
+        {/* Recent sign-in activity: a table of when, what happened, the IP address and the device used. */}
         <SecuritySection title="Recent Sign-In Activity" sectionKey="account-security-recent-activity">
           <RecentActivity />
         </SecuritySection>

@@ -308,6 +308,7 @@ export default function ActivityLogView() {
         }
       />
 
+      {/* Filters: date range, page or route, record type, record ID and free-text search, plus dropdown filters for user, role, department, session, device, browser, action and status, with Apply and Reset buttons. */}
       <LayerTheme>
         <div
           style={{
@@ -439,6 +440,7 @@ export default function ActivityLogView() {
       </LayerTheme>
 
       {canManageRetention && retention ? (
+        // Retention and session expiry: set how many days live and archived events are kept and the session timeout, then save or run maintenance now.
         <LayerTheme>
           <div>
             <h2 style={{ margin: 0, fontSize: "var(--text-h3)", color: "var(--accentText)" }}>
@@ -494,6 +496,7 @@ export default function ActivityLogView() {
         </LayerTheme>
       ) : null}
 
+      {/* Summary: counts of matching events, sessions and failures on this page, with an expandable table of session summaries (user, start, last activity, duration, device, IP address, status). */}
       <LayerTheme>
         <div
           style={{
@@ -542,6 +545,7 @@ export default function ActivityLogView() {
         ) : null}
       </LayerTheme>
 
+      {/* Activity timeline: a table of events showing time, user, event, page or feature, related record and status, with expandable details and Previous / Next paging. */}
       <LayerTheme>
         {error && <StatusMessage tone="danger">{error}</StatusMessage>}
         {loading ? (

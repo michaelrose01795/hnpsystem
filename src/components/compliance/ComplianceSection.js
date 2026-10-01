@@ -7,6 +7,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 
 export default function ComplianceSection({ title, subtitle, children, style }) {
   return (
+    // Titled compliance panel: a heading with an optional subtitle, followed by the table or content passed in.
     <LayerTheme
       as="section"
       gap="12px"

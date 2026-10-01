@@ -114,6 +114,7 @@ export default function PasswordResetNewPage() {
       >
         {/* Margin (not padding) keeps the gutter on a flex item without
             overflowing the 100% width on narrow phones. */}
+        {/* Password reset card: a heading and either the new-password form or the confirmation that the password was changed. */}
         <LayerSurface
           as="section"
           padding="var(--page-card-padding)"
@@ -134,6 +135,7 @@ export default function PasswordResetNewPage() {
           </header>
 
           {done ? (
+            // Success message with a button to continue to sign in.
             <LayerTheme>
               <StatusMessage tone="success">
                 Your password has been updated.
@@ -147,6 +149,7 @@ export default function PasswordResetNewPage() {
               </Link>
             </LayerTheme>
           ) : (
+            // New password form: password and confirmation fields, a 'show passwords' tick box, any error and the save button.
             <LayerTheme as="form" onSubmit={handleSubmit} noValidate>
               <InputField
                 label="New password"

@@ -68,6 +68,7 @@ export default function UnauthorisedPageUi(props) {
             // Cap the measure so the message stays readable on wide screens.
             style={{ width: "100%", maxWidth: "38rem", marginInline: "auto" }}
           >
+            {/* Access denied message: explains that the signed-in account does not have permission to open this page and what to do next. */}
             <LayerTheme
               as="section"
               sectionKey={PAGE_KEY}
@@ -90,6 +91,7 @@ export default function UnauthorisedPageUi(props) {
                   request and we will check your role.
                 </p>
 
+                {/* Access facts: the page that was requested, who is signed in and what access they have. */}
                 <LayerSurface
                   sectionKey="unauthorised-facts"
                   parentKey={PAGE_KEY}

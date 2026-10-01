@@ -689,6 +689,10 @@
       "group": "popup",
       "purpose": "Viewport gap around the Help popup card (mirrors the staff --popup-viewport-gap)."
     },
+    "--ws-popup-gap-x": {
+      "group": "popup",
+      "purpose": "Left / right viewport gap around the Help popup card (mirrors the staff --popup-viewport-gap-x)."
+    },
     "--surface-rgb": {
       "group": "dev-overlay",
       "purpose": "Staff token re-declared on the dev overlay root so staff overlay components render on the customer dark material."

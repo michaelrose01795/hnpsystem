@@ -98,6 +98,7 @@ export default function PartsManagerDashboardUi(props) {
       gap: "16px",
       gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
     }}>
+            {/* Placeholder cards shown in place of the main dashboard panels while data is loading. */}
             {Array.from({
         length: 2
       }).map((_, i) => <LayerSurface key={i} padding="18px" gap="12px" style={{
@@ -113,8 +114,10 @@ export default function PartsManagerDashboardUi(props) {
     textAlign: "center",
     color: "var(--primary-selected)"
   }}>{error}</div> : <div className="app-page-stack">
+          {/* Parts Manager Dashboard: the headline view of the live parts queue, inbound deliveries and inventory status. */}
           <PartsOpsDashboard title="Parts Manager Dashboard" subtitle="Live queue, inbound deliveries and inventory status pulled from Supabase" data={dashboardData} />
 
+          {/* Parts Pipeline: a tile for each stage that parts move through, with a total of the part lines currently tracked. */}
           <LayerTheme sectionKey="parts-manager-pipeline" sectionType="content-card" data-dev-text-preview="Parts Pipeline" style={sectionCardStyle}>
             <h2 className="app-staff-card__title">Parts Pipeline</h2>
             <div style={{
@@ -122,6 +125,7 @@ export default function PartsManagerDashboardUi(props) {
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         gap: "12px"
       }}>
+              {/* One pipeline stage: the number of part lines in it, the stage name and a short description. */}
               {pipelineStages.map(stage => <LayerSurface key={stage.id} radius="var(--radius-sm)" padding="var(--space-3) var(--space-md)" gap="var(--space-xs)" style={{
           minHeight: "100px"
         }}>
@@ -160,6 +164,7 @@ export default function PartsManagerDashboardUi(props) {
         gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
         gap: "var(--page-stack-gap)"
       }}>
+              {/* Queue Snapshot: a table of jobs waiting on parts showing job, delivery stop, registration, supplier, status and value, with a button to schedule a delivery where one is needed. */}
               <LayerTheme sectionKey="parts-manager-queue-snapshot" sectionType="data-table" data-dev-text-preview="Queue Snapshot table" style={sectionCardStyle}>
                 <h2 className="app-staff-card__title">Queue Snapshot</h2>
                 <StaffTable label="Queue Snapshot">
@@ -250,6 +255,7 @@ export default function PartsManagerDashboardUi(props) {
           flexDirection: "column",
           gap: "var(--page-stack-gap)"
         }}>
+                {/* Status Buckets: a list of queue groupings, each with its current status and time window. */}
                 <LayerTheme sectionKey="parts-manager-status-buckets" sectionType="content-card" data-dev-text-preview="Status Buckets" style={sectionCardStyle}>
                   <h2 className="app-staff-card__title">Status Buckets</h2>
                   {dashboardData.teamAvailability.map(bucket => <div key={bucket.name} style={{
@@ -271,6 +277,7 @@ export default function PartsManagerDashboardUi(props) {
                     </div>)}
                 </LayerTheme>
 
+                {/* Focus Items: the things needing attention, each with a title, detail and owner. */}
                 <LayerTheme sectionKey="parts-manager-focus-items" sectionType="content-card" data-dev-text-preview="Focus Items" style={sectionCardStyle}>
                   <h2 className="app-staff-card__title">Focus Items</h2>
                   {dashboardData.focusItems.map(item => <div key={item.title} style={{
@@ -294,6 +301,7 @@ export default function PartsManagerDashboardUi(props) {
               </div>
             </div>
 
+            {/* Top Queue Lines: a table of the leading queue lines with supplier, status and value. */}
             <LayerTheme sectionKey="parts-manager-top-queue-lines" sectionType="data-table" data-dev-text-preview="Top Queue Lines" style={sectionCardStyle}>
               <h2 className="app-staff-card__title">Top Queue Lines</h2>
               <StaffTable label="Top Queue Lines">
@@ -339,6 +347,7 @@ export default function PartsManagerDashboardUi(props) {
               </StaffTable>
             </LayerTheme>
 
+            {/* Low Stock Parts Overview: a table of parts running low showing supplier, cost, sell price, margin, stock, minimum level, status and linked jobs. */}
             <LayerTheme sectionKey="parts-manager-low-stock" sectionType="data-table" data-dev-text-preview="Low Stock Parts Overview" style={sectionCardStyle}>
               <h2 className="app-staff-card__title">Low Stock Parts Overview</h2>
               {lowStockRows.length === 0 ? <div style={{
@@ -423,6 +432,7 @@ export default function PartsManagerDashboardUi(props) {
                 </StaffTable>}
             </LayerTheme>
 
+          {/* Tech Requests: a table of open part requests from technicians showing job, request, quantity, source, status and when it was created. */}
           <LayerTheme sectionKey="parts-manager-tech-requests" sectionType="data-table" data-dev-text-preview="Tech Requests" style={sectionCardStyle}>
             <h2 className="app-staff-card__title">Tech Requests</h2>
             {techRequests.length === 0 ? <div style={{

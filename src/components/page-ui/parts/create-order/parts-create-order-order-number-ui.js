@@ -49,6 +49,7 @@ export default function PartsOrderDetailUi(props) {
     case "section1":
       return <>
       <div style={containerStyle}>
+        {/* Order header: the order number, customer and registration, with totals for parts lines, subtotal and invoice total. */}
         <LayerTheme style={sectionCard}>
           <div className="app-page-header">
             <div className="app-job-summary-panel__identity">
@@ -75,6 +76,7 @@ export default function PartsOrderDetailUi(props) {
                 ["Subtotal", formatCurrency(totals.subtotal)],
                 ["Invoice total", formatCurrency(order?.invoice_total ?? totals.subtotal)],
               ].map(([label, value]) => (
+                // One header total tile showing a caption and its figure.
                 <LayerSurface key={label} className="app-job-summary-panel__stat" radius="var(--radius-sm)" padding="8px 12px" gap="var(--space-xs)" style={{ minWidth: "120px" }}>
                   <span>{label}</span>
                   <strong>{value}</strong>
@@ -86,8 +88,11 @@ export default function PartsOrderDetailUi(props) {
 
           {/* Three equal-width sibling cards that fill the row and collapse as the viewport narrows. */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "var(--layout-card-gap)", width: "100%" }}>
+            {/* Vehicle summary: registration, make, model and related details. */}
             <OrderSummaryBox title="Vehicle" fields={[["Registration", order?.vehicle_reg], ["Make", order?.vehicle_make], ["Model", order?.vehicle_model], ["VIN", order?.vehicle_vin]]} />
+            {/* Customer and contact summary: name, phone and address. */}
             <OrderSummaryBox title="Customer & contact" fields={[["Customer", order?.customer_name], ["Phone", order?.customer_phone], ["Address", order?.customer_address], ["Email", order?.customer_email]]} />
+            {/* Notes summary: short previews of the order, customer, delivery and invoice notes; clicking opens the notes popup. */}
             <OrderSummaryBox
               title="Notes"
               fields={[
@@ -111,6 +116,7 @@ export default function PartsOrderDetailUi(props) {
             onSave={saveNotes}
           />
 
+        {/* Order tabs: switch between the parts, delivery and invoice views, with the active tab's actions and content. */}
         <LayerTheme style={sectionCard}>
           {/* Tabs and the active tab's actions share one toolbar row; the row
               hands the tabs their own full-width line on mobile. */}
@@ -188,6 +194,7 @@ function notePreview(value) {
 function OrderSummaryBox({ title, fields, onOpen = null, openLabel }) {
   const interactive = typeof onOpen === "function";
   return (
+    // Summary card: a title above a list of labelled values, optionally clickable to open more detail.
     <LayerTheme
       radius="var(--radius-sm)"
       padding="12px 14px"
@@ -242,6 +249,7 @@ function NotesPopup({ isOpen, draft, error, saving, onChange, onClose, onSave })
     ["delivery_notes", "Delivery notes", "Notes for the delivery driver…"],
     ["invoice_notes", "Invoice notes", "Notes to appear on the invoice…"],
   ];
+  // Order notes popup: edit the order, customer, delivery and invoice notes for this parts order and save them.
   return (
     <PopupModal
       isOpen={isOpen}

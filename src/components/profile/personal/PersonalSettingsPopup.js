@@ -50,6 +50,7 @@ function makeRecurringRule() {
 }
 
 function Section({ title, description, children, sectionId }) {
+  // Titled settings block: a heading and a short description above whatever fields are passed in.
   return (
     <section
       data-section={sectionId || undefined}
@@ -237,6 +238,7 @@ function RecurringRulesSection() {
     }
   };
 
+  // Recurring overtime rules: add, edit and remove the days and hours that should log overtime automatically, then save them.
   return (
     <Section
       sectionId="recurring-rules"
@@ -372,6 +374,7 @@ function PayAndWorkSection({ finance, isMobile }) {
   const month = finance.model.currentMonth;
   const monthLabel = formatMonthLabel(finance.model.selectedMonthKey);
 
+  // Pay and work: contracted weekly hours, hourly and overtime rates, salary and other income, with tax and National Insurance figures for the month.
   return (
     <Section
       sectionId="pay"
@@ -480,6 +483,7 @@ function PayAndWorkSection({ finance, isMobile }) {
 function OvertimeSection({ finance, isMobile }) {
   const month = finance.model.currentMonth;
 
+  // Overtime: totals of overtime hours and pay, plus a list of manually logged overtime entries that can be added or removed.
   return (
     <Section
       sectionId="overtime"
@@ -521,6 +525,7 @@ function OvertimeSection({ finance, isMobile }) {
 function LeaveSection({ finance, isMobile }) {
   const leaveStats = finance.derived.leaveStats;
 
+  // Leave and calendar: days taken and remaining, with a list of approved leave requests.
   return (
     <Section
       sectionId="leave"
@@ -568,6 +573,7 @@ function LeaveSection({ finance, isMobile }) {
 function SavingsSection({ finance, isMobile }) {
   const month = finance.model.currentMonth;
 
+  // Savings and pots: monthly savings totals and a list of named pots with amounts that can be added, edited or removed.
   return (
     <Section
       sectionId="savings"
@@ -610,6 +616,7 @@ function PaymentsSection({ finance, isMobile }) {
   const fixedOutgoingRowStyle = isMobile ? "minmax(0, 1fr)" : "1.5fr 0.9fr 1fr minmax(180px, auto) auto";
   const plannedPaymentRowStyle = isMobile ? "minmax(0, 1fr)" : "1.6fr 1fr auto";
 
+  // Payments and outgoings: totals for the month, the fixed monthly costs with optional one-month overrides, and planned payments.
   return (
     <Section
       sectionId="payments"
@@ -689,6 +696,7 @@ function CreditCardsSection({ finance, isMobile }) {
   const accounts = finance.financeState.creditCardAccounts || [];
   const accountOptions = accounts.map((entry) => ({ value: entry.id, label: entry.name || "Card" }));
 
+  // Credit cards: total card payments and balances, with a list of cards to track each balance and monthly payment.
   return (
     <Section
       sectionId="credit-cards"
@@ -795,6 +803,7 @@ function CreditCardsSection({ finance, isMobile }) {
 function AdjustmentsSection({ finance, isMobile }) {
   const month = finance.model.currentMonth;
 
+  // Manual adjustments: one-off income or outgoing amounts for the month, followed by totals in, out and money left.
   return (
     <Section
       sectionId="adjustments"
@@ -870,6 +879,7 @@ export default function PersonalSettingsPopup({ isOpen, onClose, finance, initia
 
   if (!isOpen || !finance) return null;
 
+  // Personal settings popup: the user's figures for the selected month (pay and work, overtime, recurring rules, leave, savings, payments, credit cards and adjustments), saved automatically as they are changed.
   return (
     <PopupModal
       isOpen

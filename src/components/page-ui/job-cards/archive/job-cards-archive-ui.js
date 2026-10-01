@@ -35,7 +35,9 @@ export default function ArchivedJobsPageUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
+      {/* Archive page: the search and filter toolbar followed by the table of archived jobs. */}
       <LayerSurface sectionKey="job-cards-archive-page-shell" sectionType="page-shell" shell className="app-page-stack" gap={isVerticalPhone ? "var(--space-2)" : "24px"} padding={0}>
+        {/* Search toolbar: a search box alongside the filter button. Submitting it runs the archive search. */}
         <DevLayoutSection as="form" data-presentation="archive-filters" sectionKey="job-cards-archive-search-toolbar" parentKey="job-cards-archive-page-shell" sectionType="toolbar" backgroundToken="transparent" onSubmit={event => {
       event.preventDefault();
       runSearch(query);
@@ -49,6 +51,7 @@ export default function ArchivedJobsPageUi(props) {
       boxShadow: "none",
       color: "var(--search-text)"
     }}>
+          {/* Search box for finding archived jobs by registration, job number or customer name. */}
           <DevLayoutSection sectionKey="job-cards-archive-search-input" parentKey="job-cards-archive-search-toolbar" sectionType="filter-row" backgroundToken="search-surface" style={{
         flex: isVerticalPhone ? "0 0 auto" : "1 1 260px"
       }}>
@@ -56,6 +59,7 @@ export default function ArchivedJobsPageUi(props) {
           flex: "1 1 260px"
         }} />
           </DevLayoutSection>
+          {/* Filter controls: narrow results by status, change the sort order or limit the search to registrations only. */}
           <DevLayoutSection sectionKey="job-cards-archive-toolbar-actions" parentKey="job-cards-archive-search-toolbar" sectionType="toolbar" backgroundToken="accent-surface" style={{
         display: "flex",
         flexWrap: "wrap",
@@ -104,6 +108,7 @@ export default function ArchivedJobsPageUi(props) {
           </DevLayoutSection>
         </DevLayoutSection>
 
+        {/* Error banner: shows the message when the archive search fails. */}
         {error && <LayerTheme sectionKey="job-cards-archive-error-banner" parentKey="job-cards-archive-page-shell" sectionType="state-banner" backgroundToken="danger-surface" radius="var(--radius-sm)" padding="12px">
             <p style={{
         margin: 0,
@@ -111,6 +116,7 @@ export default function ArchivedJobsPageUi(props) {
       }}>{error}</p>
           </LayerTheme>}
 
+        {/* Results panel: holds the table of archived jobs that match the search and filters. */}
         <LayerTheme
           as="section"
           data-presentation="archive-results"
@@ -118,6 +124,7 @@ export default function ArchivedJobsPageUi(props) {
           parentKey="job-cards-archive-page-shell"
           sectionType="content-card"
           shell>
+          {/* Scrollable table area, so the wide results table can be scrolled sideways on small screens. */}
           <LayerSurface
             data-app-table-shell-scroll
             sectionKey="job-cards-archive-results-scroll"
@@ -129,6 +136,7 @@ export default function ArchivedJobsPageUi(props) {
             role="region"
             aria-label="Archived job results"
             tabIndex={0}>
+          {/* Archived jobs table: job number, customer, vehicle, status, completion date and a link to view the archived job card. */}
           <DevLayoutSection as="table" sectionKey="job-cards-archive-results-table" parentKey="job-cards-archive-results-scroll" sectionType="data-table" backgroundToken="surface" className="app-data-table app-table-shell app-table-shell--with-headings">
               <thead data-dev-section="1" data-dev-section-key="job-cards-archive-results-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="job-cards-archive-results-table">
                 <tr>

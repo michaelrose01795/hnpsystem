@@ -12,6 +12,7 @@ export default function ReportSection({ title, subtitle, action, children, secti
   const devSectionKey = sectionKey || reportDevKey("report-section", title || subtitle, "untitled");
 
   return (
+    // Report section panel: an optional row of actions at the top, followed by whatever KPI cards, charts or tables the report places inside it.
     <LayerTheme
       as="section"
       gap="12px"

@@ -146,6 +146,7 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
   const showConfidence = flags.debug_mode_enabled || flags.confidence_display_enabled; // Show confidence badges
 
   return (
+    // Smart summary of the job: its current stage, the latest update, who is responsible, and the tracking, wash and invoice status, followed by the next steps.
     <LayerTheme radius="var(--radius-sm)" padding="14px 16px" gap="10px" style={STYLES.container}>
       {/* Header row: label + stage badge */}
       <div style={STYLES.header}>
@@ -207,6 +208,7 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {steps.map((step, index) => (
+              // One next step for the job, with the department responsible and what needs doing.
               <LayerSurface key={step.label || index} radius="var(--radius-xs)" padding="10px 12px" gap="2px" style={STYLES.nextStepCard}>
                 <span style={STYLES.nextStepLabel}>
                   {multiStep ? `Next Step ${index + 1}` : "Next Step"}

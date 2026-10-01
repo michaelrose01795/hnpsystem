@@ -36,6 +36,7 @@ export default function AttendanceTab() {
   }
 
   if (error) {
+    // Error card shown when the attendance data could not be loaded.
     return (
       <SectionCard layer="theme"
         sectionKey="hr-attendance-error" parentKey="hr-manager-tab-attendance" title="Unable to load attendance" subtitle="An error occurred.">
@@ -46,8 +47,10 @@ export default function AttendanceTab() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      {/* Summary strip: who is clocked in, hours booked, who is away and overtime building up. */}
       <HrSummaryStrip items={summary} parentKey="hr-manager-tab-attendance" />
 
+      {/* Daily time logs from the workshop clocking system, with an Export CSV button. */}
       <SectionCard layer="theme"
         sectionKey="hr-attendance-daily-time-logs" parentKey="hr-manager-tab-attendance"
         title="Daily Time Logs"
@@ -58,6 +61,7 @@ export default function AttendanceTab() {
           </button>
         }
       >
+        {/* Time log table: employee, date, clock in, clock out, total hours and status. */}
         <LayerSurface padding="var(--space-3)" gap="0">
           <DataTableShell>
             <table className="app-data-table">
@@ -105,8 +109,10 @@ export default function AttendanceTab() {
         </LayerSurface>
       </SectionCard>
 
+      {/* Overtime summary: recent overtime entries. */}
       <SectionCard layer="theme"
         sectionKey="hr-attendance-overtime-summary" parentKey="hr-manager-tab-attendance" title="Overtime Summary" subtitle="Recent overtime entries">
+        {/* Overtime list: each employee with the overtime hours worked and the rate multiplier. */}
         <LayerSurface padding="var(--space-3)" gap="var(--space-3)">
           {overtimeSummaries.map((entry) => (
             <div
@@ -128,8 +134,10 @@ export default function AttendanceTab() {
         </LayerSurface>
       </SectionCard>
 
+      {/* Absence records: upcoming and recent absences. */}
       <SectionCard layer="theme"
         sectionKey="hr-attendance-absence-records" parentKey="hr-manager-tab-attendance" title="Absence Records" subtitle="Upcoming and recent absences">
+        {/* Absence table: employee, absence type, start date, end date and approval status. */}
         <LayerSurface padding="var(--space-3)" gap="0">
           <DataTableShell>
             <table className="app-data-table">

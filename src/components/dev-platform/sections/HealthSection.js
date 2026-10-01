@@ -29,6 +29,7 @@ const CHECK_META = {
 
 function CheckTile({ name, check }) {
   const meta = CHECK_META[name] || { label: name };
+  // Health check tile: the name of one subsystem, its status badge and a short note.
   return (
     <LayerSurface style={{ gap: "8px", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
@@ -73,6 +74,7 @@ export default function HealthSection() {
   const checks = data?.checks || {};
   const checkEntries = Object.entries(checks);
 
+  // Application health: an overall status and a grid of tiles, one per subsystem check, with loading, error and empty states.
   return (
     <Panel
       title="Application health"

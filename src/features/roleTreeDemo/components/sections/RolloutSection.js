@@ -28,6 +28,7 @@ export default function RolloutSection() {
 
       <div className={styles.rolloutScene}>
         {rolloutPhases.map((phase) => (
+          // One rollout phase: its label, title and a one-line description.
           <LayerSurface
             as="article"
             key={phase.id}
@@ -43,6 +44,7 @@ export default function RolloutSection() {
         ))}
       </div>
 
+      {/* Rollout discipline panel: the heading and the list of safeguards that keep adoption low-risk. */}
       <LayerSurface className={styles.rolloutAssurance} radius="var(--radius-lg)">
         <div className={styles.detailHeader}>
           <div>
@@ -53,6 +55,7 @@ export default function RolloutSection() {
         </div>
         <div className={styles.outcomeGrid}>
           {rolloutSafeguards.map((item) => (
+            // One rollout safeguard with its title and explanation.
             <LayerTheme key={item.id} padding="14px" gap="4px">
               <span className={styles.dashboardCardLabel}>{item.title}</span>
               <span>{item.line}</span>

@@ -18,6 +18,7 @@ function TrendCard({ kpiId, label, unit, format, filter, granularity, granularit
   const trend = useKpiTrend(kpiId, { ...filter, granularity }, { enabled: true });
   const devSectionKey = reportDevKey("report-trend-card", `${kpiId}-${granularity}`);
   return (
+    // Trend card: a small chart of one KPI over time, labelled with the KPI name and whether it is daily or weekly.
     <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={devSectionKey} data-dev-text-preview={`${label} ${granularityLabel}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)" }}>{label}</span>
@@ -31,12 +32,15 @@ function TrendCard({ kpiId, label, unit, format, filter, granularity, granularit
 export default function AccountsOperationsTab({ filter, onDrilldown }) {
   return (
     <>
+      {/* Financial activity: payments, open invoices, balances and exposure for the selected period. */}
       <ReportSection title="Financial activity" subtitle="Collection and receivables activity across the period — payments, the open invoice pipeline, balances and exposure.">
         <KpiScorecardStrip kpis={FINANCIAL_ACTIVITY} filter={filter} onDrilldown={onDrilldown} minCardWidth={220} />
       </ReportSection>
 
+      {/* Revenue and payment trends: invoiced revenue and cash collected over time. */}
       <ReportSection title="Revenue & payment trends" subtitle="Invoiced revenue and cash collected, re-bucketed daily / weekly / monthly.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          {/* Four trend charts: revenue and payments received, each shown daily and weekly. */}
           <TrendCard kpiId="acc.revenue" label="Revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="day" granularityLabel="Daily" />
           <TrendCard kpiId="acc.revenue" label="Revenue (£)" unit="currency" format="£0,0.00" filter={filter} granularity="week" granularityLabel="Weekly" />
           <TrendCard kpiId="acc.payments_received" label="Payments (£)" unit="currency" format="£0,0.00" filter={filter} granularity="day" granularityLabel="Daily" />
@@ -44,6 +48,7 @@ export default function AccountsOperationsTab({ filter, onDrilldown }) {
         </div>
       </ReportSection>
 
+      {/* Invoice processing and readiness indicators: figures such as debtor days, invoice ageing and profitability that are not yet fully available. */}
       <ReportSection
         title="Invoice processing & financial readiness indicators"
         subtitle="Declared in the catalogue — DSO, invoice ageing and payment conversion light up once invoice status-history accrues (R2); profitability needs the department dimension + cost inputs (R2); gross/net profit need COGS and an opex model (R3)."

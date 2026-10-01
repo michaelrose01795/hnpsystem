@@ -196,6 +196,7 @@ export default function InternalElectricsDetailsModal({
       footer={modalFooter}
       sectionKey="vhc-internal"
     >
+      {/* Internal and electrics check: a grid of category cards, each opening a form to log issues for that area. */}
       <div data-draft-ignore="true" style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-internal-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-internal-body">
         <div
           data-dev-section="1"
@@ -226,6 +227,7 @@ export default function InternalElectricsDetailsModal({
             const greenCount = concerns.filter((c) => c.status === "Green").length;
             const loggedCount = redCount + amberCount + greenCount;
 
+            // One category card: the category name, a prompt to log observations, and a badge counting the items already logged.
             return (
               <LayerTheme
                 as="button"

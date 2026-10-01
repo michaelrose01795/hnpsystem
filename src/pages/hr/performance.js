@@ -64,6 +64,7 @@ function PerformanceContent() {
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+        {/* Error message shown when the performance data could not be loaded. */}
         <SectionCard layer="theme"
           sectionKey="hr-performance-error" parentKey="hr-manager-tab-performance" title="Unable to load performance data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
@@ -88,11 +89,13 @@ function PerformanceContent() {
 
       {isLoading ? null : <HrSummaryStrip items={summary} parentKey="hr-manager-tab-performance" />}
 
+      {/* Upcoming reviews: lists the performance reviews that are due so feedback can be prepared in time. */}
       <SectionCard layer="theme"
         sectionKey="hr-performance-upcoming-reviews" parentKey="hr-manager-tab-performance"
         title="Upcoming Reviews"
         subtitle="Schedule and prepare feedback before the review date">
         
+        {/* Table of upcoming reviews: employee, review period, reviewer and next review date. */}
         <LayerSurface padding="var(--space-3)" gap="0">
           <DataTableShell>
             <table className="app-data-table">
@@ -130,6 +133,7 @@ function PerformanceContent() {
         </LayerSurface>
       </SectionCard>
 
+      {/* Development to-do: bullet list of each employee's development focus to follow up after reviews, with an add reminder button. */}
       <SectionCard layer="theme"
         sectionKey="hr-performance-development-todo" parentKey="hr-manager-tab-performance"
         title="Development To-Do"
@@ -161,6 +165,7 @@ function PerformanceContent() {
         }
       </SectionCard>
 
+      {/* Recent appraisals: summary of the latest review scores for each employee, with an export to PDF button. */}
       <SectionCard layer="theme"
         sectionKey="hr-performance-recent-appraisals" parentKey="hr-manager-tab-performance"
         title="Recent Appraisals"
@@ -171,6 +176,7 @@ function PerformanceContent() {
           </Button>
         }>
         
+        {/* Table of appraisal scores: overall rating plus attendance, productivity, quality and teamwork out of five, and the reviewer. */}
         <LayerSurface padding="var(--space-3)" gap="0">
           <DataTableShell>
             <table className="app-data-table">
@@ -219,6 +225,7 @@ function PerformanceContent() {
         </LayerSurface>
       </SectionCard>
 
+      {/* Create performance review: form to pick an employee, review period and reviewer, write summary notes, then save a draft or share it. */}
       <SectionCard layer="theme"
         sectionKey="hr-performance-create-review" parentKey="hr-manager-tab-performance"
         title="Create Performance Review"

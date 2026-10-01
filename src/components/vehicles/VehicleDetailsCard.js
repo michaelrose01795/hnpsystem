@@ -6,6 +6,7 @@
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
 import StatusMessage from "@/components/ui/StatusMessage";
+import { resolveVehicleDisplay } from "@/lib/vehicles/vehicleFormState";
 import { formatUkRegistration, normalizeUkRegistrationInput } from "@/lib/vehicles/registration";
 
 // Row each field claims when `subgrid` is on. Fixed by field name so hiding
@@ -46,12 +47,15 @@ export default function VehicleDetailsCard({
   style,
   children,
 }) {
+  const display = resolveVehicleDisplay(vehicle);
+  const displayedFields = { colour: display.colour, makeModel: display.makeModel, chassis: display.vin, engine: display.engine };
   const cardStyle = subgrid
     ? { ...style, display: "grid", gridTemplateRows: "subgrid", gridRow: `1 / span ${subgridRows}` }
     : style;
   const rowStyle = (row) => (subgrid ? { gridRow: row } : undefined);
 
   return (
+    // Vehicle details: the existing rows show registration, colour, full available make/model and VIN, engine number and mileage.
     <LayerTheme
       sectionKey={sectionKey}
       sectionType="content-card"
@@ -118,7 +122,7 @@ export default function VehicleDetailsCard({
             <label htmlFor={`vehicle-${key}`}>
               {VEHICLE_FIELD_LABELS[key]}
             </label>
-            <input id={`vehicle-${key}`} className="app-input" value={vehicle[key] || "Not available"} readOnly />
+            <input id={`vehicle-${key}`} className="app-input" value={displayedFields[key] || "Not available"} title={displayedFields[key] || "Not available"} readOnly />
           </div>
         ))}
 

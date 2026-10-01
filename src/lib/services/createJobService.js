@@ -1,3 +1,4 @@
+import { dvlaVehicleColumns } from "@/lib/vehicles/vehicleFormState";
 // file location: src/lib/services/createJobService.js
 // Service layer for job creation — consolidates all write operations
 // into a single orchestrated flow used by both the create page and the legacy API.
@@ -221,7 +222,7 @@ export const ensureCustomer = async ({ customerId, firstName, lastName, email, m
    Upserts a vehicle record using the shared database helper,
    returning the vehicle record with a vehicle_id.
 ------------------------------------------------------------------ */
-export const ensureVehicle = async ({ reg, makeModel, colour, chassis, engine, mileage, customerId }) => {
+export const ensureVehicle = async ({ reg, makeModel, colour, chassis, engine, mileage, customerId, dvlaData }) => {
   const regUpper = (reg || "").trim().toUpperCase(); // normalize registration
   if (!regUpper) { // guard against missing registration
     throw new Error("Vehicle registration is required"); // abort
@@ -232,6 +233,7 @@ export const ensureVehicle = async ({ reg, makeModel, colour, chassis, engine, m
   const modelName = makeModelParts.slice(1).join(" "); // extract model
 
   const vehiclePayload = { // build vehicle payload matching database/vehicles.js contract
+    ...dvlaVehicleColumns(dvlaData, reg),
     registration: regUpper, // primary registration field
     reg_number: regUpper, // legacy registration field
     make_model: makeModel || "", // combined make model display string
@@ -291,6 +293,7 @@ export const createFullJob = async ({ customer, vehicle, requests, options = {} 
   // Step 1: Resolve vehicle (upsert)
   const vehicleRecord = await ensureVehicle({ // upsert vehicle record
     reg: vehicle.reg, // registration number
+    dvlaData: vehicle.dvlaData,
     makeModel: vehicle.makeModel, // make and model
     colour: vehicle.colour, // colour
     chassis: vehicle.chassis, // chassis/VIN

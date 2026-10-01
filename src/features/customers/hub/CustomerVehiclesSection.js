@@ -92,6 +92,7 @@ function AddVehicleForm({ customerId, onDone, onCancel }) {
     setBusy("");
   };
 
+  // Add a vehicle: enter a registration, look it up and confirm the details before linking it to the customer.
   return (
     <LayerSurface as="div" sectionKey="customer-profile-vehicle-add" parentKey="customer-profile-vehicles">
       <h3 className="app-record-heading">Add a vehicle</h3>
@@ -132,6 +133,7 @@ function AddVehicleForm({ customerId, onDone, onCancel }) {
       {message && <StatusMessage tone="warning">{message}</StatusMessage>}
 
       {lookup && (
+        // Lookup result: the registration plate, make and model, and the year, colour, fuel, MOT due date, tax status and engine size returned by the lookup.
         <LayerTheme as="div" sectionKey="customer-profile-vehicle-dvla" parentKey="customer-profile-vehicle-add">
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
             <RegistrationPlate registration={registration.trim().toUpperCase()} onTheme />
@@ -160,6 +162,7 @@ function VehicleCard({ vehicle, customerId, access, onOpenHistory }) {
   const warnings = buildVehicleWarnings(vehicle);
   const encodedReg = encodeURIComponent(details.registration);
 
+  // One linked vehicle: plate, make/model and warnings, then VIN, mileage, MOT, tax, service and warranty details with history and booking links.
   return (
     <LayerSurface
       as="article"
@@ -257,6 +260,7 @@ export default function CustomerVehiclesSection({
 }) {
   const [adding, setAdding] = useState(false);
 
+  // Linked vehicles: every vehicle on the customer's record, with an add vehicle button for staff who can manage vehicles.
   return (
     <LayerTheme as="section" sectionKey="customer-profile-vehicles" parentKey="customer-profile-tab-overview">
       <RecordHeading
@@ -272,6 +276,7 @@ export default function CustomerVehiclesSection({
       </RecordHeading>
 
       {adding && (
+        // Form for adding a new vehicle to this customer, shown after pressing Add vehicle.
         <AddVehicleForm
           customerId={customerId}
           onCancel={() => setAdding(false)}
@@ -298,6 +303,7 @@ export default function CustomerVehiclesSection({
         />
       ) : (
         vehicles.map((vehicle) => (
+          // One card per linked vehicle with its details and shortcuts.
           <VehicleCard
             key={vehicle.vehicle_id}
             vehicle={vehicle}

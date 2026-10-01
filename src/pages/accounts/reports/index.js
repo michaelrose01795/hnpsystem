@@ -67,6 +67,7 @@ export default function AccountsReportsPage() {
 
   // Each metric card is nested inside the metrics shell (LayerTheme) → so each card is a LayerSurface.
   const metricCard = (key, label, value, accent = "var(--text-accent)") =>
+  // Metric card: one headline figure for the selected period, shown as an uppercase label above a large value.
   <LayerSurface
     key={key}
     sectionKey={key}

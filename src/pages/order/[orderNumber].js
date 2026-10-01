@@ -281,6 +281,7 @@ export default function PartsOrderDetail() {
 
 function SummaryPill({ label, value }) {
   return (
+    // Small tile showing a caption and its value.
     <LayerSurface gap="0" style={{ minWidth: "140px" }}>
       <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-1)" }}>{label}</p>
       <strong style={{ fontSize: "1.1rem", color: "var(--accentText)" }}>{value}</strong>
@@ -290,6 +291,7 @@ function SummaryPill({ label, value }) {
 
 function InfoCell({ label, value, fullWidth = false }) {
   return (
+    // Detail tile showing one labelled piece of order information.
     <LayerSurface gap="var(--space-xs)" style={{ minWidth: 0, overflowWrap: "anywhere", gridColumn: fullWidth ? "1 / -1" : undefined }}>
       <p className="app-staff-card__subtitle" style={{ margin: 0 }}>{label}</p>
       <div style={{ fontWeight: 600 }}>{value ?? "Not provided"}</div>
@@ -389,6 +391,7 @@ function DeliveryTab({ order }) {
     <div className="app-page-stack">
       <h3 className="app-staff-card__title">Delivery schedule</h3>
       <div className="app-card-grid">
+        {/* Delivery schedule tiles: delivery type, status, expected arrival and time window. */}
         <InfoCell label="Delivery type" value={order.delivery_type || "Not provided"} />
         <InfoCell label="Delivery status" value={formatDeliveryStatus(order.delivery_status)} />
         <InfoCell label="Expected arrival" value={formatDate(order.delivery_eta)} />
@@ -396,6 +399,7 @@ function DeliveryTab({ order }) {
       </div>
       <h3 className="app-staff-card__title">Contact & destination</h3>
       <div className="app-card-grid">
+        {/* Contact and destination tiles: delivery contact, phone and address. */}
         <InfoCell label="Delivery contact" value={order.delivery_contact || order.customer_name || "Not provided"} />
         <InfoCell label="Delivery phone" value={order.delivery_phone || order.customer_phone || "Not provided"} />
         <InfoCell label="Delivery address" value={order.delivery_address || order.customer_address || "Not provided"} />
@@ -407,6 +411,7 @@ function DeliveryTab({ order }) {
 function InvoiceTab({ orderNumber, order }) {
   if (!orderNumber) {
     return (
+      // Error message shown when the order number is missing and the invoice cannot be displayed.
       <LayerSurface padding="var(--section-card-padding)">
         <p style={{ margin: 0, color: "var(--danger-dark)" }}>Order number missing — cannot render invoice.</p>
       </LayerSurface>);

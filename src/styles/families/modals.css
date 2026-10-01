@@ -62,14 +62,15 @@ html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
        indicator on a notched device (the viewport meta sets viewport-fit=cover,
        so the inset is real and must be accounted for here). */
     max-height: calc(100dvh - env(safe-area-inset-bottom));
-    border-radius: 0;
   }
 
+  /* No squared-off corners: on a portrait phone the panel is pinned one gap in
+     from every edge by the phone-popup law in staffglobal.css, so it is still
+     a floating card and keeps the card radius. */
   html.staff-scope :is(.app-drawer) .app-drawer__panel {
     width: 100%;
     max-width: 100%;
     max-height: 100dvh;
-    border-radius: 0;
   }
 }
 

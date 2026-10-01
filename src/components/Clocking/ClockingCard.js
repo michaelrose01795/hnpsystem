@@ -43,6 +43,7 @@ export default function ClockingCard() {
   const hoursDisplay = Number(hoursWorked || 0).toFixed(2);
 
   return (
+    // Your Clocking Status: shows whether the signed-in user is clocked in and the hours worked today, with a button to clock in or out.
     <Card
       title="Your Clocking Status"
       style={{ width: "100%", maxWidth: "32rem" }}

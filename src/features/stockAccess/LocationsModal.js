@@ -33,6 +33,7 @@ function LocationRow({ storeKey, location, onSaved }) {
   const dirty = name !== location.name || department !== (location.department || "workshop");
 
   return (
+    // One storage location: editable name and department, an active or retired badge and Save and Retire / Restore buttons.
     <LayerTheme>
       <div className={styles.fieldGrid}>
         <InputField label="Name" value={name} onChange={(event) => setName(event.target.value)} />
@@ -74,6 +75,7 @@ export default function LocationsModal({ storeKey, locations = [], onClose, onCh
   };
 
   return (
+    // Storage locations pop-up: every existing location followed by a form to add a new one.
     <PopupModal isOpen onClose={onClose} ariaLabel="Storage locations" cardClassName="app-settings-popup-card">
       <div className={`app-settings-popup ${styles.sheet}`}>
         <header className="app-popup-compact-header">
@@ -85,6 +87,7 @@ export default function LocationsModal({ storeKey, locations = [], onClose, onCh
           </div>
         </header>
         {locations.map((location) => (
+          // An existing storage location, editable in place.
           <LocationRow storeKey={storeKey} key={`${location.id}-${location.name}-${location.isActive}`} location={location} onSaved={onChanged} />
         ))}
         <form className={styles.sheet} onSubmit={add}>

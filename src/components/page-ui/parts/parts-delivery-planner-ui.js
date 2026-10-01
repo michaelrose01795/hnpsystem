@@ -91,6 +91,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
     flexDirection: "column",
     gap: "22px"
   }}>
+        {/* Planner header: switch between the delivery and collection planners, create a parts order, and see delivery totals. */}
         <LayerSurface as="header" style={sectionStyle}>
           <div style={{
         display: "flex",
@@ -173,7 +174,9 @@ export default function PartsDeliveryPlannerPageUi(props) {
             </>}
         </LayerSurface>
 
+        {/* Planner body: the delivery planner (scheduled drop-offs and delivery runs) or the collection planner (order search, collection schedule and selected-day details). */}
         {plannerTab === "delivery" ? <>
+            {/* Scheduled drop-offs: invoice deliveries waiting to go out, which can be clicked to review and confirm. */}
             <LayerSurface as="section" style={queueCardStyle}>
               <div>
                 <p style={{
@@ -202,6 +205,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
           flexDirection: "column",
           gap: "14px"
         }}>
+                {/* Drop-off queue: a loading placeholder, an empty message, or one card per day listing that day's delivery jobs. */}
                 {jobsLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading scheduled deliveries" style={{
             display: "flex",
             flexDirection: "column",
@@ -310,6 +314,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
               </div>
             </LayerSurface>
 
+            {/* Delivery runs: filter by day and see each day's planned runs. */}
             <LayerSurface as="section" style={sectionStyle}>
               <div style={{
           display: "flex",
@@ -363,6 +368,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
           const dayDrops = items.reduce((total, item) => total + (item.stops_count || 1), 0);
           const status = items[0]?.status?.replace(/_/g, " ") || "Planned";
           const cardLabel = date === "unscheduled" ? "Unscheduled" : formatDate(date);
+          // One day's delivery runs with its status and totals for mileage, fuel and drops.
           return <LayerTheme key={`${date}-${status}`} style={dayCardStyle}>
                       <div style={{
               display: "flex",
@@ -402,6 +408,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 const jobNumber = run.job?.job_number || `#${run.job_id}`;
                 const address = run.destination_address || customer?.address || run.customer?.name || "Address TBC";
                 const fuelExpense = Number(run.fuel_cost) || computeFuelCost(run);
+                // One delivery run: job number, customer and address, with its mileage and fuel cost.
                 return <LayerSurface as="article" key={run.id} radius="var(--radius-sm)" padding="12px" gap="0" style={runRowStyle}>
                               <div>
                                 <div style={{
@@ -510,6 +517,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                   {collectionSearchMessage}
                 </p>}
             </div>
+            {/* Collection schedule table: collections, total parts, earliest slot and load for each day. */}
             <LayerTheme padding="0" gap="0" style={collectionTableSectionStyle}>
               {collectionError ? <div style={{
           padding: "18px",
@@ -611,6 +619,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                   </table>
                 </div>}
             </LayerTheme>
+            {/* Selected day details: the chosen date's collection figures and the list of collection jobs, each opening its order. */}
             <LayerTheme padding="18px" style={collectionDetailsSectionStyle}>
               <div style={{
           display: "flex",
@@ -697,6 +706,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
           gap: "10px"
         }}>
                   <SkeletonKeyframes />
+                  {/* Placeholder cards shown while the selected day's collection jobs load. */}
                   {["55%", "45%", "60%"].map((width, index) => <LayerSurface key={index} radius="var(--radius-md)" padding="14px" gap="6px">
                       <SkeletonBlock width={width} height="16px" />
                       <SkeletonBlock width="75%" height="12px" />

@@ -317,6 +317,7 @@ export default function DocumentsUploadPopup({
   }
 
   return (
+    // Upload documents popup: choose PDFs or images to attach, rename or remove them before uploading, and watch upload progress alongside documents already uploaded.
     <PopupModal
       isOpen
       onClose={handleClose}
@@ -367,6 +368,7 @@ export default function DocumentsUploadPopup({
 
         <div style={{ display: "flex", gap: "20px", flexWrap: hasRightPanel ? "nowrap" : "wrap" }}>
           <div style={{ flex: hasRightPanel ? "0 0 45%" : "1", display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* File picker: click to choose PNG, JPG or PDF files to upload. */}
             <LayerTheme
               as="label"
               htmlFor="documents-input"
@@ -389,6 +391,7 @@ export default function DocumentsUploadPopup({
             </LayerTheme>
 
             {pendingDocuments.length > 0 && (
+              // Selected files: each chosen file with its size and buttons to rename or remove it before uploading.
               <LayerTheme
                 radius="var(--radius-sm)"
                 padding="12px"
@@ -472,6 +475,7 @@ export default function DocumentsUploadPopup({
           </div>
 
           {hasRightPanel && (
+            // Right-hand panel: upload progress for each file, followed by the documents already uploaded.
             <LayerTheme
               padding="16px"
               radius="var(--radius-sm)"
@@ -511,6 +515,7 @@ export default function DocumentsUploadPopup({
                         : "var(--info)";
 
                     return (
+                      // Upload progress card: the file name, percentage complete, a progress bar, and the speed or time remaining.
                       <LayerSurface
                         key={`progress-${idx}`}
                         padding="12px"
@@ -619,6 +624,7 @@ export default function DocumentsUploadPopup({
                       const docType = doc.type || doc.file_type || doc.contentType || "";
                       const docUrl = doc.url || doc.file_url || "";
                       return (
+                        // Uploaded document: a thumbnail or file-type tile, the name and type, and a View link.
                         <LayerSurface
                           key={doc.id || doc.file_id || idx}
                           padding="8px"

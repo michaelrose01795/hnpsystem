@@ -20,6 +20,7 @@ export default function MeetTheTeam() {
     [filter],
   );
 
+  // Meet the team: an introduction, department filter chips and a grid of staff cards.
   return (
     <section className={`${styles.section} ${styles.teamSection}`} aria-label="Meet the team">
       <header className={styles.subSceneHead} data-reveal>
@@ -51,6 +52,7 @@ export default function MeetTheTeam() {
         {filtered.map((member) => (
           <div key={member.id} data-reveal>
             <Card3D intensity={0.6}>
+              {/* One team member card: their photo with their name and role details beneath. */}
               <LayerSurface className={styles.teamCard} padding="0">
                 <div className={styles.teamPhotoWrap}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}

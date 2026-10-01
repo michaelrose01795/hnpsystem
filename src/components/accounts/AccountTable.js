@@ -68,6 +68,7 @@ export default function AccountTable({
     onSortChange({ field: columnKey, direction: "asc" });
   };
 
+  // Accounts table: optional filter toolbar above a sortable list of accounts showing ID, customer, type, status, balance, credit limit, billing name and last updated.
   return (
     <LayerTheme as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" style={{ display: "flex", flexDirection: "column", gap: isVerticalPhone ? "var(--space-2)" : "16px" }}>
       {/* Filter toolbar (when supplied by the consumer) sits at the top of the card. */}

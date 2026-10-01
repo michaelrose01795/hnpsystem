@@ -10,6 +10,7 @@ import { NotConnectedNotice } from "./analyticsAtoms";
 
 export default function PagePerformanceSection() {
   return (
+    // Page Performance: a placeholder explaining that per-page visitor figures (most viewed pages, time on page, entry and exit pages) will appear once tracking is connected.
     <Section
       title="Page Performance"
       subtitle="How each public /website page performs once visitor tracking is live."

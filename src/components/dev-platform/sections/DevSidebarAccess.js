@@ -373,6 +373,7 @@ export default function DevSidebarAccess() {
     : "Role default";
 
   return (
+    // Sidebar module access: pick a user, then choose which sidebar modules and pages they can see. Includes popups for assigned modules, the module page map and copying a layout.
     <Panel
       sectionKey="dev-sidebar-user-editor"
       parentKey="app-layout-page-card"
@@ -395,6 +396,7 @@ export default function DevSidebarAccess() {
           action={<button type="button" onClick={load} className="app-btn app-btn--secondary">Refresh</button>}
         />
       ) : (
+        // Editor area: the user picker followed by the selected user's summary and module choices.
         <DevLayoutSection
           sectionKey="dev-sidebar-user-editor-grid"
           parentKey="dev-sidebar-user-editor-content"
@@ -406,6 +408,7 @@ export default function DevSidebarAccess() {
             minWidth: 0,
           }}
         >
+          {/* Choose a user: search or browse the user list and select whose sidebar to edit. */}
           <SubSurface
             sectionKey="dev-sidebar-user-directory"
             parentKey="dev-sidebar-user-editor-grid"
@@ -480,18 +483,21 @@ export default function DevSidebarAccess() {
               message="Choose a user, assign complete modules, then tailor the pages inside each module."
             />
           ) : (
+            // Selected user area: a summary card beside the standard module picker.
             <DevLayoutSection
               sectionKey="dev-sidebar-selected-user"
               parentKey="dev-sidebar-user-editor-grid"
               sectionType="section-shell"
               style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))", gap: "var(--page-stack-gap, 12px)", alignItems: "start", minWidth: 0 }}
             >
+              {/* User summary: name, email, role and status, with controls to load a role's modules, save, copy the layout, discard changes or restore the default. */}
               <SubSurface
                 sectionKey="dev-sidebar-selected-user-summary"
                 parentKey="dev-sidebar-selected-user"
                 sectionType="content-card"
                 style={{ gap: "12px" }}
               >
+                {/* Summary row: the user's name and email with role, status and unsaved-changes badges. */}
                 <DevLayoutSection
                   sectionKey="dev-sidebar-selected-user-summary-row"
                   parentKey="dev-sidebar-selected-user-summary"
@@ -574,6 +580,7 @@ export default function DevSidebarAccess() {
                 ) : null}
               </SubSurface>
 
+              {/* Standard modules: buttons to add or remove each standard module, and a button to open the assigned modules popup. */}
               <SubSurface
                 sectionKey="dev-sidebar-module-library"
                 parentKey="dev-sidebar-selected-user"
@@ -626,6 +633,7 @@ export default function DevSidebarAccess() {
         </DevLayoutSection>
       )}
 
+      {/* Assigned modules popup: lists each module assigned to the user so individual pages can be ticked on or off, then saved. */}
       <PopupModal
         isOpen={assignedModulesOpen}
         onClose={() => setAssignedModulesOpen(false)}
@@ -640,6 +648,7 @@ export default function DevSidebarAccess() {
           overflow: "hidden",
         }}
       >
+        {/* Assigned modules panel: module count and saved-state badges with Save and Close buttons, above the list of module cards. */}
         <Panel
           sectionKey="dev-sidebar-assigned-modules-popup"
           parentKey="shared-popup-card"
@@ -686,6 +695,7 @@ export default function DevSidebarAccess() {
             const visibleItems = [...baseItems, ...extraItems];
             const selectedCount = module.items.length;
             return (
+              // Module card: the module name and page count, with a tick box for each page it can contain.
               <SubSurface
                 as="section"
                 id={`sidebar-module-${module.key}`}
@@ -750,6 +760,7 @@ export default function DevSidebarAccess() {
         </Panel>
       </PopupModal>
 
+      {/* Module page map popup: shows every standard module and the pages inside it, colour-coding pages that appear in more than one module. */}
       <PopupModal
         isOpen={modulePageMapOpen}
         onClose={() => setModulePageMapOpen(false)}
@@ -763,6 +774,7 @@ export default function DevSidebarAccess() {
           overflow: "hidden",
         }}
       >
+        {/* Module page map panel: module and shared-page counts with a Close button, above the legend and the grid of modules. */}
         <Panel
           sectionKey="dev-sidebar-module-page-map-popup"
           parentKey="shared-popup-card"
@@ -779,6 +791,7 @@ export default function DevSidebarAccess() {
             </>
           )}
         >
+          {/* Legend: the colours used for pages shared between modules. */}
           <SubSurface
             sectionKey="dev-sidebar-module-page-map-legend"
             parentKey="dev-sidebar-module-page-map-popup-content"
@@ -819,6 +832,7 @@ export default function DevSidebarAccess() {
             }}
           >
             {moduleCatalog.map((bundle) => (
+              // Module card: the module name, its page count and the list of pages, noting any that also appear in other modules.
               <SubSurface
                 as="section"
                 key={bundle.key}
@@ -882,6 +896,7 @@ export default function DevSidebarAccess() {
         </Panel>
       </PopupModal>
 
+      {/* Copy layout popup: choose one or more staff members to receive this user's sidebar layout. */}
       <PopupModal
         isOpen={copyLayoutOpen}
         onClose={closeCopyLayout}

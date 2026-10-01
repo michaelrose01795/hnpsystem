@@ -12,8 +12,10 @@ export default function CreateAccountRouteShimUi(props) {
     case "section1":
       return <ProtectedRoute allowedRoles={CREATE_ROLES}>
       <div className="app-page-shell">
+        {/* Holding card shown briefly while the new account form is opened. */}
         <LayerSurface>
           <div className="app-page-stack">
+            {/* Message telling the user the account form is opening. */}
             <LayerTheme as="section">
               Opening account form…
             </LayerTheme>

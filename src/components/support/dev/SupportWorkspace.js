@@ -52,6 +52,7 @@ const relTime = (iso) => {
 const withDefault = (options, placeholder) => [{ value: "", label: placeholder }, ...options];
 
 function WorkspaceCard({ title, actions, children, sectionKey }) {
+  // Workspace card: a titled panel with optional action buttons, used for each block of the Support Centre.
   return (
     <LayerSurface sectionKey={sectionKey} style={{ gap: "var(--space-md)" }}>
       {(title || actions) && (
@@ -194,6 +195,7 @@ export default function SupportWorkspace() {
     { label: "Total", value: stats?.total ?? count, tone: "text-1" },
   ];
 
+  // Support Centre workspace: a header with Refresh, the dashboard figures, the filters and the queue of reports.
   return (
     <LayerTheme sectionKey="support-centre-workspace" style={{ gap: "var(--page-stack-gap)" }}>
       {/* Header */}
@@ -205,9 +207,10 @@ export default function SupportWorkspace() {
       </div>
 
       <DashboardGrid min={420}>
-      {/* Dashboard */}
+      {/* Dashboard: headline counts of support reports. */}
       <WorkspaceCard title="Dashboard" sectionKey="support-centre-dashboard">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--space-sm)" }}>
+          {/* One figure tile per headline count. */}
           {statCards.map((c) => (
             <StatCard
               key={c.label}
@@ -220,7 +223,7 @@ export default function SupportWorkspace() {
         </div>
       </WorkspaceCard>
 
-      {/* Filters + saved views */}
+      {/* Filters: search plus status, severity, category and sort dropdowns, with preset and saved views that can be applied or removed. */}
       <WorkspaceCard
         title="Filters"
         sectionKey="support-centre-filters"
@@ -275,7 +278,7 @@ export default function SupportWorkspace() {
       </WorkspaceCard>
       </DashboardGrid>
 
-      {/* Queue */}
+      {/* Queue: the list of reports matching the filters, each opening its detail view, with loading, error and empty states. */}
       <WorkspaceCard title={`Queue (${reports.length})`} sectionKey="support-centre-queue">
         {loading ? (
           <LoadingBlock rows={5} />

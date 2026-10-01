@@ -38,12 +38,14 @@ export const EQUIPMENT_SUMMARY_TILES = [
 
 export function EquipmentSummaryBar({ summary, activeFilter, onSelect }) {
   return (
+    // Summary tiles: counts of equipment due soon, overdue, checked today, in total, with a fault reported and out of service. Clicking a tile filters the list.
     <div className="app-summary-section">
       <div className="app-summary-grid" role="group" aria-label="Filter equipment by summary">
         {EQUIPMENT_SUMMARY_TILES.map((tile) => {
           const isActive = activeFilter === tile.key;
           const toggle = () => onSelect(isActive || tile.key === "active" ? "active" : tile.key);
           return (
+            // Summary tile: a label and count that switches the matching filter on or off when clicked.
             <div
               key={tile.key}
               role="button"
@@ -106,6 +108,7 @@ export function EquipmentCard({
   };
 
   return (
+    // Equipment card: name, asset code, category and status, then location, check dates, interval and who last checked it, any open fault, and buttons for history, reporting a fault and logging a check.
     <LayerTheme
       as="article"
       role="button"

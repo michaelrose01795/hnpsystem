@@ -243,6 +243,7 @@ For every request:
 4. If the request is clear and local in scope — proceed without delay.
 5. Keep work scoped to the request. Do not refactor surrounding code unless it directly blocks the task.
 6. Do not rename or move files unless it clearly improves organisation for the feature being changed and does not cause wider breakage.
+7. After editing, bring the plain-English section notes back in step with what changed — see §10a. This is part of every task, not an optional extra.
 
 ---
 
@@ -267,6 +268,32 @@ If creating a new file, state why an existing file could not be used instead.
 - If a one-off style is genuinely required, add a comment on the same line explaining why.
 - Do not introduce new CSS class names outside of `globals.css` without justification.
 - Do not add Tailwind utility classes that conflict with the existing CSS variable system.
+
+---
+
+## 10a. Section Notes — Keep Them In Step
+
+Every card section in the app has a short plain-English note directly above it describing what the section shows or lets the user do. A page with 20 sections has 20 notes. **The notes are part of the code: any change that alters a section must update its note in the same edit.** This applies to every prompt, whether or not the prompt mentions notes.
+
+**What counts as a card section:** `<Section>`, `<SectionCard>`, `<Card>`, `<LayerSurface>`, `<LayerTheme>`, `<DevLayoutSection>`, `<PopupModal>`, any element with `app-section-card` / `app-page-card`, and feature wrappers that are plainly the same thing (stat cards, summary cards, drawers, titled panels). Not plain layout divs, rows, buttons, inputs or table cells.
+
+**After every edit, before finishing the task:**
+
+1. **Changed a section** (added, removed or renamed a field, column, action, state or condition; changed who can see or do something) → re-read the note above it and rewrite it so it describes the section as it now is.
+2. **Added a section** → write a note above it.
+3. **Removed a section** → remove its note with it.
+4. **Moved or split a section** → the note moves with it; a split section gets one note per part.
+5. **Note still accurate** → leave it exactly as it is. Do not reword notes for style.
+
+**How to write the note:**
+
+- One sentence (two at most), UK English, written for someone who has never seen the page. Describe the content — "Vehicle details: registration, make/model and MOT expiry, with an edit button for managers." — never the implementation (no class names, tokens, component names or rule references).
+- Between JSX siblings: `{/* … */}`. Where a JSX comment is not legal (directly inside `return (`, inside `cond && (` or a ternary branch, above an arrow-function component): a `//` line. A `//` in a JSX-child position renders as visible text on the page — never put one there.
+- One note above a `.map()` covers the mapped card. A card that opens mid-line inside a ternary is covered by one note above the whole expression — do not restructure code to make room for a comment.
+- If an existing comment above the section only explains implementation, keep it and put the plain-English note beneath it.
+- Do not write the literal text `border:`, `!important`, `var(--` or a hex colour inside a note — the design checks scan source text.
+
+**In the task summary**, list the notes that were added, rewritten or removed, or state that no section's content changed.
 
 ---
 

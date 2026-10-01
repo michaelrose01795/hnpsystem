@@ -167,6 +167,7 @@ function MetricGridSkeleton({ count, statCardStyle }) {
       style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}
     >
       {Array.from({ length: count }).map((_, index) => (
+        // Placeholder stat tile: two grey bars standing in for a label and a figure.
         <div key={index} style={{ ...statCardStyle, gap: "10px" }}>
           <SkeletonBlock width={index % 3 === 0 ? "72%" : "60%"} height="11px" />
           <SkeletonBlock width={index % 2 === 0 ? "58%" : "46%"} height="25px" />
@@ -178,6 +179,7 @@ function MetricGridSkeleton({ count, statCardStyle }) {
 
 function EfficiencyTableSkeleton({ sectionKey, titleWidth, themedSectionStyle, tableWrapperStyle }) {
   return (
+    // Placeholder table card: a grey heading bar above an empty nine-column table, shown while efficiency data loads.
     <DevLayoutSection
       sectionKey={sectionKey}
       sectionType="content-card"
@@ -208,6 +210,7 @@ function EfficiencyContentSkeleton({ individual, themedSectionStyle, statCardSty
     >
       <SkeletonKeyframes />
       {!individual ? (
+        // Placeholder for the overall summary: a grey heading and twelve blank stat tiles.
         <DevLayoutSection
           sectionKey="tech-efficiency-overall-summary"
           sectionType="content-card"
@@ -1357,6 +1360,7 @@ export default function EfficiencyTab({
   };
 
   return (
+    // Efficiency page: technician tabs and month picker, filters, summary figures, insights and the entries table, plus popups for details and job entries.
     <DevLayoutSection
       sectionKey="tech-efficiency-page"
       sectionType="page-shell"
@@ -1365,7 +1369,7 @@ export default function EfficiencyTab({
       className="efficiency-page"
       style={{ display: "flex", flexDirection: "column", gap: "20px" }}
     >
-      {/* Combined row: Tabs + Month Nav + Print */}
+      {/* Top bar: technician tabs, the Download and Add Job Entry buttons, and the month picker. */}
       <DevLayoutSection
         sectionKey="tech-efficiency-topbar"
         sectionType="toolbar"
@@ -1383,6 +1387,7 @@ export default function EfficiencyTab({
           border: "none",
         }}
       >
+        {/* Navigation group: holds the tabs, action buttons and month picker together in one row. */}
         <DevLayoutSection
           sectionKey="tech-efficiency-nav-group"
           sectionType="toolbar"
@@ -1390,7 +1395,7 @@ export default function EfficiencyTab({
           className="efficiency-topbar-nav-group"
           style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flex: "1 1 auto", flexWrap: "wrap" }}
         >
-          {/* Tab bar */}
+          {/* Technician tabs: switch between the workshop overall view and each technician. */}
           <DevLayoutSection
             sectionKey="tech-efficiency-tabs"
             sectionType="tab-row"
@@ -1412,7 +1417,7 @@ export default function EfficiencyTab({
             />
           </DevLayoutSection>
 
-          {/* Action buttons */}
+          {/* Actions: download the technician's timesheet as a PDF and, where editing is allowed, add a job entry. */}
           <DevLayoutSection
             sectionKey="tech-efficiency-topbar-actions"
             sectionType="toolbar"
@@ -1442,7 +1447,7 @@ export default function EfficiencyTab({
             )}
           </DevLayoutSection>
 
-          {/* Month navigation */}
+          {/* Month picker: choose which month's efficiency data to show. */}
           <DevLayoutSection
             sectionKey="tech-efficiency-month-nav"
             sectionType="toolbar"
@@ -1459,6 +1464,7 @@ export default function EfficiencyTab({
         </DevLayoutSection>
       </DevLayoutSection>
 
+      {/* Filters: switch between day, week and month, pick a date, search entries and, on the overall view, filter by technician. */}
       <DevLayoutSection
         sectionKey="tech-efficiency-filter-shell"
         sectionType="content-card"
@@ -1536,7 +1542,7 @@ export default function EfficiencyTab({
         </div>
       </DevLayoutSection>
 
-      {/* Error */}
+      {/* Error banner: shows the message when efficiency data fails to load or save. */}
       {error && (
         <div
           data-dev-section="1"
@@ -1571,7 +1577,7 @@ export default function EfficiencyTab({
       {/* Overall Tab */}
       {!loading && activeTab === "overall" && (
         <>
-          {/* Overall stats */}
+          {/* Overall efficiency: stat tiles covering logged, allocated, productive, target, overtime and unallocated hours, the differences, weighted figures, overall efficiency and the change on the previous period. */}
           <DevLayoutSection
             sectionKey="tech-efficiency-overall-summary"
             sectionType="content-card"
@@ -1590,6 +1596,7 @@ export default function EfficiencyTab({
               data-dev-section-type="content-card"
               data-dev-section-parent="tech-efficiency-overall-summary"
             >
+              {/* Logged total: all hours logged by the workshop in the selected period. */}
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-logged" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Logged Total
@@ -1598,6 +1605,7 @@ export default function EfficiencyTab({
                   {formatHours(overallCurrentMetrics.loggedHours)}h
                 </strong>
               </div>
+              {/* Allocated total: all hours allocated to jobs in the selected period. */}
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-allocated" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Allocated Total
@@ -1606,22 +1614,27 @@ export default function EfficiencyTab({
                   {formatHours(overallCurrentMetrics.allocatedHours)}h
                 </strong>
               </div>
+              {/* Productive hours: hours spent on productive work. */}
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-productive" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>Productive Hours</span>
                 <strong style={summaryValueStyle(overallSectionStatusColor)}>{formatHours(overallCurrentMetrics.productiveHours)}h</strong>
               </div>
+              {/* Available / target: the hours the workshop was expected to work. */}
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-target" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>Available / Target</span>
                 <strong style={summaryValueStyle(overallSectionStatusColor)}>{formatHours(overallCurrentMetrics.targetHours)}h</strong>
               </div>
+              {/* Overtime: hours worked as overtime. */}
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-overtime" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>Overtime</span>
                 <strong style={summaryValueStyle(overallSectionStatusColor)}>{formatHours(overallCurrentMetrics.overtimeHours)}h</strong>
               </div>
+              {/* Unallocated / non-productive: hours not tied to allocated work. */}
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-unallocated" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>Unallocated / Non-productive</span>
                 <strong style={summaryValueStyle(overallSectionStatusColor)}>{formatHours(overallCurrentMetrics.unallocatedHours)}h</strong>
               </div>
+              {/* Total difference: logged hours compared with allocated hours. */}
               <div style={statusCardStyle(overallSectionStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-total-difference" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Total Difference
@@ -1630,6 +1643,7 @@ export default function EfficiencyTab({
                   {formatSignedHours(overallCurrentMetrics.allocationDifference)}
                 </strong>
               </div>
+              {/* Weighted actual: actual hours adjusted by each technician's weight. */}
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-weighted-actual" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Weighted Actual
@@ -1638,6 +1652,7 @@ export default function EfficiencyTab({
                   {overallTotals.weightedActual}h
                 </strong>
               </div>
+              {/* Weighted target: target hours adjusted by each technician's weight. */}
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-weighted-target" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Weighted Target
@@ -1646,6 +1661,7 @@ export default function EfficiencyTab({
                   {overallTotals.weightedTarget}h
                 </strong>
               </div>
+              {/* Difference: weighted actual hours compared with the weighted target. */}
               <div style={statusCardStyle(overallSectionStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-weighted-difference" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Difference
@@ -1654,6 +1670,7 @@ export default function EfficiencyTab({
                   {formatSignedHours(overallTotals.difference)}
                 </strong>
               </div>
+              {/* Overall efficiency: the workshop's efficiency percentage for the period. */}
               <div style={statusCardStyle(overallSectionStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-efficiency" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Overall Efficiency
@@ -1662,6 +1679,7 @@ export default function EfficiencyTab({
                   {overallTotals.efficiencyPct}%
                 </strong>
               </div>
+              {/* Previous / change: the previous period's efficiency and how much it has moved. */}
               <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-previous" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 {analysisLoading ? <><SkeletonBlock width="72%" height="11px" /><SkeletonBlock width="58%" height="25px" /></> : <>
                   <span style={statusLabelStyle(overallSectionStatusColor)}>Previous / Change</span>
@@ -1688,7 +1706,7 @@ export default function EfficiencyTab({
             hideHeadline
           />
 
-          {/* Technician summary table */}
+          {/* Technician breakdown: a table of each technician's role, weight, actual, allocated and target hours, difference, efficiency and change on the previous period. Clicking a row opens that technician's tab. */}
           <DevLayoutSection
             sectionKey="tech-efficiency-overall-breakdown"
             sectionType="content-card"
@@ -1814,7 +1832,7 @@ export default function EfficiencyTab({
             analysisError={analysisError}
           />
 
-          {/* Entries table */}
+          {/* Entries: the technician's job entries with date, job number, description, allocated and logged hours, difference, source, notes and day type. Clicking a row opens it. */}
           <DevLayoutSection
             sectionKey="tech-efficiency-tech-entries"
             sectionType="content-card"
@@ -2112,8 +2130,9 @@ export default function EfficiencyTab({
                 </div>
               )}
 
-              {/* Summary stats row */}
+              {/* Summary tiles: the technician's actual hours, target hours, difference and efficiency for the month. */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+                {/* Actual hours tile. */}
                 <div style={statCardStyle}>
                   <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                     Actual Hours
@@ -2122,6 +2141,7 @@ export default function EfficiencyTab({
                     {detailPopupSummary.totals.actualHours}h
                   </strong>
                 </div>
+                {/* Target hours tile. */}
                 <div style={statCardStyle}>
                   <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                     Target Hours
@@ -2130,6 +2150,7 @@ export default function EfficiencyTab({
                     {detailPopupSummary.totals.targetHours}h
                   </strong>
                 </div>
+                {/* Difference tile: actual hours against target, coloured by whether it is ahead or behind. */}
                 <div style={statusCardStyle(totalDifferenceColor(detailPopupSummary.totals.difference))}>
                   <span style={detailStatusLabelStyle(totalDifferenceColor(detailPopupSummary.totals.difference))}>
                     Difference
@@ -2138,6 +2159,7 @@ export default function EfficiencyTab({
                     {formatSignedHours(detailPopupSummary.totals.difference)}
                   </strong>
                 </div>
+                {/* Efficiency tile: the technician's efficiency percentage, coloured by how good it is. */}
                 <div style={statusCardStyle(effColor(detailPopupSummary.totals.efficiencyPct))}>
                   <span style={detailStatusLabelStyle(effColor(detailPopupSummary.totals.efficiencyPct))}>
                     Efficiency
@@ -2231,7 +2253,7 @@ export default function EfficiencyTab({
         </PopupModal>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* Job entry popup: add, edit or view a job entry with its date, day type, job number, clocking, allocated and clocked hours, description and notes. */}
       {modalOpen && (
         <PopupModal
           isOpen

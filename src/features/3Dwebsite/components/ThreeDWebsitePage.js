@@ -203,6 +203,7 @@ export default function ThreeDWebsitePage() {
               const Section = SECTION_COMPONENTS[i];
               if (!Section) return null;
               return (
+                // Story panel for one stage of the dealership tour (entry, sales, workshop, parts, smart repair, valet or collection); only the active stage is shown.
                 <Section
                   key={stage.id}
                   stage={stage}

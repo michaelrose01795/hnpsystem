@@ -45,6 +45,7 @@ const TrendBlock = ({ data }) => (
 
 // JobList — list block inside a dashboard LayerTheme section, so it renders as LayerSurface.
 const JobList = ({ jobs }) => (
+  // Outstanding jobs list: each row shows the job number, vehicle registration and status, or a message when there are none.
   <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
     {jobs.length === 0 ?
       <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>No outstanding jobs right now.</p> :

@@ -49,6 +49,7 @@ export default function OpeningSection() {
           })}
         </div>
 
+        {/* Story brief: a short explanation of how the presentation runs, from daily friction on the workshop floor up to business clarity. */}
         <LayerSurface className={styles.openingBrief} radius="var(--radius-lg)">
           <span className={styles.cardKicker}>The page story</span>
           <div className={styles.cardTitle}>One route from daily friction to business clarity.</div>
@@ -57,6 +58,7 @@ export default function OpeningSection() {
             departments and roles, then finish with a realistic rollout.
           </p>
           <div className={styles.signalGrid}>
+            {/* One card per opening signal, each with a title and a one-line message. */}
             {openingSignals.map((signal) => (
               <LayerTheme key={signal.id} className={styles.signalCard} padding="14px" gap="6px">
                 <span className={styles.dashboardCardLabel}>{signal.title}</span>

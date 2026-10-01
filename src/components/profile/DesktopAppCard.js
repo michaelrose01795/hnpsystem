@@ -40,6 +40,7 @@ const DESKTOP_APP_PAGE_KEY = "profile-desktop-app-page-card";
 
 function DesktopAppSection({ title, sectionKey, headerRight, children }) {
   return (
+    // Titled section of the desktop app panel: a heading with an optional button on the right, then the section's content.
     <LayerTheme
       as="section"
       sectionKey={sectionKey}
@@ -174,6 +175,7 @@ function StatusPill({ tone, label }) {
 
 function MetaItem({ label, value, tone = "theme" }) {
   return (
+    // Detail tile: a small uppercase label above its value, such as the version or file size.
     <div
       style={{
         display: "flex",
@@ -360,6 +362,7 @@ export default function DesktopAppCard({
 }) {
   const probe = useInstallerProbe();
   return (
+    // Desktop app card: explains the Windows desktop app and offers the installer download with its version, date and size.
     <DevLayoutSection
       as="div"
       sectionKey={sectionKey}
@@ -385,6 +388,7 @@ export function DesktopAppPanel({ onClose } = {}) {
     : "Awaiting publish";
 
   return (
+    // Desktop app panel: overview, download and details sections for the Windows installer.
     <LayerSurface
       as="div"
       sectionKey={DESKTOP_APP_PAGE_KEY}
@@ -397,6 +401,7 @@ export function DesktopAppPanel({ onClose } = {}) {
       style={{ minWidth: "min(440px, 100%)" }}
     >
       <div className="app-page-stack">
+        {/* Overview: what the desktop app is, with a status pill showing whether the installer is ready. */}
         <DesktopAppSection
           title="Desktop App"
           sectionKey="profile-desktop-app-overview"
@@ -442,6 +447,7 @@ export function DesktopAppPanel({ onClose } = {}) {
           </div>
         </DesktopAppSection>
 
+        {/* Download: the installer download button, a notice if it is not yet available and a note about the Windows warning. */}
         <DesktopAppSection title="Download" sectionKey="profile-desktop-app-download">
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
             {isAvailable ? (
@@ -480,6 +486,7 @@ export function DesktopAppPanel({ onClose } = {}) {
           ) : null}
         </DesktopAppSection>
 
+        {/* Details: the installer's version, last updated date and file size, with a support note. */}
         <DesktopAppSection title="Details" sectionKey="profile-desktop-app-details">
           <div
             style={{

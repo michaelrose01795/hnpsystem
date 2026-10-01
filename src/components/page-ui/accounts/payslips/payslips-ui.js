@@ -82,9 +82,10 @@ export default function PayslipsAdminPageUi(uiProps) {
 
   return (
     <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
+      {/* Payslips admin page: the filter toolbar and the payslips table. */}
       <DevLayoutSection sectionKey="payslips-page-shell" sectionType="page-shell" shell>
         <div style={{ display: "flex", flexDirection: "column", gap: isVerticalPhone ? "var(--space-2)" : "20px" }}>
-          {/* Filter toolbar — lives in the main page section, above the table card */}
+          {/* Filter toolbar: search box, filters for user, department, status and paid month, a Clear filters button and a New payslip button. */}
           <DevLayoutSection sectionKey="payslips-filter-toolbar" sectionType="filter-row" parentKey="payslips-page-shell">
             <ToolbarRow>
               <SearchBar
@@ -147,7 +148,7 @@ export default function PayslipsAdminPageUi(uiProps) {
             </ToolbarRow>
           </DevLayoutSection>
 
-          {/* Table card — only wraps the table itself */}
+          {/* Payslips table: paid date, user, department, period, gross, net and status for each payslip, with view, edit and delete actions. */}
           <LayerTheme
             sectionKey="payslips-table"
             sectionType="data-table"
@@ -242,6 +243,7 @@ export default function PayslipsAdminPageUi(uiProps) {
         </div>
       </DevLayoutSection>
 
+      {/* Popup form for creating a new payslip. */}
       <PayslipUpsertModal
         isOpen={isCreateOpen}
         mode="create"
@@ -250,6 +252,7 @@ export default function PayslipsAdminPageUi(uiProps) {
         onSaved={() => fetchPayslips()}
       />
 
+      {/* Popup form for editing an existing payslip. */}
       <PayslipUpsertModal
         isOpen={Boolean(editingPayslip)}
         mode="edit"
@@ -259,12 +262,14 @@ export default function PayslipsAdminPageUi(uiProps) {
         onSaved={() => fetchPayslips()}
       />
 
+      {/* Popup showing the full details of one payslip. */}
       <PayslipDetailPopup
         isOpen={Boolean(activePayslip)}
         payslip={activePayslip}
         onClose={() => setActivePayslip(null)}
       />
 
+      {/* Confirmation prompt shown before a payslip is deleted. */}
       <ConfirmationDialog
         isOpen={Boolean(confirmDialog)}
         message={confirmDialog?.message}

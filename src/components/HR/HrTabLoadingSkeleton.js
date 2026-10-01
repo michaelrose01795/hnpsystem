@@ -4,6 +4,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import { SkeletonBlock, SkeletonKeyframes, SkeletonMetricCard } from "@/components/ui/LoadingSkeleton";
 
 function SkeletonPanel({ titleWidth = "180px", subtitleWidth = "260px", children }) {
+  // Placeholder panel: a shimmering title and subtitle above placeholder content, shown while an HR section loads.
   return <LayerTheme style={{ minWidth: 0 }}>
     <div style={{ display: "grid", gap: "var(--space-sm)" }}>
       <SkeletonBlock width={titleWidth} height="18px" />
@@ -68,23 +69,28 @@ function DashboardVariant() {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: "18px" }}>
         {Array.from({ length: 4 }).map((_, index) => (
+          // Placeholder for one headline HR figure.
           <SkeletonMetricCard key={index} />
         ))}
       </div>
 
       <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
+        {/* Placeholder for the department performance table. */}
         <SkeletonPanel titleWidth="210px" subtitleWidth="300px">
           <TableRows rows={5} cols={4} />
         </SkeletonPanel>
+        {/* Placeholder for the training renewals list. */}
         <SkeletonPanel titleWidth="150px" subtitleWidth="240px">
           <ListRows rows={4} />
         </SkeletonPanel>
       </div>
 
       <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
+        {/* Placeholder for the upcoming absences table. */}
         <SkeletonPanel titleWidth="220px" subtitleWidth="280px">
           <TableRows rows={4} cols={4} />
         </SkeletonPanel>
+        {/* Placeholder for the active warnings list. */}
         <SkeletonPanel titleWidth="150px" subtitleWidth="220px">
           <ListRows rows={4} />
         </SkeletonPanel>
@@ -108,9 +114,11 @@ function EmployeesVariant() {
       </div>
 
       <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
+        {/* Placeholder for the employee directory list. */}
         <SkeletonPanel titleWidth="180px" subtitleWidth="250px">
           <div style={{ display: "grid", gap: "12px" }}>
             {Array.from({ length: 6 }).map((_, index) => (
+              // Placeholder for one employee row: avatar, name and role lines.
               <div
                 key={index}
                 style={{
@@ -135,12 +143,14 @@ function EmployeesVariant() {
           </div>
         </SkeletonPanel>
 
+        {/* Placeholder for the selected employee's profile panel. */}
         <SkeletonPanel titleWidth="190px" subtitleWidth="260px">
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <SkeletonBlock width="40%" height="12px" borderRadius="999px" />
             <SkeletonBlock width="56%" height="28px" borderRadius="8px" />
             <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))" }}>
               {Array.from({ length: 6 }).map((_, index) => (
+                // Placeholder for one profile detail tile.
                 <div
                   key={index}
                   style={{
@@ -169,14 +179,17 @@ function StandardVariant() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
+        {/* Placeholder for a table panel on a standard HR tab. */}
         <SkeletonPanel titleWidth="200px" subtitleWidth="280px">
           <TableRows rows={6} cols={4} />
         </SkeletonPanel>
+        {/* Placeholder for a list panel on a standard HR tab. */}
         <SkeletonPanel titleWidth="150px" subtitleWidth="210px">
           <ListRows rows={5} />
         </SkeletonPanel>
       </div>
 
+      {/* Placeholder for a full-width table panel on a standard HR tab. */}
       <SkeletonPanel titleWidth="190px" subtitleWidth="260px">
         <TableRows rows={5} cols={5} />
       </SkeletonPanel>

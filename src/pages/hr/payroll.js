@@ -33,6 +33,7 @@ function ListRowsSkeleton({ rows = 3 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       {Array.from({ length: rows }).map((_, i) =>
+      // Placeholder card shown in place of each overtime entry while payroll data is loading.
       <LayerSurface
         key={i}
         radius="var(--radius-sm)"
@@ -63,6 +64,7 @@ function PayrollContent() {
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+        {/* Error card shown when payroll data could not be loaded, with the error message. */}
         <SectionCard layer="theme"
           sectionKey="hr-payroll-error" parentKey="hr-manager-tab-payroll" title="Unable to load payroll data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
@@ -80,8 +82,10 @@ function PayrollContent() {
         </p>
       </header>
 
+      {/* Summary strip: headline payroll figures (cost and items still waiting to be processed) shown once the data has loaded. */}
       {isLoading ? null : <HrSummaryStrip items={summary} parentKey="hr-manager-tab-payroll" />}
 
+      {/* Compensation Overview: every employee's current pay rate, with a button to export the payroll as a CSV. */}
       <SectionCard layer="theme"
         sectionKey="hr-payroll-compensation-overview" parentKey="hr-manager-tab-payroll"
         title="Compensation Overview"
@@ -92,6 +96,7 @@ function PayrollContent() {
           </Button>
         }>
         
+        {/* Compensation table: employee name and job title, department, contract type and hourly pay rate. */}
         <LayerSurface padding="var(--space-3)" gap="0">
           <DataTableShell>
             <table className="app-data-table">
@@ -136,9 +141,11 @@ function PayrollContent() {
         </LayerSurface>
       </SectionCard>
 
+      {/* Pay Rise Requests: requests moving through the employee, manager and HR approval chain, or a message when there are none. */}
       <SectionCard layer="theme"
         sectionKey="hr-payroll-pay-rise-requests" parentKey="hr-manager-tab-payroll" title="Pay Rise Requests" subtitle="Approval workflow: Employee → Manager → HR">
         {showPresentationMock ? (
+          // Pay rise table: employee, current rate, requested rate and approval status.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">
@@ -172,6 +179,7 @@ function PayrollContent() {
         )}
       </SectionCard>
 
+      {/* Pay Rate History: an audit trail of pay changes, with a button to add a record. */}
       <SectionCard layer="theme"
         sectionKey="hr-payroll-pay-rate-history" parentKey="hr-manager-tab-payroll"
         title="Pay Rate History"
@@ -182,6 +190,7 @@ function PayrollContent() {
           </Button>
         }>
         
+        {/* Pay history table: employee, effective date, rate, type of change and who approved it. */}
         <LayerSurface padding="var(--space-3)" gap="0">
           <DataTableShell>
             <table className="app-data-table">
@@ -221,6 +230,7 @@ function PayrollContent() {
         </LayerSurface>
       </SectionCard>
 
+      {/* Overtime & Bonus Tracking: overtime hours and bonuses per employee for each period, with a button to generate the payroll pack. */}
       <SectionCard layer="theme"
         sectionKey="hr-payroll-overtime-and-bonus" parentKey="hr-manager-tab-payroll"
         title="Overtime & Bonus Tracking"
@@ -236,6 +246,7 @@ function PayrollContent() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
             {overtimeSummaries.map((summary) =>
+          // One overtime entry: employee name and status, the period covered, overtime hours, overtime rate and bonus.
           <LayerSurface
             key={summary.id}
             radius="var(--radius-sm)"

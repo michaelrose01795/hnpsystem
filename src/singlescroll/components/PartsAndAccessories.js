@@ -9,6 +9,7 @@ import styles from "../styles/singlescroll.module.css";
 
 export default function PartsAndAccessories() {
   return (
+    // Parts and accessories section: an intro heading followed by a card for each brand of genuine parts supplied.
     <section id="parts" className={styles.section} aria-label="Parts & Accessories">
       <SectionHeading
         number="05"
@@ -18,6 +19,7 @@ export default function PartsAndAccessories() {
       />
 
       <div className={styles.partsGrid}>
+        {/* Brand card: the brand name with a short note, marked as genuine parts. */}
         {partsContent.brands.map((brand) => (
           <div key={brand.name} data-reveal>
             <Card3D intensity={0.7}>

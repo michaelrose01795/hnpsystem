@@ -189,6 +189,7 @@ export default function EquipmentCheckDrawer({
   const title = isBulk ? `${MODE_TITLES[mode]} — ${assets.length} assets` : `${MODE_TITLES[mode]} — ${single?.name || ""}`;
 
   return (
+    // Side drawer for logging an equipment check, inspection, service or calibration, with a Save button in the header.
     <EquipmentDrawer
       title={title}
       description={single ? `${single.assetCode}` : "Each asset gets its own check record."}
@@ -203,6 +204,7 @@ export default function EquipmentCheckDrawer({
       {error && <StatusMessage tone="danger">{error}</StatusMessage>}
 
       {isBulk && (
+        // Bulk notice: lists the assets the same check is being logged for.
         <LayerTheme radius="var(--radius-sm)" padding="12px" gap="6px">
           <p className="app-record-note app-record-note--strong">
             Logging the same {mode === "routine" ? "check" : mode} for:
@@ -215,6 +217,7 @@ export default function EquipmentCheckDrawer({
       )}
 
       {!isBulk && !isMaintenance && items.length > 0 && (
+        // Checklist: each item is marked Pass, Fail or N/A or given a reading, with an 'All pass' shortcut and out-of-range warnings.
         <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
           <div className="equipment-drawer__list-item">
             <h3 className="app-record-heading">{checklist.name}</h3>
@@ -351,6 +354,7 @@ export default function EquipmentCheckDrawer({
       </div>
 
       {raisesFault && !isBulk && (
+        // Fault found: describe the fault, set its severity, say whether the equipment can still be used and whether a repair is needed.
         <LayerTheme radius="var(--radius-sm)" padding="12px" gap="12px">
           <h3 className="app-record-heading">Fault found</h3>
           <TextAreaField

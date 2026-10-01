@@ -39,6 +39,7 @@ function FilterChips({ filters }) {
 
 function ViewRow({ view, onRemove }) {
   return (
+    // Saved view row: the view's name, whether it is shared or personal, its filters, and buttons to open the Support Centre or remove it.
     <LayerTheme
       style={{
         flexDirection: "row",
@@ -75,6 +76,7 @@ function SavedViewsView() {
   };
 
   return (
+    // Saved views panel: lists every saved filter set, or prompts the user to create one in the Support Centre.
     <Panel
       title="Saved views"
       subtitle={

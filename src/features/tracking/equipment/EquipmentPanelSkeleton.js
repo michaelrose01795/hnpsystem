@@ -27,6 +27,7 @@ export default function EquipmentPanelSkeleton({ view = "cards" }) {
     <div className="equipment-grid" role="status" aria-live="polite" aria-busy="true" aria-label="Loading equipment">
       <SkeletonKeyframes />
       {Array.from({ length: 6 }, (_, index) => (
+        // Placeholder equipment card shown while the equipment list loads; six are drawn to match the final grid.
         <LayerTheme key={index} className="equipment-card" radius="var(--radius-sm)" padding="20px 24px" gap="10px">
           <div className="equipment-card__head">
             <div style={{ display: "grid", gap: "6px", minWidth: 0, flex: 1 }}>

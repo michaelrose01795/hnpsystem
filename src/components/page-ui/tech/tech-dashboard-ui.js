@@ -37,6 +37,7 @@ export default function TechsDashboardUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
+        {/* Loading state shown while the staff roster is being fetched. */}
         <SectionShell sectionKey="tech-dashboard-roster-loading" parentKey="app-layout-page-card" style={centeredStateStyle}>
           <InlineLoading width={180} label="Loading roster" />
         </SectionShell>
@@ -44,6 +45,7 @@ export default function TechsDashboardUi(props) {
 
     case "section2":
       return <>
+        {/* Access denied message: explains that this page is only for technicians. */}
         <SectionShell sectionKey="tech-dashboard-access-denied" parentKey="app-layout-page-card" style={centeredStateStyle}>
           <div style={{
       display: "grid",
@@ -68,8 +70,11 @@ export default function TechsDashboardUi(props) {
 
     case "section4":
       return <>
+      {/* Technician dashboard: headline figures, the current or next job, the assigned jobs list and quick actions. */}
       <DevLayoutSection sectionKey="tech-dashboard-page" parentKey="app-layout-page-card" sectionType="page-shell" shell backgroundToken="surface" className="app-layout-page-shell" style={pageShellStyle}>
+        {/* Headline figures row: jobs assigned, clocking status, current job and hours worked today. */}
         <DevLayoutSection sectionKey="tech-dashboard-stats-grid" parentKey="tech-dashboard-page" sectionType="section-shell" shell style={statsGridStyle}>
+          {/* Jobs assigned: how many jobs are allocated to this technician. */}
           <StatCard sectionKey="tech-dashboard-stat-assigned" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--theme)", "var(--primary-border)")}>
             <div style={{
            fontSize: "28px",
@@ -87,6 +92,7 @@ export default function TechsDashboardUi(props) {
             </div>
           </StatCard>
 
+          {/* Clocking status: whether the technician is clocked in or out, and since when. */}
           <StatCard sectionKey="tech-dashboard-stat-clocking" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle(isClockedIn ? "var(--success-surface)" : "var(--danger-surface)", "transparent")}>
             <div style={{
           fontSize: "16px",
@@ -103,6 +109,7 @@ export default function TechsDashboardUi(props) {
             </div>
           </StatCard>
 
+          {/* Current job: the job number being worked on, or "None". */}
           <StatCard sectionKey="tech-dashboard-stat-current-job" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--theme)")}>
             <div style={{
           fontSize: "16px",
@@ -120,6 +127,7 @@ export default function TechsDashboardUi(props) {
             </div>
           </StatCard>
 
+          {/* Hours today: time worked so far since clocking in. */}
           <StatCard sectionKey="tech-dashboard-stat-hours" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--theme)")}>
             <div style={{
            fontSize: "28px",
@@ -138,6 +146,7 @@ export default function TechsDashboardUi(props) {
           </StatCard>
         </DevLayoutSection>
 
+        {/* Currently working on: the active job's number, customer, vehicle and description, with a button to continue it. */}
         {currentJob && <SectionShell sectionKey="tech-dashboard-current-job" parentKey="tech-dashboard-page" backgroundToken="page-card-alt" style={{
       ...emphasizedSectionSurfaceStyle,
       gap: "16px"
@@ -184,6 +193,7 @@ export default function TechsDashboardUi(props) {
             </DevLayoutSection>
           </SectionShell>}
 
+        {/* Next job assigned: the next job's number, customer and vehicle, with a button to start it. Shown only when nothing is in progress. */}
         {nextJob && !currentJob && <SectionShell sectionKey="tech-dashboard-next-job" parentKey="tech-dashboard-page" backgroundToken="page-card-alt" style={{
       ...sectionSurfaceStyle,
       display: "grid",
@@ -226,7 +236,9 @@ export default function TechsDashboardUi(props) {
             </DevLayoutSection>
           </SectionShell>}
 
+        {/* My assigned jobs: a table of this technician's jobs with customer, vehicle and status. */}
         <SectionShell sectionKey="tech-dashboard-assigned-jobs" parentKey="tech-dashboard-page" backgroundToken="page-card-alt" style={sectionSurfaceStyle}>
+          {/* Heading row for the assigned jobs list. */}
           <DevLayoutSection sectionKey="tech-dashboard-assigned-jobs-header" parentKey="tech-dashboard-assigned-jobs" sectionType="toolbar" className="app-layout-header-row">
             <div style={{
           display: "grid",
@@ -236,6 +248,7 @@ export default function TechsDashboardUi(props) {
             </div>
           </DevLayoutSection>
 
+          {/* Assigned jobs content: an empty message when there are none, otherwise a table of job, customer, vehicle and status that opens the job when a row is clicked. */}
           {visibleJobs.length === 0 ? <DevLayoutSection sectionKey="tech-dashboard-assigned-jobs-empty" parentKey="tech-dashboard-assigned-jobs" sectionType="content-card" className="app-layout-card" style={{
         alignItems: "center",
         justifyContent: "center",
@@ -289,6 +302,7 @@ export default function TechsDashboardUi(props) {
                 </tbody>
               </table>
 
+              {/* Hint shown when more than three jobs are assigned, pointing to the full list. */}
               {myJobs.length > 3 && <DevLayoutSection sectionKey="tech-dashboard-assigned-jobs-more" parentKey="tech-dashboard-assigned-jobs-rows" sectionType="content-card" className="app-layout-surface-subtle">
                   <p style={{
             ...sectionCopyStyle,
@@ -300,7 +314,9 @@ export default function TechsDashboardUi(props) {
             </DevLayoutSection>}
         </SectionShell>
 
+        {/* Quick actions: a card holding the dashboard's shortcut buttons. */}
         <SectionShell sectionKey="tech-dashboard-actions-card" parentKey="tech-dashboard-page" backgroundToken="page-card-alt" style={sectionSurfaceStyle}>
+          {/* Shortcut buttons row, one button per dashboard action such as viewing all jobs. */}
           <DevLayoutSection sectionKey="tech-dashboard-actions" parentKey="tech-dashboard-actions-card" sectionType="toolbar" className="app-layout-toolbar-row" style={actionGridStyle}>
             {dashboardActions.map(action => <DevLayoutSection key={action.key} as="button" type="button" sectionKey={`tech-dashboard-action-${action.key}`} parentKey="tech-dashboard-actions" sectionType="content-card" className="app-btn app-btn--primary tech-dashboard-action-button" onClick={() => router.push(action.href)}>
                 <div style={{

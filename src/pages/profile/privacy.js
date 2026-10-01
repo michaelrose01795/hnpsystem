@@ -49,6 +49,7 @@ const formatDate = (iso) => {
 
 function PrivacySection({ title, sectionKey, children }) {
   return (
+    // Titled privacy block: a heading followed by the content passed in.
     <LayerTheme
       as="section"
       sectionKey={sectionKey}
@@ -424,6 +425,7 @@ export function PrivacyPanel() {
   }, [tick]);
 
   return (
+    // Privacy hub: the signed-in user's data, consents and data requests.
     <LayerSurface
       as="div"
       sectionKey={PRIVACY_PAGE_KEY}
@@ -435,6 +437,7 @@ export function PrivacyPanel() {
       gap="var(--page-stack-gap)"
     >
       <div className="app-page-stack">
+        {/* Introduction explaining what the privacy page covers, plus any loading error. */}
         <PrivacySection title="Privacy" sectionKey="profile-privacy-summary">
           <p style={{ margin: 0, color: "var(--surfaceTextMuted)", lineHeight: 1.5 }}>
             This page summarises the personal data we hold about you and lets you manage your consents or
@@ -448,6 +451,7 @@ export function PrivacyPanel() {
           )}
         </PrivacySection>
 
+        {/* Your profile data: the personal details held against the account. */}
         <PrivacySection title="Your Profile Data" sectionKey="profile-privacy-profile-data">
           {data ? (
             <ProfileSummary profile={data.profile} />
@@ -456,6 +460,7 @@ export function PrivacyPanel() {
           )}
         </PrivacySection>
 
+        {/* Download a copy: a button to download the user's data as a file. */}
         <PrivacySection title="Download a Copy" sectionKey="profile-privacy-download">
           <p style={{ margin: "0 0 12px", color: "var(--surfaceTextMuted)" }}>
             Get a JSON file containing the data we hold against your account (profile, consents, subject
@@ -471,6 +476,7 @@ export function PrivacyPanel() {
           </p>
         </PrivacySection>
 
+        {/* Marketing and communication consents: grant or withdraw each consent. */}
         <PrivacySection title="Marketing &amp; Communication Consents" sectionKey="profile-privacy-consents">
           {data ? (
             <ConsentManager initial={data.consents} onUpdated={() => setTick((n) => n + 1)} />
@@ -479,10 +485,12 @@ export function PrivacyPanel() {
           )}
         </PrivacySection>
 
+        {/* File a subject request: choose a request type, add details and submit it. */}
         <PrivacySection title="File a Subject Request" sectionKey="profile-privacy-subject-request">
           <SubjectRequestForm onCreated={() => setTick((n) => n + 1)} />
         </PrivacySection>
 
+        {/* Your open requests: a table of the requests already filed and their status. */}
         <PrivacySection title="Your Open Requests" sectionKey="profile-privacy-open-requests">
           <RequestsList requests={data?.requests || []} />
         </PrivacySection>

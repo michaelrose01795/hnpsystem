@@ -20,13 +20,16 @@ export default function ManagementUtilitiesTab({ filter, onApplySavedView }) {
 
   return (
     <>
+      {/* Saved executive views: save the current filters under a name and recall them later. */}
       <ReportSection title="Saved executive views" subtitle="Save and recall a filter set for the executive report.">
         <SavedViewsBar targetRef={MGT_VIEW_TARGET} currentFilter={filter} onApply={onApplySavedView} />
       </ReportSection>
 
+      {/* Exports and drill-downs: one card per measure for downloading or exploring the records behind it. */}
       <ReportSection title="Exports & drill-downs" subtitle="Download the contributing records behind each executive composite, or explore them inline. Every export is itself audited.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
           {ALL_EXPORTABLE.map((kpi) => (
+            // One measure with buttons to explore its records or export them as a CSV file.
             <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-export-card", kpi.id)} data-dev-text-preview={`${kpi.label} export card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
@@ -45,6 +48,7 @@ export default function ManagementUtilitiesTab({ filter, onApplySavedView }) {
         </div>
       </ReportSection>
 
+      {/* Drill-down table for the measure chosen with Explore. */}
       {explore && (
         <ReportSection title={`Drill-down: ${explore.label}`}>
           <ReportDrilldownTable kpiId={explore.id} label={explore.label} filter={filter} onClose={() => setExplore(null)} />

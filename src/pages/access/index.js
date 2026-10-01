@@ -42,6 +42,7 @@ export default function StockAccessHubPage() {
 
   return (
     <div className={styles.screen}>
+      {/* Stores: a tile for each stock store the user can open, with a manage button where they are allowed to manage it. */}
       <LayerTheme>
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>Stores</h2>

@@ -17,12 +17,15 @@ export default function PaintUtilitiesTab({ filter, onApplySavedView }) {
 
   return (
     <>
+      {/* Saved views: save the current report filters under a name and recall them later. */}
       <ReportSection title="Saved views" subtitle="Save and recall a filter set for this Paint report.">
         <SavedViewsBar targetRef={PAINT_VIEW_TARGET} currentFilter={filter} onApply={onApplySavedView} />
       </ReportSection>
 
+      {/* Exports and drill-downs: one card per paint measure with buttons to explore its records or download them. */}
       <ReportSection title="Exports & drill-downs" subtitle="Download contributing records behind each drillable Paint KPI, or explore them inline.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
+          {/* One card per exportable measure: its name and reference, an Explore button and an Export CSV link. */}
           {ALL_EXPORTABLE.map((kpi) => (
             <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-export-card", kpi.id)} data-dev-text-preview={`${kpi.label} export card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
@@ -40,6 +43,7 @@ export default function PaintUtilitiesTab({ filter, onApplySavedView }) {
         </div>
       </ReportSection>
 
+      {/* Drill-down: a table of the individual records behind the measure chosen with Explore, with a close option. */}
       {explore && (
         <ReportSection title={`Drill-down: ${explore.label}`}>
           <ReportDrilldownTable kpiId={explore.id} label={explore.label} filter={filter} onClose={() => setExplore(null)} />

@@ -149,6 +149,7 @@ function TimelineCard({ item, isCompact, isEvent, isHighlighted, performer, isGr
     : (isHighlighted === false ? 0.7 : 1); // Fallback to highlight-based
 
   return (
+    // One timeline entry: its title and category, who did it and when, and any explanation or detail.
     <LayerSurface
       className={`job-tracker__card${isGroupChild ? " job-tracker__card--group-row" : ""}`}
       radius="var(--radius-xs)"
@@ -498,7 +499,7 @@ export default function JobProgressTracker({
   }, []);
 
   return (
-    // Outer wrapper keeps the card styling consistent with the rest of the UI shell
+    // Job timeline: a heading with user and action filters, then the job's status history from newest to oldest.
     <LayerTheme
       radius="var(--radius-md)"
       padding={isCompact ? "var(--section-card-padding-sm, 16px)" : "12px"}

@@ -84,6 +84,7 @@ function RecordField({ label, value, muted = false, copyValue, onCopy, copied, w
 
 function Section({ title, children, actions }) {
   return (
+    // Titled section used throughout the booking drawer: a heading, optional action buttons and the section's content.
     <LayerTheme as="section" radius="var(--radius-sm)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">
       <div className="loan-car-section-head">
         <h3 className="app-record-heading">{title}</h3>
@@ -134,6 +135,7 @@ function HandoverForm({ car, onSubmit, busy }) {
         event.preventDefault();
         onSubmit({ loanMileageOut: mileage, loanFuelOut: fuel });
       }}>
+      {/* Hand over: record the loan car's mileage and fuel level as it leaves with the customer. */}
       <Section title="Hand over">
         <p className="app-record-note">Confirm the loan car's readings as it leaves. They also become the vehicle's latest readings.</p>
         <InputField id="loan-car-handover-mileage" label="Mileage out" type="number" value={mileage} onChange={(event) => setMileage(event.target.value)} disabled={busy} />
@@ -166,6 +168,7 @@ function ReturnForm({ booking, car, onSubmit, busy, canMarkUnavailable }) {
         event.preventDefault();
         onSubmit({ returnedDate, returnedTime, loanMileageIn: mileage, loanFuelIn: fuel, hasDamage, returnNotes, markUnavailable });
       }}>
+      {/* Quick return: record when the car came back, its mileage and fuel, and any damage or notes. */}
       <Section title="Quick return">
         <div className="loan-car-form-grid loan-car-form-grid--pair">
           <CalendarField label="Returned on" value={returnedDate} onValueChange={setReturnedDate} />
@@ -442,6 +445,7 @@ export default function LoanCarBookingDrawer({
             ) : null}
           </>
         }>
+        {/* Booking status: the current state of the loan with the hand-over and return buttons, plus controls to change the due-back date. */}
         <LayerTheme as="section" radius="var(--radius-sm)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">
           <div className="loan-car-section-head">
             {stateMeta ? <span className={STATE_BADGE[stateMeta.tone] || STATE_BADGE.neutral}>{stateMeta.label}</span> : null}
@@ -489,6 +493,7 @@ export default function LoanCarBookingDrawer({
 
         {message ? <StatusMessage tone={message.tone}>{message.text}</StatusMessage> : null}
 
+        {/* Customer: the borrower's name and contact details, each with a copy button. */}
         <Section title="Customer">
           <div className="app-record-grid">
             <RecordField label="Name" value={booking.customerName} copyValue={booking.customerName} onCopy={copy} copied={copied} />
@@ -506,6 +511,7 @@ export default function LoanCarBookingDrawer({
           </div>
         </Section>
 
+        {/* Loan: which loan car, its status, the from and to dates and any external reference. */}
         <Section title="Loan">
           <div className="app-record-grid">
             <RecordField label="Loan car" value={[car?.reg, car?.makeModel].filter(Boolean).join(" · ")} />
@@ -523,6 +529,7 @@ export default function LoanCarBookingDrawer({
           </div>
         </Section>
 
+        {/* Related job: the job card this loan is linked to, with a link to open it. */}
         <Section title="Related job">
           <div className="app-record-grid">
             <RecordField
@@ -547,6 +554,7 @@ export default function LoanCarBookingDrawer({
           </div>
         </Section>
 
+        {/* Mileage and fuel: readings when the car went out and when it came back, with any damage or return notes. */}
         <Section title="Mileage & fuel">
           <div className="app-record-grid">
             <RecordField label="Out" value={reading(booking.loanMileageOut, booking.loanFuelOut)} />
@@ -564,11 +572,13 @@ export default function LoanCarBookingDrawer({
         </Section>
 
         {booking.notes ? (
+          // Notes: the free-text note saved with the booking, shown only when there is one.
           <Section title="Notes">
             <p className="app-record-note app-record-note--strong">{booking.notes}</p>
           </Section>
         ) : null}
 
+        {/* Activity: a history of everything that has happened to this booking. */}
         <Section title="Activity">
           <ActivityList events={events} loading={loadingEvents} />
         </Section>

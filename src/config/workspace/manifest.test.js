@@ -52,6 +52,7 @@ import {
   migrateSidebarLayout,
   WORKSPACE_DEPARTMENTS,
   WORKSPACE_NAV_SECTIONS,
+  WORKSPACE_ROLE_DEFAULT_NAMES,
   DEVELOPER_GROUP_LOCK,
 } from "@/config/workspace/manifest";
 import {
@@ -548,6 +549,7 @@ describe("workspace manifest - module bundle placement", () => {
       "Workshop",
       "Tech",
       "Parts",
+      "Access",
       "Admin",
       "Accounts",
       "MOT",
@@ -563,13 +565,15 @@ describe("workspace manifest - module bundle placement", () => {
       { key: "department-general", hrefs: ["/newsfeed", "/messages", "/tracking/Key-Parking"] },
       { key: "department-service", hrefs: ["/dashboard/service", "/new-job", "/appointments", "/jobs", "/customers", "/tracking/Loan-car"] },
       { key: "department-workshop", hrefs: [
-        "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools", "/access/back-shed",
+        "/dashboard/workshop", "/clocking", "/consumables-tracker", "/nextjobs", "/tracking/Equipment-Tools",
       ] },
       { key: "department-tech", hrefs: [
         "/dashboard/tech", "/tech", "/consumables-request", "/tech/efficiency", "/dashboard/mobile",
       ] },
       // No "/jobs" — Job Cards was removed from the Parts module; it belongs to Service.
-      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock", "/access/back-shed/manage"] },
+      { key: "department-parts", hrefs: ["/dashboard/parts", "/parts-manager", "/order", "/new-order", "/stock-catalogue", "/deliveries", "/goods-in", "/tracking/Oil-Stock"] },
+      // Every Access page lives here and nowhere else in the library.
+      { key: "department-access", hrefs: ["/access", "/access/back-shed", "/access/back-shed/manage"] },
       { key: "department-management", hrefs: [
         "/dashboard/managers", "/dashboard/admin", "/admin/activity-log", "/admin/compliance",
         "/hr/manager", "/website-manager", "/archive",
@@ -611,6 +615,48 @@ describe("workspace manifest - module bundle placement", () => {
       "/deliveries",
     ]));
     expect(parts.items.map((item) => item.href)).not.toContain("/jobs");
+  });
+
+  it("gives the Access module to All Access only, and to anyone it is assigned to", () => {
+    const accessHrefs = ["/access", "/access/back-shed", "/access/back-shed/manage"];
+    const hrefsIn = (modules, key) =>
+      modules.find((navigationModule) => navigationModule.key === key)?.items.map((item) => item.href);
+
+    // All Access holds the module, and the pages appear nowhere else on its rail.
+    const allAccessModules = getRoleWorkspaceModules([ALL_ACCESS_ROLE]);
+    expect(hrefsIn(allAccessModules, "department-access")).toEqual(accessHrefs);
+    expect(allAccessModules.find((navigationModule) => navigationModule.key === "department-access")?.label).toBe("Access");
+    for (const navigationModule of allAccessModules) {
+      if (navigationModule.key === "department-access") continue;
+      expect(navigationModule.items.some((item) => accessHrefs.includes(item.href)), navigationModule.key).toBe(false);
+    }
+
+    // No role default carries the module or any of its pages.
+    for (const role of WORKSPACE_ROLE_DEFAULT_NAMES) {
+      const modules = getRoleWorkspaceModules([role]);
+      expect(modules.map((navigationModule) => navigationModule.key), role).not.toContain("department-access");
+      expect(
+        modules.flatMap((navigationModule) => navigationModule.items.map((item) => item.href))
+          .some((href) => accessHrefs.includes(href)),
+        role
+      ).toBe(false);
+    }
+
+    // Assigning the library module to a user puts it on their rail and makes
+    // its pages landable.
+    const access = getSidebarModuleCatalog().find((module) => module.key === "department-access");
+    const assigned = {
+      version: SIDEBAR_LAYOUT_MIGRATION.version,
+      items: ["/newsfeed", ...accessHrefs],
+      modules: [
+        { key: "department-general", label: "General", items: ["/newsfeed"] },
+        { key: access.key, label: access.label, items: access.items.map((item) => item.href) },
+      ],
+    };
+    expect(hrefsIn(getRoleWorkspaceModules(["service"], assigned), "department-access")).toEqual(accessHrefs);
+    for (const href of accessHrefs) {
+      expect(canAccessPath(href, ["service"], assigned), href).toBe(true);
+    }
   });
 
   it("keeps Goods In exclusively in Parts role modules, including all-access navigation", () => {
@@ -1411,8 +1457,8 @@ describe("workspace manifest — tracker split saved-layout migration", () => {
     const modules = getRoleWorkspaceModules([ALL_ACCESS_ROLE], layout);
     expect(hrefsOf(modules, "department-general")).toEqual(["/newsfeed", "/tracking/Key-Parking"]);
     expect(hrefsOf(modules, "department-service")).toEqual(["/jobs", "/tracking/Loan-car"]);
-    expect(hrefsOf(modules, "department-workshop")).toEqual(["/clocking", "/tracking/Equipment-Tools", "/access/back-shed"]);
-    expect(hrefsOf(modules, "department-parts")).toEqual(["/goods-in", "/tracking/Oil-Stock", "/access/back-shed/manage"]);
+    expect(hrefsOf(modules, "department-workshop")).toEqual(["/clocking", "/tracking/Equipment-Tools"]);
+    expect(hrefsOf(modules, "department-parts")).toEqual(["/goods-in", "/tracking/Oil-Stock"]);
     // The stored row is read, never rewritten.
     expect(layout.modules[1].items).toEqual(["/jobs"]);
   });
@@ -1431,10 +1477,10 @@ describe("workspace manifest — tracker split saved-layout migration", () => {
       "department-general",
       "department-workshop",
     ]);
-    expect(hrefsOf(modules, "department-workshop")).toEqual(["/clocking", "/tracking/Equipment-Tools", "/access/back-shed"]);
+    expect(hrefsOf(modules, "department-workshop")).toEqual(["/clocking", "/tracking/Equipment-Tools"]);
   });
 
-  it("adds the Stock Access pages to a version-6 layout", () => {
+  it("does not add the Access pages to a saved Workshop or Parts module", () => {
     const layout = {
       version: 6,
       modules: [
@@ -1442,13 +1488,13 @@ describe("workspace manifest — tracker split saved-layout migration", () => {
         { key: "department-parts", label: "Parts", items: ["/goods-in", "/tracking/Oil-Stock"] },
       ],
     };
-    // Parts may open both pages, so each lands in the saved module that owns it.
+    // The Access pages belong to the Access module, which is assigned per user,
+    // so an older layout is upgraded without them.
     const parts = getRoleWorkspaceModules(["parts"], layout);
-    expect(hrefsOf(parts, "department-parts")).toEqual(["/goods-in", "/tracking/Oil-Stock", "/access/back-shed/manage"]);
-    expect(hrefsOf(parts, "department-workshop")).toContain("/access/back-shed");
-    // A technician gets the back-shed screen but never the manager view.
-    const techs = getRoleWorkspaceModules(["techs"], layout);
-    expect(hrefsOf(techs, "department-workshop")).toContain("/access/back-shed");
+    expect(hrefsOf(parts, "department-parts")).toEqual(["/goods-in", "/tracking/Oil-Stock"]);
+    expect(hrefsOf(parts, "department-workshop")).toEqual(["/clocking", "/tracking/Equipment-Tools"]);
+    // Page access is unchanged: a technician can still open the back-shed
+    // screen by its address, but never the manager view.
     expect(resolveAccessiblePaths(["techs"], layout).has("/access/back-shed")).toBe(true);
     expect(resolveAccessiblePaths(["techs"], layout).has("/access/back-shed/manage")).toBe(false);
   });
@@ -1475,6 +1521,6 @@ describe("workspace manifest — tracker split saved-layout migration", () => {
     expect(serviceMigrated.items).toEqual(["/jobs", "/tracking/Key-Parking", "/tracking/Loan-car"]);
     // Techs may view loan cars but their default has no Service module.
     const techsMigrated = migrateSidebarLayout({ items: ["/tracking"] }, ["techs"]);
-    expect(techsMigrated.items).toEqual(["/tracking/Key-Parking", "/tracking/Equipment-Tools", "/access/back-shed"]);
+    expect(techsMigrated.items).toEqual(["/tracking/Key-Parking", "/tracking/Equipment-Tools"]);
   });
 });

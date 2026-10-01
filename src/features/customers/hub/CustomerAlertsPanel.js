@@ -23,6 +23,7 @@ const COLLAPSE_ABOVE = 4;
 
 function AlertCard({ alert, onOpenTab }) {
   return (
+    // One alert about the customer: what needs attention and the single action that resolves it.
     <LayerSurface
       as="article"
       sectionKey={`customer-profile-alert-${alert.id}`}
@@ -73,6 +74,7 @@ export default function CustomerAlertsPanel({ alerts = [], duplicates = [], onOp
   }, {});
 
   return (
+    // Needs attention: a count of the customer's alerts, the alert cards themselves, and a show all / show fewer toggle when there are many.
     <LayerTheme
       as="section"
       sectionKey="customer-profile-alerts"
@@ -102,6 +104,7 @@ export default function CustomerAlertsPanel({ alerts = [], duplicates = [], onOp
       </div>
 
       {/* The duplicate warning is only useful next to the records it matched. */}
+      {/* Possible duplicate customers: the matching records with links to open them. */}
       {duplicates.length > 0 && (
         <LayerSurface
           as="div"

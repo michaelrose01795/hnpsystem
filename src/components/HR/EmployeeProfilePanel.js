@@ -76,6 +76,7 @@ export default function EmployeeProfilePanel({
 
   if (!employee) {
     return (
+      // Empty state shown before an employee is chosen, explaining that the profile will appear here.
       <LayerTheme
         sectionKey="hr-employee-profile-panel"
         parentKey="hr-employees-detail-panel"
@@ -123,6 +124,7 @@ export default function EmployeeProfilePanel({
   const phoneWithExtension = employee.extension && phone ? `${phone} ext. ${employee.extension}` : phone;
 
   return (
+    // Employee profile: a header with the person's name and status, followed by cards for role, employment, contact, emergency contact, pay and documents.
     <LayerTheme
       sectionKey="hr-employee-profile-panel"
       parentKey="hr-employees-detail-panel"
@@ -134,6 +136,7 @@ export default function EmployeeProfilePanel({
       padding="0"
       gap="0"
     >
+      {/* Profile header: the employee's avatar, name, job title, department and status, with an edit button and extra detail chips. */}
       <LayerSurface
         sectionKey="hr-employee-profile-header"
         parentKey="hr-employee-profile-panel"
@@ -177,6 +180,7 @@ export default function EmployeeProfilePanel({
         )}
       </LayerSurface>
 
+      {/* Container for the profile's detail cards, arranged in two columns when the panel is wide enough. */}
       <DevLayoutSection
         as="section"
         sectionKey="hr-employee-profile-sections"
@@ -184,6 +188,7 @@ export default function EmployeeProfilePanel({
         sectionType="section-shell"
         className="hr-employee-profile-sections"
       >
+        {/* Role and access: job title, department, system role, sidebar access and line manager. */}
         <CardBlock
           title="Role & Access"
           subtitle="What this person does, and what the system lets them do."
@@ -220,6 +225,7 @@ export default function EmployeeProfilePanel({
             />
           </div>
 
+          {/* Line manager: who this person reports to, with a link to each manager's profile and a button to assign or change them. */}
           <DevLayoutSection
             as="div"
             sectionKey="hr-employee-line-managers"
@@ -264,6 +270,7 @@ export default function EmployeeProfilePanel({
           </DevLayoutSection>
         </CardBlock>
 
+        {/* Employment: employment type and status, start date and probation end date. */}
         <CardBlock
           title="Employment"
           subtitle="Contract, service and probation."
@@ -300,6 +307,7 @@ export default function EmployeeProfilePanel({
         </CardBlock>
 
 
+        {/* Contact information: email, phone and home address, with buttons to email, call or copy. The address is hidden from roles without access. */}
         <CardBlock
           title="Contact Information"
           subtitle="How to reach this employee."
@@ -346,6 +354,7 @@ export default function EmployeeProfilePanel({
           </div>
         </CardBlock>
 
+        {/* Emergency contact: who to call and their phone number, or a restricted placeholder for roles without access. */}
         {canViewSensitive ? (
           <CardBlock
             title="Emergency Contact"
@@ -385,6 +394,7 @@ export default function EmployeeProfilePanel({
           <RestrictedBlock title="Emergency Contact" sectionKey="hr-employee-emergency" />
         )}
 
+        {/* Pay and hours: salary, hourly and overtime rates, contracted hours, payroll reference and National Insurance number, or a restricted placeholder. */}
         {canViewSensitive ? (
           <CardBlock
             title="Pay & Hours"
@@ -393,6 +403,7 @@ export default function EmployeeProfilePanel({
             sectionKey="hr-employee-pay-hours"
           >
             <div className="hr-employee-pay-layout">
+              {/* Headline tile showing the employee's basic salary. */}
               <LayerTheme
                 sectionKey="hr-employee-basic-salary"
                 parentKey="hr-employee-pay-hours"
@@ -447,6 +458,7 @@ export default function EmployeeProfilePanel({
           <RestrictedBlock title="Pay & Hours" fullWidth sectionKey="hr-employee-pay-hours" />
         )}
 
+        {/* Documents: a table of the HR documents on file with a button to upload another, or a restricted placeholder. */}
         {canViewSensitive ? (
           <CardBlock
             title="Documents"
@@ -555,6 +567,7 @@ export default function EmployeeProfilePanel({
                 </DevLayoutSection>
               </DataTableShell>
             ) : (
+              // Message shown when the employee has no documents on file.
               <DevLayoutSection
                 as="div"
                 sectionKey="hr-employee-documents-empty"
@@ -583,6 +596,7 @@ export default function EmployeeProfilePanel({
 
 function CardBlock({ title, subtitle, action = null, children, sectionKey, fullWidth = false }) {
   return (
+    // Reusable titled card: a heading, optional subtitle and action button, then the content passed in.
     <LayerSurface
       as="section"
       sectionKey={sectionKey}
@@ -609,6 +623,7 @@ function CardBlock({ title, subtitle, action = null, children, sectionKey, fullW
 // section exists — stays visible without leaking any of the values.
 function RestrictedBlock({ title, sectionKey, fullWidth = false }) {
   return (
+    // Stand-in card telling the viewer their role cannot see this section.
     <CardBlock title={title} sectionKey={sectionKey} fullWidth={fullWidth}>
       <div className="hr-employee-empty-block">Restricted — your role cannot view this section.</div>
     </CardBlock>
@@ -617,6 +632,7 @@ function RestrictedBlock({ title, sectionKey, fullWidth = false }) {
 
 function KeyValue({ label, value, helper, sectionKey, parentKey }) {
   return (
+    // Single labelled value with an optional helper line beneath it.
     <DevLayoutSection
       as="div"
       sectionKey={sectionKey}
@@ -645,6 +661,7 @@ function ContactRow({ label, value, helper, actions, multiline = false, restrict
     .join(" ");
 
   return (
+    // Contact line: the label and its action buttons on one row, with the value on its own line below.
     <DevLayoutSection
       as="div"
       sectionKey={sectionKey}

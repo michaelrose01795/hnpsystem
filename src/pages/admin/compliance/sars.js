@@ -81,6 +81,7 @@ export default function SarsPage() {
 
   return (
     <ComplianceLayout title="Subject Requests">
+      {/* Subject requests: a table of data-subject requests with type, subject, a status dropdown, received and due dates and a 'Mark fulfilled' button. */}
       <Section title="Subject Requests">
         {error && (
           <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base)" }}>

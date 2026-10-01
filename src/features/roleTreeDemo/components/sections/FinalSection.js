@@ -16,6 +16,7 @@ export default function FinalSection() {
         <h2 className={styles.title}>Built From Inside H&amp;P</h2>
       </header>
 
+      {/* Closing scene: the final headline and supporting message of the presentation, with a grid of proof points. */}
       <LayerSurface className={styles.finalScene} radius="var(--radius-xl)">
         <div className={styles.finalConstellation} aria-hidden="true">
           <span />
@@ -27,6 +28,7 @@ export default function FinalSection() {
         <div className={styles.finalHeadline}>{closingMessage.headline}</div>
         <p className={styles.finalSupporting}>{closingMessage.supporting}</p>
         <div className={styles.finalProofGrid}>
+          {/* One proof point card: a short title and a one-line supporting statement. */}
           {closingProofPoints.map((point) => (
             <LayerTheme key={point.id} padding="14px" gap="4px">
               <span className={styles.dashboardCardLabel}>{point.title}</span>

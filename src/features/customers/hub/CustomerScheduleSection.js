@@ -32,6 +32,7 @@ const statusTone = (status) => {
 
 function AppointmentCard({ appointment, access, customerId, past }) {
   return (
+    // Appointment card: the date and time of one appointment with its vehicle, work and status details.
     <LayerSurface
       as="article"
       sectionKey={`customer-profile-appointment-${appointment.id}`}
@@ -106,6 +107,7 @@ export default function CustomerScheduleSection({ appointments = [], access, cus
   const visiblePrevious = showAllPrevious ? previous : previous.slice(0, PREVIOUS_PAGE_SIZE);
 
   return (
+    // Schedule: the customer's upcoming appointments with a Book appointment button, followed by their previous appointments.
     <LayerTheme as="section" sectionKey="customer-profile-schedule" parentKey="customer-profile-tab-overview">
       <RecordHeading
         actions={
@@ -141,6 +143,7 @@ export default function CustomerScheduleSection({ appointments = [], access, cus
         />
       ) : (
         upcoming.map((appointment) => (
+          // One card per upcoming appointment.
           <AppointmentCard
             key={appointment.id}
             appointment={appointment}
@@ -165,6 +168,7 @@ export default function CustomerScheduleSection({ appointments = [], access, cus
             {`Previous appointments (${previous.length})`}
           </RecordHeading>
           {visiblePrevious.map((appointment) => (
+            // One card per previous appointment.
             <AppointmentCard
               key={appointment.id}
               appointment={appointment}

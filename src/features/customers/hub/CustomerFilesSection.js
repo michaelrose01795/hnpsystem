@@ -36,6 +36,7 @@ const KIND_TONE = { document: "neutral", photo: "accent-soft", video: "accent-so
 function FileCard({ file, onCopyLink, layer = "surface" }) {
   const Layer = layer === "theme" ? LayerTheme : LayerSurface;
   return (
+    // File card: a preview and name that open the file, badges for its type and folder, the job, vehicle and upload date, and buttons to open it, copy its link or go to the job card.
     <Layer
       as="div"
       sectionKey={`customer-profile-file-${file.fileId}`}
@@ -110,6 +111,7 @@ export default function CustomerFilesSection({ files = [] }) {
 
   if (!files.length) {
     return (
+      // Documents, photos and videos (empty): explains that files added to the customer's job cards will appear here.
       <LayerTheme as="section" sectionKey="customer-profile-files" parentKey="customer-profile-tab-overview">
         <RecordHeading>Documents, photos and videos</RecordHeading>
         <EmptyState
@@ -123,6 +125,7 @@ export default function CustomerFilesSection({ files = [] }) {
   }
 
   return (
+    // Documents, photos and videos: every file attached to this customer's jobs, with search, filters for file type and job, sorting and an option to group by job.
     <LayerTheme as="section" sectionKey="customer-profile-files" parentKey="customer-profile-tab-overview">
       <RecordHeading
         actions={
@@ -207,6 +210,7 @@ export default function CustomerFilesSection({ files = [] }) {
         />
       ) : grouped ? (
         groups.map((group) => (
+          // Job group: the files belonging to one job, headed by the job number, vehicle and file count.
           <LayerSurface
             key={group.jobNumber}
             as="div"
@@ -218,6 +222,7 @@ export default function CustomerFilesSection({ files = [] }) {
             </RecordHeading>
             <div className="app-card-grid" style={{ "--app-card-grid-min": "220px" }}>
               {group.files.map((file) => (
+                // One file within the job group.
                 <FileCard key={file.id} file={file} onCopyLink={copy} layer="theme" />
               ))}
             </div>
@@ -226,6 +231,7 @@ export default function CustomerFilesSection({ files = [] }) {
       ) : (
         <div className="app-card-grid" style={{ "--app-card-grid-min": "220px" }}>
           {visible.map((file) => (
+            // One file in the ungrouped list.
             <FileCard key={file.id} file={file} onCopyLink={copy} />
           ))}
         </div>

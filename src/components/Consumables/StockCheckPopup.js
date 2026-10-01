@@ -7,6 +7,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { logFailure } from "@/lib/utils/logFailure";
+import useIsMobile from "@/hooks/useIsMobile";
 
 const consumableNameCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -198,6 +199,7 @@ function StockCheckPopup({
   const [newConsumableLoading, setNewConsumableLoading] = useState(false);
   const [newConsumableError, setNewConsumableError] = useState("");
   const [isAddConsumableOpen, setIsAddConsumableOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const allConsumables = useMemo(() => {
     const locatedItems = (data.locations || []).flatMap((location) => location.consumables || []);
@@ -699,31 +701,37 @@ function StockCheckPopup({
           display: "flex",
           flexDirection: "column",
           gap: isRenaming ? "8px" : 0,
-          padding: "0 8px",
+          padding: "4px 8px",
           borderRadius: "var(--radius-sm)",
           background: checked ? "var(--theme)" : "var(--surface)",
           minHeight: "44px",
         }}
       >
+        {/* The row grows with its content: on a narrow screen the name wraps
+            and the controls drop to their own right-aligned line rather than
+            overlapping the name or the next row. */}
         <div
-          className="app-popup-compact-header"
           style={{
             display: "flex",
+            flexWrap: "wrap",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: "12px",
-            height: "44px",
-            minHeight: "44px",
+            gap: "4px 12px",
+            minHeight: "36px",
+            minWidth: 0,
           }}
         >
-          <label style={{ ...checkboxLabelStyle, margin: 0, minWidth: 0, flex: "1 1 auto" }}>
+          <label style={{ ...checkboxLabelStyle, margin: 0, minWidth: 0, flex: "1 1 120px" }}>
             <input
               type="checkbox"
               checked={checked}
               onChange={() => toggleItem(item.id)}
+              style={{ flex: "0 0 auto" }}
             />
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+            <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{item.name}</span>
           </label>
+          {(checked || isManager) && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", gap: "4px 8px", marginLeft: "auto", minWidth: 0 }}>
           {checked && (
             <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: "0 0 auto" }}>
               <button
@@ -756,11 +764,12 @@ function StockCheckPopup({
                 aria-label={`Increase quantity for ${item.name}`}
                 style={{ width: "var(--control-height)", minWidth: "var(--control-height)", height: "var(--control-height)", minHeight: "var(--control-height)", padding: 0, background: "transparent", borderRadius: "50%" }}
               >
-                </button>
+                <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "var(--table-action-btn-height)", height: "var(--table-action-btn-height)", borderRadius: "50%", background: "var(--surface)" }}>+</span>
+              </button>
             </div>
           )}
           {isManager && (
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "8px", flex: "0 0 auto" }}>
               <Button
                 type="button"
                 variant="secondary"
@@ -780,6 +789,8 @@ function StockCheckPopup({
                 Delete
               </Button>
             </div>
+          )}
+          </div>
           )}
         </div>
         {isRenaming && (
@@ -820,6 +831,7 @@ function StockCheckPopup({
 
   return (
     <>
+    {/* Stock check popup: review recent stock check requests from technicians and search the list of consumable stock. */}
     <PopupModal
       isOpen={open && !addOnly}
       onClose={closePopup}
@@ -830,6 +842,7 @@ function StockCheckPopup({
         {/* Shared compact popup header (.app-popup-compact-header in
             staffglobal.css) on a --theme layer: title vertically centred,
             10px above and below the chips / actions row. */}
+        {/* Popup header: the Stock Check title, counts of stock items and pending requests, and the popup's action buttons. */}
         <LayerTheme
           as="header"
           className="app-popup-compact-header"
@@ -940,11 +953,12 @@ function StockCheckPopup({
                   flexDirection: "column",
                   gap: "16px",
                   flex: "0.95 1 320px",
-                  minWidth: "300px",
+                  minWidth: 0,
                   width: "100%",
                   order: 2,
                 }}
               >
+              {/* Recent stock check requests (managers only): a table of each request's consumable, technician, submitted date and status, with actions to deal with it. */}
               <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", order: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                   <h3 style={sectionHeadingStyle}>Recent stock check requests</h3>
@@ -1030,7 +1044,8 @@ function StockCheckPopup({
               </div>
             )}
 
-            <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", flex: "1.35 1 420px", minWidth: "320px", width: "100%", order: 1 }}>
+            {/* Consumable stock: search the list of consumables, tick the ones to request, set quantities and add a new consumable. */}
+            <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", flex: "1.35 1 420px", minWidth: 0, width: "100%", order: 1 }}>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
                 <div>
                   <h3 style={sectionHeadingStyle}>Consumable stock</h3>
@@ -1084,6 +1099,7 @@ function StockCheckPopup({
                 </div>
               </div>
               {hasSearchQuery && !loading && (
+                // Possible items: suggested matches for what has been typed in the search box.
                 <div
                   style={{
                     display: "flex",
@@ -1145,7 +1161,10 @@ function StockCheckPopup({
                   {totalItems === 0 ? "No consumables recorded yet." : "No consumables match your search."}
                 </p>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px", maxHeight: "420px", overflowY: "auto", paddingRight: "4px" }}>
+                // On a phone the popup body is the only scroller: a list with its
+                // own scroll box is taller than the body it sits in, which traps
+                // the scroll before the last rows are reached.
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px", paddingRight: "4px", ...(isMobile ? {} : { maxHeight: "420px", overflowY: "auto" }) }}>
                   {displayConsumables.map((item) => renderConsumableRow(item))}
                 </div>
               )}
@@ -1154,6 +1173,7 @@ function StockCheckPopup({
           </div>
 
     </PopupModal>
+    {/* Add new consumable popup: a form for the item name, default supplier and default unit cost of a consumable to add to stock. */}
     <PopupModal
       isOpen={open && (addOnly || isAddConsumableOpen)}
       onClose={() => addOnly ? closePopup() : setIsAddConsumableOpen(false)}

@@ -111,6 +111,7 @@ export default function OvertimeEntriesEditor({
     }
   };
 
+  // Overtime sessions: a form to add an overtime session for the period (when editing is allowed) and the list of sessions already logged.
   return (
     <SectionCard
       title="Overtime Sessions"
@@ -163,6 +164,7 @@ export default function OvertimeEntriesEditor({
         </div>
       )}
 
+      {/* Table of logged overtime sessions: date, start time, end time and hours. */}
       <LayerTheme padding="var(--space-3)" gap="0">
         <DataTableShell>
           <table className="app-data-table">

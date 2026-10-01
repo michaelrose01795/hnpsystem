@@ -920,6 +920,7 @@ export default function Sidebar({
   const sidebarHeaderKey = isCondensed ? "app-sidebar-header-mobile" : "app-sidebar-header";
   const sidebarBodyKey = isCondensed ? "app-sidebar-body-mobile" : "app-sidebar-body";
 
+  // Staff sidebar: the main navigation column, with the logo header at the top and the list of page links beneath.
   return (
     <DevLayoutSection
       as="aside"
@@ -1084,7 +1085,7 @@ export default function Sidebar({
         />
       )}
 
-      {/* Navigation Content */}
+      {/* Navigation area: the scrolling list of page links, grouped under headings such as General, each department and Account. */}
       <DevLayoutSection
         className="app-sidebar__body"
         sectionKey={sidebarBodyKey}

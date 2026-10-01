@@ -22,6 +22,7 @@ export default function PaintBreakdownCards({ filter, source = "completed", keys
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Breakdown grid: one small value card for each part of the selected paint figure. */}
       <DevLayoutSection
         sectionKey={gridKey}
         sectionType="section-shell"

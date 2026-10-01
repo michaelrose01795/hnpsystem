@@ -16,6 +16,7 @@ export default function ExecutiveTrendCard({ kpiId, label, unit, format, filter,
   const trend = useKpiTrend(kpiId, { ...filter, granularity }, { enabled: true });
   const devSectionKey = reportDevKey("report-trend-card", `${kpiId}-${granularity || granularityLabel || "trend"}`);
   return (
+    // Trend card: a KPI's name, the period it is grouped by and a small line chart of its values over time.
     <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={devSectionKey} data-dev-text-preview={`${label} ${granularityLabel || ""}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
         <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)" }}>{label}</span>

@@ -21,6 +21,7 @@ import {
 } from "./payslipUtils";
 
 function SummaryStat({ label, value, tone = "var(--text-1)" }) {
+  // Summary tile: a small label with a single pay figure beneath it.
   return (
     <div
       style={{
@@ -65,6 +66,7 @@ export default function PayslipsListPopup({
 
   const latest = summary?.latest;
 
+  // All payslips popup: pay rates, the latest payslip figures and year-to-date totals, above a searchable list of every payslip.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -111,16 +113,19 @@ export default function PayslipsListPopup({
               gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
             }}
           >
+            {/* The employee's hourly rate. */}
             <SummaryStat
               label="Hourly rate"
               value={summary?.hourlyRate ? formatCurrency(summary.hourlyRate) : "—"}
               tone="var(--success)"
             />
+            {/* The employee's overtime rate. */}
             <SummaryStat
               label="Overtime rate"
               value={summary?.overtimeRate ? formatCurrency(summary.overtimeRate) : "—"}
               tone="var(--danger)"
             />
+            {/* Contracted hours. */}
             <SummaryStat
               label="Contracted hours"
               value={
@@ -129,23 +134,28 @@ export default function PayslipsListPopup({
                   : "—"
               }
             />
+            {/* Gross pay on the latest payslip. */}
             <SummaryStat
               label="Latest gross"
               value={latest ? formatCurrency(latest.grossPay) : "—"}
             />
+            {/* Net pay on the latest payslip. */}
             <SummaryStat
               label="Latest net"
               value={latest ? formatCurrency(latest.netPay) : "—"}
               tone="var(--accentText)"
             />
+            {/* Tax deducted on the latest payslip. */}
             <SummaryStat
               label="Latest tax"
               value={latest ? formatCurrency(latest.taxPaid) : "—"}
             />
+            {/* National Insurance deducted on the latest payslip. */}
             <SummaryStat
               label="Latest NI"
               value={latest ? formatCurrency(latest.niPaid) : "—"}
             />
+            {/* Pension contribution on the latest payslip. */}
             <SummaryStat
               label="Latest pension"
               value={latest ? formatCurrency(latest.pensionEmployee) : "—"}
@@ -161,10 +171,15 @@ export default function PayslipsListPopup({
                 gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
               }}
             >
+              {/* Gross pay for the year to date. */}
               <SummaryStat label="YTD Gross" value={formatCurrency(summary.ytd.gross)} />
+              {/* Net pay for the year to date. */}
               <SummaryStat label="YTD Net" value={formatCurrency(summary.ytd.net)} />
+              {/* Tax paid for the year to date. */}
               <SummaryStat label="YTD Tax" value={formatCurrency(summary.ytd.tax)} />
+              {/* National Insurance paid for the year to date. */}
               <SummaryStat label="YTD NI" value={formatCurrency(summary.ytd.ni)} />
+              {/* Pension contributions for the year to date. */}
               <SummaryStat label="YTD Pension" value={formatCurrency(summary.ytd.pension)} />
             </div>
           ) : null}

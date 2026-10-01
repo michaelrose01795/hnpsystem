@@ -7,6 +7,7 @@ export function TechEfficiencyRouteSkeleton() {
   return (
     <div className="tech-efficiency-route-skeleton" role="status" aria-live="polite" aria-label="Loading" aria-busy="true">
       <SkeletonKeyframes />
+      {/* Loading placeholder for the toolbar: the tabs and the control beside them. */}
       <LayerTheme padding="16px 18px" gap="var(--space-sm)">
         <div className="tech-efficiency-route-skeleton__toolbar" aria-hidden="true">
           <div className="tech-efficiency-route-skeleton__tabs">
@@ -16,6 +17,7 @@ export function TechEfficiencyRouteSkeleton() {
         </div>
       </LayerTheme>
 
+      {/* Loading placeholder for the row of filters. */}
       <LayerTheme padding="16px 18px" gap="var(--space-sm)">
         <div className="tech-efficiency-route-skeleton__filters" aria-hidden="true">
           <SkeletonBlock width="220px" height="var(--control-height-sm)" />
@@ -25,9 +27,11 @@ export function TechEfficiencyRouteSkeleton() {
         </div>
       </LayerTheme>
 
+      {/* Loading placeholder for the efficiency metrics: a heading and a grid of twelve figure tiles. */}
       <LayerTheme padding="var(--section-card-padding)" gap="var(--space-md)">
         <SkeletonBlock width="260px" height="19px" />
         <div className="tech-efficiency-route-skeleton__metrics" aria-hidden="true">
+          {/* Placeholder tile standing in for one metric (label and value). */}
           {Array.from({ length: 12 }).map((_, index) => (
             <LayerSurface key={index} padding="var(--space-sm)" gap="8px">
               <SkeletonBlock width={index % 2 ? "72%" : "60%"} height="11px" />
@@ -38,6 +42,7 @@ export function TechEfficiencyRouteSkeleton() {
       </LayerTheme>
 
       <div className="tech-efficiency-route-skeleton__analysis">
+        {/* Loading placeholders for the four analysis panels (heading, chart area and caption). */}
         {Array.from({ length: 4 }).map((_, index) => (
           <LayerTheme key={index} padding="var(--section-card-padding)" gap="var(--space-sm)">
             <SkeletonBlock width={index % 2 ? "150px" : "190px"} height="16px" />

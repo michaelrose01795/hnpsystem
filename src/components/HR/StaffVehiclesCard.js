@@ -474,6 +474,7 @@ export default function StaffVehiclesCard({
     };
   }, [localVehicles, userId, userName]);
 
+  // Staff Vehicles card: the employee's registered vehicles, their repair history and an Add vehicle button.
   return (
     <SectionCard
       title="Staff Vehicles"
@@ -492,6 +493,7 @@ export default function StaffVehiclesCard({
         </button>
       }
     >
+      {/* Confirmation popup shown before a vehicle is removed. */}
       {confirmRemoveId && (
         <div
           className="popup-backdrop"
@@ -568,6 +570,7 @@ export default function StaffVehiclesCard({
         </div>
       )}
 
+      {/* Vehicle list: every vehicle registered to this member of staff, or a prompt to add the first one. */}
       <DevLayoutSection
         as="div"
         sectionKey={`${overlayParentKey}-vehicle-list`}
@@ -600,6 +603,7 @@ export default function StaffVehiclesCard({
             payrollDeductionEnabled: vehicle.payrollDeductionEnabled !== false,
             payrollDeductionReference: vehicle.payrollDeductionReference || "",
           };
+          // One card per vehicle: registration, make, model, colour, payroll reference and VIN, with an inline edit form.
           return (
             <article
               key={vehicle.id}
@@ -820,6 +824,7 @@ export default function StaffVehiclesCard({
         })}
       </DevLayoutSection>
 
+      {/* History: the repair history for the staff vehicles, with a button to log a new repair. */}
       <DevLayoutSection
         as="div"
         sectionKey={`${overlayParentKey}-history`}
@@ -851,6 +856,7 @@ export default function StaffVehiclesCard({
           </button>
         </div>
 
+        {/* Repair form, shown when logging a new repair: choose the vehicle and enter the repair details. */}
         {showHistoryForm && (
           <DevLayoutSection
             as="form"
@@ -969,6 +975,7 @@ export default function StaffVehiclesCard({
           </DevLayoutSection>
         )}
 
+        {/* Repair history table: registration, description, date, payroll deduction, cost and an action for each repair, or a message when there is none. */}
         <DevLayoutSection
           as="div"
           sectionKey={`${overlayParentKey}-history-table-shell`}
@@ -1101,6 +1108,7 @@ export default function StaffVehiclesCard({
         </DevLayoutSection>
       </DevLayoutSection>
 
+      {/* Add vehicle form, shown when the Add vehicle button is pressed. */}
       {showVehicleForm && (
         <DevLayoutSection
           as="div"

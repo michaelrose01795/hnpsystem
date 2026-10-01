@@ -27,6 +27,7 @@ export default function ConnectedDmsSection() {
       <div className={styles.hubScene}>
         <div className={styles.hubColumn}>
           {left.map((feature) => (
+            // Feature card on the left of the hub: the title and one-line summary of a connected feature.
             <LayerSurface key={feature.id} className={styles.hubFeature} radius="var(--radius-md)" padding="14px 16px" gap="4px">
               <span className={styles.hubFeatureTitle}>{feature.title}</span>
               <span className={styles.hubFeatureLine}>{feature.line}</span>
@@ -34,6 +35,7 @@ export default function ConnectedDmsSection() {
           ))}
         </div>
 
+        {/* Central hub card: presents the DMS as the single connected workflow at the centre of the business. */}
         <LayerSurface className={styles.hubCore} radius="var(--radius-lg)" padding="28px 24px">
           <div className={styles.hubOrbitScene} aria-hidden="true">
             <span />
@@ -50,6 +52,7 @@ export default function ConnectedDmsSection() {
 
         <div className={styles.hubColumn}>
           {right.map((feature) => (
+            // Feature card on the right of the hub: the title and one-line summary of a connected feature.
             <LayerSurface key={feature.id} className={styles.hubFeature} radius="var(--radius-md)" padding="14px 16px" gap="4px">
               <span className={styles.hubFeatureTitle}>{feature.title}</span>
               <span className={styles.hubFeatureLine}>{feature.line}</span>
@@ -58,6 +61,7 @@ export default function ConnectedDmsSection() {
         </div>
       </div>
 
+      {/* Outcomes panel: a heading and a grid of the improvements the connected system brings. */}
       <LayerSurface className={styles.outcomePanel} radius="var(--radius-lg)">
         <div className={styles.detailHeader}>
           <div>
@@ -68,6 +72,7 @@ export default function ConnectedDmsSection() {
         </div>
         <div className={styles.outcomeGrid}>
           {connectedOutcomes.map((outcome) => (
+            // One outcome: its title and a short explanation.
             <LayerTheme key={outcome.id} padding="14px" gap="4px">
               <span className={styles.dashboardCardLabel}>{outcome.title}</span>
               <span>{outcome.line}</span>

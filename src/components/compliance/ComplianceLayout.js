@@ -31,6 +31,7 @@ export default function ComplianceLayout({ title, children }) {
         <title>{title ? `${title} - Compliance` : "Compliance"} - HNP System</title>
       </Head>
       <div className="app-page-stack" style={{ gap: 10 }}>
+        {/* Compliance navigation: tabs linking to the dashboard, subject requests, breaches, DPIAs, ROPA and retention pages. */}
         <DevLayoutSection
           as="nav"
           sectionKey="admin-compliance-tabs"

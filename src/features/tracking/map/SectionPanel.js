@@ -194,6 +194,7 @@ export default function SectionPanel({
 
   // ---------------------------------------------------------------- overview
   if (!selectedSection) {
+    // Sections overview: table of every site section with its vehicle count and capacity; choosing one opens its vehicle list.
     return (
       <LayerSurface className="tracking-panel" as="aside" aria-label="Sections overview" gap="var(--space-sm)">
         <div className="tracking-panel__head">
@@ -255,6 +256,7 @@ export default function SectionPanel({
   const occupancy = occupancyById[selectedSection.id] || { capacity: null, occupied: 0, available: null };
   const total = counts[selectedSection.id] || 0;
 
+  // Selected section: its name with a close button, a vehicle search and the vehicles currently parked there.
   return (
     <LayerSurface
       className="tracking-panel"

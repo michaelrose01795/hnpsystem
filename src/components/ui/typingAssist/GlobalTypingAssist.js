@@ -33,6 +33,7 @@ const ANCHOR_GAP = 6;
 function StaffPopover({ popover, controller, visible }) {
   const copy = describePopover(popover);
   return (
+    // Correction popover: explains the spelling or grammar issue on the clicked word and offers suggestions to apply, plus Ignore and Add to dictionary.
     <LayerSurface
       id={POPOVER_ID}
       role="dialog"

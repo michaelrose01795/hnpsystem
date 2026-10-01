@@ -84,6 +84,7 @@ export default function EquipmentFaultDrawer({ asset, fault = null, mode = "repo
   const title =
     mode === "report" ? `Report fault — ${asset.name}` : mode === "start-repair" ? "Start repair" : "Resolve fault";
 
+  // Equipment fault drawer: report a fault, start a repair or record how a fault was resolved for one piece of equipment, with a save button.
   return (
     <EquipmentDrawer
       title={title}
@@ -98,6 +99,7 @@ export default function EquipmentFaultDrawer({ asset, fault = null, mode = "repo
     >
       {error && <StatusMessage tone="danger">{error}</StatusMessage>}
 
+      {/* Summary of the fault being worked on: its description, severity, who reported it and when. */}
       {fault && (
         <LayerTheme radius="var(--radius-sm)" padding="12px" gap="4px">
           <p className="app-record-note app-record-note--strong">{fault.description}</p>

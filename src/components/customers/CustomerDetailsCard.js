@@ -73,6 +73,7 @@ export default function CustomerDetailsCard({
   const definitionFor = (field) => customerFieldDefinitions.find((input) => input.field === field);
 
   return (
+    // Customer Details: shows the selected customer's name, phone numbers, email and address with Edit and Clear buttons, switches to an editable form, or offers Existing Customer / New Customer buttons when nobody is selected.
     <LayerTheme
       sectionKey={sectionKey}
       sectionType="content-card"

@@ -29,6 +29,7 @@ export default function ProblemsSection() {
           <span />
         </div>
         <div className={styles.problemsGrid}>
+          {/* One friction card per everyday workflow problem, with a title and a one-line description. */}
           {workflowProblems.map((problem) => (
             <LayerSurface
               as="article"
@@ -56,6 +57,7 @@ export default function ProblemsSection() {
         </button>
       </div>
 
+      {/* Deep-dive panel: explains the cost of the disconnected workflow, or the benefit once the departments are connected, depending on the toggle above. */}
       <LayerSurface className={styles.problemDeepDive} radius="var(--radius-lg)">
         <div className={styles.detailHeader}>
           <div>
@@ -72,6 +74,7 @@ export default function ProblemsSection() {
             : "The biggest loss is not one single system gap. It is the repeated micro-chase that pulls people away from customers and vehicles."}
         </p>
         <div className={styles.improvementGrid}>
+          {/* One card per improvement, giving its label and a one-line explanation. */}
           {workflowImprovements.map((item) => (
             <LayerTheme key={item.id} padding="14px" gap="4px">
               <span className={styles.dashboardCardLabel}>{item.label}</span>

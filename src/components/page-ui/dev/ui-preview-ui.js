@@ -57,8 +57,10 @@ export function UiPreviewShell({ uiKey, label, children }) {
 export function UiPreviewIndex({ groups }) {
   return (
     <div className="app-page-shell">
+      {/* Page card for the developer preview index. */}
       <LayerSurface as="div">
         <div className="app-page-stack">
+          {/* Heading card: the index title and a short explanation of what the previews show. */}
           <LayerSurface as="div">
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
               <h1 style={{ margin: 0, color: "var(--primary)" }}>Page-UI Preview Index</h1>
@@ -70,6 +72,7 @@ export function UiPreviewIndex({ groups }) {
           </LayerSurface>
 
           {groups.map((group) =>
+          // One group of previews: the area name and a grid of links, each opening a page preview.
           <LayerSurface as="div" key={group.label}>
               <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: 16 }}>{group.label}</h2>
               <ul

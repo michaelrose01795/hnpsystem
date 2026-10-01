@@ -353,6 +353,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
 
   if (!isOpen) return null; // Do not render when closed
 
+  // Start Job popup: shows the jobs the technician is already clocked on to and lets them clock on to another job.
   return (
     <PopupModal
       isOpen
@@ -393,7 +394,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           </div>
         </div>
 
-        {/* Active clock-ins */}
+        {/* Currently working on: the jobs the technician is clocked on to, shown only when there are any. */}
         {activeJobs.length > 0 && (
           <div
             style={{
@@ -411,6 +412,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               Currently Working On:
             </h3>
 
+            {/* One card per active job: job number, registration, vehicle and hours worked, with a Clock Out button. */}
             {activeJobs.map((job) => (
               <LayerTheme
                 key={job.clockingId} // List key
@@ -460,7 +462,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           </div>
         )}
 
-        {/* Manual Entry */}
+        {/* Manual entry: type a job number, choose the type of work and see any error before starting the job. */}
         <LayerTheme
           radius="var(--radius-xs)"
           padding="16px"

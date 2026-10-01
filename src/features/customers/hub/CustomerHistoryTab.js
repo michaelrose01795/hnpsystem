@@ -99,6 +99,7 @@ export default function CustomerHistoryTab({ entries = [], initialSearch = "", a
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap)", minWidth: 0 }}>
+      {/* History filters: search the customer's history by registration, job number, invoice or status and filter by event type. */}
       <LayerTheme as="section" sectionKey="customer-profile-history-filters" parentKey="customer-profile-tab-history">
         <RecordHeading>{`History (${filtered.length} of ${entries.length} events)`}</RecordHeading>
         <div className="app-filter-bar">
@@ -150,6 +151,7 @@ export default function CustomerHistoryTab({ entries = [], initialSearch = "", a
         </div>
       </LayerTheme>
 
+      {/* History list: the matching events, or a message when nothing matches the filters. */}
       <LayerTheme as="section" sectionKey="customer-profile-history-list" parentKey="customer-profile-tab-history">
         {visible.length === 0 ? (
           <EmptyState
@@ -160,6 +162,7 @@ export default function CustomerHistoryTab({ entries = [], initialSearch = "", a
             description="Try a different event type, or clear the search."
           />
         ) : (
+          // Timeline of history events, each with its title, date, type badge and details.
           <LayerSurface as="div" sectionKey="customer-profile-history-timeline" parentKey="customer-profile-history-list">
             <Timeline
               entries={visible}

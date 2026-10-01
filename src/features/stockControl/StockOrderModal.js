@@ -48,6 +48,7 @@ function OrderFacts({ order, item, capabilities }) {
     ["Raised", formatDate(order.createdAt)],
   ];
   return (
+    // Order facts: a label-and-value summary of the open order for this item, with any notes.
     <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
       {rows.map(([label, value]) => (
         <div key={label} className="stock-row">
@@ -131,6 +132,7 @@ export default function StockOrderModal({ row, mode = "order", capabilities, onC
   const receivingShort = mode === "receive" && toNumber(receipt.quantity) !== null && toNumber(receipt.quantity) < (outstanding || toNumber(openOrder?.quantityOrdered) || 0);
   const title = mode === "receive" ? "Mark Received" : mode === "view" ? "Order" : editing ? "Update Order" : "Order Stock";
 
+  // Stock order popup: raise or update a supplier order for a stock item (supplier, expected delivery, reference, unit cost and notes), or book in the delivery when it arrives.
   return (
     <PopupModal isOpen onClose={onClose} ariaLabel={`${title} — ${item.title}`} cardClassName="app-settings-popup-card stock-popup">
       <form className="app-settings-popup stock-form" onSubmit={mode === "receive" ? submitReceipt : submitOrder}>

@@ -23,6 +23,7 @@ export default function KpiBreakdownCards({ filter, kpiId, cards = [], keys = nu
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Breakdown grid: a responsive set of small figures splitting one KPI into its component categories. */}
       <DevLayoutSection
         sectionKey={gridKey}
         sectionType="section-shell"
@@ -31,6 +32,7 @@ export default function KpiBreakdownCards({ filter, kpiId, cards = [], keys = nu
         style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(${minCardWidth}px, 1fr))`, gap: 12 }}
       >
         {wanted.map((card) => (
+          // One breakdown figure: the category label and its value for the selected period.
           <KpiValueCard
             key={card.key}
             compact

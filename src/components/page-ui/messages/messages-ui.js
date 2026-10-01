@@ -296,6 +296,7 @@ function NewConversationModal({ modal }) {
   } = modal;
 
   const needsPeople = mode === "direct" || mode === "group";
+  // New conversation popup: choose the type (direct, group, department, job or announcement), fill in its details and pick the people to include.
   return (
     <PopupModal
       isOpen
@@ -460,6 +461,7 @@ function NewConversationModal({ modal }) {
 // popup: compact header with the canonical secondary Close, StatusMessage tips
 // and secondary Button rows.
 function CommandHelpModal({ help }) {
+  // Slash commands help popup: explains what commands do and lists them by group; clicking one inserts it into the message box.
   return (
     <PopupModal
       isOpen
@@ -527,6 +529,7 @@ function CommandHelpModal({ help }) {
 }
 
 function RenameModal({ rename }) {
+  // Rename conversation popup: type a new name for the conversation and save it.
   return (
     <PopupModal
       isOpen
@@ -559,6 +562,7 @@ function RenameModal({ rename }) {
 }
 
 function LeaveDeclineModal({ decline }) {
+  // Decline leave request popup: enter the required reason before declining a colleague's leave request.
   return (
     <PopupModal
       isOpen
@@ -638,6 +642,7 @@ export default function MessagesPageUi(props) {
 
   return (
     <>
+      {/* Messages page: the conversation list on the left, the open conversation in the middle and an optional details panel on the right. */}
       <DevLayoutSection
         sectionKey="messages-page-shell"
         sectionType="page-shell"
@@ -649,6 +654,7 @@ export default function MessagesPageUi(props) {
         <div className="app-msg__grid">
           {showList && (
             <div className="app-msg__slot app-msg__slot--list">
+              {/* Conversation list: every thread and system feed the user can open, with search. */}
               <LayerTheme
                 as="aside"
                 className="app-msg__panel app-msg__list"
@@ -664,6 +670,7 @@ export default function MessagesPageUi(props) {
 
           {showConversation && (
             <div className="app-msg__slot app-msg__slot--conversation">
+              {/* Open conversation: either a system or bookings notification feed, or a message thread with its header, messages and reply box. */}
               <LayerTheme
                 as="section"
                 className="app-msg__panel app-msg__conversation app-msg-convo"
@@ -737,6 +744,7 @@ export default function MessagesPageUi(props) {
 
           {detailsOpen && (
             <div className="app-msg__slot app-msg__slot--details">
+              {/* Details panel: information about the open feed or conversation, such as its members and linked records. */}
               <LayerTheme
                 as="aside"
                 className="app-msg__panel app-msg__details"

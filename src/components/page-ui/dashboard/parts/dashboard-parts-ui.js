@@ -49,6 +49,7 @@ export default function PartsDashboardUi(props) {
       // top-level card sits on the --theme background. Per CLAUDE.md §3.0,
       // any LayerTheme inside MUST flip back to LayerSurface (handled below).
       const ThemedSection = ({ title, subtitle, children }) => (
+        // Titled dashboard section: a heading and optional subtitle above whatever content is passed in.
         <LayerTheme as="section" gap="12px">
           <div>
             <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accent-text-on-tint)" }}>{title}</h2>
@@ -59,30 +60,38 @@ export default function PartsDashboardUi(props) {
       );
       return <>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap, 16px)" }}>
+        {/* Request snapshot: today's headline parts figures, or a loading, error or no-data message. */}
         <ThemedSection title="Request snapshot" subtitle="New and pre-picks today">
           {loading ? <InlineLoading label="Loading request counts" /> : error ? <p style={{ color: "var(--danger-strong)" }}>{error}</p> : data ? <div style={{
         display: "flex",
         flexWrap: "wrap",
         gap: "16px"
       }}>
+              {/* Number of open parts requests. */}
               <MetricCard label="Parts requests" value={requestSummary.totalRequests ?? 0} helper="Open requests" />
+              {/* Number of part units currently on order. */}
               <MetricCard label="Parts on order" value={requestSummary.partsOnOrder ?? 0} helper="Units on order" />
+              {/* Number of parts pre-picked and assigned to racks. */}
               <MetricCard label="Pre picked" value={requestSummary.prePicked ?? 0} helper="Assigned to racks" />
+              {/* Number of delayed orders with missing quantities. */}
               <MetricCard label="Delayed orders" value={requestSummary.delayedOrders ?? 0} helper="Missing qty" />
             </div> : <p style={{ color: "var(--surfaceTextMuted)" }}>No request data available yet.</p>}
         </ThemedSection>
 
         <div style={splitRowStyle}>
+          {/* Requests trend: chart of parts requests over the last seven days. */}
           <ThemedSection title="Requests trend" subtitle="Report KPI: parts requests, last 7 days">
             {loading ? <InlineLoading label="Loading request trends" /> : trendData.length === 0 ? <p style={{ color: "var(--surfaceTextMuted)" }}>No trend data available yet.</p> : <TrendBlock data={trendData} />}
           </ThemedSection>
 
+          {/* Stock levels: the parts with the lowest availability. */}
           <ThemedSection title="Stock levels" subtitle="Lowest availability items">
             {loading ? <InlineLoading label="Loading stock alerts" /> : stockAlerts.length === 0 ? <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>No low stock alerts yet.</p> : <div style={{
           display: "flex",
           flexDirection: "column",
           gap: "10px"
         }}>
+                {/* One low-stock part: its name, reorder level and the quantity currently in stock. */}
                 {stockAlerts.map(part => <LayerSurface key={part.id} radius="var(--radius-sm)" padding="10px 12px" style={{
             flexDirection: "row",
             justifyContent: "space-between"
@@ -103,12 +112,14 @@ export default function PartsDashboardUi(props) {
         </div>
 
         <div style={splitRowStyle}>
+          {/* Requests by status: a count of parts requests for each status. */}
           <ThemedSection title="Requests by status">
             {loading ? <InlineLoading label="Loading request status breakdown" /> : requestsByStatus.length === 0 ? <p style={{ margin: 0, color: "var(--surfaceTextMuted)" }}>Waiting for request data.</p> : <div style={{
           display: "flex",
           flexWrap: "wrap",
           gap: "12px"
         }}>
+                {/* One status tile: the status name and how many requests are in it. */}
                 {requestsByStatus.map(row => <LayerSurface key={row.status} radius="var(--radius-sm)" padding="10px 14px" style={{ minWidth: 150 }}>
                     <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--surfaceTextMuted)" }}>{humanizeStatus(row.status)}</p>
                     <strong style={{ color: "var(--text-accent)", fontSize: "1.4rem" }}>{row.count}</strong>
@@ -116,6 +127,7 @@ export default function PartsDashboardUi(props) {
               </div>}
           </ThemedSection>
 
+          {/* Recent requests: list of the most recently raised parts requests. */}
           <ThemedSection title="Recent requests" subtitle="Most recent entries">
             {loading ? <InlineLoading label="Loading recent requests" /> : <ListBlock title="Recent requests" items={recentRequests} />}
           </ThemedSection>

@@ -48,6 +48,7 @@ export default function DeliveryWeekPanel({ week, selectedDate, onSelectDate }) 
   const today = todayIso();
 
   return (
+    // Delivery week: a strip of Monday-to-Friday tiles for choosing which day's route to view.
     <LayerTheme
       id="deliveries-week-panel"
       as="section"
@@ -75,6 +76,7 @@ export default function DeliveryWeekPanel({ week, selectedDate, onSelectDate }) 
           };
           const isSelected = day === selectedDate;
           return (
+            // Day tile: the date, number of stops, how many are open, delivered or failed, the total value and an urgent badge; pressing it opens that day.
             <LayerSurface
               key={day}
               as="button"

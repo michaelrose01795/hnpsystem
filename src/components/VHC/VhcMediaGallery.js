@@ -133,6 +133,7 @@ function RequestRow({ label, section, status, photos, videos, hideMediaCounts = 
   const badge = severityBadge(status);
   let mediaIndex = -1;
   return (
+    // Media row for one concern: its name, section, severity badge and photo/video counts on the left, with the thumbnails captured for it on the right.
     <div
       style={{
         display: "flex",
@@ -251,6 +252,7 @@ export default function VhcMediaGallery({ jobId, reloadToken = 0 }) {
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {statTiles.map((tile) => (
+            // Count tile: the total number of photos or videos captured on this health check.
             <div
               key={tile.label}
               style={{ background: "var(--theme)", borderRadius: "var(--radius-md)", padding: "8px 16px", display: "flex", flexDirection: "column", gap: "2px", minWidth: "72px" }}
@@ -271,6 +273,7 @@ export default function VhcMediaGallery({ jobId, reloadToken = 0 }) {
           <SkeletonKeyframes />
           {/* Mirrors RequestRow: concern details on the left, thumbnail strip on the right. */}
           {[3, 2].map((thumbCount, rowIndex) => (
+            // Placeholder row shown while the media is loading.
             <LayerTheme
               key={rowIndex}
               padding="20px"
@@ -294,6 +297,7 @@ export default function VhcMediaGallery({ jobId, reloadToken = 0 }) {
           ))}
         </div>
       ) : !hasAnyMedia ? (
+        // Empty message shown when no photos or videos have been captured yet.
         <div
           style={{
             background: "var(--theme)",
@@ -309,9 +313,11 @@ export default function VhcMediaGallery({ jobId, reloadToken = 0 }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {mainVideos.length > 0 && (
+            // Customer Video: the main videos recorded for the customer.
             <RequestRow label="Customer Video" section="" status="" photos={[]} videos={mainVideos} />
           )}
           {groups.map((group) => (
+            // One row per concern, showing the photos and videos captured against it.
             <RequestRow
               key={group.key}
               label={group.label}
@@ -322,6 +328,7 @@ export default function VhcMediaGallery({ jobId, reloadToken = 0 }) {
             />
           ))}
           {(unlinkedPhotos.length > 0 || unlinkedVideos.length > 0) && (
+            // Unlinked media: photos and videos not attached to any particular concern.
             <RequestRow label="Unlinked media" section="" status="" photos={unlinkedPhotos} videos={unlinkedVideos} />
           )}
         </div>

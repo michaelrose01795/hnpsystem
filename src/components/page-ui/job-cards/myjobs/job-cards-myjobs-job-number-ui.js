@@ -4,8 +4,11 @@ import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer prim
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { SectionSkeleton } from "@/components/ui/LoadingSkeleton";
 import useIsMobile from "@/hooks/useIsMobile";
+import { useTechnicalVehicle } from "@/hooks/useTechnicalInfo";
 import VhcMediaGallery from "@/components/VHC/VhcMediaGallery"; // read-only viewer for media captured during the health check
 import PopupModal from "@/components/popups/popupStyleApi";
+import SymbolButton from "@/components/ui/SymbolButton";
+import dynamic from "next/dynamic";
 import { formatVehicleLocation } from "@/lib/tracking/vehicleLocations"; // canonical vehicle-location display
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations"; // Pre-pick single source of truth = parts_job_items (see project_pre_pick_location).
 import {
@@ -16,6 +19,9 @@ import {
   TechnicianJobSummaryGrid,
   TechnicianJobTabRow,
 } from "@/components/JobCards/TechnicianJobLayout";
+
+// Code-split and rendered only while open: nobody pays for it until they reach for it.
+const TechnicalInfoPopup = dynamic(() => import("@/components/page-ui/job-cards/TechnicalInfoPopup"), { ssr: false });
 
 const compactLabelStyle = {
   display: "flex",
@@ -98,6 +104,7 @@ function QuickStatCard({ stat, sectionKey, scrollTargetId }) {
     stat.onClick?.();
   };
 
+  // Quick figure card: one job statistic shown as a value over a label, pressable when it jumps to more detail.
   return (
     <TechnicianJobSummaryCard
       as={CardTag}
@@ -272,6 +279,16 @@ export default function TechJobDetailPageUi(props) {
     writeUpTabComplete,
     writeUpTabPartiallyComplete,
   } = props; // receive page logic props.
+  const vehicleDisplay = useTechnicalVehicle(props.view === "section5" && vehicle ? jobCard?.jobNumber || jobNumber : null, vehicle);
+
+  // Technical information popup, opened from the info symbol in the job header.
+  // Focus returns to that symbol when the popup closes.
+  const [technicalInfoOpen, setTechnicalInfoOpen] = useState(false);
+  const technicalInfoButtonRef = useRef(null);
+  const closeTechnicalInfo = () => {
+    setTechnicalInfoOpen(false);
+    technicalInfoButtonRef.current?.focus();
+  };
 
   // Bumped after any VHC media upload so the read-only gallery below re-fetches
   // the job's files and the technician sees their capture immediately.
@@ -694,6 +711,7 @@ export default function TechJobDetailPageUi(props) {
     width: "100%"
   };
   const renderVhcSummaryItem = (item, idx) => (
+    // One line of the health check summary: the section it belongs to and the finding, flagged when a tyre is unmatched.
     <LayerTheme
       key={idx}
       className="vhc-summary-item"
@@ -780,6 +798,12 @@ export default function TechJobDetailPageUi(props) {
       return <>
         {/* Header Section */}
         <TechnicianJobHeader>
+          {/* Status label, not a control: .app-badge + one tone from the
+              Badge family, so a read-only status never takes the shape of the
+              action buttons at the other end of the header. */}
+          <span className={`app-badge app-badge--${jobStatusBadgeTone}`} style={{ flexShrink: 0 }}>
+            {techStatusDisplay}
+          </span>
           <h1 style={{
         color: "var(--text-1)",
         fontSize: "28px",
@@ -790,51 +814,33 @@ export default function TechJobDetailPageUi(props) {
       }}>
             {jobCard.jobNumber}
           </h1>
-          <span style={{
-        fontSize: "12px",
-        color: "var(--text-1)",
-        flexShrink: 0
-      }}>
-            Updated {formatDateTime(jobCard.updatedAt)}
-          </span>
           <div style={{
         flex: 1,
         minWidth: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "flex-end",
-        gap: "12px",
+        gap: "8px",
         flexWrap: "wrap"
       }}>
-              {/* Status label, not a control: .app-badge + one tone from the
-                  Badge family. It previously borrowed .app-btn and tinted it
-                  inline, which gave a read-only status the shape of the Clock
-                  Out / Complete Job buttons sitting immediately beside it. */}
-              <span className={`app-badge app-badge--${jobStatusBadgeTone}`}>
-                {techStatusDisplay}
-              </span>
-              <div style={{
-            display: "flex",
-            gap: "8px",
-            flexWrap: "wrap"
-          }}>
-                {/* Clock Out / Clock In / Complete Job all use the global `<Button>`
-                    component so they share the canonical `.app-btn` sizing, radius
-                    and hover treatment. Previously each was an inline-styled <button>
-                    with hardcoded padding/border-radius — now visual appearance is
-                    centrally owned by the design system. */}
-                {jobClocking ? <Button variant="secondary" size="sm" onClick={handleJobClockOut} disabled={clockOutLoading || clockInLoading}>
-                    {clockOutLoading ? "Clocking Out..." : "Clock Out"}
-                  </Button> : <Button variant="secondary" size="sm" onClick={handleJobClockIn} disabled={clockInLoading || clockOutLoading} title={canClockIntoMotHandoff ? "Clock in to complete the remaining MOT request" : "Clock in to start technician work"}>
-                    {clockInLoading ? "Clocking In..." : canClockIntoMotHandoff ? "Clock In to MOT" : "Clock In"}
-                  </Button>}
-
-                <Button variant="primary" size="sm" onClick={handleCompleteJob} disabled={!canCompleteJob || clockInLoading || clockOutLoading} title={completeJobLockedTitle}>
-                  {canCompleteJob ? "Complete Job" : "Complete Job (locked)"}
-                </Button>
-              </div>
-            </div>
+            {/* Technical info / Clock In / Clock Out / Complete Job are icon-only
+                actions from the shared symbol family; each keeps its full
+                wording as the accessible name and hover title. */}
+            <SymbolButton
+              ref={technicalInfoButtonRef}
+              symbol="info"
+              label="Technical info"
+              aria-haspopup="dialog"
+              aria-expanded={technicalInfoOpen}
+              onClick={() => setTechnicalInfoOpen(true)}
+            />
+            {jobClocking ? <SymbolButton symbol="clockOut" label={clockOutLoading ? "Clocking out..." : "Clock out"} onClick={handleJobClockOut} disabled={clockOutLoading || clockInLoading} /> : <SymbolButton symbol="clockIn" label={clockInLoading ? "Clocking in..." : canClockIntoMotHandoff ? "Clock in to complete the remaining MOT request" : "Clock in to start technician work"} onClick={handleJobClockIn} disabled={clockInLoading || clockOutLoading} />}
+            <SymbolButton symbol="approve" label={canCompleteJob ? "Complete job" : completeJobLockedTitle || "Complete job (locked)"} onClick={handleCompleteJob} disabled={!canCompleteJob || clockInLoading || clockOutLoading} />
+          </div>
         </TechnicianJobHeader>
+
+        {/* Technical information: vehicle-scoped request suggestions, search and sourced workshop information. */}
+        {technicalInfoOpen && <TechnicalInfoPopup key={jobCard.jobNumber} jobNumber={jobCard.jobNumber} onClose={closeTechnicalInfo} />}
 
         {completeJobFeedback ? <div style={{
       padding: "12px 14px",
@@ -861,6 +867,7 @@ export default function TechJobDetailPageUi(props) {
 
         {/* Vehicle, customer, clocked time, and location summary */}
         <TechnicianJobSummaryGrid>
+          {/* Vehicle summary: registration and mileage, with the full available make/model, VIN, year, colour, fuel and engine number in the existing detail row. */}
           <TechnicianJobSummaryCard
             sectionKey="myjob-summary-vehicle"
             sectionType="content-card"
@@ -901,11 +908,12 @@ export default function TechJobDetailPageUi(props) {
                 </span>
               </div>
             </div>
-            <div style={compactSummarySecondaryStyle}>
-              {vehicle?.makeModel || [vehicle?.make, vehicle?.model].filter(Boolean).join(" ") || "N/A"}
+            <div title={`${vehicleDisplay.summary} · Model source: ${vehicleDisplay.modelSource}`} tabIndex={0} style={{ ...compactSummarySecondaryStyle, overflowX: "auto", textOverflow: "clip" /* Keep full identifiers accessible without adding a summary line. */ }}>
+              {vehicleDisplay.summary}
             </div>
           </TechnicianJobSummaryCard>
 
+          {/* Customer summary: the customer's name and contact details. */}
           <TechnicianJobSummaryCard
             sectionKey="myjob-summary-customer"
             sectionType="content-card"
@@ -942,12 +950,14 @@ export default function TechJobDetailPageUi(props) {
             </div>
           </TechnicianJobSummaryCard>
 
+          {/* Clocked hours: total time clocked on this job, pressing it jumps to the time breakdown. */}
           <QuickStatCard
             stat={quickStats.find((stat) => stat.label === "Clocked Hours")}
             sectionKey="myjob-quick-stat-clocked-hours"
             scrollTargetId="job-progress-total-time"
           />
 
+          {/* Locations summary: where the vehicle and its keys are currently kept. */}
           <TechnicianJobSummaryCard
             sectionKey="myjob-summary-locations"
             sectionType="content-card"
@@ -1069,13 +1079,14 @@ export default function TechJobDetailPageUi(props) {
             landscape technician workflow without changing the shell design. */}
         <TechnicianJobContentShell activeTab={activeTab}>
           
+          {/* Scrolling area that holds the content of whichever job tab is selected. */}
           <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-main-scroll" sectionType="section-shell" parentKey="myjob-main-content" backgroundToken="none" style={{
         flex: 1,
         overflowY: "auto",
         minHeight: 0
       }}>
           
-          {/* OVERVIEW TAB */}
+          {/* Overview tab: the customer's requests and the job details for this job. */}
           {activeTab === "overview" && <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-tab-overview" sectionType="content-card" parentKey="myjob-main-scroll" backgroundToken="none" data-dev-page="My job detail" data-dev-tab="Overview" data-dev-card-section="overview tab" data-dev-text-preview="Overview tab" data-dev-auto-outline="cards">
               {CustomerRequestsTab && workspaceJobData ? <CustomerRequestsTab
                 jobData={workspaceJobData}
@@ -1089,7 +1100,7 @@ export default function TechJobDetailPageUi(props) {
                 notes={notes}
                 partsJobItems={workspaceJobData.parts_job_items || []}
               /> : <>
-              {/* Job Details */}
+              {/* Job details: the work requested on the job, linked notes, any cosmetic damage noted on the vehicle as a highlighted concern, and the health check items that have been authorised. */}
               <LayerSurface as="section" sectionKey="myjob-overview-details" sectionType="content-card" parentKey="myjob-tab-overview" backgroundToken="surface" radius="var(--section-card-radius)" padding="var(--section-card-padding)" gap="var(--layout-card-gap)">
                 <h3 style={{
               fontSize: "18px",
@@ -1098,7 +1109,7 @@ export default function TechJobDetailPageUi(props) {
             }}>
                   Job Details
                 </h3>
-                {(overviewCustomerRequests.length > 0 || overviewAuthorisedRequests.length > 0) && <div style={{
+                {(overviewCustomerRequests.length > 0 || overviewAuthorisedRequests.length > 0 || jobCard.cosmeticNotes) && <div style={{
               marginBottom: "16px"
             }}>
                     <strong style={{
@@ -1252,6 +1263,25 @@ export default function TechJobDetailPageUi(props) {
                           </div>
                         </div>;
               })}
+                      {jobCard.cosmeticNotes && <div style={overviewRequestRowStyle}>
+                          <div style={overviewRequestColumnGridStyle}>
+                            <div style={{
+                      minWidth: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px",
+                      alignSelf: "start"
+                    }}>
+                              <span style={overviewRequestSubtitleStyle}>Cosmetic Damage Notes</span>
+                              <span style={{
+                        fontSize: "14px",
+                        color: "var(--text-1)"
+                      }}>
+                                {jobCard.cosmeticNotes}
+                              </span>
+                            </div>
+                          </div>
+                        </div>}
                     </div>
                   </div>}
                 {authorisedVhcItems.length > 0 ? <div style={{
@@ -1328,24 +1358,13 @@ export default function TechJobDetailPageUi(props) {
                     </div>
                   </div>
                 </div> : null}
-                {jobCard.cosmeticNotes && <div>
-                    <strong style={{
-                fontSize: "14px",
-                color: "var(--text-1)",
-                letterSpacing: "0.04em"
-              }}>Cosmetic Notes:</strong>
-                    <p style={{
-                marginTop: "10px",
-                color: "var(--text-1)",
-                lineHeight: 1.6
-              }}>{jobCard.cosmeticNotes}</p>
-                  </div>}
               </LayerSurface>
               </>}
             </DevLayoutSection>}
 
-          {/* VHC TAB */}
+          {/* Health check tab: the vehicle health check sections, summary and captured media for this job. */}
           {activeTab === "vhc" && <DevLayoutSection as="div" sectionKey="myjob-tab-vhc" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell className="vhc-section-shell">
+              {/* Completed banner shown once the health check is finished, with customer video and Reopen VHC buttons. */}
               {!activeSection && (showVhcReopenButton ? <LayerTheme as="div" sectionKey="myjob-vhc-reopen-banner" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card" style={{
             display: "flex",
             alignItems: "center",
@@ -1375,7 +1394,7 @@ export default function TechJobDetailPageUi(props) {
                     </Button>
                   </div>
                 </LayerTheme> : <>
-                  {/* VHC Header with Save Status */}
+                  {/* Health check header: the title, save status, and buttons to view the summary, complete the check and take photos. */}
                   <DevLayoutSection as="div" sectionKey="myjob-vhc-header" sectionType="toolbar" parentKey="myjob-tab-vhc" backgroundToken="section-card-bg" className="vhc-toolbar">
                     <div>
                       <h2 className="vhc-toolbar__title" style={{ color: "var(--text-1)" }}>Vehicle Health Check</h2>
@@ -1423,12 +1442,12 @@ export default function TechJobDetailPageUi(props) {
                     </LayerTheme>}
 
                   {!showVhcSummary && <>
-                      {/* Mandatory Sections */}
+                      {/* Mandatory sections: the three checks that must be finished before the health check can be completed. */}
                       <LayerTheme as="div" sectionKey="myjob-vhc-mandatory" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                     <h3 className="vhc-section-heading" style={{ color: "var(--text-1)" }}>Mandatory Sections</h3>
                     <div className="vhc-card-grid">
 
-                  {/* Wheels & Tyres */}
+                  {/* Wheels and tyres card: opens the tread depth, pressure and condition check and shows its status. */}
                   <LayerSurface as="div" sectionKey="myjob-vhc-card-wheels" sectionType="content-card" parentKey="myjob-vhc-mandatory" className="vhc-card vhc-card--mandatory" onClick={() => openSection("wheelsTyres")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Wheels & Tyres</h4>
@@ -1439,7 +1458,7 @@ export default function TechJobDetailPageUi(props) {
                     <p className="vhc-card__description">Check tread depth, pressure, and condition</p>
                   </LayerSurface>
 
-                  {/* Brakes & Hubs */}
+                  {/* Brakes and hubs card: opens the pads, discs and brake system check and shows its status. */}
                   <LayerSurface as="div" sectionKey="myjob-vhc-card-brakes" sectionType="content-card" parentKey="myjob-vhc-mandatory" className="vhc-card vhc-card--mandatory" onClick={() => openSection("brakesHubs")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Brakes & Hubs</h4>
@@ -1450,7 +1469,7 @@ export default function TechJobDetailPageUi(props) {
                     <p className="vhc-card__description">Check pads, discs, and brake system</p>
                   </LayerSurface>
 
-                  {/* Service Indicator & Under Bonnet */}
+                  {/* Service indicator and under bonnet card: opens the service reminder, oil level and under bonnet check and shows its status. */}
                   <LayerSurface as="div" sectionKey="myjob-vhc-card-service" sectionType="content-card" parentKey="myjob-vhc-mandatory" className="vhc-card vhc-card--mandatory" onClick={() => openSection("serviceIndicator")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Service Indicator & Under Bonnet</h4>
@@ -1463,7 +1482,7 @@ export default function TechJobDetailPageUi(props) {
                 </div>
                       </LayerTheme>
 
-              {/* Additional Checks (Optional) */}
+              {/* Additional checks: the optional inspection areas the technician can also record. */}
               <LayerTheme as="div" sectionKey="myjob-vhc-additional" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card">
                 <h3 className="vhc-section-heading" style={{ color: "var(--text-1)" }}>
                   Additional Checks
@@ -1478,7 +1497,7 @@ export default function TechJobDetailPageUi(props) {
                 </h3>
                 <div className="vhc-card-grid">
 
-                  {/* External */}
+                  {/* External card: opens the external inspection and shows how many items have been logged. */}
                   <LayerSurface as="div" sectionKey="myjob-vhc-card-external" sectionType="content-card" parentKey="myjob-vhc-additional" className="vhc-card" onClick={() => openSection("externalInspection")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>External</h4>
@@ -1492,7 +1511,7 @@ export default function TechJobDetailPageUi(props) {
                     <p className="vhc-card__description">Body, lights, glass, mirrors</p>
                   </LayerSurface>
 
-                  {/* Internal & Electrics */}
+                  {/* Internal and electrics card: opens the interior and electrics inspection and shows how many items have been logged. */}
                   <LayerSurface as="div" sectionKey="myjob-vhc-card-internal" sectionType="content-card" parentKey="myjob-vhc-additional" className="vhc-card" onClick={() => openSection("internalElectrics")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Internal & Electrics</h4>
@@ -1506,7 +1525,7 @@ export default function TechJobDetailPageUi(props) {
                     <p className="vhc-card__description">Interior, lights, electrics, controls</p>
                   </LayerSurface>
 
-                  {/* Underside */}
+                  {/* Underside card: opens the underside inspection and shows how many items have been logged. */}
                   <LayerSurface as="div" sectionKey="myjob-vhc-card-underside" sectionType="content-card" parentKey="myjob-vhc-additional" className="vhc-card" onClick={() => openSection("underside")}>
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title" style={{ color: "var(--text-1)" }}>Underside</h4>
@@ -1523,7 +1542,7 @@ export default function TechJobDetailPageUi(props) {
               </LayerTheme>
                 </>}
 
-              {/* VHC Summary */}
+              {/* Health check summary: every finding recorded so far, grouped for review before the check is completed. */}
               {showVhcSummary && <LayerTheme as="div" sectionKey="myjob-vhc-summary" sectionType="content-card" parentKey="myjob-tab-vhc" className="vhc-content-card vhc-content-card--bordered">
                   <div style={{
                 display: "flex",
@@ -1612,33 +1631,38 @@ export default function TechJobDetailPageUi(props) {
                   <VhcMediaGallery jobId={resolvedJobId} reloadToken={galleryReloadToken} />
                 </LayerTheme>}
 
-              {/* VHC Modals */}
+              {/* Wheels and tyres form, shown in place of the section cards while that check is being filled in. */}
               {activeSection === "wheelsTyres" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-wheels" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
                   <WheelsTyresDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("wheelsTyres", data)} onComplete={data => handleSectionComplete("wheelsTyres", data)} initialData={vhcData.wheelsTyres} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
+              {/* Brakes and hubs form, shown while that check is being filled in. */}
               {activeSection === "brakesHubs" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-brakes" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
                   <BrakesHubsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("brakesHubs", data)} onComplete={data => handleSectionComplete("brakesHubs", data)} initialData={vhcData.brakesHubs} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
+              {/* Service indicator and under bonnet form, shown while that check is being filled in. */}
               {activeSection === "serviceIndicator" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-service" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
                   <ServiceIndicatorDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("serviceIndicator", data)} onComplete={data => handleSectionComplete("serviceIndicator", data)} initialData={vhcData.serviceIndicator} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
+              {/* External inspection form, shown while that check is being filled in. */}
               {activeSection === "externalInspection" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-external" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
                   <ExternalDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("externalInspection", data)} onComplete={data => handleSectionComplete("externalInspection", data)} initialData={vhcData.externalInspection} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
+              {/* Internal and electrics form, shown while that check is being filled in. */}
               {activeSection === "internalElectrics" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-internal" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
                   <InternalElectricsDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("internalElectrics", data)} onComplete={data => handleSectionComplete("internalElectrics", data)} initialData={vhcData.internalElectrics} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
 
+              {/* Underside inspection form, shown while that check is being filled in. */}
               {activeSection === "underside" && <DevLayoutSection as="div" sectionKey="myjob-vhc-modal-underside" sectionType="content-card" parentKey="myjob-tab-vhc" backgroundToken="surface">
                   <UndersideDetailsModal isOpen={true} inlineMode onClose={data => handleSectionDismiss("underside", data)} onComplete={data => handleSectionComplete("underside", data)} initialData={vhcData.underside} isReopenMode={isReopenMode} jobId={resolvedJobId} jobNumber={jobNumber} userId={dbUserId || user?.id || null} onSectionMediaUploaded={() => { fetchJobData?.(); bumpGallery(); }} />
                 </DevLayoutSection>}
             </DevLayoutSection>}
 
-          {/* PARTS TAB */}
+          {/* Parts tab: the parts already requested or booked for this job and a form to request another. */}
           {activeTab === "parts" && <DevLayoutSection as="div" sectionKey="myjob-tab-parts" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell style={{
             padding: 0,
             display: "flex",
@@ -1646,6 +1670,7 @@ export default function TechJobDetailPageUi(props) {
             gap: "var(--page-stack-gap)",
             alignItems: "stretch"
           }}>
+              {/* Active requests: the parts requests raised for this job and the parts already booked to it. */}
               <LayerSurface as="section" sectionKey="myjob-parts-active-requests" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--text-1)" }}>Active Requests</h3>
@@ -1671,6 +1696,7 @@ export default function TechJobDetailPageUi(props) {
                     const canEditRequest = ["pending", "waiting_authorisation"].includes(String(request.status || "").toLowerCase()) && !request.fulfilled_by;
                     const isExpanded = expandedPartRequestId === request.request_id;
                     const latestUpdate = request.updated_at && request.updated_at !== request.created_at ? formatDateTime(request.updated_at) : "No Parts update yet";
+                    // One parts request: what was asked for, its quantity and status, the latest update, and edit or remove actions.
                     return <LayerTheme key={request.request_id} as="article" sectionKey={`myjob-parts-request-row-${request.request_id}`} sectionType="content-card" parentKey="myjob-parts-active-requests" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="10px">
                       <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 1.4fr) repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", alignItems: "start" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -1730,6 +1756,7 @@ export default function TechJobDetailPageUi(props) {
                       const requestNotes = part?.requestNotes ?? part?.request_notes ?? "";
                       const updatedAt = part?.updatedAt ?? part?.updated_at ?? part?.createdAt ?? part?.created_at ?? null;
 
+                      // One booked part: its name and part number, quantity booked, status and when it was last updated.
                       return <LayerTheme key={part.id} as="article" sectionKey={`myjob-parts-booked-row-${part.id}`} sectionType="content-card" parentKey="myjob-parts-active-requests" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="10px">
                         <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 1.5fr) repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", alignItems: "start" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -1753,6 +1780,7 @@ export default function TechJobDetailPageUi(props) {
                 </>}
               </LayerSurface>
 
+              {/* Ready or approved parts: parts that are approved, ordered or ready to collect for this job. */}
               {(Array.isArray(authorizedParts) && authorizedParts.length > 0) && <LayerSurface as="section" sectionKey="myjob-parts-ready-approved" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--text-1)" }}>Ready or Approved Parts</h3>
@@ -1766,6 +1794,7 @@ export default function TechJobDetailPageUi(props) {
                     const badgeTone = getPartsStatusTone(part.status);
                     const partName = part.part?.name || part.part_name_snapshot || part.row_description || "Approved part";
                     const canCollect = ["allocated", "pre_picked", "picked", "stock"].includes(String(part.status || "").toLowerCase());
+                    // One approved part: its name, quantity, whether it is approved or ordered, and its current status.
                     return <LayerTheme key={part.id} as="article" sectionKey={`myjob-parts-ready-${part.id}`} sectionType="content-card" parentKey="myjob-parts-ready-approved" backgroundToken="theme" radius="var(--radius-sm)" padding="14px" gap="8px">
                       <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 1.5fr) repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", alignItems: "center" }}>
                         <strong style={{ color: "var(--text-1)", fontSize: "15px" }}>{partName}</strong>
@@ -1782,11 +1811,13 @@ export default function TechJobDetailPageUi(props) {
                 </div>}
               </LayerSurface>}
 
+              {/* Approved technician findings: a count of approved findings still waiting for parts to be allocated. */}
               {(!authorizedParts || authorizedParts.length === 0) && !authorizedVhcRowsLoading && authorizedVhcRows.length > 0 && <LayerSurface as="section" sectionKey="myjob-parts-authorised-findings" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="16px" gap="8px">
                 <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "var(--text-1)" }}>Approved technician findings</h3>
                 <p style={{ margin: 0, fontSize: "13px", color: "var(--text-1)" }}>{authorizedVhcRows.length} approved finding{authorizedVhcRows.length === 1 ? "" : "s"} waiting for parts allocation.</p>
               </LayerSurface>}
 
+              {/* Request an individual part: form to describe the part, set a quantity, attach photos and send the request to Parts. */}
               <LayerSurface as="section" sectionKey="myjob-parts-request" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="16px">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-3)", flexWrap: "wrap" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
@@ -1811,6 +1842,7 @@ export default function TechJobDetailPageUi(props) {
                     alignItems: "stretch",
                   }}
                 >
+                  {/* Part required: search box for describing or finding the part that is needed. */}
                   <LayerTheme sectionKey="myjob-parts-required-field" sectionType="content-card" parentKey="myjob-parts-request" radius="var(--radius-sm)" padding="14px" gap="8px">
                     <label style={compactLabelStyle}>
                       Part Required
@@ -1828,6 +1860,7 @@ export default function TechJobDetailPageUi(props) {
                     </label>
                   </LayerTheme>
 
+                  {/* Quantity: plus and minus buttons and a number box for how many are needed. */}
                   <LayerTheme sectionKey="myjob-parts-quantity-field" sectionType="content-card" parentKey="myjob-parts-request" radius="var(--radius-sm)" padding="14px" gap="8px" style={{ justifyContent: "center" }}>
                     <label style={compactLabelStyle}>
                       Quantity
@@ -1845,6 +1878,7 @@ export default function TechJobDetailPageUi(props) {
                     </label>
                   </LayerTheme>
 
+                  {/* Photos or images: optional picture upload to help Parts identify the item. */}
                   <LayerTheme sectionKey="myjob-parts-upload-summary" sectionType="content-card" parentKey="myjob-parts-request" radius="var(--radius-sm)" padding="14px" gap="8px">
                     <label style={compactLabelStyle}>
                       Photos or images (optional)
@@ -1883,7 +1917,7 @@ export default function TechJobDetailPageUi(props) {
               </LayerSurface>
             </DevLayoutSection>}
 
-          {/* NOTES TAB */}
+          {/* Notes tab: the notes written against this job, with the option to add more. */}
           {activeTab === "notes" && <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-tab-notes" sectionType="content-card" parentKey="myjob-main-scroll" backgroundToken="none" data-dev-page="My job detail" data-dev-tab="Notes" data-dev-card-section="notes tab" data-dev-text-preview="Notes tab" data-dev-auto-outline="cards" style={{
             gap: "var(--space-4)"
           }}>
@@ -1894,6 +1928,7 @@ export default function TechJobDetailPageUi(props) {
                 onNotesChange={handleNotesChange}
                 noteHistoryJobs={[]}
               /> : <>
+              {/* Notes toolbar: the heading and the button for adding a new note. */}
               <DevLayoutSection as="div" sectionKey="myjob-notes-toolbar" sectionType="toolbar" parentKey="myjob-tab-notes" backgroundToken="none" style={{
             display: "flex",
             justifyContent: "space-between",
@@ -1925,6 +1960,7 @@ export default function TechJobDetailPageUi(props) {
                 </button>
               </DevLayoutSection>
 
+              {/* New note box: a text area for writing a note, with save and cancel buttons. */}
               {showAddNote && <DevLayoutSection as="div" sectionKey="myjob-notes-compose" sectionType="content-card" parentKey="myjob-tab-notes" backgroundToken="layer-section-level-3" style={{
             padding: "20px",
             backgroundColor: "var(--layer-section-level-3)",
@@ -1974,6 +2010,7 @@ export default function TechJobDetailPageUi(props) {
                   </div>
                 </DevLayoutSection>}
 
+              {/* Notes area: shows loading placeholders, an empty message, or the list of notes. */}
               {notesLoading ? <DevLayoutSection as="div" sectionKey="myjob-notes-loading" sectionType="content-card" parentKey="myjob-tab-notes" backgroundToken="none" role="status" aria-live="polite" aria-busy="true" aria-label="Loading notes" style={{
             display: "flex",
             flexDirection: "column",
@@ -2009,6 +2046,7 @@ export default function TechJobDetailPageUi(props) {
               const creatorName = note.createdBy || "Unknown";
               const createdAt = formatDateTime(note.createdAt || note.created_at);
               const updatedLabel = note.updatedAt && note.updatedAt !== note.createdAt ? ` • Updated ${formatDateTime(note.updatedAt)}` : "";
+              // One note: who wrote it and when, the note text, and edit or delete actions for its author.
               return <DevLayoutSection as="div" key={noteId} sectionKey={`myjob-note-${noteId}`} sectionType="content-card" parentKey="myjob-notes-list" backgroundToken="layer-section-level-3" style={{
                 border: "none",
                 borderRadius: "var(--control-radius-xs)",
@@ -2134,7 +2172,7 @@ export default function TechJobDetailPageUi(props) {
             }} />}
           </DevLayoutSection>
 
-          {/* DOCUMENTS TAB */}
+          {/* Documents tab: the files attached to this job, with rename, delete and manage options for permitted users. */}
           {activeTab === "documents" && <DevLayoutSection as="div" className="app-page-stack" sectionKey="myjob-tab-documents" sectionType="content-card" parentKey="myjob-main-scroll" backgroundToken="none" data-dev-page="My job detail" data-dev-tab="Documents" data-dev-card-section="documents tab" data-dev-text-preview="Documents tab" data-dev-auto-outline="cards">
               <DocumentsTab documents={jobDocuments} canDelete={canManageDocuments} onDelete={handleDeleteDocument} onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined} onRenameDocument={handleRenameDocument} onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined} />
             </DevLayoutSection>}
@@ -2181,6 +2219,7 @@ export default function TechJobDetailPageUi(props) {
             display: "grid",
             gap: "10px"
           }}>
+                  {/* One job request type in the Job Requests popup: the type name and its position in the list. */}
                   {detectedJobTypes.map((jobType, index) => <LayerTheme
                     key={`${jobType}-${index}`}
                     radius="var(--radius-sm)"

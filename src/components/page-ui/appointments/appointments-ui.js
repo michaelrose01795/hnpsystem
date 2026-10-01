@@ -348,6 +348,7 @@ function SchedulerBoard({
 
   return (
     <>
+      {/* Workshop scheduler board: one row per day with its bookings laid out along a timeline from 08:00 to 17:00. */}
       <div
         className="appt-sched-shell"
         data-presentation="appointments-scheduler"
@@ -443,7 +444,7 @@ function SchedulerBoard({
                 data-dev-background-token="theme"
                 data-dev-text-preview={`Day row ${dateKey}`}
               >
-                {/* Sticky date cell */}
+                {/* Day summary cell: the date with that day's jobs, booked hours, capacity and utilisation; clicking it selects the day. */}
                 <div
                   className={dateCellClasses}
                   role="rowheader"
@@ -1457,6 +1458,7 @@ export default function AppointmentsUi(props) {
               overflow: "hidden"
             }}
           >
+            {/* Jobs for the selected day: a heading with the job count and a Close button, above the table of that day's appointments. */}
             <div
               data-presentation="appointments-day-jobs"
               data-dev-section-key="appointments-day-jobs"

@@ -19,6 +19,7 @@ const STAGE_TONE = {
 };
 
 export default function AutomationRoadmapSection() {
+  // Content automation roadmap: a grid of planned Website Manager automation features, none of which are live yet.
   return (
     <Section
       title="Content Automation — Coming Soon"
@@ -34,6 +35,7 @@ export default function AutomationRoadmapSection() {
           gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
         }}
       >
+        {/* One roadmap card per planned feature: its name, a stage badge and a short description. */}
         {AUTOMATION_ROADMAP.map((item) => (
           <LayerTheme key={item.id} padding="14px" gap="8px">
             <div

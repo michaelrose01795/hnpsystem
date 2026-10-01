@@ -86,6 +86,7 @@ export default function PopupModal({
 
   return (
     <ModalPortal>
+      {/* Dimmed backdrop behind the pop-up; clicking it closes the pop-up when that is allowed. */}
       <DevLayoutSection
         className={["popup-backdrop", backdropClassName].filter(Boolean).join(" ")}
         sectionKey="shared-popup-backdrop"
@@ -103,6 +104,7 @@ export default function PopupModal({
           if (event.target === event.currentTarget) onClose?.();
         }}
       >
+        {/* The pop-up card itself, holding whatever content the caller provides. */}
         <DevLayoutSection
           className={["popup-card", cardClassName].filter(Boolean).join(" ")}
           sectionKey="shared-popup-card"

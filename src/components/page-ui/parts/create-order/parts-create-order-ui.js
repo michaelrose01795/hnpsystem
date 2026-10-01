@@ -119,6 +119,7 @@ export default function PartsCreateOrderUi(props) {
   const rowStyle = (row) => (rowsAligned ? { gridRow: row } : undefined);
 
   if (props.view === "access-denied") {
+    // Access message shown when the user is not allowed to work with parts orders.
     return (
       <DevLayoutSection as="section" sectionKey="new-order-access-message" sectionType="section-shell" parentKey="app-layout-page-card">
         <StatusMessage tone="danger">You do not have permission to access parts orders.</StatusMessage>
@@ -261,6 +262,7 @@ export default function PartsCreateOrderUi(props) {
                 width: "100%",
               }}
         >
+          {/* Delivery card: collection, delivery or courier choice, the date and preferred time, the delivery charge and a preview of the order notes. */}
           <LayerTheme
             id="new-order-delivery"
             as="section"
@@ -368,6 +370,7 @@ export default function PartsCreateOrderUi(props) {
             </LayerSurface>
           </LayerTheme>
 
+          {/* Vehicle card: registration lookup and vehicle details, with a tick box for orders that are not linked to a vehicle. */}
           <VehicleDetailsCard
             sectionKey="new-order-vehicle"
             parentKey="new-order-top-row"
@@ -394,6 +397,7 @@ export default function PartsCreateOrderUi(props) {
             </label>
           </VehicleDetailsCard>
 
+          {/* Customer card: pick an existing customer or add a new one, view or edit their details, and see a warning if they already have open orders. */}
           <CustomerDetailsCard
             sectionKey="new-order-customer"
             parentKey="new-order-top-row"
@@ -467,6 +471,7 @@ export default function PartsCreateOrderUi(props) {
               const replacement = supersededPart(line);
               const gross = (Number(line.quantity) || 0) * (Number(line.unit_price) || 0);
               const lineTotal = gross * (1 - Math.min(Math.max(Number(line.discount) || 0, 0), 100) / 100);
+              // One row per order line: part number, description, availability and location, quantity, unit price, line total and an Edit button.
               return (
                 <LayerSurface
                   key={line.client_id}
@@ -509,6 +514,7 @@ export default function PartsCreateOrderUi(props) {
           </div>
         </LayerTheme>
 
+        {/* Notes popup for editing the order, customer, delivery and invoice notes. */}
         <NotesPopup
           isOpen={notesOpen}
           form={form}
@@ -516,6 +522,7 @@ export default function PartsCreateOrderUi(props) {
           onClose={() => setNotesOpen(false)}
         />
 
+        {/* Order summary popup: order totals, pricing level, payment status, source, priority, customer type, adviser, department, reference, notes and notification options. */}
         {summaryOpen ? (
           <PopupModal maxWidth="720px" onClose={() => setSummaryOpen(false)} ariaLabel="Order summary">
             <div className="app-page-stack" style={{ padding: "var(--section-card-padding)" }}>
@@ -566,6 +573,7 @@ export default function PartsCreateOrderUi(props) {
                 </FormField>
               </div>
 
+              {/* Notifications: tick boxes for SMS, email and phone updates, and for reserving available stock when the order is created. */}
               <LayerTheme sectionKey="new-order-summary-notifications" parentKey="shared-popup-card" sectionType="content-card" radius="var(--radius-sm)" padding="10px" gap="var(--space-sm)">
                 <strong>Notifications</strong>
                 <ToolbarRow>
@@ -583,6 +591,7 @@ export default function PartsCreateOrderUi(props) {
         ) : null}
       </form>
 
+      {/* Parts catalogue popup: search the live catalogue and pick a part to fill the chosen order line. */}
       {partSearchOpen ? (
         <PopupModal maxWidth="920px" onClose={closePartSearch} ariaLabel="Search parts catalogue">
           <div className="app-page-stack" style={{ padding: "var(--section-card-padding)" }}>
@@ -593,6 +602,7 @@ export default function PartsCreateOrderUi(props) {
             <SearchBar autoFocus value={partSearchQuery} onChange={(event) => setPartSearchQuery(event.target.value)} onClear={() => setPartSearchQuery("")} placeholder="Part number, description, barcode or vehicle" ariaLabel="Search parts catalogue" />
             {partSearchLoading ? <span className="app-field-hint">Searching live catalogue…</span> : null}
             {!partSearchLoading && partSearchQuery.trim().length >= 2 && partSearchResults.length === 0 ? <EmptyState variant="bare" title="No matching parts" description="Try a different term or add a manual part line." action={<Button type="button" onClick={() => { closePartSearch(); addManualPart(); }}>Add manual part</Button>} /> : null}
+            {/* Catalogue results: one button per matching part showing its number, description, available quantity, location and price. */}
             {partSearchResults.length > 0 ? (
               <LayerTheme sectionKey="new-order-catalogue-results" parentKey="shared-popup-card" sectionType="content-card" role="listbox" aria-label="Parts catalogue results" radius="var(--radius-sm)" padding="10px" gap="var(--space-xs)" style={{ maxHeight: "55dvh", overflowY: "auto" }}>
                 {partSearchResults.map((part) => {
@@ -623,6 +633,7 @@ export default function PartsCreateOrderUi(props) {
                 <div className="app-field-hint">{stockShortages.length} line{stockShortages.length === 1 ? "" : "s"} cannot be covered from the shelf. Confirm how they are being supplied before the order is created.</div>
               </div>
             </header>
+            {/* List of the order lines that cannot be supplied from stock, with required, available and on-order quantities. */}
             <LayerTheme sectionKey="new-order-stock-shortages" parentKey="shared-popup-card" sectionType="content-card" radius="var(--radius-sm)" padding="10px" gap="var(--space-xs)">
               {stockShortages.map((entry) => (
                 <div key={entry.client_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
@@ -663,6 +674,7 @@ export default function PartsCreateOrderUi(props) {
         </PopupModal>
       ) : null}
 
+      {/* Edit part popup: change one order line's part number, description, quantity, price, discount and notes, find alternatives, unlink it from the catalogue or delete it. */}
       {editLine ? (
         <PopupModal maxWidth="560px" onClose={() => setEditPartId(null)} ariaLabel={`Edit part ${editLineIndex + 1}`}>
           <div className="app-page-stack" style={{ padding: "var(--section-card-padding)" }}>
@@ -735,12 +747,14 @@ export default function PartsCreateOrderUi(props) {
         </PopupModal>
       ) : null}
 
+      {/* Popup for finding and selecting an existing customer. */}
       {showExistingCustomer && <ExistingCustomerPopup onClose={() => setShowExistingCustomer(false)} onSelect={(record) => handleCustomerSelect(record)} onCreateNew={(prefill) => {
         setNewCustomerPrefill(prefill || null);
         setShowExistingCustomer(false);
         setShowNewCustomer(true);
       }} />}
 
+      {/* Popup for creating a new customer and attaching them to the order. */}
       {showNewCustomer && <NewCustomerPopup onClose={() => {
         setShowNewCustomer(false);
         setNewCustomerPrefill(null);
@@ -856,6 +870,7 @@ const NOTES_POPUP_CARD_STYLE = {
 // here — the notes go to the database with the rest of the form.
 function NotesPopup({ isOpen, form, onChange, onClose }) {
   if (!isOpen) return null;
+  // Notes popup: four text boxes for the order, customer, delivery and invoice notes, with a Done button.
   return (
     <PopupModal isOpen onClose={onClose} ariaLabel="Order notes" cardStyle={NOTES_POPUP_CARD_STYLE}>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)", minWidth: 0 }}>

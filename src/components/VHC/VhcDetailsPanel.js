@@ -1108,6 +1108,7 @@ const buildBrakeHealthCardItems = (items = [], brakesRaw = {}) => {
 
 const SummarySupplementaryBlock = ({ useTheme = false, children }) => {
   if (useTheme) {
+    // Tinted block for extra detail shown beneath a summary item, such as notes or measurements.
     return (
       <LayerTheme
         radius="var(--radius-sm)"
@@ -1139,6 +1140,7 @@ const SummarySupplementaryBlock = ({ useTheme = false, children }) => {
 
 const GreenCheckItemBlock = ({ useTheme = false, children, ...rest }) => {
   if (useTheme) {
+    // Tinted block holding one passed (green) check item.
     return (
       <LayerTheme
         radius="var(--radius-md)"
@@ -1329,6 +1331,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collap
     { key: "red", count: severityCounts.red, bg: "var(--danger-surface)", fg: "var(--danger)", label: "red" },
   ].filter((badge) => badge.count > 0);
 
+  // One health check section card: the section name, counts of red, amber and green items, and the individual items found in that section.
   return (
     <div
       data-dev-section="1"
@@ -1505,6 +1508,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen, collapsed: collap
                       tileBorder: "none",
                     };
             const itemSectionKey = `vhc-healthcheck-card-${config.key}-item-${idx}`;
+            // One recorded item within a health check section: its heading, status and any measurements or notes.
             return (
               <div
                 key={`${config.key}-${idx}-${item.heading || item.label || "item"}`}
@@ -1740,6 +1744,7 @@ const HealthSectionPair = ({ sections, onOpen }) => {
       }}
     >
       {sections.map(({ config, data, rawData }) => (
+        // One card per health check section, showing its findings.
         <HealthSectionCard
           key={config.key}
           config={config}
@@ -8580,7 +8585,7 @@ export default function VhcDetailsPanel({
           </div>
         </div>
 
-        {/* ── Items table ── */}
+        {/* Parts identified table: each health check item with its linked parts, or a message when nothing matches the filters. */}
         <div
           data-dev-section="1"
           data-dev-section-key="vhc-parts-identified-card"
@@ -8943,6 +8948,7 @@ export default function VhcDetailsPanel({
                   {isExpanded && (
                     <tr>
                       <td colSpan="6" style={{ padding: "0", borderBottom: "1px solid var(--separating-line-color)" }}>
+                        {/* Expanded detail for one health check item: the parts linked to it, or a prompt when none have been added. */}
                         <div
                           className="vhc-parts-identified-expanded"
                           data-dev-section="1"
@@ -9968,6 +9974,7 @@ export default function VhcDetailsPanel({
       data-dev-active-tab-label={activeTabLabel || undefined}
     >
       {showNavigation && (
+        // Navigation card: Back, Car and Key Tracker and View job card buttons above the job's header details.
         <LayerSurface radius="var(--radius-lg)" padding="24px" gap="18px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
               <Button
@@ -10018,6 +10025,7 @@ export default function VhcDetailsPanel({
       )}
 
       {!activeSection && (
+      // Main health check card: the tab bar with its summary figures, and the content of whichever tab is selected.
       <LayerSurface radius="var(--radius-lg)" padding="24px" gap="18px">
         {enableTabs ? (
           <>
@@ -10061,6 +10069,7 @@ export default function VhcDetailsPanel({
                   }}
                 >
                   {vhcPartsToolbarMoneyTiles.map((tile) => (
+                    // One money tile in the parts toolbar: a label with a cost or total.
                     <LayerTheme
                       key={tile.key}
                       radius="var(--radius-sm)"
@@ -10094,6 +10103,7 @@ export default function VhcDetailsPanel({
                   }}
                 >
                   {vhcMediaToolbarStatTiles.map((tile) => (
+                    // One figure tile in the media toolbar: a label with a count.
                     <LayerTheme
                       key={tile.label}
                       radius="var(--radius-sm)"
@@ -10148,6 +10158,7 @@ export default function VhcDetailsPanel({
                 </div>
               )}
             </div>
+            {/* Tab content area: shows the summary, health check, parts or media tab chosen above. */}
             <LayerTheme
               style={TAB_CONTENT_STYLE}
               sectionKey="vhc-tab-content"
@@ -10192,6 +10203,7 @@ export default function VhcDetailsPanel({
                     >
                       <div className="app-summary-grid">
                         {tiles.map((tile) => (
+                          // One summary tile: a label and a count of items in that state.
                           <LayerSurface
                             key={tile.key}
                             className="app-summary-item"
@@ -10263,6 +10275,7 @@ export default function VhcDetailsPanel({
                       }
                     });
 
+                    // One severity group in the summary (red or amber): the items needing attention at that level, with their costs and customer decision.
                     return (
                       <div
                         key={severity}
@@ -10312,6 +10325,7 @@ export default function VhcDetailsPanel({
                   })}
 
                   {greenItems.length > 0 && (
+                    // Green checks: the items that passed the health check.
                     <div
                       data-dev-section="1"
                       data-dev-section-key="vhc-summary-greenchecks-section"
@@ -10535,6 +10549,7 @@ export default function VhcDetailsPanel({
                       data-dev-section-parent="vhc-summary-split"
                       style={{ flex: "3 1 280px", minWidth: "260px", display: "flex", flexDirection: "column", gap: "18px" }}
                     >
+                      {/* Approved: the items the customer has authorised, with a message when there are none. */}
                       <div
                         data-dev-section="1"
                         data-dev-section-key="vhc-summary-approved-section"
@@ -10563,6 +10578,7 @@ export default function VhcDetailsPanel({
                           <span style={{ fontSize: "12px", color: "var(--text-1)" }}>No approved items yet.</span>
                         )}
                       </div>
+                      {/* Completed: the authorised items that have been carried out, with a message when there are none. */}
                       <div
                         data-dev-section="1"
                         data-dev-section-key="vhc-summary-complete-section"
@@ -10591,6 +10607,7 @@ export default function VhcDetailsPanel({
                           <span style={{ fontSize: "12px", color: "var(--text-1)" }}>No completed items yet.</span>
                         )}
                       </div>
+                      {/* Declined: the items the customer has declined, with a message when there are none. */}
                       <div
                         data-dev-section="1"
                         data-dev-section-key="vhc-summary-declined-section"
@@ -10681,6 +10698,7 @@ export default function VhcDetailsPanel({
                     return (
                       <>
                         {leadSections.map(({ config, data, rawData }) => (
+                          // One card per lead health check section, opened for editing when selected.
                           <HealthSectionCard
                             key={config.key}
                             config={config}
@@ -11034,6 +11052,7 @@ export default function VhcDetailsPanel({
                     return (
                       <>
                         {leadSections.map(({ config, data, rawData }) => (
+                          // One card per lead health check section, opened for editing when selected.
                           <HealthSectionCard
                             key={config.key}
                             config={config}
@@ -11320,6 +11339,7 @@ export default function VhcDetailsPanel({
         ) : null}
       </VHCModalShell>
 
+      {/* Add parts popup: search the parts catalogue or enter a part by hand, pick from the search results and review the selected parts before adding them to the health check item. */}
       <PopupModal
         isOpen={isAddPartsModalOpen}
         onClose={addingParts ? undefined : closeAddPartsModal}
@@ -11373,6 +11393,7 @@ export default function VhcDetailsPanel({
               gap: "var(--page-stack-gap)",
             }}
           >
+            {/* Search parts catalogue: look up a part by number or description to add to this health check item. */}
             <LayerTheme
               as="section"
               sectionKey="vhc-add-parts-search"
@@ -11473,6 +11494,7 @@ export default function VhcDetailsPanel({
             </LayerTheme>
 
             {showNewPartForm && (
+              // Add part: form for creating a new part when it is not already in the catalogue.
               <LayerTheme
                 as="section"
                 sectionKey="vhc-add-parts-new-part"
@@ -11584,6 +11606,7 @@ export default function VhcDetailsPanel({
               </LayerTheme>
             )}
 
+            {/* Search results: table of catalogue parts matching the search, each of which can be selected. */}
             <LayerTheme
               as="section"
               sectionKey="vhc-add-parts-results"
@@ -11642,6 +11665,7 @@ export default function VhcDetailsPanel({
               )}
             </LayerTheme>
 
+            {/* Selected parts: the parts chosen so far for this item, with a message when none are selected. */}
             <LayerTheme
               as="section"
               sectionKey="vhc-add-parts-selected"
@@ -11808,6 +11832,7 @@ export default function VhcDetailsPanel({
       </PopupModal>
 
       {labourCostModal.open && (
+        // Labour cost popup: enter the labour time in hours and the cost, and see the total including VAT before saving.
         <PopupModal
           isOpen={labourCostModal.open}
           onClose={closeLabourCostModal}

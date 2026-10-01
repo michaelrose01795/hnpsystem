@@ -61,6 +61,7 @@ export default function NextJobsPageUi(props) {
 
     case "section2":
       return <>
+        {/* Access denied message for users who are not allowed to see Next Jobs. */}
         <div style={{
     padding: "40px",
     textAlign: "center"
@@ -84,7 +85,7 @@ export default function NextJobsPageUi(props) {
     gap: "12px"
   }}>
         
-        {/* ✅ Outstanding Jobs Section with Drop Zone */}
+        {/* Outstanding jobs: the searchable list of jobs not yet given to a technician. Jobs can be dragged from here onto a technician, or dropped back. */}
             <LayerTheme sectionKey="nextjobs-outstanding" parentKey="app-layout-page-card" sectionType="content-card" backgroundToken="theme" padding="16px" gap={undefined} style={{
       marginBottom: "12px",
       // Drop-target outline is a state indicator (drag-over highlight), not a surface border. Kept per rules.
@@ -161,6 +162,7 @@ export default function NextJobsPageUi(props) {
                   marginBottom: "8px",
                   borderRadius: "var(--radius-xs)"
                 }} />}
+                        {/* Outstanding job card: the job number, vehicle, customer and requested work; click for details or drag it to assign. */}
                         <div ref={node => {
                   if (node) {
                     jobCardRefs.current[job.jobNumber] = node;
@@ -335,7 +337,7 @@ export default function NextJobsPageUi(props) {
           </div>
         </LayerTheme>
 
-        {/* ✅ Technicians Grid Section */}
+        {/* Technicians grid: one panel per technician showing their queued jobs, with a separate group of panels for MOT testers. */}
             <LayerTheme sectionKey="nextjobs-technicians" parentKey="app-layout-page-card" shell sectionType="content-card" backgroundToken="theme" padding="24px" gap="24px" style={{
       flex: "1 0 auto"
     }}>
@@ -350,6 +352,7 @@ export default function NextJobsPageUi(props) {
             {assignedJobs.slice(0, 6).map(renderAssigneePanel)}
           </div>
 
+              {/* MOT testers: the panels for staff who carry out MOT tests and the jobs assigned to them. */}
               {motPanelList.length > 0 && <div data-dev-section-key="nextjobs-mot-section" data-dev-section-parent="nextjobs-technicians" data-dev-section-type="section-shell">
                   <h3 style={{
           margin: "0 0 12px 0",
@@ -539,6 +542,7 @@ export default function NextJobsPageUi(props) {
                     </div>)}
                 </div>
 
+                {/* Description: the list of work requested on the selected job. */}
                 <div style={{
               padding: "14px",
               borderRadius: "var(--radius-sm)",

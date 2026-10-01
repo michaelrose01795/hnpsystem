@@ -41,6 +41,7 @@ const OutcomeBar = ({ pass = 0, fail = 0, retest = 0 }) => {
     { key: "retest", count: Number(retest), fill: "var(--warning)", tone: "app-badge--warning", label: "Retest" },
     { key: "fail", count: Number(fail), fill: "var(--danger)", tone: "app-badge--danger", label: "Fail" }
   ];
+  // Outcome split: the pass rate, a proportional pass / retest / fail bar and a count badge for each outcome.
   return (
     <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
@@ -92,6 +93,7 @@ const outcomeTone = (status) => {
 };
 
 const CardList = ({ items = [] }) => (
+  // Recent MOT jobs: each row shows the job number, registration, check-in date and outcome, or a message when none are recorded.
   <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
     {items.length === 0 ? (
       <p className="app-status-message app-status-message--info" style={{ margin: 0 }}>No MOT jobs recorded yet.</p>

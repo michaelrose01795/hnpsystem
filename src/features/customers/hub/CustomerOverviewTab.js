@@ -25,6 +25,7 @@ import {
 
 function SnapshotCard({ title, children }) {
   return (
+    // Snapshot card: a small titled box holding one group of at-a-glance customer facts.
     <LayerSurface as="div" sectionKey={`customer-profile-snapshot-${title}`} parentKey="customer-profile-snapshot">
       <RecordHeading>{title}</RecordHeading>
       {children}
@@ -34,6 +35,7 @@ function SnapshotCard({ title, children }) {
 
 function OpenJobRow({ job }) {
   return (
+    // Open job row: the job number, vehicle and status of one job currently in progress, with a link to open it.
     <LayerTheme as="div" sectionKey={`customer-profile-open-job-${job.id}`} parentKey="customer-profile-snapshot">
       <div className="app-page-header">
         <div className="app-page-header__text">
@@ -84,10 +86,12 @@ export default function CustomerOverviewTab({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--page-stack-gap)", minWidth: 0 }}>
+      {/* Snapshot: at-a-glance cards covering work in progress, the next booking, the customer's vehicles and money owed. */}
       <LayerTheme as="section" sectionKey="customer-profile-snapshot" parentKey="customer-profile-tab-overview">
         <RecordHeading>Snapshot</RecordHeading>
 
         <div className="app-card-grid" style={{ "--app-card-grid-min": "280px" }}>
+          {/* Work in progress: the customer's live jobs, or a message when there are none. */}
           <SnapshotCard title="Work in progress">
             {openJobs.length === 0 ? (
               <EmptyState
@@ -107,6 +111,7 @@ export default function CustomerOverviewTab({
             )}
           </SnapshotCard>
 
+          {/* Next in: when the customer is next booked in, which vehicle, the work requested, the advisor and any courtesy car. */}
           <SnapshotCard title="Next in">
             {summary?.nextBooking ? (
               <RecordFieldGrid
@@ -125,6 +130,7 @@ export default function CustomerOverviewTab({
             )}
           </SnapshotCard>
 
+          {/* Fleet: how many vehicles the customer has, the next MOT due, MOT status and their last visit. */}
           <SnapshotCard title="Fleet">
             <RecordFieldGrid
               keepEmpty
@@ -145,6 +151,7 @@ export default function CustomerOverviewTab({
           </SnapshotCard>
 
           {access?.canViewFinancials && (
+            // Money: outstanding balance, overdue invoices, lifetime spend, total invoiced and account status. Only shown to staff who can view financials.
             <SnapshotCard title="Money">
               <RecordFieldGrid
                 keepEmpty
@@ -166,6 +173,7 @@ export default function CustomerOverviewTab({
         </div>
       </LayerTheme>
 
+      {/* Vehicles: the customer's vehicles, with options to add one or open its history. */}
       <CustomerVehiclesSection
         vehicles={vehicles}
         customerId={customer?.id}
@@ -174,10 +182,13 @@ export default function CustomerOverviewTab({
         onOpenHistory={onOpenHistory}
       />
 
+      {/* Schedule: the customer's upcoming and past appointments. */}
       <CustomerScheduleSection appointments={appointments} access={access} customerId={customer?.id} />
 
+      {/* Files: documents stored against the customer. */}
       <CustomerFilesSection files={files} />
 
+      {/* Contact log: a history of calls, messages and activity with the customer, with a way to add a new entry. */}
       <CustomerContactLog
         activityEvents={activityEvents}
         jobs={jobs}

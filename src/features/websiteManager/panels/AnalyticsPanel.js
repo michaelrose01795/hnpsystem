@@ -55,6 +55,7 @@ export default function AnalyticsPanel() {
 
   return (
     <>
+      {/* Website analytics: tabs for choosing which analytics area to view (traffic, page performance, customer behaviour and so on). */}
       <Section title="Website analytics">
         <TabGroup
           items={SUB_TABS}
@@ -65,6 +66,7 @@ export default function AnalyticsPanel() {
         />
       </Section>
 
+      {/* The analytics area chosen in the tabs above. */}
       <ActiveSection />
     </>
   );

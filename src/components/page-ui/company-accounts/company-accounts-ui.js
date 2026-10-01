@@ -35,6 +35,7 @@ export default function CompanyAccountsIndexPageUi(props) {
     case "section1":
       return <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
       <>
+        {/* Company accounts page: tabs for company accounts and ledgers, a search and add toolbar, and the list, new-account form or ledger table beneath. */}
         <DevLayoutSection sectionKey="company-accounts-page-shell" sectionType="page-shell" shell>
           <div style={{
         display: "flex",
@@ -55,6 +56,7 @@ export default function CompanyAccountsIndexPageUi(props) {
                 ariaLabel="Company accounts views"
                 devSectionKey="company-accounts-tab-row"
                 devSectionParent="company-accounts-page-shell" />
+              {/* Company list toolbar: search companies by name and, for permitted users, add a new account. */}
               {activeTab === "companies" && !showForm && <DevLayoutSection sectionKey="company-accounts-company-toolbar" sectionType="filter-row" parentKey="company-accounts-page-shell" style={{
                 flex: "1 1 420px",
                 minWidth: 0
@@ -70,6 +72,7 @@ export default function CompanyAccountsIndexPageUi(props) {
                     flex: "1 1 260px",
                     minWidth: "220px"
                   }} />
+                  {/* Add new account button, shown only to users allowed to create accounts. */}
                   {permissions.canCreateAccount && <DevLayoutSection sectionKey="company-accounts-add-account-button" sectionType="floating-action" parentKey="company-accounts-company-toolbar">
                       <Button type="button" variant="primary" onClick={() => setShowForm(true)} style={{
                         flex: "0 0 auto"
@@ -81,6 +84,7 @@ export default function CompanyAccountsIndexPageUi(props) {
               </DevLayoutSection>}
             </div>
           {activeTab === "companies" ? <>
+              {/* Back button shown above the new-account form, returning to the company list. */}
               {showForm && permissions.canCreateAccount && <DevLayoutSection sectionKey="company-accounts-form-back-link" sectionType="toolbar" parentKey="company-accounts-page-shell">
                   <Button type="button" variant="secondary" size="sm" onClick={() => setShowForm(false)} style={{
               alignSelf: "flex-start"

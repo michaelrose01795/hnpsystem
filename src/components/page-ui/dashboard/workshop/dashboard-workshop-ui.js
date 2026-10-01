@@ -77,12 +77,14 @@ export default function WorkshopDashboardUi(props) {
       return (
         <PageShell sectionKey="workshop-dashboard-shell">
           <ContentWidth sectionKey="workshop-dashboard-content" parentKey="workshop-dashboard-shell" widthMode="content" style={{ gap: "10px" }}>
+            {/* Daily checkpoints: today's headline workshop numbers, or a loading or error message while they are unavailable. */}
             <Section sectionKey="workshop-dashboard-daily-checkpoints" parentKey="workshop-dashboard-content" title="Daily checkpoints">
               {loading ? (
                 <InlineLoading label="Loading today's metrics" />
               ) : error ? (
                 <p style={{ color: "var(--danger-text)" }}>{error}</p>
               ) : (
+                // Grid holding the four headline figures for today.
                 <DevLayoutSection
                   sectionKey="workshop-dashboard-checkpoints-grid"
                   parentKey="workshop-dashboard-daily-checkpoints"
@@ -93,25 +95,34 @@ export default function WorkshopDashboardUi(props) {
                     gap: "10px",
                   }}
                 >
+                  {/* Number of jobs currently being worked on in the bays. */}
                   <MetricCard sectionKey="workshop-dashboard-metric-in-progress" parentKey="workshop-dashboard-checkpoints-grid" label="Jobs in progress" value={dashboardData.dailySummary.inProgress} helper="Vehicles currently on the bay" />
+                  {/* Number of vehicles checked in since midnight. */}
                   <MetricCard sectionKey="workshop-dashboard-metric-checkedin" parentKey="workshop-dashboard-checkpoints-grid" label="Checked in today" value={dashboardData.dailySummary.checkedInToday} helper="Arrivals since midnight" />
+                  {/* Number of jobs finished today. */}
                   <MetricCard sectionKey="workshop-dashboard-metric-completed" parentKey="workshop-dashboard-checkpoints-grid" label="Jobs completed" value={dashboardData.dailySummary.completedToday} helper="Finished today" />
+                  {/* How many technicians are free compared with the total, and how many are busy on jobs. */}
                   <MetricCard sectionKey="workshop-dashboard-metric-availability" parentKey="workshop-dashboard-checkpoints-grid" label="Technician availability" value={`${availableTechnicians} / ${dashboardData.technicianAvailability.totalTechnicians}`} helper={`${dashboardData.technicianAvailability.onJobs} techs on jobs`} />
                 </DevLayoutSection>
               )}
             </Section>
 
+            {/* Analytics row: places the progress and completion trend sections side by side. */}
             <DevLayoutSection sectionKey="workshop-dashboard-analytics-row" parentKey="workshop-dashboard-content" sectionType="section-shell" shell style={twoColSplitStyle}>
+              {/* Progress: a bar comparing jobs completed against jobs scheduled. */}
               <Section sectionKey="workshop-dashboard-progress" parentKey="workshop-dashboard-analytics-row" title="Progress" subtitle="Completed vs scheduled" style={{ height: "100%", minHeight: "250px" }}>
                 <ProgressBar completed={dashboardData.progress.completed} target={dashboardData.progress.scheduled} />
               </Section>
 
+              {/* Completion trend: chart of jobs completed over the last seven days. */}
               <Section sectionKey="workshop-dashboard-checkin-trends" parentKey="workshop-dashboard-analytics-row" title="Completion trend" subtitle="Report KPI: jobs completed, last 7 days" style={{ height: "100%", minHeight: "250px" }}>
                 <TrendBlock sectionKey="workshop-dashboard-checkin-trends-chart" parentKey="workshop-dashboard-checkin-trends" data={dashboardData.trends.checkInsLast7} />
               </Section>
             </DevLayoutSection>
 
+            {/* Worklist row: places the next jobs queue and the outstanding health checks side by side. */}
             <DevLayoutSection sectionKey="workshop-dashboard-worklist-row" parentKey="workshop-dashboard-content" sectionType="section-shell" shell style={twoColSplitStyle}>
+              {/* Next jobs queue: scrolling list of jobs waiting to be started. */}
               <Section sectionKey="workshop-dashboard-next-jobs-queue" parentKey="workshop-dashboard-worklist-row" title="Next jobs queue" style={{ height: "100%", minHeight: "360px" }}>
                 {loading ? (
                   <InlineLoading label="Loading queue" />
@@ -121,6 +132,7 @@ export default function WorkshopDashboardUi(props) {
                       <p style={{ margin: 0, color: "var(--text-1)" }}>No outstanding jobs in the queue.</p>
                     ) : (
                       dashboardData.queue.map((job) => (
+                        // One queued job: job number, registration and make/model, waiting status and check-in time.
                         <LayerTheme
                           key={job.job_number}
                           backgroundToken="surface"
@@ -144,6 +156,7 @@ export default function WorkshopDashboardUi(props) {
                 )}
               </Section>
 
+              {/* Outstanding VHCs: scrolling list of jobs whose vehicle health check has not been completed. */}
               <Section sectionKey="workshop-dashboard-outstanding-vhc" parentKey="workshop-dashboard-worklist-row" title="Outstanding VHCs" style={{ height: "100%", minHeight: "360px" }}>
                 {loading ? (
                   <InlineLoading label="Loading VHC backlog" />
@@ -152,6 +165,7 @@ export default function WorkshopDashboardUi(props) {
                 ) : (
                   <div style={listViewportStyle}>
                     {dashboardData.outstandingVhc.map((job) => (
+                      // One job awaiting its health check: job number, registration and make/model, status and check-in time.
                       <LayerTheme
                         key={job.job_number}
                         backgroundToken="surface"

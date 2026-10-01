@@ -50,6 +50,7 @@ export default function NewsInsightsPanel({ insights }) {
 
   return (
     <div className="app-news-insights">
+      {/* Engagement: how many people are in the audience for this announcement and how many comments and reactions it has had. */}
       {analytics && (
         <LayerTheme as="section" className="app-news-insights__section" gap="var(--space-md)">
           <header className="app-news-insights__header">
@@ -64,6 +65,7 @@ export default function NewsInsightsPanel({ insights }) {
         </LayerTheme>
       )}
 
+      {/* Acknowledgements: counts of who has signed off and who is outstanding, followed by a list of each staff member with their status. */}
       {acknowledgements && (
         <LayerTheme as="section" className="app-news-insights__section" gap="var(--space-md)">
           <header className="app-news-insights__header">
@@ -104,6 +106,7 @@ export default function NewsInsightsPanel({ insights }) {
         </LayerTheme>
       )}
 
+      {/* Edit history: each published version of the update with who edited it, when, and the text at that point. */}
       <LayerTheme as="section" className="app-news-insights__section" gap="var(--space-md)">
         <header className="app-news-insights__header">
           <h4>Edit history</h4>

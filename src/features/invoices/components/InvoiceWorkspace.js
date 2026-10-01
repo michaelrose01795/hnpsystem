@@ -38,6 +38,7 @@ const getFinalInvoiceNumberDisplay = (invoice = {}, isProforma = false) => {
 };
 
 const CompactStatTile = ({ label, children }) => (
+  // Small summary tile showing a caption and its value on one line.
   <div
     style={{
       backgroundColor: "var(--surface)",
@@ -99,6 +100,7 @@ const RequestSection = ({ row, isProforma, onOpenEditor }) => {
   const hasLineItems = hasLabour || parts.length > 0;
 
   return (
+    // One job request on the invoice: its title, summary, fault and rectification notes, then its labour and parts lines and totals.
     <LayerSurface
       radius="var(--radius-sm)"
       gap="var(--space-3)"
@@ -133,6 +135,7 @@ const RequestSection = ({ row, isProforma, onOpenEditor }) => {
       </div>
 
       {hasLineItems ? (
+        // Line-items table for the request: a labour row plus a row for each part.
         <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 0 }}>
         <div style={{ width: "100%", overflowX: "auto" }}>
           <table className="app-data-table app-data-table--rounded" style={{ minWidth: "560px" }}>
@@ -287,7 +290,7 @@ export default function InvoiceWorkspace({
 
   return (
     <>
-      {/* ── Action bar ───────────────────────────────────────────── */}
+      {/* Invoice action bar: the heading with buttons to preview and print the invoice, then send it once paid or take payment, plus the email status. */}
       <LayerSurface radius="var(--radius-sm)" gap="var(--space-3)">
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", minWidth: 0 }}>
@@ -328,7 +331,7 @@ export default function InvoiceWorkspace({
         )}
       </LayerSurface>
 
-      {/* ── Summary ──────────────────────────────────────────────── */}
+      {/* Invoice summary tiles: invoice number, invoice date, due date, total, balance due and payment status. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "8px" }}>
         <CompactStatTile label="Invoice Number">{invoice.invoice_number || "—"}</CompactStatTile>
         <CompactStatTile label="Invoice Date">{formatDate(invoice.invoice_date)}</CompactStatTile>
@@ -338,8 +341,9 @@ export default function InvoiceWorkspace({
         <CompactStatTile label="Payment Status">{paymentStatusLabel}</CompactStatTile>
       </div>
 
-      {/* ── Per-request sections ─────────────────────────────────── */}
+      {/* Request sections: one card per job request, or a message when the invoice has no detailed requests. */}
       {rows.length === 0 ? (
+        // Message shown when no detailed requests are recorded for the invoice.
         <LayerSurface radius="var(--radius-sm)">
           <p style={{ margin: 0, color: "var(--text-1)" }}>No detailed requests recorded for this invoice yet.</p>
         </LayerSurface>
@@ -351,7 +355,7 @@ export default function InvoiceWorkspace({
 
       {isProforma && modal}
 
-      {/* ── Invoice notes ────────────────────────────────────────── */}
+      {/* Invoice notes: a text box for notes on the invoice with a save button and save status. */}
       {showNotes && (
       <LayerSurface radius="var(--radius-sm)" gap="var(--space-4)">
         <div style={{ display: "grid", gap: "var(--space-2)" }}>

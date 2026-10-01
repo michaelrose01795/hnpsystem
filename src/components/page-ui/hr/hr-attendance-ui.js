@@ -46,6 +46,7 @@ export default function HrAttendanceUi(props) {
       gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
       gap: "var(--layout-card-gap)"
     }}>
+            {/* Loading placeholder for the daily time logs table. */}
             <SectionCard>
               <div style={{
           display: "grid",
@@ -54,10 +55,12 @@ export default function HrAttendanceUi(props) {
                 <SkeletonBlock width="160px" height="18px" />
                 <SkeletonBlock width="240px" height="12px" />
               </div>
+              {/* Placeholder rows standing in for the time logs table while it loads. */}
               <LayerTheme padding="var(--space-3)" gap="0">
                 <TableSkeleton columns={["Employee", "Date", "Clock In", "Clock Out", "Total Hours", "Status"]} rows={5} label="Loading daily time logs" />
               </LayerTheme>
             </SectionCard>
+            {/* Loading placeholder for the overtime summary list. */}
             <SectionCard>
               <div style={{
           display: "grid",
@@ -71,6 +74,7 @@ export default function HrAttendanceUi(props) {
           flexDirection: "column",
           gap: "var(--space-3)"
         }}>
+                {/* Placeholder blocks standing in for the overtime records while they load. */}
                 {["62%", "48%", "55%"].map(width => <LayerTheme key={width} radius="var(--radius-sm)" padding="var(--space-3)" gap="var(--space-1)">
                     <div style={{
               display: "flex",
@@ -87,6 +91,7 @@ export default function HrAttendanceUi(props) {
               </div>
             </SectionCard>
           </section>
+          {/* Loading placeholder for the absence tracking table. */}
           <SectionCard>
             <div style={{
         display: "grid",
@@ -95,12 +100,14 @@ export default function HrAttendanceUi(props) {
               <SkeletonBlock width="160px" height="18px" />
               <SkeletonBlock width="300px" height="12px" />
             </div>
+            {/* Placeholder rows standing in for the absence table while it loads. */}
             <LayerTheme padding="var(--space-3)" gap="0">
               <TableSkeleton columns={["Employee", "Type", "Start", "End", "Status"]} rows={4} label="Loading absence records" />
             </LayerTheme>
           </SectionCard>
         </div>}
 
+      {/* Error message shown when the attendance data could not be loaded. */}
       {error && <SectionCard title="Unable to load attendance" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>}
@@ -111,9 +118,11 @@ export default function HrAttendanceUi(props) {
       gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
       gap: "var(--layout-card-gap)"
     }}>
+            {/* Daily time logs: each employee's clock-in and clock-out times, total hours and status for the day, with a CSV export button. */}
             <SectionCard title="Daily Time Logs" subtitle="Sourced from the workshop clocking system" action={<Button variant="secondary" size="sm">
                   Export CSV
                 </Button>}>
+              {/* Time logs table: employee, date, clock in, clock out, total hours and status. */}
               <LayerTheme padding="var(--space-3)" gap="0">
                 <DataTableShell>
                   <table className="app-data-table">
@@ -146,6 +155,7 @@ export default function HrAttendanceUi(props) {
               </LayerTheme>
             </SectionCard>
 
+            {/* Overtime summary: one entry per employee for the current overtime period, with a button to review timesheets. */}
             <SectionCard title="Overtime Summary" subtitle="Captured per 26th-to-26th overtime period" action={<Button variant="primary" size="sm">
                   Review Timesheets
                 </Button>}>
@@ -154,6 +164,7 @@ export default function HrAttendanceUi(props) {
           flexDirection: "column",
           gap: "var(--space-3)"
         }}>
+                {/* Overtime record: the employee, whether it is ready, the period dates, overtime hours, rate and bonus. */}
                 {overtimeSummaries.map(record => <LayerTheme key={record.id} radius="var(--radius-sm)" padding="var(--space-3)" gap="var(--space-1)">
                     <div style={{
               display: "flex",
@@ -188,6 +199,7 @@ export default function HrAttendanceUi(props) {
             </SectionCard>
           </section>
 
+          {/* Absence tracking: holiday, sickness and other leave, with buttons to export a PDF or add a new absence. */}
           <SectionCard title="Absence Tracking" subtitle="Holiday, sickness, unpaid leave, and other absences" action={<div style={{
       display: "flex",
       gap: "var(--space-2)"
@@ -199,6 +211,7 @@ export default function HrAttendanceUi(props) {
                   New Absence
                 </Button>
               </div>}>
+            {/* Absence table: employee, absence type, start and end dates and approval status. */}
             <LayerTheme padding="var(--space-3)" gap="0">
               <DataTableShell>
                 <table className="app-data-table">

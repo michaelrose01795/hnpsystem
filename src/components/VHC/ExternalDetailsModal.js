@@ -226,6 +226,7 @@ export default function ExternalDetailsModal({
     </>
   );
 
+  // External inspection window: a grid of exterior check areas, each opening a pop-up for logging issues, with camera, save and close buttons in the footer.
   return (
     <VHCModalShell
       isOpen={isOpen}
@@ -263,6 +264,7 @@ export default function ExternalDetailsModal({
               paddingRight: "6px",
             }}
           >
+          {/* One button card per exterior area (for example wipers, washers and horn): tap to log or review issues, with a count of how many are logged. */}
           {CATEGORY_ORDER.map((category) => {
             const concerns = data[category]?.concerns ?? [];
             const redCount = concerns.filter((c) => c.status === "Red").length;
@@ -296,6 +298,7 @@ export default function ExternalDetailsModal({
 
       </div>
 
+      {/* Issue pop-up for the chosen area: add a new issue with a description and severity, and review, edit or remove those already reported. */}
       {activeConcern.open ? (
         <IssueReportPopup
           isOpen={activeConcern.open}

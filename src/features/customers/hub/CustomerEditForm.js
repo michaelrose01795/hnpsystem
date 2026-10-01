@@ -56,6 +56,7 @@ export default function CustomerEditForm({ customer, onSave, onCancel }) {
   };
 
   return (
+    // Edit customer form: name, email, phone numbers, home and work addresses and internal notes, with Save changes and Cancel buttons.
     <LayerSurface
       as="form"
       onSubmit={handleSubmit}

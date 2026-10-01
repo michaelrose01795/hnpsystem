@@ -152,6 +152,7 @@ export default function CollectionManager({
   const hasStatus = schema.fields.some((f) => f.name === "status");
   const singular = (addLabel || schema.label).replace(/s$/i, "").toLowerCase();
 
+  // Collection manager: a titled list of website content items with an add button, an editor for the item being added or changed, and a table with edit, reorder, publish and delete actions.
   return (
     <Section title={title || schema.label}>
       <div className="website-manager__actions">

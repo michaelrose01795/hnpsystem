@@ -16,6 +16,7 @@ import { reportDevKey } from "../reportDevOverlay";
 function TrendCard({ kpiId, label, unit, format, filter, granularity, granularityLabel }) {
   const trend = useKpiTrend(kpiId, { ...filter, granularity }, { enabled: true });
   const devSectionKey = reportDevKey("report-trend-card", `${kpiId}-${granularity}`);
+  // Trend card: a small chart of one measure over time, labelled with the measure name and the time grouping.
   return (
     <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={devSectionKey} data-dev-text-preview={`${label} ${granularityLabel}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
@@ -30,6 +31,7 @@ function TrendCard({ kpiId, label, unit, format, filter, granularity, granularit
 export default function PaintOverviewTab({ filter, onDrilldown }) {
   return (
     <>
+      {/* Department scorecard: the headline Paint department figures. */}
       <ReportSection
         title="Department scorecard"
         subtitle="Catalogue-defined Paint KPIs. Queue and completed jobs are live; cycle-time is a whole-job proxy; stage, bay, productivity, material and rework metrics remain blocked until the paint model exists."
@@ -37,12 +39,15 @@ export default function PaintOverviewTab({ filter, onDrilldown }) {
         <KpiScorecardStrip kpis={OVERVIEW_SCORECARD} filter={filter} onDrilldown={onDrilldown} showProvenance={false} />
       </ReportSection>
 
+      {/* Daily summary: breakdown cards for paint jobs identified, work completed and throughput. */}
       <ReportSection title="Daily summary" subtitle="Identified Paint jobs, completed work, throughput and bodyshop demand facets returned by the Paint KPI resolver.">
         <PaintBreakdownCards filter={filter} />
       </ReportSection>
 
+      {/* Weekly and monthly summary: paint jobs completed, charted over time. */}
       <ReportSection title="Weekly and monthly summary" subtitle="Paint completed volume re-bucketed by the reporting engine.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          {/* Three trend charts of paint jobs completed, grouped daily, weekly and monthly. */}
           <TrendCard kpiId="pnt.jobs_completed" label="Paint jobs completed" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <TrendCard kpiId="pnt.jobs_completed" label="Paint jobs completed" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <TrendCard kpiId="pnt.jobs_completed" label="Paint jobs completed" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

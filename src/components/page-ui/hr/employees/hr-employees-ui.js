@@ -60,6 +60,7 @@ export default function EmployeeManagementUi(props) {
               <SkeletonBlock width="180px" height="18px" />
               <SkeletonBlock width="140px" height="12px" />
             </div>
+            {/* Placeholder table shown while the employee list is loading. */}
             <LayerTheme padding="var(--space-3)" gap="0">
               <TableSkeleton columns={["Employee", "Department", "Type", "Status"]} rows={6} label="Loading employee directory" />
             </LayerTheme>
@@ -67,6 +68,7 @@ export default function EmployeeManagementUi(props) {
           <SectionSkeleton layer="surface" rows={5} />
         </section>}
 
+      {/* Error card shown when the employee directory could not be loaded, with the error message. */}
       {error && <SectionCard title="Failed to load employee directory" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>}
@@ -76,7 +78,9 @@ export default function EmployeeManagementUi(props) {
     gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
     gap: "var(--layout-card-gap)"
   }}>
+          {/* Employee Directory: a filterable list of staff with a count of how many are shown; clicking a row selects that employee. */}
           <SectionCard title="Employee Directory" subtitle={`${filteredEmployees.length} of ${employees.length} employees`} action={<DirectoryFilters filters={filters} setFilters={setFilters} departments={uniqueDepartments} employmentTypes={uniqueEmploymentTypes} />}>
+            {/* Directory table: each employee's name and job title, department, employment type and status. */}
             <LayerTheme padding="var(--space-3)" gap="0">
               <DataTableShell>
                 <table className="app-data-table">
@@ -136,6 +140,7 @@ export default function EmployeeManagementUi(props) {
             </LayerTheme>
           </SectionCard>
 
+          {/* Profile panel showing the full details of the employee selected in the directory. */}
           <EmployeeProfilePanel employee={selectedEmployee} />
         </section>}
     </div>; // render extracted page section.

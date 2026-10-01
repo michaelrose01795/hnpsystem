@@ -18,6 +18,7 @@ export default function KpiScorecardStrip({ kpis = [], filter, onDrilldown, minC
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Scorecard grid: a responsive row of headline figure cards for a department report. */}
       <DevLayoutSection
         sectionKey={gridKey}
         sectionType="section-shell"
@@ -29,6 +30,7 @@ export default function KpiScorecardStrip({ kpis = [], filter, onDrilldown, minC
           gap: 12,
         }}
       >
+        {/* One figure card per measure, showing its value and opening the underlying records when clicked. */}
         {kpis.map((k) => (
           <KpiValueCard
             key={k.id}

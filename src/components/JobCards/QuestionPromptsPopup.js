@@ -31,6 +31,7 @@ export default function QuestionPromptsPopup({
     0
   );
 
+  // Question prompts pop-up: suggested questions for staff to ask the customer about a request, which can be ticked off during the call.
   return (
     <PopupModal
       isOpen
@@ -68,6 +69,7 @@ export default function QuestionPromptsPopup({
           </div>
         </div>
 
+        {/* The wording of the customer request the questions relate to. */}
         {requestText ? (
           <LayerTheme radius="var(--radius-sm)" padding="10px 12px">
             <span>
@@ -87,6 +89,7 @@ export default function QuestionPromptsPopup({
         ) : null}
 
         <div style={{ display: "grid", gap: "12px" }}>
+          {/* One card per question group: a list of suggested questions, each with a tick box to mark it as asked. */}
           {result.groups.map((group) => (
             <LayerTheme key={group.id} radius="var(--radius-sm)" padding="14px 16px">
               {result.groups.length > 1 || result.isFallback ? <strong>{group.label}</strong> : null}

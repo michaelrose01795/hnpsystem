@@ -922,6 +922,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
       </div>
 
       {isHistoryOpen && (
+        // Chat history popup: search past conversations with the app guide, reopen one or delete it.
         <PopupModal
           isOpen
           onClose={closeHistory}
@@ -960,6 +961,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
               </span>
             </div>
 
+            {/* Conversation list: each saved chat with its title and date, a delete button, and a message when there are none or nothing matches the search. */}
             <LayerTheme
               className={`${styles.historyList} themed-scrollbar`}
               radius="var(--radius-sm)"
@@ -1068,6 +1070,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
             const isLastAssistant = !isUser && isLast;
 
             return (
+              // One chat message: who sent it and when, the message text, and suggested follow-up questions after the guide's latest reply.
               <article
                 key={msg.id || index}
                 className={`${styles.messageBubble} ${isUser ? styles.messageUser : styles.messageAssistant}`}
@@ -1083,6 +1086,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
                 {isUser ? (
                   <div className={styles.bubbleContent}>{msg.content}</div>
                 ) : (
+                  // The guide's reply, shown as formatted text with headings, steps and bullet points.
                   <LayerTheme
                     className={styles.bubbleContent}
                     radius="var(--radius-sm)"

@@ -140,6 +140,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
   const totalRecords = pagination?.total || filteredInvoices.length || 0;
 
   return (
+    // Invoices card: a header with search and filters, then the table of invoices.
     <Layer
       as="section"
       sectionKey="accounts-invoices-table-card"
@@ -147,9 +148,11 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
       parentKey="accounts-invoices-table"
       style={{ display: "flex", flexDirection: "column", gap: isVerticalPhone ? "var(--space-2)" : "16px" }}>
 
+      {/* Invoices header: title and record count, search box, status and date filters, and reset / export buttons. */}
       {showHeader &&
       <DevLayoutSection sectionKey="accounts-invoices-table-header" sectionType="content-card" parentKey="accounts-invoices-table-card">
         <header style={{ display: "grid", gridTemplateColumns: "auto minmax(280px, 1fr) auto", alignItems: "center", gap: "12px" }}>
+          {/* Title and the number of invoice records. */}
           <DevLayoutSection sectionKey="accounts-invoices-table-title" sectionType="content-card" parentKey="accounts-invoices-table-header">
             <div>
               <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1.1rem" }}>Invoices</h3>
@@ -195,6 +198,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
         </header>
       </DevLayoutSection>
       }
+      {/* Invoices table: one row per invoice with its status, each row opening that invoice. */}
       <DevLayoutSection sectionKey="accounts-invoices-table-scroll" sectionType="content-card" parentKey="accounts-invoices-table-card">
         {/* Canonical global table (CLAUDE.md §3.0b rule 5a): DataTableShell owns the
             scroll, staffglobal.css / families/tables.css own every visual. */}

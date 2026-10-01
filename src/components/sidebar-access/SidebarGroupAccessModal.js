@@ -143,6 +143,7 @@ export default function SidebarGroupAccessModal({
   const renderOrderSection = (kind, title) => {
     const sectionItems = orderedItems.filter((item) => item.kind === kind);
     if (sectionItems.length === 0) return null;
+    // One block of sidebar buttons under a heading, each with Up and Down buttons to change its order.
     return (
       <LayerSurface gap="8px">
         <strong>{title}</strong>
@@ -182,6 +183,7 @@ export default function SidebarGroupAccessModal({
       {error ? <StaffAlert tone="danger" title="Access cannot be saved">{error}</StaffAlert> : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "var(--page-stack-gap)", alignItems: "stretch" }}>
+        {/* Assigned users: search the staff list, add users to this group and choose which sidebar buttons each one can see. */}
         <LayerTheme gap="10px" style={{ height: "100%", minHeight: 0 }}>
           <strong>Assigned users</strong>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
@@ -221,6 +223,7 @@ export default function SidebarGroupAccessModal({
           ) : null}
           {usersError ? <StaffAlert tone="danger" title="User directory unavailable">{usersError}</StaffAlert> : null}
           {showAddUser && !readOnly ? (
+            // Add user form: pick a staff member from a searchable list and add them to the group.
             <LayerSurface gap="8px">
               <DropdownField
                 id="sidebar-access-add-user"
@@ -283,6 +286,7 @@ export default function SidebarGroupAccessModal({
                       : "Not assigned"}
                   </button>
                   {isExpanded ? (
+                  // Expanded user detail: a tick box for every sidebar button in the group, plus a button to remove the user or assign everything.
                   <LayerSurface id={`sidebar-access-user-${user.id}`} gap="8px">
                     {orderedItems.map((item, itemIndex) => (
                       <React.Fragment key={`${user.id}-${item.href}`}>
@@ -318,6 +322,7 @@ export default function SidebarGroupAccessModal({
           </div>
         </LayerTheme>
 
+        {/* Button order: the dashboard and page buttons in this group, listed so they can be moved up or down. */}
         <LayerTheme gap="10px" style={{ height: "100%", minHeight: 0 }}>
           <strong>Button order</strong>
           {renderOrderSection("dashboard", "Dashboards")}

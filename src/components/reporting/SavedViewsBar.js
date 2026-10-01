@@ -33,6 +33,7 @@ export default function SavedViewsBar({ targetRef, currentFilter, onApply }) {
   };
 
   return (
+    // Saved views: apply or delete a saved set of report filters, or save the current filters under a new name.
     <LayerSurface
       radius="var(--radius-sm)"
       padding="12px"

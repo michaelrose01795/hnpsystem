@@ -36,6 +36,7 @@ function DisciplinaryContent() {
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+        {/* Error card shown when the disciplinary data could not be loaded, with the error message. */}
         <SectionCard layer="theme"
           sectionKey="hr-disciplinary-error" parentKey="hr-manager-tab-disciplinary"
           title="Unable to load disciplinary data"
@@ -54,14 +55,17 @@ function DisciplinaryContent() {
         </p>
       </header>
 
+      {/* Summary strip: the disciplinary case load at a glance, with final warnings listed first. */}
       <HrSummaryStrip items={summary} parentKey="hr-manager-tab-disciplinary" />
 
+      {/* Active Warnings: warnings that still need follow-up or monitoring, or a message when there are none. */}
       <SectionCard layer="theme"
         sectionKey="hr-disciplinary-active-warnings" parentKey="hr-manager-tab-disciplinary"
         title="Active Warnings"
         subtitle="Warnings that still require follow-up or monitoring.">
         
         {activeWarnings.length ? (
+          // Warnings table: employee, department, warning level, status and notes.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">
@@ -97,12 +101,14 @@ function DisciplinaryContent() {
         )}
       </SectionCard>
 
+      {/* Incident Log: recent incident entries and their current outcome, or a message when none are recorded. */}
       <SectionCard layer="theme"
         sectionKey="hr-disciplinary-incident-log" parentKey="hr-manager-tab-disciplinary"
         title="Incident Log"
         subtitle="Recent case entries and their current outcome.">
         
         {incidentLog.length ? (
+          // Incident table: incident type, related job number, who recorded it and the outcome.
           <LayerSurface padding="var(--space-3)" gap="0">
             <DataTableShell>
               <table className="app-data-table">
@@ -136,6 +142,7 @@ function DisciplinaryContent() {
         )}
       </SectionCard>
 
+      {/* New Incident / Warning: a form for the employee, department, incident date, warning level and summary, with buttons to save the record or attach a supporting file. */}
       <SectionCard layer="theme"
         sectionKey="hr-disciplinary-new-incident" parentKey="hr-manager-tab-disciplinary"
         title="New Incident / Warning"

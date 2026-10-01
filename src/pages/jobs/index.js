@@ -1401,6 +1401,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
     action();
   };
 
+  // Job row: one job in the job cards list, with its summary strip and any customer requests.
   return (
     <DevLayoutSection
       as="article"
@@ -1410,6 +1411,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
       className="app-job-operations-row-shell"
       onMouseEnter={onMouseEnter}>
 
+      {/* Row card holding the job summary and the customer requests. */}
       <LayerSurface
         className="app-job-operations-row"
         radius="var(--radius-sm)"
@@ -1417,6 +1419,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
         gap="0"
         data-dev-disable-fallback="1">
 
+      {/* Job summary: appointment time, job number and vehicle, customer contact details, status, technician, vehicle health check, parts and action buttons. */}
       <DevLayoutSection
         sectionKey={`${sectionKey}-summary`}
         parentKey={sectionKey}
@@ -1498,6 +1501,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
         </div>
       </DevLayoutSection>
 
+      {/* Customer requests: shown when the job has requests, with a count and a scrollable list of what the customer asked for. */}
       {summary.requests.length > 0 && <DevLayoutSection
         sectionKey={`${sectionKey}-customer-requests`}
         parentKey={sectionKey}
@@ -1505,6 +1509,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, onOpenQuickNote, sectionKe
         backgroundToken="transparent"
         className="app-job-operations-row__lower"
         data-dev-text-preview={`${summary.requests.length} customer requests for job ${job.jobNumber || "workshop row"}`}>
+        {/* Request count and the list of each customer request. */}
         <DevLayoutSection
           sectionKey={`${sectionKey}-customer-requests-content`}
           parentKey={`${sectionKey}-customer-requests`}

@@ -17,13 +17,16 @@ export default function MotUtilitiesTab({ filter, onApplySavedView }) {
 
   return (
     <>
+      {/* Saved views: save the current MOT report filters (date range, granularity, search) and recall them later. */}
       <ReportSection title="Saved views" subtitle="Save and recall a filter set (date range, granularity, search) for this MOT report.">
         <SavedViewsBar targetRef={MOT_VIEW_TARGET} currentFilter={filter} onApply={onApplySavedView} />
       </ReportSection>
 
+      {/* Exports and drill-downs: one card per MOT KPI whose underlying records can be explored on screen or downloaded as a CSV. */}
       <ReportSection title="Exports & drill-downs" subtitle="Download the contributing records behind any drillable MOT KPI (audited CSV), or explore them inline.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
           {ALL_EXPORTABLE.map((kpi) => (
+            // Export card for one KPI: its name and id, with Explore and Export CSV buttons.
             <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-export-card", kpi.id)} data-dev-text-preview={`${kpi.label} export card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
@@ -41,6 +44,7 @@ export default function MotUtilitiesTab({ filter, onApplySavedView }) {
       </ReportSection>
 
       {explore && (
+        // Drill-down: a table of the individual records behind the KPI chosen with Explore, with a close button.
         <ReportSection title={`Drill-down: ${explore.label}`}>
           <ReportDrilldownTable kpiId={explore.id} label={explore.label} filter={filter} onClose={() => setExplore(null)} />
         </ReportSection>

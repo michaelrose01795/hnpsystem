@@ -252,6 +252,7 @@ export default function NewsComposerModal({
   );
   const activeLinkType = LINK_TYPES.find((type) => type.value === linkDraft.recordType);
 
+  // Announcement popup: write or edit a news post - title, message, audience, category, priority, acknowledgement, scheduling, attachments and record links.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -370,6 +371,7 @@ export default function NewsComposerModal({
           />
         </div>
 
+        {/* Acknowledgement and scheduling: tick box to require an acknowledgement with a due date, plus optional publish and expiry times. */}
         <LayerTheme gap="var(--space-3)">
           <div className="app-news-composer__row">
             <label
@@ -436,6 +438,7 @@ export default function NewsComposerModal({
           </div>
         </div>
 
+        {/* Attachments: the files added to the announcement, with a button to attach more. */}
         <LayerTheme gap="var(--space-3)">
           <strong>Attachments</strong>
           <NewsAttachments
@@ -475,6 +478,7 @@ export default function NewsComposerModal({
           </div>
         </LayerTheme>
 
+        {/* Record links: link the announcement to system records by choosing a record type, reference and optional label. */}
         <LayerTheme gap="var(--space-3)">
           <strong>Link to DMS records</strong>
           <NewsRecordLinks links={form.links} onRemove={removeLink} />
@@ -533,6 +537,7 @@ export default function NewsComposerModal({
         )}
       </div>
 
+      {/* Confirmation prompt shown before an announcement is deleted. */}
       <ConfirmationDialog
         isOpen={confirmingDelete}
         title="Delete announcement"

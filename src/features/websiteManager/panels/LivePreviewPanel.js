@@ -225,6 +225,7 @@ export default function LivePreviewPanel() {
 
   return (
     <>
+      {/* Preview controls: tabs choosing which website section to show, tabs choosing the device size, and a Reload button. */}
       <Section title="Preview">
         <div className="website-manager__preview-toolbar">
           <TabGroup
@@ -256,6 +257,7 @@ export default function LivePreviewPanel() {
         </div>
       </Section>
 
+      {/* Live preview of the chosen section (or the whole website) in a frame, with a loading placeholder until it is ready. */}
       <Section title={activeTab.whole ? "Whole website" : activeTab.name}>
         <div
           className={`ws-section-view ws-section-view--${device}${
@@ -321,6 +323,7 @@ export default function LivePreviewPanel() {
         </Section>
       )}
 
+      {/* Editing area: a message when this tab has nothing to edit, otherwise an editor for each section that can be changed here. */}
       {editableSections.length === 0 && codeOwnedSections.length === 0 ? (
         <Section title="Edit this section">
           <EmptyState
@@ -402,6 +405,7 @@ function LiveSingletonEditor({ sectionKey, schema, onDraftChange, onSaved }) {
     onSaved?.();
   };
 
+  // Editor for a single-entry website section: shows a load error, a loading placeholder or the edit form, and typing updates the preview above.
   return (
     <Section title={schema.label}>
       {error && (
@@ -409,6 +413,7 @@ function LiveSingletonEditor({ sectionKey, schema, onDraftChange, onSaved }) {
           {error}
         </div>
       )}
+      {/* Placeholder form shown while the section's content is loading. */}
       {loading && (
         <LayerTheme className="website-manager__editor" gap="var(--space-3)" role="status" aria-live="polite" aria-busy="true" aria-label={`Loading ${schema.label.toLowerCase()}`}>
           <SkeletonKeyframes />

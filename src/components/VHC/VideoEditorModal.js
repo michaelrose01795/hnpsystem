@@ -232,6 +232,7 @@ export default function VideoEditorModal({
 
   const popupMaxWidth = videoAspectRatio < 0.8 ? "460px" : videoAspectRatio < 1.35 ? "720px" : "900px";
 
+  // Edit video popup: preview the recording, trim its start and end, mute the sound, then save, skip or cancel; when several videos are queued, step back and forth between them.
   return (
     <PopupModal
       isOpen
@@ -335,6 +336,7 @@ export default function VideoEditorModal({
 
         </div>
 
+        {/* Editing controls: back and next buttons when working through several videos, the timeline for trimming the clip, and progress or error messages. */}
         <LayerTheme
           sectionKey="video-editor-controls"
           parentKey="shared-popup-card"

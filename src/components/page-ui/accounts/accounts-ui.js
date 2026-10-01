@@ -37,6 +37,7 @@ export default function AccountsListPageUi(props) {
     case "section1":
       return <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
       <>
+        {/* Accounts page: action buttons, linked finance shortcuts and the accounts table, plus the account and settings popups. */}
         <DevLayoutSection sectionKey="accounts-page-shell" sectionType="page-shell" shell>
         <div style={{
         display: "flex",
@@ -59,6 +60,7 @@ export default function AccountsListPageUi(props) {
               </Button>}
           </ToolbarRow>
           {renderLinkedFinance()}
+          {/* Accounts table: the filterable, sortable and paged list of accounts; selecting one opens it to view or edit. */}
           <DevLayoutSection sectionKey="accounts-ledger-table" sectionType="data-table" parentKey="accounts-page-shell">
             <AccountTable toolbar={renderFilters()} accounts={accounts} loading={loading} pagination={pagination} onPageChange={handlePageChange} sortState={sortState} onSortChange={handleSortChange} onSelectAccount={handleAccountSelect} />
           </DevLayoutSection>

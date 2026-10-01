@@ -16,6 +16,7 @@ import { reportDevKey } from "../reportDevOverlay";
 function TrendCard({ kpiId, label, unit, format, filter, granularity, granularityLabel }) {
   const trend = useKpiTrend(kpiId, { ...filter, granularity }, { enabled: true });
   const devSectionKey = reportDevKey("report-trend-card", `${kpiId}-${granularity}`);
+  // Trend card: a small chart of one admin measure over time, labelled with the measure and whether it is daily, weekly or monthly.
   return (
     <LayerSurface radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={devSectionKey} data-dev-text-preview={`${label} ${granularityLabel}`}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
@@ -30,6 +31,7 @@ function TrendCard({ kpiId, label, unit, format, filter, granularity, granularit
 export default function AdminOverviewTab({ filter, onDrilldown }) {
   return (
     <>
+      {/* Department scorecard: the headline admin figures such as login security, audit volume and compliance activity, each clickable to see the records behind it. */}
       <ReportSection
         title="Department scorecard"
         subtitle="Catalogue-defined Admin KPIs. Login security, audit volume and compliance activity are live; report usage and active users are audit-backed proxies until the report_event spine accrues."
@@ -37,12 +39,15 @@ export default function AdminOverviewTab({ filter, onDrilldown }) {
         <KpiScorecardStrip kpis={OVERVIEW_SCORECARD} filter={filter} onDrilldown={onDrilldown} showProvenance={false} />
       </ReportSection>
 
+      {/* Daily summary: audited activity split into security, sensitive, compliance and report-access cards. */}
       <ReportSection title="Daily summary" subtitle="Audited activity split by security, sensitive, compliance and report-access planes returned by the audit-activity resolver.">
         <AdminBreakdownCards filter={filter} kpiId="adm.audit_activity" cards={AUDIT_BREAKDOWN_CARDS} />
       </ReportSection>
 
+      {/* Weekly and monthly summary: charts of audited activity volume over time. */}
       <ReportSection title="Weekly and monthly summary" subtitle="Audited activity volume re-bucketed by the reporting engine.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12 }}>
+          {/* Three trend charts of audit activity: daily, weekly and monthly. */}
           <TrendCard kpiId="adm.audit_activity" label="Audit activity" unit="count" format="0,0" filter={filter} granularity="day" granularityLabel="Daily" />
           <TrendCard kpiId="adm.audit_activity" label="Audit activity" unit="count" format="0,0" filter={filter} granularity="week" granularityLabel="Weekly" />
           <TrendCard kpiId="adm.audit_activity" label="Audit activity" unit="count" format="0,0" filter={filter} granularity="month" granularityLabel="Monthly" />

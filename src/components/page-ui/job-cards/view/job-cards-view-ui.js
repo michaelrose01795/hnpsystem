@@ -95,6 +95,7 @@ export default function ViewJobCardsUi(props) {
       return <>
       <PageShell sectionKey="job-cards-view-shell">
       <div className="app-page-stack job-cards-view-page-stack">
+          {/* Toolbar: tabs to switch between job lists, a search box and a filter menu for division and status. */}
           <SectionShell sectionKey="job-cards-view-filter-shell" parentKey="job-cards-view-shell" className="job-cards-view-filter-shell">
             <div className="job-cards-view-toolbar">
               <div className="job-cards-view-tabs">
@@ -130,8 +131,10 @@ export default function ViewJobCardsUi(props) {
             </div>
           </SectionShell>
 
+          {/* Operational status counts: how many jobs have arrived, are waiting, in the workshop, awaiting parts or authorisation, ready, overdue or carried over. */}
           <LayerTheme sectionKey="job-cards-view-operational-statuses" parentKey="job-cards-view-shell" sectionType="content-card" className="app-summary-section app-job-operational-summary" radius="var(--radius-sm)">
             <div className="app-summary-grid" role="list" aria-label="Operational job status counts">
+              {/* One status tile showing a label and the number of jobs in that state. */}
               {OPERATIONAL_STATUS_ITEMS.map((item) => <LayerSurface key={item.key} as="div" className="app-summary-item" radius="var(--radius-sm)" role="listitem">
                 <span className="app-summary-label">{item.label}</span>
                 <strong className="app-summary-value">{operationalStatusCounts?.[item.key] || 0}</strong>
@@ -139,12 +142,14 @@ export default function ViewJobCardsUi(props) {
             </div>
           </LayerTheme>
 
+          {/* Job list panel: holds the scrolling list of job cards. */}
           <SectionShell sectionKey="job-cards-view-list-shell" parentKey="job-cards-view-shell" style={{
           flex: 1,
           overflow: "hidden",
           padding: "10px",
           minHeight: "0"
         }}>
+            {/* Scrolling list area: one row card per job, in the current sort order. */}
             <DevLayoutSection sectionKey="job-cards-view-list-viewport" parentKey="job-cards-view-list-shell" sectionType="scroll-region" style={{
             height: "100%",
             overflowY: "auto",
@@ -152,15 +157,17 @@ export default function ViewJobCardsUi(props) {
             flexDirection: "column",
             gap: "10px"
             }}>
+              {/* Either a 'no jobs found' message or one job card per job, each opening the job when clicked and offering a quick note. */}
               {sortedJobs.length === 0 ? <LayerTheme sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="8px">
                   <EmptyState variant="bare" role="status" icon="🔍" title={emptyStateMessage} />
                 </LayerTheme> : sortedJobs.map((job, index) => <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} nextJobsTechnicians={nextJobsTechnicians} now={operationalNow} technicianLoads={technicianLoads} onNavigate={() => handleCardNavigation(job.jobNumber)} onOpenQuickNote={onOpenQuickNote} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
             </DevLayoutSection>
           </SectionShell>
 
-          {/* ✅ Job Popup - Enhanced with all new fields */}
+          {/* Job quick-view pop-up: appears when a job is selected and shows its key details, status control and shortcuts. */}
           {popupJob && <>
               <DevLayoutSection sectionKey="job-cards-view-quick-view-overlay" parentKey="job-cards-view-shell" sectionType="floating-action" className="popup-backdrop" onClick={() => setPopupJob(null)}>
+              {/* Quick-view card: job number, customer and badges, vehicle details, counts, a status dropdown and buttons to open the full job, the VHC or the write-up. */}
               <DevLayoutSection sectionKey="job-cards-view-quick-view-card" parentKey="job-cards-view-quick-view-overlay" sectionType="content-card" className="popup-card" onClick={e => e.stopPropagation()} style={{
               padding: "var(--page-card-padding)",
               maxWidth: "700px",
@@ -238,7 +245,7 @@ export default function ViewJobCardsUi(props) {
                 </div>
               </div>
 
-              {/* ✅ Job Details - Enhanced */}
+              {/* Job details panel: registration, vehicle, VIN, mileage, customer waiting status, appointment, job types, customer requests and cosmetic damage notes. */}
               <LayerTheme radius="var(--radius-sm)" style={{
                 marginBottom: "20px"
               }}>
@@ -499,6 +506,7 @@ export default function ViewJobCardsUi(props) {
             </>}
       </div>
       </PageShell>
+      {/* Quick note pop-up: lets the user add a note to a job without leaving the list. */}
       <PopupModal
         isOpen={Boolean(quickNoteJob)}
         onClose={closeQuickNote}
@@ -520,6 +528,7 @@ export default function ViewJobCardsUi(props) {
             </div>
           </header>
 
+          {/* Job summary: registration, customer, status, technician and the number of requests and notes. */}
           <LayerTheme as="section" className="app-job-quick-note__summary" radius="var(--radius-sm)" padding="var(--space-sm)" aria-label="Job summary">
             <div className="app-summary-grid">
               <div className="app-summary-item"><span className="app-summary-label">Registration</span><strong className="app-summary-value">{quickNoteJob.reg || "Not set"}</strong></div>
@@ -549,6 +558,7 @@ export default function ViewJobCardsUi(props) {
 
           {quickNoteError && <div className="app-status-message app-status-message--danger" role="alert">{quickNoteError}</div>}
 
+          {/* Recent notes: the four latest notes on the job with author, date and whether the customer can see them. */}
           <LayerTheme as="section" className="app-job-quick-note__recent" radius="var(--radius-sm)" padding="var(--section-card-padding)" aria-label="Recent notes">
             <div className="app-job-quick-note__section-heading">
               <h3>Recent notes</h3>

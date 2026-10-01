@@ -89,10 +89,12 @@ export default function CustomerContactLog({
   };
 
   return (
+    // Internal notes and contact log: a form to record a contact and a timeline of previous entries. Staff only.
     <LayerTheme as="section" sectionKey="customer-profile-contact-log" parentKey="customer-profile-tab-overview">
       <RecordHeading>{`Internal notes and contact log (${entries.length})`}</RecordHeading>
 
       {access?.canAddNote && (
+        // New entry form: contact type, related job, what was said or agreed and an 'Add to log' button.
         <LayerSurface
           as="form"
           onSubmit={handleSubmit}
@@ -149,6 +151,7 @@ export default function CustomerContactLog({
           description="Record calls, emails and agreements here so the next person picking up the phone has the full picture."
         />
       ) : (
+        // Timeline of logged contacts, newest first, each with its type, time, author, related job and note.
         <LayerSurface as="div" sectionKey="customer-profile-contact-log-list" parentKey="customer-profile-contact-log">
           <Timeline
             entries={visible}

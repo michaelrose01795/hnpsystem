@@ -11,6 +11,7 @@
 // EDGE-SAFE: plain data + pure functions only (see ./departments.js header).
 
 import {
+  ACCESS_MODULE_HREFS,
   DEVELOPER_GROUP_LOCK,
   SIDEBAR_MODULE_LIBRARY,
   WORKSPACE_CONTEXT_NAV_SECTIONS,
@@ -437,6 +438,9 @@ function allAccessModuleLabel(departmentKey) {
 
 const techSidebarModule = SIDEBAR_MODULE_LIBRARY.find((module) => module.key === "department-tech");
 const techSidebarHrefs = new Set(techSidebarModule.hrefs);
+// The Access pages are declared under Workshop and Parts for page access, but
+// the All Access rail files them all under the Access module.
+const accessSidebarHrefs = new Set(ACCESS_MODULE_HREFS);
 
 // My Jobs is a technician page, so the All Access bucketing below files it under
 // Tech. An MOT tester works the same personal queue, and the MOT library module
@@ -458,7 +462,11 @@ function allAccessDefaultModules() {
     // Profile/Logout are the sidebar's persistent bottom controls, not a module.
     if (item.department === "account" || standaloneSidebarHrefs.has(item.href)) continue;
     if (isDeveloperOnlyItem(item)) continue;
-    const department = techSidebarHrefs.has(item.href) ? "tech" : item.department;
+    const department = techSidebarHrefs.has(item.href)
+      ? "tech"
+      : accessSidebarHrefs.has(item.href)
+      ? "access"
+      : item.department;
     const key = moduleBundleKey(department);
     if (!modules.has(key)) {
       modules.set(key, { key, label: allAccessModuleLabel(department), hrefs: [] });

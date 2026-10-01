@@ -98,6 +98,7 @@ export default function MediaUploadConfirmModal({
   const isPhoto = !isVideo && (mediaType === "photo" || mimeType.startsWith("image/"));
 
   return (
+    // Review media pop-up: preview an edited photo or video, choose whether the customer can see it and save it to the health check.
     <PopupModal
       isOpen={isOpen}
       onClose={uploading ? undefined : onCancel}
@@ -126,6 +127,7 @@ export default function MediaUploadConfirmModal({
           </div>
         </header>
 
+        {/* Tick box controlling whether this photo or video is visible to the customer. */}
         <LayerTheme
           as="label"
           padding="0 var(--section-card-padding)"
@@ -150,6 +152,7 @@ export default function MediaUploadConfirmModal({
           <strong>Visible to customer</strong>
         </LayerTheme>
 
+        {/* Preview of the photo or video about to be saved. */}
         <LayerTheme
           as="section"
           aria-label={`${isVideo ? "Video" : "Photo"} preview`}

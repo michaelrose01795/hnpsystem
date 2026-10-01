@@ -17,12 +17,15 @@ export default function ValetingUtilitiesTab({ filter, onApplySavedView }) {
 
   return (
     <>
+      {/* Saved views: save the current report filters and recall them later. */}
       <ReportSection title="Saved views" subtitle="Save and recall a filter set for this Valeting report.">
         <SavedViewsBar targetRef={VALETING_VIEW_TARGET} currentFilter={filter} onApply={onApplySavedView} />
       </ReportSection>
 
+      {/* Exports and drill-downs: one card per exportable measure for downloading or exploring the records behind it. */}
       <ReportSection title="Exports & drill-downs" subtitle="Download contributing records behind each drillable Valeting KPI, or explore them inline.">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
+          {/* One card per measure: its name and id, with Explore and Export CSV buttons. */}
           {ALL_EXPORTABLE.map((kpi) => (
             <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-export-card", kpi.id)} data-dev-text-preview={`${kpi.label} export card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
@@ -40,6 +43,7 @@ export default function ValetingUtilitiesTab({ filter, onApplySavedView }) {
         </div>
       </ReportSection>
 
+      {/* Drill-down table listing the records behind the measure chosen with Explore. */}
       {explore && (
         <ReportSection title={`Drill-down: ${explore.label}`}>
           <ReportDrilldownTable kpiId={explore.id} label={explore.label} filter={filter} onClose={() => setExplore(null)} />

@@ -86,6 +86,7 @@ export default function DeliveryRouteSettingsModal({
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  // Route settings popup: set the leave time and minutes at each stop, see the driving time and estimated finish, open route guidance, manage route notifications and auto-calculate the stop order.
   return (
     <PopupModal
       isOpen
@@ -125,6 +126,7 @@ export default function DeliveryRouteSettingsModal({
             </div>
           ) : null}
 
+          {/* Timing: set the leave time and the minutes allowed at each stop, and see the driving time, estimated finish and any route difference. */}
           <LayerTheme
             as="section"
             sectionKey="parts-deliveries-route-timing"
@@ -171,6 +173,7 @@ export default function DeliveryRouteSettingsModal({
             </div>
           </LayerTheme>
 
+          {/* Route guidance: options for the route and buttons that open it in Google Maps. */}
           <LayerTheme
             as="section"
             sectionKey="parts-deliveries-route-guidance"
@@ -215,6 +218,7 @@ export default function DeliveryRouteSettingsModal({
             ) : null}
           </LayerTheme>
 
+          {/* Route notifications: warnings about the route, such as missing postcodes or a run split into several map sections. */}
           <LayerTheme
             as="section"
             sectionKey="parts-deliveries-route-notifications"

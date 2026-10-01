@@ -10,6 +10,7 @@ import { NotConnectedNotice } from "./analyticsAtoms";
 
 export default function StockInsightsSection() {
   return (
+    // Vehicle stock insights: will show how vehicle adverts on the website perform; for now it explains the data is not connected yet.
     <Section
       title="Vehicle Stock Insights"
       subtitle="How the vehicle adverts on /website perform once advert tracking is live."

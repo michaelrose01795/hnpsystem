@@ -58,6 +58,7 @@ export function IssueReportAddSection({
   addLabel = "Add Issue",
 }) {
   return (
+    // Add issue: describe the issue, choose a severity and add it to the report.
     <LayerTheme as="section" className="vhc-issue-report__add" aria-labelledby="vhc-issue-report-add-heading">
       <h4 id="vhc-issue-report-add-heading" className="vhc-issue-report__section-title">
         {heading}
@@ -81,6 +82,7 @@ export function IssueReportAddSection({
 
 export function IssueReportList({ count = 0, emptyMessage, children, scroll = false }) {
   return (
+    // Reported issues: a count and the list of issues already reported, or an empty message.
     <section className="vhc-issue-report__reported" aria-labelledby="vhc-issue-report-list-heading">
       <div className="vhc-issue-report__divider" aria-hidden="true" />
       <div className="vhc-issue-report__reported-heading">
@@ -90,6 +92,7 @@ export function IssueReportList({ count = 0, emptyMessage, children, scroll = fa
         <span className="app-badge app-badge--accent-soft">{count}</span>
       </div>
       {count === 0 ? (
+        // Message shown when no issues have been reported for this location.
         <LayerTheme className="vhc-issue-report__empty" padding="var(--space-md)" gap="var(--space-xs)">
           {emptyMessage || "No issues reported for this location."}
         </LayerTheme>
@@ -128,6 +131,7 @@ export function IssueReportRow({
   const reportedTime = formatIssueReportedTime(issue);
 
   return (
+    // One reported issue: its description and time, with controls to add media, change severity or delete it.
     <LayerTheme
       className="vhc-issue-report__row"
       padding="var(--space-md)"
@@ -177,6 +181,7 @@ export default function IssueReportPopup({
 }) {
   const dialogTitle = `${title || "VHC"} issue report`;
 
+  // Issue report popup for one vehicle health check area: a titled window with a close button that holds the issue form passed into it.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -190,6 +195,7 @@ export default function IssueReportPopup({
       }}
     >
       <div className="vhc-issue-report">
+        {/* Popup header: the report title and a close button. */}
         <LayerTheme
           as="header"
           className="app-popup-compact-header vhc-issue-report__header"

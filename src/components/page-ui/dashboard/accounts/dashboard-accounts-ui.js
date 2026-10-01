@@ -6,6 +6,7 @@ import { SkeletonBlock, SkeletonKeyframes, SkeletonMetricCard, TableSkeleton } f
 
 function ThemeSection({ sectionKey, title, subtitle, children }) {
   return (
+    // Titled dashboard block: a heading, optional subtitle and the content passed in.
     <LayerTheme
       as="section"
       sectionKey={sectionKey}
@@ -39,6 +40,7 @@ export default function AccountsDashboardUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
+      {/* Accounts dashboard: a two-column grid of the finance blocks below. */}
       <DevLayoutSection
         sectionKey="dashboard-accounts-shell"
         parentKey="app-layout-page-card"
@@ -54,6 +56,7 @@ export default function AccountsDashboardUi(props) {
           alignItems: "start"
         }}
       >
+        {/* Invoice stats: invoices raised, invoices paid and outstanding balances. */}
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-1" title="Invoice stats">
           {loading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading financial KPIs" style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
               {Array.from({ length: 3 }, (_, index) => <SkeletonMetricCard key={index} layer="surface" />)}
@@ -70,6 +73,7 @@ export default function AccountsDashboardUi(props) {
             </div>}
         </ThemeSection>
 
+        {/* Cashflow snapshot: revenue received, money out, outstanding debt and accounts at risk over the last seven days. */}
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-cashflow" title="Cashflow snapshot" subtitle="Movement across customer accounts in the last 7 days">
           {loading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading cashflow" style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
               {Array.from({ length: 4 }, (_, index) => <SkeletonMetricCard key={index} layer="surface" />)}
@@ -87,18 +91,21 @@ export default function AccountsDashboardUi(props) {
             </div>}
         </ThemeSection>
 
+        {/* Recent transactions: a table of the latest entries with date, description, job, method and amount. */}
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-transactions" title="Recent transactions" subtitle="Latest entries posted to customer accounts">
           {loading ? <TableSkeleton columns={["Date", "Description", "Job", "Method", "Amount"]} rows={5} label="Loading transactions" /> : error ? <p style={{
         color: "var(--text-accent)"
       }}>{error}</p> : <TransactionTable transactions={data.recentTransactions} />}
         </ThemeSection>
 
+        {/* Credit watchlist: accounts with their balance, credit limit and usage. */}
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-balances" title="Credit watchlist" subtitle="Accounts ranked by how much of their credit limit is used">
           {loading ? <TableSkeleton columns={["Account", "Type", "Balance", "Credit limit", "Usage"]} rows={5} label="Loading account balances" /> : error ? <p style={{
         color: "var(--text-accent)"
       }}>{error}</p> : <AccountBalanceTable accounts={data.creditAccounts} />}
         </ThemeSection>
 
+        {/* Outstanding jobs: recently completed jobs that have not been invoiced yet. */}
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-2" title="Outstanding jobs" subtitle="Most recent completions without invoice">
           {loading ? <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px" role="status" aria-live="polite" aria-busy="true" aria-label="Loading outstanding jobs">
               <SkeletonKeyframes />
@@ -114,6 +121,7 @@ export default function AccountsDashboardUi(props) {
       }}>{error}</p> : <JobList jobs={data.outstandingJobs} />}
         </ThemeSection>
 
+        {/* Payments received trend chart. */}
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-3" title="Payments received trend" subtitle="Report KPI: payments received, last 7 days">
           <TrendBlock data={data.trends} />
         </ThemeSection>

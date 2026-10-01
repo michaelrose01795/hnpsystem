@@ -751,6 +751,7 @@ export default function NotesTabNew({
           }}
         >
           {statTiles.map((tile) => (
+            // Summary tile: a headline count, either the total number of notes or the number the customer can see.
             <div key={tile.label} className="app-summary-item">
               <span className="app-summary-label">{tile.label}</span>
               <span className="app-summary-value">{tile.value}</span>
@@ -820,7 +821,7 @@ export default function NotesTabNew({
           alignItems: "start",
         }}
       >
-        {/* ---- LEFT 70%: composer + notes list ---- */}
+        {/* Notes list panel: a count of the notes shown, the new-note composer and the list of notes for this job. */}
         <LayerSurface
           sectionKey="jobcard-notes-list"
           parentKey="jobcard-tab-content-shell"
@@ -842,7 +843,7 @@ export default function NotesTabNew({
             </span>
           </div>
 
-          {/* Inline composer */}
+          {/* New note composer: type a note, choose whether to hide it from the customer, then save or cancel. */}
           {canEdit && showAddNote && (
             <LayerTheme id="jobcard-note-composer" radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
               <span style={fieldLabelStyle}>New note</span>
@@ -919,8 +920,9 @@ export default function NotesTabNew({
             </LayerTheme>
           )}
 
-          {/* Notes list */}
+          {/* Notes list: either an empty message or the scrollable list of note cards. */}
           {filteredNotes.length === 0 ? (
+            // Empty state: says there are no notes yet, or none matching the current filter.
             <LayerTheme radius="var(--radius-sm)" padding="var(--space-6)" gap="var(--space-2)" style={{ textAlign: "center" }}>
               <div style={{ fontSize: "40px" }}>📝</div>
               <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-1)" }}>
@@ -953,6 +955,7 @@ export default function NotesTabNew({
                 const isEditing = editingNoteId === note.noteId;
 
                 return (
+                  // Note card: a title and three-line preview, a pin button, an internal or customer badge, and the author and date. Click it to select the note; it shows an inline editor while being edited.
                   <LayerTheme
                     key={note.noteId}
                     radius="var(--radius-sm)"
@@ -1104,7 +1107,7 @@ export default function NotesTabNew({
           )}
         </LayerSurface>
 
-        {/* ---- RIGHT 30%: selected note detail ---- */}
+        {/* Note details panel: full information about the note selected in the list. */}
         <LayerSurface
           sectionKey="jobcard-notes-detail"
           parentKey="jobcard-tab-content-shell"
@@ -1136,7 +1139,7 @@ export default function NotesTabNew({
 
               return (
                 <>
-                  {/* Fields grid */}
+                  {/* Note facts: category, author, created and updated dates, followed by the full note text. */}
                   <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
                     <div
                       style={{
@@ -1181,7 +1184,7 @@ export default function NotesTabNew({
                     </div>
                   </LayerTheme>
 
-                  {/* Linked request data */}
+                  {/* Linked request: the customer request this note is attached to, with its status, type, labour time and dates. */}
                   {meta.category === "Customer Request" && (
                     <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)", flexWrap: "wrap" }}>
@@ -1260,7 +1263,7 @@ export default function NotesTabNew({
                     </LayerTheme>
                   )}
 
-                  {/* Activity timeline */}
+                  {/* Activity timeline: when the note was created, updated and linked, and by whom. */}
                   <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
                     <span style={fieldLabelStyle}>Activity timeline</span>
                     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -1285,7 +1288,7 @@ export default function NotesTabNew({
                     </div>
                   </LayerTheme>
 
-                  {/* Visible to + Edit access */}
+                  {/* Visible to: who can see the note, with controls to show it to the customer or give a specific staff member access. */}
                   <LayerTheme radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-3)">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-2)" }}>
                       <span style={fieldLabelStyle}>Visible to</span>
@@ -1433,6 +1436,7 @@ export default function NotesTabNew({
       {/* History (toggled from the overview toolbar)                   */}
       {/* ============================================================= */}
       {showHistory && (
+        // History notes: notes from this vehicle's previous job cards, grouped by job.
         <LayerSurface
           sectionKey="jobcard-tab-notes-history"
           parentKey="jobcard-tab-content-shell"
@@ -1466,6 +1470,7 @@ export default function NotesTabNew({
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               {historyJobsWithNotes.map((job) => (
+                // Previous job card: its number, date and mileage, with each note's time, author and text.
                 <LayerTheme key={job.id || job.jobNumber} radius="var(--radius-sm)" padding="var(--space-4)" gap="var(--space-2)">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                     <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)" }}>
@@ -1530,6 +1535,7 @@ export default function NotesTabNew({
 
             return (
               <div className="popup-backdrop">
+                {/* Add viewer popup: choose a staff member to give access to this note. */}
                 <div
                   className="popup-card"
                   style={{
@@ -1607,6 +1613,7 @@ export default function NotesTabNew({
         typeof document !== "undefined" &&
         createPortal(
           <div className="popup-backdrop">
+            {/* Link note popup: attach the note to a customer request, an authorised item or an authorised part, or clear the link. */}
             <div
               className="popup-card"
               style={{

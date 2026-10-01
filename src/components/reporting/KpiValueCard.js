@@ -50,6 +50,7 @@ export default function KpiValueCard({ result, readiness, onDrilldown, showProve
       }
     : {};
 
+  // Single figure card: a label, one large value with an up or down hint against target, and a loading or "not yet captured" state. Clicking it opens the records behind the figure.
   return (
     <LayerSurface
       radius="var(--radius-sm)"

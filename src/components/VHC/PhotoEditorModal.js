@@ -394,6 +394,7 @@ export default function PhotoEditorModal({
   };
 
   return (
+    // Edit photo popup: draw shapes on a photo in a chosen colour, with undo and redo, and step through a set of photos.
     <PopupModal
       isOpen={isOpen}
       onClose={onCancel}
@@ -428,6 +429,7 @@ export default function PhotoEditorModal({
           {/* Controls run full width along the top of the popup, under the header
               actions and above the preview. Two rows maximum: the groups wrap as
               units rather than growing the bar. */}
+          {/* Drawing controls: choose a shape and a colour, undo or redo, and move back or forward between photos. */}
           <LayerTheme
             as="aside"
             sectionKey="photo-editor-shape-colour"

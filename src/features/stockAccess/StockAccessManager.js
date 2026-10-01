@@ -159,6 +159,7 @@ export default function StockAccessManager({ store }) {
       )}
       {state.error && <StatusMessage tone="danger">{state.error}</StatusMessage>}
 
+      {/* Stock summary: headline counts, buttons to add an item, manage locations or open the quick screen, and the tab switcher. */}
       <LayerTheme>
         <div className={styles.summaryGrid}>
           <Stat label="Active items" value={summary.items} />
@@ -183,6 +184,7 @@ export default function StockAccessManager({ store }) {
         <TabGroup items={tabs} value={tab} onChange={setTab} ariaLabel="Stock management" />
       </LayerTheme>
 
+      {/* Active tab content: the stock table with search and filters, checked-out items, restock requests, warranty parts or the activity log. */}
       <LayerTheme>
         {tab === "stock" && (
           <>

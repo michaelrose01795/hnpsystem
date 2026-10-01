@@ -109,6 +109,7 @@ function StatusBadge({ status }) {
 
 function Metric({ label, value, detail, tone = "" }) {
   return (
+    // Metric tile: a label with its value and an optional line of detail.
     <div className={`app-summary-item clocking-board__metric${tone ? ` app-tone-${tone}` : ""}`}>
       <span className="app-summary-label">{label}</span>
       <strong className="app-summary-value">{value}</strong>
@@ -127,6 +128,7 @@ function JobPanel({ variant, prefix, jobNumber, descriptions, badge, headerMeta,
   const summary = lines.join(" · ");
 
   return (
+    // Job panel: the job number (linking to the job card), a time or status badge, a scrollable summary of the work, and any extra detail for that job.
     <LayerTheme
       as="section"
       padding={variant === "current" ? "var(--space-2)" : "var(--space-3)"}
@@ -186,6 +188,7 @@ const TechnicianCard = memo(function TechnicianCard({ technician, onOpenDetails 
     : "Allocation unavailable";
 
   return (
+    // Technician card: the technician's name with a details button, their current job with time spent against the time allocated, and their next queued job.
     <LayerSurface
       as="article"
       padding="var(--space-3)"
@@ -210,6 +213,7 @@ const TechnicianCard = memo(function TechnicianCard({ technician, onOpenDetails 
         </Button>
       </header>
 
+      {/* Current job: job number, clocking status, time on the job, a progress bar against the allocated hours and the variance. */}
       <JobPanel
         variant="current"
         prefix="Job"
@@ -252,6 +256,7 @@ const TechnicianCard = memo(function TechnicianCard({ technician, onOpenDetails 
         </div>
       </JobPanel>
 
+      {/* Next job: the next queued job with its type and planned time, or a note that nothing is queued. */}
       <JobPanel
         variant="next"
         jobNumber={nextJob?.jobNumber}
@@ -271,6 +276,7 @@ function BoardSkeleton({ count = 6 }) {
     <div className="clocking-board__technician-grid" aria-label="Loading live technician board">
       <SkeletonKeyframes />
       {Array.from({ length: count }).map((_, index) => (
+        // Placeholder technician card shown while the live board is loading.
         <LayerSurface key={index} padding="var(--space-3)" gap="var(--space-2)">
           {/* Mirrors the real card: header, current panel, next panel. */}
           <SkeletonBlock width="55%" height="var(--control-height)" />
@@ -317,6 +323,7 @@ function ChangeStatusSection({ technician, onCompleted }) {
   };
 
   return (
+    // Change status: clock the technician on to a job number or off their current job.
     <LayerTheme as="section" padding="var(--section-card-padding)" gap="var(--space-3)">
       <header className="app-popup-compact-header">
         <h2>Change status</h2>
@@ -328,12 +335,14 @@ function ChangeStatusSection({ technician, onCompleted }) {
       </header>
       {error ? <div className="app-status-message app-status-message--danger" role="alert">{error}</div> : null}
       {active ? (
+        // Active job: the job the technician is clocked on to, the time spent and its description.
         <LayerSurface padding="var(--space-3)" gap="var(--space-2)">
           <span className="app-summary-label">Active job</span>
           <strong>{technician?.currentJobNumber || "—"} · {formatHours(technician?.actualHours)}</strong>
           <span>{technician?.currentDescription}</span>
         </LayerSurface>
       ) : (
+        // Job number box: enter the job to clock the technician on to.
         <LayerSurface padding="var(--space-3)" gap="var(--space-2)">
           <label htmlFor="clocking-control-job-number">Job number</label>
           <input
@@ -392,6 +401,7 @@ function WorkshopAssignmentSection({ technician, onCompleted }) {
   };
 
   return (
+    // Workshop section: choose which board section (technicians or MOT) the person appears in today and save it.
     <LayerTheme as="section" padding="var(--section-card-padding)" gap="var(--space-3)">
       <header className="app-popup-compact-header">
         <h2>Workshop section</h2>
@@ -412,6 +422,7 @@ function WorkshopAssignmentSection({ technician, onCompleted }) {
       {error ? <div className="app-status-message app-status-message--danger" role="alert">{error}</div> : null}
       {saved ? <div className="app-status-message app-status-message--success" role="status">Workshop section updated for today.</div> : null}
 
+      {/* Board section dropdown with a note that it only affects today's placement, not the permanent role. */}
       <LayerSurface padding="var(--space-3)" gap="var(--space-2)">
         <DropdownField
           id="clocking-workshop-assignment"
@@ -439,6 +450,7 @@ function WorkshopAssignmentSection({ technician, onCompleted }) {
 // loading — no duplicated markup).
 function TechnicianDetailsPopup({ technician, canManage, onClose, onCompleted }) {
   return (
+    // Technician details popup: the technician's name, links to the full page, the change-status and workshop-section controls for managers, and their clocking history.
     <PopupModal
       isOpen={Boolean(technician)}
       onClose={onClose}
@@ -463,6 +475,7 @@ function TechnicianDetailsPopup({ technician, canManage, onClose, onCompleted })
             </div>
           ) : null}
 
+          {/* View details: the technician's full clocking history. */}
           <LayerTheme as="section" padding="var(--section-card-padding)" gap="var(--space-3)">
             <h3 className="clocking-details-modal__section-title">View details</h3>
             <UserClockingHistory slug={technician.slug} embedded />
@@ -475,6 +488,7 @@ function TechnicianDetailsPopup({ technician, canManage, onClose, onCompleted })
 
 function TechnicianSection({ sectionKey, title, technicians, loading, snapshot, emptyLabel, onOpenDetails, skeletonCount = 6 }) {
   return (
+    // Board section: a titled grid of technician cards, with placeholders while loading and a message when nobody matches the filter.
     <LayerTheme
       as="section"
       sectionKey={sectionKey}
@@ -488,10 +502,12 @@ function TechnicianSection({ sectionKey, title, technicians, loading, snapshot, 
       {loading && !snapshot ? <BoardSkeleton count={skeletonCount} /> : technicians.length ? (
         <div className="clocking-board__technician-grid">
           {technicians.map((technician) => (
+            // One card per technician in this section.
             <TechnicianCard key={technician.userId} technician={technician} onOpenDetails={onOpenDetails} />
           ))}
         </div>
       ) : (
+        // Empty message shown when no technicians match the current status filter.
         <LayerSurface padding="var(--section-card-padding)" gap="var(--space-2)" className="clocking-board__empty">
           <strong>{emptyLabel}</strong>
           <span>Change the status filter to show other workshop users.</span>
@@ -633,6 +649,7 @@ function ClockingOverviewTab() {
 
   return (
     <div className="clocking-board">
+      {/* Capacity summary: status filter, sort and capacity settings, a live-connection indicator, then tiles for working technicians, productive hours, hours remaining, utilisation and the number of technicians in each clocking status. */}
       <LayerTheme as="section" sectionKey="clocking-capacity-summary" padding="var(--section-card-padding)" gap="var(--space-2)">
         {capacityError ? <div className="app-status-message app-status-message--warning" role="status">Capacity summary unavailable: {capacityError}</div> : null}
         <div className="clocking-board__toolbar">
@@ -687,6 +704,7 @@ function ClockingOverviewTab() {
         </div>
       ) : null}
 
+      {/* Technicians board: a card for each workshop technician. */}
       <TechnicianSection
         sectionKey="clocking-technician-board"
         title="Technicians"
@@ -697,6 +715,7 @@ function ClockingOverviewTab() {
         onOpenDetails={(technician) => setSelectedTechnicianId(technician.userId)}
       />
 
+      {/* MOT users board: a card for each MOT tester. */}
       <TechnicianSection
         sectionKey="clocking-mot-user-board"
         title="MOT users"
@@ -708,6 +727,7 @@ function ClockingOverviewTab() {
         skeletonCount={3}
       />
 
+      {/* Popup with the selected technician's details and clocking controls. */}
       <TechnicianDetailsPopup
         technician={selectedTechnician}
         canManage={canManageCapacity}
@@ -715,6 +735,7 @@ function ClockingOverviewTab() {
         onCompleted={() => fetchBoard({ background: true })}
       />
 
+      {/* Popup for managers to adjust the workshop capacity settings. */}
       <CapacitySettingsPopup
         isOpen={capacitySettingsOpen}
         onClose={() => setCapacitySettingsOpen(false)}

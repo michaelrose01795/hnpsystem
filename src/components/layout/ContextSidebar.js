@@ -64,6 +64,7 @@ export default function ContextSidebar({
     );
   };
 
+  // Group sidebar: a Back to Groups button, the group's dashboards, then its modules which expand to show their pages.
   return (
     <DevLayoutSection
       sectionKey="workspace-context-sidebar"

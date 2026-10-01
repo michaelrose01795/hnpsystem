@@ -151,6 +151,7 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
           flexShrink: 0,
         }}
       >
+        {/* Vehicle card placeholder: grey bars standing in for the registration and vehicle description. */}
         <LayerTheme
           sectionKey="jobcard-summary-vehicle"
           sectionType="content-card"
@@ -167,6 +168,7 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
           <SkeletonBlock width="68%" height="12px" borderRadius="4px" />
         </LayerTheme>
 
+        {/* Customer card placeholder: grey bars standing in for the customer's name, contact line and a badge. */}
         <LayerTheme
           sectionKey="jobcard-summary-customer"
           sectionType="content-card"
@@ -189,6 +191,7 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
           { key: "jobcard-summary-vhc-financials", left: "52%", right: "62%" },
           { key: "jobcard-summary-locations", left: "68%", right: "74%" },
         ].map((card) => (
+          // Placeholder for the two remaining summary cards (health check figures and locations): a label and value on each side.
           <LayerTheme
             key={card.key}
             sectionKey={card.key}
@@ -226,6 +229,7 @@ export function JobCardPageShellSkeleton({ jobNumber }) {
       </section>
 
       {/* Tab bar — annotated as tab-row so the strip shows as its own fingerprint block */}
+      {/* Tab bar placeholder: a row of grey pills, one for each job card tab. */}
       <LayerTheme
         sectionKey="jobcard-tab-row"
         sectionType="tab-row"
@@ -322,8 +326,11 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
     <>
       <SkeletonKeyframes />
 
-      {/* Header */}
+      {/* Header placeholder: the job number with grey bars standing in for the status badge and action buttons. */}
       <TechnicianJobHeader>
+        {/* Status badge sits to the left of the job number, as on the live page */}
+        <SkeletonBadge width="100px" />
+
         {/* Job number — sits directly inside header, no nested card */}
         <h1
           style={{
@@ -338,9 +345,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
           {jobNumber}
         </h1>
 
-        <SkeletonBlock width="150px" height="12px" borderRadius="5px" />
-
-        {/* Right side: status + buttons — sit directly inside header, no nested cards */}
+        {/* Right side: three icon buttons (technical info, clock in/out, complete job) */}
         <div
           style={{
             flex: 1,
@@ -348,21 +353,13 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
-            gap: "12px",
+            gap: "8px",
             flexWrap: "wrap",
           }}
         >
-          <SkeletonBadge width="100px" />
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              flexWrap: "wrap",
-            }}
-          >
-            <SkeletonButton width="96px" />
-            <SkeletonButton width="144px" />
-          </div>
+          <SkeletonBlock width="44px" height="44px" borderRadius="50%" />
+          <SkeletonBlock width="44px" height="44px" borderRadius="50%" />
+          <SkeletonBlock width="44px" height="44px" borderRadius="50%" />
         </div>
       </TechnicianJobHeader>
 
@@ -374,6 +371,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
           { key: "myjob-quick-stat-clocked-hours", primary: "54%", secondary: "68%", stat: true },
           { key: "myjob-summary-locations", primary: "82%", secondary: "82%" },
         ].map((card) => (
+          // Summary card placeholder: two grey bars standing in for the vehicle, customer, clocked hours or location details.
           <TechnicianJobSummaryCard
             key={card.key}
             sectionKey={card.key}
@@ -392,7 +390,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
         ))}
       </TechnicianJobSummaryGrid>
 
-      {/* Tab row */}
+      {/* Tab row placeholder: a grey pill for each technician job tab. */}
       <TechnicianJobTabRow>
         {TECHNICIAN_JOB_TABS.map((tab) => (
           <SkeletonBlock
@@ -405,6 +403,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
       </TechnicianJobTabRow>
 
       {/* Tab content — wraps in myjob-main-content shell to match the live page's theme background */}
+      {/* Tab content placeholder: grey blocks standing in for the overview tab while the job loads. */}
       <TechnicianJobContentShell activeTab="overview">
         <div
           data-dev-section="1"

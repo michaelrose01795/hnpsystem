@@ -3,6 +3,7 @@ import React from "react";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 export default function StatCard({ sectionKey, parentKey = "", children, className = "", style }) {
+  // Stat card: a small tile that frames a single headline figure supplied by the page using it.
   return (
     <DevLayoutSection
       sectionKey={sectionKey}

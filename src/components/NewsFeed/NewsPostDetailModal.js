@@ -71,6 +71,7 @@ export default function NewsPostDetailModal({
   const authorRole =
     post.authorUser?.jobTitle || formatAuthorRole(post.author) || post.authorUser?.role || "";
 
+  // Post detail popup: the full news post with its author, acknowledgement prompt, linked records, attachments, reactions, comments and reach figures.
   return (
     <PopupModal
       isOpen={isOpen}
@@ -112,6 +113,7 @@ export default function NewsPostDetailModal({
           </span>
         </div>
 
+        {/* Acknowledgement banner: says whether this update still needs acknowledging and by when, with a button to acknowledge it. */}
         {post.requiresAck && (
           <div
             className={`app-news-ack ${
@@ -148,6 +150,7 @@ export default function NewsPostDetailModal({
 
         {(post.links.length > 0 || post.attachments.length > 0) && (
           <div className="app-news-section-row">
+            {/* Linked records: the jobs, vehicles or other records this post refers to. */}
             {post.links.length > 0 && (
               <LayerTheme
                 as="section"
@@ -173,6 +176,7 @@ export default function NewsPostDetailModal({
               </LayerTheme>
             )}
 
+            {/* Attachments: the files attached to this post. */}
             {post.attachments.length > 0 && (
               <LayerTheme
                 as="section"
@@ -196,10 +200,12 @@ export default function NewsPostDetailModal({
           </div>
         )}
 
+        {/* Reactions: a summary of how staff have reacted to the post. */}
         <LayerTheme gap="var(--space-3)">
           <ReactionSummary reactions={reactions} emptyLabel="No reactions yet." />
         </LayerTheme>
 
+        {/* Comments: the discussion thread for this post. */}
         <LayerTheme gap="var(--space-3)">
           <NewsCommentThread
             postId={post.id}
@@ -208,6 +214,7 @@ export default function NewsPostDetailModal({
           />
         </LayerTheme>
 
+        {/* Reach and history: a show/hide section with engagement, acknowledgement and edit history figures. */}
         <section className="app-news-insights-disclosure">
           <header className="app-news-insights-disclosure__header">
             <span className="app-news-insights-disclosure__heading">

@@ -80,6 +80,7 @@ const isoOrNull = (value) => fromDateInputValue(value)?.toISOString() || null;
 
 function Section({ title, children }) {
   return (
+    // Titled group used in the equipment form: a heading followed by that group's fields.
     <LayerTheme radius="var(--radius-sm)" padding="12px" gap="12px">
       <h3 className="app-record-heading">{title}</h3>
       {children}
@@ -229,6 +230,7 @@ export default function EquipmentEditorDrawer({ asset = null, checklists = [], o
     >
       {error && <StatusMessage tone="danger">{error}</StatusMessage>}
 
+      {/* Asset: name, asset ID, category, manufacturer, model and serial number. */}
       <Section title="Asset">
         <div className="equipment-form__grid">
           <InputField label="Name" required value={form.name} onChange={setInput("name")} placeholder="e.g. 2-post lift" />
@@ -240,6 +242,7 @@ export default function EquipmentEditorDrawer({ asset = null, checklists = [], o
         </div>
       </Section>
 
+      {/* Location: the department and place where the equipment is kept, with a field for exactly where. */}
       <Section title="Location">
         <div className="equipment-form__grid">
           <DropdownField
@@ -267,6 +270,7 @@ export default function EquipmentEditorDrawer({ asset = null, checklists = [], o
         </div>
       </Section>
 
+      {/* Inspection schedule: how often it is checked, last checked and next due dates, the due-soon warning and which checklist to use. */}
       <Section title="Inspection schedule">
         <div className="equipment-form__grid">
           <DropdownField
@@ -298,6 +302,7 @@ export default function EquipmentEditorDrawer({ asset = null, checklists = [], o
         )}
       </Section>
 
+      {/* Service: service interval, last and next service dates and the service provider. */}
       <Section title="Service">
         <div className="equipment-form__grid">
           <DropdownField label="Service every" options={MONTH_OPTIONS} value={form.serviceIntervalMonths} onValueChange={set("serviceIntervalMonths")} size="md" />
@@ -307,6 +312,7 @@ export default function EquipmentEditorDrawer({ asset = null, checklists = [], o
         </div>
       </Section>
 
+      {/* Calibration: turn calibration tracking on, then record the interval, dates, calibration company and certificate number. */}
       <Section title="Calibration">
         <CheckboxField label="Track calibration for this equipment" checked={form.requiresCalibration} onChange={set("requiresCalibration")} />
         {form.requiresCalibration && (
@@ -326,6 +332,7 @@ export default function EquipmentEditorDrawer({ asset = null, checklists = [], o
         )}
       </Section>
 
+      {/* Purchase and warranty: purchase date, price, supplier, order reference and warranty expiry and provider. */}
       <Section title="Purchase & warranty">
         <div className="equipment-form__grid">
           <CalendarField label="Purchase date" value={form.purchaseDate} onValueChange={(value) => set("purchaseDate")(value || "")} size="md" />

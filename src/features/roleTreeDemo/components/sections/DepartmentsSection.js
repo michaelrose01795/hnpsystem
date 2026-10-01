@@ -105,6 +105,7 @@ export default function DepartmentsSection() {
                   cardRefs.current[dept.id] = el;
                 }}
               >
+                {/* Department card showing the department name; clicking it selects that department for the deep dive below. */}
                 <LayerSurface
                   as="article"
                   className={`${styles.glassCard} ${styles.departmentCard} ${isActive ? styles.glassCardActive : ""}`}
@@ -138,6 +139,7 @@ export default function DepartmentsSection() {
         </div>
       </div>
 
+      {/* Department deep dive: the selected department, what it needs, which departments it connects to and a grid of detail points. */}
       <LayerSurface className={styles.departmentDetail} radius="var(--radius-lg)">
         <div className={styles.detailHeader}>
           <div>
@@ -155,6 +157,7 @@ export default function DepartmentsSection() {
           ))}
         </div>
         <div className={styles.departmentDeepDiveGrid}>
+          {/* One detail point for the selected department: a label and a one-line explanation. */}
           {departmentDeepDive.map((item) => (
             <LayerTheme key={item.id} padding="14px" gap="4px">
               <span className={styles.dashboardCardLabel}>{item.label}</span>

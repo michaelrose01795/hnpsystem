@@ -106,6 +106,7 @@ export default function StaffUiShowcasePage() {
   return (
     <Layout>
       <main className="app-page-shell" style={{ padding: "8px 8px 32px" }}>
+        {/* Main page card holding the whole staff UI showcase. */}
         <LayerSurface as="section" radius="var(--page-card-radius)" padding="var(--page-card-padding)">
           <div className="app-page-stack">
             <StaffPageHeader
@@ -114,16 +115,20 @@ export default function StaffUiShowcasePage() {
               actions={<Button type="button" variant="secondary" onClick={() => setShowDrawer(true)}>Open drawer</Button>}
             />
 
+            {/* Summary panel: three count tiles and an info alert explaining that this panel uses the tinted layer. */}
             <LayerTheme>
               <Grid min="180px">
+                {/* Tile counting the UI patterns already covered by shared components. */}
                 <LayerSurface>
                   <strong>{supportedCount}</strong>
                   <span>Patterns supported by shared primitives</span>
                 </LayerSurface>
+                {/* Tile counting the duplicated or page-specific patterns still to migrate. */}
                 <LayerSurface>
                   <strong>{remainingPatterns.length}</strong>
                   <span>Remaining duplicated or page-specific patterns to migrate later</span>
                 </LayerSurface>
+                {/* Tile confirming that the showcase changes no live feature behaviour. */}
                 <LayerSurface>
                   <strong>0</strong>
                   <span>Live feature behaviour changes in this showcase pass</span>
@@ -134,6 +139,7 @@ export default function StaffUiShowcasePage() {
               </StaffAlert>
             </LayerTheme>
 
+            {/* Filter bar example: job search box, status dropdown, department multi-select and a reset button. */}
             <StaffFilterBar
               actions={<Button type="button" variant="ghost" onClick={() => setSearch("")}>Reset filters</Button>}
             >
@@ -142,6 +148,7 @@ export default function StaffUiShowcasePage() {
               <MultiSelectDropdown label="Departments" value={selectedDepartments} onChange={setSelectedDepartments} options={departments} />
             </StaffFilterBar>
 
+            {/* Form controls example: tabs, booking date and arrival time pickers, job number field, technician and customer selectors, and the four button styles. */}
             <LayerTheme>
               <TabGroup
                 ariaLabel="Staff showcase tabs"
@@ -165,6 +172,7 @@ export default function StaffUiShowcasePage() {
             </LayerTheme>
 
             <Grid min="420px">
+              {/* Audit table listing each UI pattern, whether it is supported and the finding, with pagination underneath. */}
               <LayerTheme>
                 <table className="app-data-table app-data-table--rounded">
                   <thead><tr><th>Pattern</th><th>Status</th><th>Finding</th></tr></thead>
@@ -187,6 +195,7 @@ export default function StaffUiShowcasePage() {
                 />
               </LayerTheme>
 
+              {/* Remaining patterns panel: a warning alert and a table of the patterns not yet moved to shared components. */}
               <LayerTheme>
                 <StaffAlert tone="warning" title="Remaining non-global patterns">
                   These are audit findings only. No live feature pages were migrated in this pass.
@@ -203,16 +212,19 @@ export default function StaffUiShowcasePage() {
             </Grid>
 
             <Grid min="300px">
+              {/* Example vehicle health check rows for tyres, brakes and lights with their red/amber/green results. */}
               <LayerTheme>
                 <strong>VHC item rows</strong>
                 {vhcRows.map((row) => <StaffVhcItemRow key={row.area} {...row} />)}
               </LayerTheme>
+              {/* Example parts request rows showing part, quantity, status and owner. */}
               <LayerTheme>
                 <strong>Parts request rows</strong>
                 {partsRequests.map((row) => <StaffPartsRequestRow key={row.part} {...row} />)}
               </LayerTheme>
             </Grid>
 
+            {/* Example job summary panel: job number and vehicle, advisor, technician and stage, totals, an Open job button and a warranty warning. */}
             <StaffJobSummaryPanel
               title="JOB-10482 / HN24 ABC"
               subtitle="Olivia Hughes / ASX 2.0 / 18,420 miles"
@@ -233,6 +245,7 @@ export default function StaffUiShowcasePage() {
               </StaffAlert>
             </StaffJobSummaryPanel>
 
+            {/* States panel showing the empty state, the loading state and the buttons that open the modal and drawer examples. */}
             <LayerTheme>
               <Grid min="260px">
                 <StaffEmptyState
@@ -240,12 +253,14 @@ export default function StaffUiShowcasePage() {
                   description="The selected filters have no matching workshop jobs."
                   action={<Button type="button" variant="secondary" size="sm">Clear filters</Button>}
                 />
+                {/* Loading state example with skeleton bars and an inline loading label. */}
                 <LayerSurface>
                   <strong>Loading state</strong>
                   <SkeletonBlock height="18px" />
                   <SkeletonBlock width="75%" height="18px" />
                   <InlineLoading label="Loading matching jobs" />
                 </LayerSurface>
+                {/* Overlay example with buttons to open the shared modal and drawer. */}
                 <LayerSurface>
                   <strong>Overlay primitives</strong>
                   <span>Modal and drawer chrome now comes from shared staff primitives.</span>
@@ -260,6 +275,7 @@ export default function StaffUiShowcasePage() {
         </LayerSurface>
       </main>
 
+      {/* Example modal demonstrating the shared modal header, body and footer. */}
       <StaffModal
         open={showModal}
         title="Shared modal primitive"
@@ -272,6 +288,7 @@ export default function StaffUiShowcasePage() {
         </StaffAlert>
       </StaffModal>
 
+      {/* Example side drawer demonstrating the shared drawer with a sample row inside. */}
       <StaffDrawer
         open={showDrawer}
         title="Shared drawer primitive"

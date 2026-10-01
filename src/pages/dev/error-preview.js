@@ -182,6 +182,7 @@ const PREVIEWS = [
 // not simply a LayerTheme.
 function RecoveryPreviewStage({ level, children }) {
   if (level === RECOVERY_LEVELS.ROUTE) return <>{children}</>;
+  // Tinted backing card for a preview specimen, so section- and app-level error screens are shown on the background they sit on in the live app.
   return <LayerTheme>{children}</LayerTheme>;
 }
 
@@ -295,6 +296,7 @@ function ErrorPreviewPage() {
         {/* ---------------------------------------------------------------- */}
         {/* 1. Previews                                                       */}
         {/* ---------------------------------------------------------------- */}
+        {/* Introduction card: explains that this page shows every error screen the app can display, rendered live with inert buttons. */}
         <LayerSurface>
           <h1 style={{ margin: 0, color: "var(--accentText)" }}>Error experience</h1>
           <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.75, lineHeight: 1.5 }}>
@@ -309,6 +311,7 @@ function ErrorPreviewPage() {
           </p>
         </LayerSurface>
 
+        {/* One preview card per error screen: its title, a short note on when staff would see it, and the real recovery screen rendered below. */}
         {PREVIEWS.map((preview) => (
           <LayerSurface key={preview.id}>
             <div>
@@ -348,6 +351,7 @@ function ErrorPreviewPage() {
         {/* ---------------------------------------------------------------- */}
         {/* 2. Triggers                                                       */}
         {/* ---------------------------------------------------------------- */}
+        {/* Trigger a real error: buttons that deliberately cause a runtime error, a rejected promise, a failed API call and similar, to test that each is caught and logged. */}
         <LayerSurface>
           <div>
             <h2 style={{ margin: 0, color: "var(--text-1)" }}>Trigger a real error</h2>
@@ -455,6 +459,7 @@ function ErrorPreviewPage() {
               Disarm
             </button>
           </div>
+          {/* Specimen area that crashes when armed, showing the section-level error screen contained inside this card. */}
           <LayerTheme>
             <SectionBoundary sectionLabel="Error preview specimen" sectionKey="dev-error-preview">
               <Exploder armed={sectionArmed} label="section" />
@@ -462,6 +467,7 @@ function ErrorPreviewPage() {
           </LayerTheme>
         </LayerSurface>
 
+        {/* Real render crash (whole page): a button that crashes this entire page to demonstrate the page-level error screen while the sidebar and top bar stay up. */}
         <LayerSurface>
           <div>
             <h2 style={{ margin: 0, color: "var(--text-1)" }}>Real render crash (whole page)</h2>
@@ -505,6 +511,7 @@ function ErrorPreviewPage() {
         {/* ---------------------------------------------------------------- */}
         {/* 3. Captured trail                                                 */}
         {/* ---------------------------------------------------------------- */}
+        {/* Captured automatically: a table of the errors logged so far (reference, kind, message, route, times seen and last seen), with a refresh button. */}
         <LayerSurface>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" }}>
             <div>
@@ -532,6 +539,7 @@ function ErrorPreviewPage() {
             </button>
           </div>
 
+          {/* Warning card shown when the error log cannot be read, with a hint that the database migration may not have been applied. */}
           {eventsError && (
             <LayerTheme>
               <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5 }}>

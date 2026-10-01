@@ -230,6 +230,7 @@ export default function StockCataloguePageUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <div className="app-page-stack" style={{ gap: "var(--layout-card-gap)" }}>
+        {/* Parts inventory overview: headline stock figures, a stock status breakdown, demand figures and the highest-value categories. */}
         <LayerTheme
           as="section"
           sectionKey="stock-catalogue-overview"
@@ -258,6 +259,7 @@ export default function StockCataloguePageUi(props) {
               aria-label="Stock catalogue summary"
               style={{ columnGap: "var(--layout-card-gap)", rowGap: STOCK_OVERVIEW_SECTION_GAP }}
             >
+            {/* Headline figure tiles, one per measure: active parts, in stock, low stock, out of stock, on order, reserved, stock value, retail value and potential margin. */}
             {[
               ["Active parts", stockSummary?.totalParts],
               ["In stock", stockSummary?.inStockCount],
@@ -286,6 +288,7 @@ export default function StockCataloguePageUi(props) {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "var(--layout-card-gap)" }}>
+            {/* Stock status breakdown: on hand, reserved, available, on order, back order, expected soon and inactive quantities for the parts currently loaded. */}
             <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
               <strong style={{ color: "var(--accentText)" }}>Stock status breakdown</strong>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "var(--space-2)" }}>
@@ -307,6 +310,7 @@ export default function StockCataloguePageUi(props) {
               </span>
             </LayerSurface>
 
+            {/* Demand overview: how many open job requirements there are and how many parts are linked to open jobs. */}
             <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
               <strong style={{ color: "var(--accentText)" }}>Demand overview</strong>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--space-2)" }}>
@@ -324,6 +328,7 @@ export default function StockCataloguePageUi(props) {
               </span>
             </LayerSurface>
 
+            {/* Top categories by cost value: the four part categories holding the most stock value. */}
             <LayerSurface padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
               <strong style={{ color: "var(--accentText)" }}>Top categories by cost value</strong>
               {(stockSummary?.topCategoriesByValue || []).length > 0 ?
@@ -337,6 +342,7 @@ export default function StockCataloguePageUi(props) {
           </div>
         </LayerTheme>
 
+        {/* Find Job Card panel: search by job number or registration to see the parts needed on that job, or a prompt to search when no job is loaded. */}
         <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Find Job Card" style={{
       ...cardStyle,
       backgroundColor: "var(--theme)"
@@ -383,12 +389,14 @@ export default function StockCataloguePageUi(props) {
                 </div>}
 
               {jobData ? <>
+                  {/* Job summary row: three tiles for the job, the vehicle and the job status. */}
                   <div data-dev-section="1" data-dev-section-key="stock-catalogue-job-summary-grid" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Job / Vehicle / Status summary" style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
             gap: "12px",
             marginBottom: "16px"
           }}>
+                    {/* Job tile: job number and description. */}
                     <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-job" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Job summary card" style={{
               background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
@@ -408,6 +416,7 @@ export default function StockCataloguePageUi(props) {
                       </div>
                       <div>{jobData.description || "No description"}</div>
                     </div>
+                    {/* Vehicle tile: registration with make and model. */}
                     <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-vehicle" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Vehicle summary card" style={{
               background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
@@ -424,6 +433,7 @@ export default function StockCataloguePageUi(props) {
               }}>{jobData.reg}</div>
                       <div>{jobData.makeModel || `${jobData.make} ${jobData.model}`}</div>
                     </div>
+                    {/* Status tile: the job's status and what it is waiting on. */}
                     <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-status" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Job status summary card" style={{
               background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
@@ -485,6 +495,7 @@ export default function StockCataloguePageUi(props) {
                       {getPipelineStageMeta(selectedPipelineStage).label}.
                     </div>}
 
+                  {/* Parts on this job: an empty message, or a table of each part with requested, allocated and fitted quantities, stage, status and pre-pick dropdowns, notes and a Mark fitted button. */}
                   {jobParts.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-job-parts-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="No parts linked empty state" style={{
             background: "var(--surface)",
             borderRadius: "var(--radius-xs)",
@@ -637,6 +648,7 @@ export default function StockCataloguePageUi(props) {
                       </table>
                     </div>}
 
+                  {/* Workshop requests: a table of the part requests raised by the workshop for this job, with quantity, source, status and date. */}
                   {jobRequests.length > 0 && <div data-dev-section="1" data-dev-section-key="stock-catalogue-workshop-requests" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Workshop Requests block" style={{
             marginTop: "20px"
           }}>
@@ -721,6 +733,7 @@ export default function StockCataloguePageUi(props) {
                       </div>
                     </div>}
 
+                  {/* Warning showing how many parts on this job are still awaiting stock or action. */}
                   {pendingJobParts.length > 0 && <div data-dev-section="1" data-dev-section-key="stock-catalogue-pending-warning" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Pending parts warning" style={{
             marginTop: "20px",
             padding: "16px",
@@ -743,6 +756,7 @@ export default function StockCataloguePageUi(props) {
                 </div>}
         </div>
 
+        {/* Stock Catalogue panel: quick-filter tabs, search and filter controls and the table of every part in stock. */}
         <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Stock Catalogue card" style={{
       ...cardStyle,
       backgroundColor: "var(--theme)"
@@ -924,6 +938,7 @@ export default function StockCataloguePageUi(props) {
               {inventoryError}
             </div>}
 
+          {/* Catalogue results: a loading placeholder, an empty message, or the parts table with part number, details, category, bin, stock, cost, reorder level, status and actions, plus a Load More button. */}
           {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory loading state" aria-busy="true">
               <TableSkeleton columns={["Part Number", "Part details", "Category / supplier", "Bin", "Stock", "Unit cost", "Reorder", "Status", "Actions"]} rows={6} label="Loading inventory" />
             </div> :inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory empty state" style={{
@@ -1036,7 +1051,7 @@ export default function StockCataloguePageUi(props) {
               </>}
         </div>
 
-        {/* Part Details Modal */}
+        {/* Part details popup: opened from a catalogue row to view or edit one part, with stock, pricing, part information, recent receipts and linked jobs. */}
         {isPartModalOpen && selectedPart && <PopupModal
           onClose={() => {
             setIsPartModalOpen(false);
@@ -1106,7 +1121,7 @@ export default function StockCataloguePageUi(props) {
           }}>
                   {/* Left Column - Stock & Pricing */}
                   <div>
-                    {/* Stock Overview Card */}
+                    {/* Stock overview: the part's stock status with on hand, reserved, available, on order, back order, minimum level and linked job figures. */}
                     <LayerTheme
                       as="section"
                       padding="var(--space-3)"
@@ -1183,7 +1198,7 @@ export default function StockCataloguePageUi(props) {
                       </div>
                     </LayerTheme>
 
-                    {/* Pricing Card */}
+                    {/* Pricing: the part's cost price, sell price and margin. */}
                     <LayerTheme as="section" padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
                       <h3 style={{
                   fontSize: "var(--text-body)",
@@ -1257,6 +1272,7 @@ export default function StockCataloguePageUi(props) {
 
                   {/* Right Column - Part Info */}
                   <div>
+                    {/* Part information: name, description, category, supplier, OEM code, storage location, service default and notes, editable in edit mode. */}
                     <LayerTheme
                       as="section"
                       sectionKey="stock-catalogue-part-information"
@@ -1351,6 +1367,7 @@ export default function StockCataloguePageUi(props) {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))", gap: "var(--layout-card-gap)", alignItems: "start" }}>
+                {/* Recent receipts: a table of the latest goods-in deliveries for this part, with a link to inspect Goods In when stock is on order. */}
                 <LayerTheme as="section" padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
                   <div className="app-layout-header-row">
                     <h3 style={{ margin: 0, color: "var(--accentText)", fontSize: "var(--text-body)" }}>Recent receipts</h3>
@@ -1372,7 +1389,7 @@ export default function StockCataloguePageUi(props) {
                   </div> : <div style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>No completed delivery log is recorded for this part.</div>}
                 </LayerTheme>
 
-                {/* Linked Jobs Table */}
+                {/* Linked jobs: a table of the jobs this part is attached to, with a button to add the part to another job. */}
                 <LayerTheme as="section" padding="var(--space-3)" radius="var(--radius-sm)" gap="var(--space-2)">
                    <div style={{
               display: "flex",

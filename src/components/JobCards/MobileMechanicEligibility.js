@@ -58,6 +58,7 @@ export default function MobileMechanicEligibility({
   }, [verdict.eligible, isMobileMechanic, onSelectionChange]);
 
   return (
+    // Mobile mechanic eligibility: a yes/no choice for sending a mobile mechanic, beside the list of rules showing whether the job qualifies.
     <DevLayoutSection
       sectionKey="job-cards-create-mobile-mechanic-eligibility"
       sectionType="section-shell"

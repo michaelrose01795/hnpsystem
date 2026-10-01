@@ -79,6 +79,7 @@ function SectionHeader({ title, meta, actions, actionsStyle }) {
 }
 
 function Metric({ label, value, detail, tone }) {
+  // Summary tile: one headline figure with its label and an optional line of detail, coloured by status.
   return (
     <LayerSurface
       as="div"
@@ -232,6 +233,7 @@ export default function ConsumablesTrackerPageUi(props) {
   } = props;
 
   if (props.view === "section1") {
+    // Access-denied card shown to anyone who is not a workshop manager, with a link back to the news feed.
     return (
       <LayerSurface style={{ maxWidth: "720px", margin: "var(--space-xl) auto", textAlign: "center" }}>
         <h1 style={{ margin: 0, ...textStyle }}>Workshop Manager access only</h1>
@@ -256,6 +258,7 @@ export default function ConsumablesTrackerPageUi(props) {
       <ContentWidth sectionKey="workshop-consumables-tracker-content" parentKey="workshop-consumables-tracker-shell" widthMode="content">
         {showDuplicateModal && potentialDuplicates.length > 0 ? (
           <div className="popup-backdrop">
+            {/* Duplicate warning pop-up: lists consumable names that look like the same item, with a dismiss button. */}
             <div className="popup-card" style={duplicateModalStyle} role="dialog" aria-modal="true" aria-label="Potential duplicate consumables">
               <h2 style={headingStyle}>Potential duplicate consumables</h2>
               <p style={{ margin: 0, ...mutedStyle }}>These names normalise to the same value. The tracker still preserves each source record.</p>
@@ -269,6 +272,7 @@ export default function ConsumablesTrackerPageUi(props) {
 
         {historyModalConsumable ? (
           <div className="popup-backdrop">
+            {/* Order history pop-up for one consumable: any price change notice and a table of its previous orders. */}
             <div className="popup-card" style={historyModalStyle} role="dialog" aria-modal="true">
               <Button type="button" variant="secondary" size="sm" onClick={closeHistoryModal} style={modalCloseStyle}>Close</Button>
               <h2 style={headingStyle}>{historyModalConsumable.name} order history</h2>
@@ -282,6 +286,7 @@ export default function ConsumablesTrackerPageUi(props) {
 
         {orderModalConsumable ? (
           <div className="popup-backdrop">
+            {/* Re-order pop-up for one consumable: previous orders plus a form for quantity, unit cost, supplier and date, pre-filled from the last order. */}
             <div className="popup-card" style={orderModalStyle} role="dialog" aria-modal="true">
               <Button type="button" variant="secondary" size="sm" onClick={closeOrderModal} style={modalCloseStyle}>Close</Button>
               <h2 style={headingStyle}>Order {orderModalConsumable.name}</h2>
@@ -312,6 +317,7 @@ export default function ConsumablesTrackerPageUi(props) {
 
         {bulkOrderItems.length ? (
           <div className="popup-backdrop">
+            {/* Grouped supplier order pop-up: a table of the selected items with editable quantity, unit cost and supplier, saved as one order per line. */}
             <div className="popup-card" style={{ ...historyModalStyle, maxWidth: "980px" }} role="dialog" aria-modal="true">
               <Button type="button" variant="secondary" size="sm" onClick={closeBulkOrder} style={modalCloseStyle}>Close</Button>
               <h2 style={headingStyle}>Grouped supplier order</h2>
@@ -339,6 +345,7 @@ export default function ConsumablesTrackerPageUi(props) {
           </div>
         ) : null}
 
+        {/* Consumables control: page heading with buttons for a stock check and jumps to scheduled items, requests and order history, plus headline totals. */}
         <LayerTheme sectionKey="workshop-consumables-command" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
           <SectionHeader
             title="Consumables control"
@@ -362,6 +369,7 @@ export default function ConsumablesTrackerPageUi(props) {
         </LayerTheme>
 
         <div style={equalHeightPanelGridStyle}>
+          {/* Stock overview: counts of available, low and out-of-stock items, followed by the most critical items with stock level and days of cover. */}
           <LayerTheme sectionKey="workshop-consumables-stock-overview" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
             <SectionHeader title="Stock overview" meta={`${dashboardSummary.active} active items`} />
             <div className="app-summary-section">
@@ -377,6 +385,7 @@ export default function ConsumablesTrackerPageUi(props) {
               <span style={{ width: `${dashboardSummary.active ? dashboardSummary.out / dashboardSummary.active * 100 : 0}%`, background: "var(--danger-base)" }} />
             </div>
             <h3 style={{ ...headingStyle, fontSize: "1rem" }}>Critical items</h3>
+            {/* One critical item card: name, current stock against target, days of cover and a status badge. */}
             {loadingConsumables ? <InlineLoading width={150} label="Loading stock" /> : criticalItems.length ? criticalItems.slice(0, 4).map((item) => (
               <LayerSurface key={item.id} padding="var(--space-3)" gap="var(--space-sm)" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center" }}>
                 <div style={{ minWidth: 0 }}>
@@ -391,6 +400,7 @@ export default function ConsumablesTrackerPageUi(props) {
             <ErrorMessage>{consumablesError}</ErrorMessage>
           </LayerTheme>
 
+          {/* Budget and spend: choose the reporting month, set and save the monthly budget, and see spend against budget with a month-by-month trend. */}
           <LayerTheme sectionKey="workshop-consumables-budget" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
             <SectionHeader title="Budget and spend" meta={monthLabel} />
             <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -418,12 +428,14 @@ export default function ConsumablesTrackerPageUi(props) {
         </div>
 
         <div style={equalHeightPanelGridStyle}>
+          {/* Alerts and notifications: a scrolling list of current stock and budget warnings. */}
           <LayerTheme sectionKey="workshop-consumables-alerts" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle, height: "100%", minHeight: 0 }}>
             <SectionHeader title="Alerts and notifications" meta={`${alerts.length} active`} />
             <ListViewport label="Consumables alerts" reserveRows>
               {alerts.length ? alerts.map((alert, index) => <div key={`${alert.label}-${index}`} className={`app-status-message app-status-message--${alert.tone}`}>{alert.label}</div>) : <div className="app-status-message app-status-message--success">No consumable alerts need attention.</div>}
             </ListViewport>
           </LayerTheme>
+          {/* Supplier spend: how much was spent with each supplier in the selected month. */}
           <LayerTheme sectionKey="workshop-consumables-suppliers" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle, height: "100%", minHeight: 0 }}>
             <SectionHeader title="Supplier spend" meta={monthLabel} />
             <ErrorMessage>{logsError}</ErrorMessage>
@@ -439,6 +451,7 @@ export default function ConsumablesTrackerPageUi(props) {
           </LayerTheme>
         </div>
 
+        {/* Scheduled consumables: searchable table of stocked items with stock levels, days left, suggested order and cost, with tick boxes to order several at once. */}
         <LayerTheme id="scheduled-consumables" sectionKey="workshop-consumables-scheduled" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
           <SectionHeader
             title="Scheduled consumables"
@@ -480,6 +493,7 @@ export default function ConsumablesTrackerPageUi(props) {
           {!loadingConsumables && !scheduled.length ? <Empty>No consumables match this search.</Empty> : null}
         </LayerTheme>
 
+        {/* Technician requests: summary tiles of the most requested items and a table of individual requests with an order button. */}
         <LayerTheme id="consumable-requests" sectionKey="workshop-consumables-requests" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
           <SectionHeader title="Technician requests" meta={requestsLoading ? "Loading" : `${techRequests.length} request records · ${groupedRequests.length} grouped items`} />
           <ErrorMessage>{requestsError}</ErrorMessage>
@@ -515,6 +529,7 @@ export default function ConsumablesTrackerPageUi(props) {
         </LayerTheme>
 
         <div style={equalHeightPanelGridStyle}>
+          {/* Top requested items: a ranked list of consumables by how often technicians have asked for them. */}
           <LayerTheme sectionKey="workshop-consumables-top-requested" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle, height: "100%", minHeight: 0 }}>
             <SectionHeader title="Top requested items" meta="All available request history" />
             <ListViewport label="Top requested consumables" reserveRows>
@@ -525,6 +540,7 @@ export default function ConsumablesTrackerPageUi(props) {
               )) : <Empty>No request history is available.</Empty>}
             </ListViewport>
           </LayerTheme>
+          {/* Recent activity: the latest orders and requests in date order. */}
           <LayerTheme sectionKey="workshop-consumables-activity" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle, height: "100%", minHeight: 0 }}>
             <SectionHeader title="Recent activity" meta="Orders and requests" />
             <ListViewport label="Recent consumables activity" reserveRows>
@@ -537,6 +553,7 @@ export default function ConsumablesTrackerPageUi(props) {
           </LayerTheme>
         </div>
 
+        {/* Order history: table of every consumable order placed in the selected month, with the month's order count and total spend. */}
         <LayerTheme id="consumable-order-history" sectionKey="workshop-consumables-order-history" parentKey="workshop-consumables-tracker-content" style={cardStyle}>
           <SectionHeader title="Order history" meta={`${monthLabel} · ${logsSummary.orders} orders · ${formatCurrency(logsSummary.spend)}`} />
           <ErrorMessage>{logsError}</ErrorMessage>

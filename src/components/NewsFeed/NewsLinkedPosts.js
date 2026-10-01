@@ -45,6 +45,7 @@ export default function NewsLinkedPosts({ recordType, recordId, title = "Mention
 
   if (!posts.length) return null;
 
+  // Mentioned in: a list of the announcements that link to this record, each with its title, priority, sign-off flag and publish date.
   return (
     <LayerSurface gap="var(--space-3)">
       <strong>{`${title} (${posts.length})`}</strong>

@@ -68,6 +68,7 @@ function HeadlineSkeleton() {
       </div>
       <div className="efficiency-kpi-grid" aria-hidden="true">
         {Array.from({ length: 8 }).map((_, index) => (
+          // Loading placeholder for one headline figure tile (label and value) while efficiency data loads.
           <LayerSurface key={index} className="efficiency-kpi-card" padding="var(--space-sm)" gap="8px">
             <SkeletonBlock width={index % 2 ? "74%" : "62%"} height="11px" />
             <SkeletonBlock width={index % 3 ? "58%" : "46%"} height="20px" />
@@ -82,6 +83,7 @@ function ComparisonSkeleton() {
   return (
     <div className="efficiency-comparison-list" aria-hidden="true">
       {Array.from({ length: 3 }).map((_, index) => (
+        // Loading placeholder for one comparable-period row while the comparison data loads.
         <LayerSurface key={index} className="efficiency-comparison-row" padding="var(--space-sm)">
           <div><SkeletonBlock width="82px" height="14px" /><SkeletonBlock width="112px" height="10px" /></div>
           <div><SkeletonBlock width="58px" height="14px" /><SkeletonBlock width="76px" height="10px" /></div>
@@ -128,6 +130,7 @@ function LostTimeSkeleton() {
   return (
     <div className="efficiency-lost-time-grid" aria-hidden="true">
       {Array.from({ length: 3 }).map((_, index) => (
+        // Loading placeholder for one lost-time tile (label and hours figure).
         <LayerSurface key={index} padding="var(--space-sm)" gap="8px">
           <SkeletonBlock width="86%" height="11px" />
           <SkeletonBlock width="54px" height="22px" />
@@ -166,6 +169,7 @@ function CategoriesSkeleton() {
   return (
     <div className="efficiency-category-grid" aria-hidden="true">
       {Array.from({ length: 4 }).map((_, index) => (
+        // Loading placeholder for one job-category card (name, efficiency badge and hours line).
         <LayerSurface key={index} padding="var(--space-sm)" className="efficiency-category-card">
           <div><SkeletonBlock width="92px" height="13px" /><SkeletonBlock width="54px" height="22px" borderRadius="var(--radius-pill)" /></div>
           <SkeletonBlock width="150px" height="11px" />
@@ -289,6 +293,7 @@ export default function EfficiencyInsights({
   return (
     <div className="efficiency-insights-stack" aria-busy={loading || analysisLoading || undefined}>
       {(loading || analysisLoading) ? <SkeletonKeyframes /> : null}
+      {/* Headline panel: the technician's overall efficiency percentage for the period with a target badge, the change against the previous equivalent period, a link to their clocking page and a grid of hour totals. */}
       {!hideHeadline ? <LayerTheme className="efficiency-headline" as="section">
         {loading ? <HeadlineSkeleton /> : <><div className="efficiency-headline-main">
           <div>
@@ -319,6 +324,7 @@ export default function EfficiencyInsights({
             ["Overtime", formatHours(metrics?.overtimeHours)],
             ["Unallocated / idle", formatHours(metrics?.unallocatedHours)],
           ].map(([label, value]) => (
+            // Headline figure tile: one hours total such as logged, allocated, target, productive, overtime or unallocated time.
             <LayerSurface key={label} className="efficiency-kpi-card" padding="var(--space-sm)" gap="4px">
               <span>{label}</span>
               <strong>{value}</strong>
@@ -328,10 +334,12 @@ export default function EfficiencyInsights({
       </LayerTheme> : null}
 
       <div className="efficiency-primary-analysis-grid">
+        {/* Comparable periods: lists each period (day, week, month) with productive hours, efficiency, target hours and the change against the previous period. */}
         <LayerTheme as="section" className="efficiency-analysis-panel efficiency-comparison-panel">
           <PanelHeader title="Comparable periods" />
           {analysisPending ? <ComparisonSkeleton /> : <div className="efficiency-comparison-list">
             {(comparisons || []).map((comparison) => (
+              // One comparable-period row: period name, productive hours, efficiency percentage, target hours and the rise or fall in efficiency.
               <LayerSurface key={comparison.key} className="efficiency-comparison-row" padding="var(--space-sm)">
                 <div>
                   <strong>{comparison.label}</strong>
@@ -349,6 +357,7 @@ export default function EfficiencyInsights({
           </div>}
         </LayerTheme>
 
+        {/* Efficiency trend: a line chart of efficiency over the selected period against the 100% target, with badges for the period and the latest reading. */}
         <LayerTheme as="section" className="efficiency-analysis-panel efficiency-trend-panel">
           <PanelHeader
             title="Efficiency trend"
@@ -369,6 +378,7 @@ export default function EfficiencyInsights({
           {!analysisPending && !analysisError ? <TrendChart points={trend} /> : null}
         </LayerTheme>
 
+        {/* Time breakdown: bars comparing productive job time, overtime and unallocated time, with a note on what cannot be classified. */}
         <LayerTheme as="section" className="efficiency-analysis-panel">
           <PanelHeader title="Time breakdown" />
           {loading ? <BreakdownSkeleton /> : <div className="efficiency-breakdown-list">
@@ -384,6 +394,7 @@ export default function EfficiencyInsights({
           {!loading ? <p className="efficiency-panel-note">Waiting, idle and break time are not classified because current efficiency and job-clocking records do not identify them reliably.</p> : null}
         </LayerTheme>
 
+        {/* Daily target progress: productive hours logged today against the day's target, shown as a progress bar with percentage complete and hours remaining. */}
         <LayerTheme as="section" className="efficiency-analysis-panel">
           <PanelHeader title="Daily target progress" />
           {analysisPending ? <TargetProgressSkeleton /> : <><div className="efficiency-target-progress-copy">
@@ -401,16 +412,21 @@ export default function EfficiencyInsights({
       </div>
 
       <div className="efficiency-secondary-analysis-grid">
+        {/* Lost time analysis: totals for hours over allocation, unallocated job time and clocking issues, with a note on which delays are excluded. */}
         <LayerTheme as="section" className="efficiency-analysis-panel">
           <PanelHeader title="Lost time analysis" />
           {analysisPending ? <LostTimeSkeleton /> : <div className="efficiency-lost-time-grid">
+            {/* Lost-time tile: total hours spent beyond the time allocated on jobs. */}
             <LayerSurface padding="var(--space-sm)"><span>Jobs over allocation</span><strong>{formatHours(overAllocatedHours)}</strong></LayerSurface>
+            {/* Lost-time tile: job time that was logged without any allocation. */}
             <LayerSurface padding="var(--space-sm)"><span>Unallocated job time</span><strong>{formatHours(metrics?.unallocatedHours)}</strong></LayerSurface>
+            {/* Lost-time tile: the number of clocking issues found in the period. */}
             <LayerSurface padding="var(--space-sm)"><span>Clocking issues</span><strong>{alerts?.length || 0}</strong></LayerSurface>
           </div>}
           {!analysisPending ? <p className="efficiency-panel-note">Parts delays, customer authorisation and technical-support delays are excluded because these records are not linked consistently enough for a reliable total.</p> : null}
         </LayerTheme>
 
+        {/* Clocking alerts: a list of up to six clocking-quality issues for the period, each with a severity badge, title and detail. */}
         <LayerTheme as="section" className="efficiency-analysis-panel">
           <PanelHeader title="Clocking alerts" aside={analysisPending ? <SkeletonBlock width="42px" height="22px" borderRadius="var(--radius-pill)" /> : <span className="app-badge app-badge--neutral">{alerts?.length || 0}</span>} />
           {analysisPending ? <AlertsSkeleton /> : !alerts?.length ? <EmptyMessage>No clocking-quality issues found for this period.</EmptyMessage> : (
@@ -426,6 +442,7 @@ export default function EfficiencyInsights({
         </LayerTheme>
       </div>
 
+      {/* Jobs table: switches between jobs that ran over their allocation and the best performing jobs, listing job number, description, allocated and actual hours and the difference. */}
       <LayerTheme as="section" className="efficiency-analysis-panel">
         <PanelHeader
           title={jobView === "over" ? "Jobs affecting efficiency" : "Best performing jobs"}
@@ -444,6 +461,7 @@ export default function EfficiencyInsights({
         {loading ? <JobsTableSkeleton showTechnician={hideHeadline} /> : <JobsTable jobs={jobs?.[jobView] || []} />}
       </LayerTheme>
 
+      {/* Job category analysis: a grid of job categories showing how efficiently each type of work was completed. */}
       <LayerTheme as="section" className="efficiency-analysis-panel">
         <PanelHeader title="Job category analysis" />
         {loading ? <CategoriesSkeleton /> : !categories?.length ? <EmptyMessage>No reliable job categories are available for this period.</EmptyMessage> : (
@@ -451,6 +469,7 @@ export default function EfficiencyInsights({
             {categories.map((category) => {
               const state = getTargetState(category.efficiencyPct);
               return (
+                // One job-category card: category name, efficiency badge and the hours logged against hours allocated.
                 <LayerSurface key={category.category} padding="var(--space-sm)" className="efficiency-category-card">
                   <div><strong>{category.category}</strong><span className={`app-badge ${state.className}`}>{category.efficiencyPct.toFixed(1)}%</span></div>
                   <span>{formatHours(category.actualHours)} logged · {formatHours(category.allocatedHours)} allocated</span>

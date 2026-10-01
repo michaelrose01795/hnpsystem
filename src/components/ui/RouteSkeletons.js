@@ -19,6 +19,7 @@ function TrackingRouteSkeleton() {
       }}
     >
       <SkeletonKeyframes />
+      {/* Placeholder for the tracking page while it loads: grey bars standing in for the tabs, search and filter controls, above a grid of placeholder cards. */}
       <div
         className="app-section-card"
         style={{
@@ -63,6 +64,7 @@ function TrackingRouteSkeleton() {
           }}
         >
           {Array.from({ length: 6 }).map((_, index) => (
+            // One placeholder vehicle card with grey bars in place of its title and details.
             <LayerTheme
               key={index}
               radius="var(--radius-sm)"

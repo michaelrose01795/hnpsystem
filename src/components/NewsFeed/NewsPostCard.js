@@ -77,6 +77,7 @@ export default function NewsPostCard({
     .join(" ");
 
   return (
+    // News post: the title and tags, the message text, linked records and attachments, then the author, date, reactions and edit button. Double-click to open the full post.
     <LayerTheme
       as="article"
       className={cardClasses}
@@ -121,6 +122,7 @@ export default function NewsPostCard({
       )}
 
       {post.requiresAck && (
+        // Acknowledgement banner: says whether you have acknowledged this update and when it is due, with an Acknowledge button.
         <div className={`app-news-ack ${ackTone(post)}`.trim()}>
           <span className="app-news-ack__text">
             {post.isAcknowledged

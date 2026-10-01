@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { hasAllAccessRole } from "@/lib/auth/roles";
+import { isAllAccessPinnedJobNumber } from "@/lib/auth/allAccessSession";
 import { useRoster } from "@/context/RosterContext";
 // Loaded on demand - these modules resolve the Supabase browser client.
 //
@@ -42,7 +43,8 @@ import {
 import MyJobsPageUi from "@/components/page-ui/job-cards/myjobs/job-cards-myjobs-ui"; // Extracted presentation layer.
 import { logFailure } from "@/lib/utils/logFailure";
 
-const MY_JOBS_CACHE_VERSION = 1;
+// v2: the All Access demo login gained pinned jobs - drop older empty snapshots.
+const MY_JOBS_CACHE_VERSION = 2;
 const getMyJobsCacheKey = (userId) => `hnp:my-jobs:${userId}:v${MY_JOBS_CACHE_VERSION}`;
 
 const readMyJobsSnapshot = (userId) => {
@@ -347,8 +349,13 @@ export default function MyJobsPage() {
             job?.appointment?.date === todayLocal
         );
       } else {
+        // The All Access demo login also sees its pinned demo jobs, whoever
+        // they are really assigned to.
         assignedJobs = fetchedJobs.filter(
-          (job) => isAssignedToTechnician(job) || shouldShowMotHandoffJob(job, clockingMap)
+          (job) =>
+            isAssignedToTechnician(job) ||
+            shouldShowMotHandoffJob(job, clockingMap) ||
+            (hasFullAccess && isAllAccessPinnedJobNumber(job?.jobNumber))
         );
       }
 
@@ -368,6 +375,7 @@ export default function MyJobsPage() {
   hasTechnicianAccess,
   dbUserId,
   isMobileTech,
+  hasFullAccess,
   isAssignedToTechnician,
   shouldShowMotHandoffJob]
   );

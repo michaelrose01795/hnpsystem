@@ -480,6 +480,7 @@ export default function UserDiagnosticDevPageUi(props) {
       </div>
       </DevLayoutSection>
 
+      {/* Diagnostic results, grouped by area with one card per check. */}
       <DevLayoutSection className="user-diagnostic-results" sectionKey="user-diagnostic/results" sectionType="content-card" parentKey="" backgroundToken="" style={{
         width: "100%",
         maxWidth: "100%",
@@ -505,6 +506,7 @@ export default function UserDiagnosticDevPageUi(props) {
           gap: "10px",
           alignItems: "start"
         }}>
+            {/* One check result: a pass or fail mark, the check name, its detail line and an optional expandable data dump. */}
             {group.items.map(result => <DevLayoutSection key={result._index} sectionKey={`user-diagnostic/result-${result._index}`} sectionType="content-card" parentKey="user-diagnostic/results" backgroundToken="surface" style={{
             background: "var(--surface)",
             border: "none",
@@ -572,6 +574,7 @@ export default function UserDiagnosticDevPageUi(props) {
         </div>)}
       </DevLayoutSection>
 
+      {/* Overall summary showing how many of the tests passed. */}
       {results && <DevLayoutSection sectionKey="user-diagnostic/summary" sectionType="stat-card" parentKey="" backgroundToken="" style={{
         width: "100%",
         maxWidth: "100%",
@@ -647,6 +650,7 @@ export default function UserDiagnosticDevPageUi(props) {
             &times;
           </Button>
         </div>
+        {/* Why This System Exists: the editable opening speech for the development proposal, with a headline quote beside it. */}
         <LayerTheme
           as="section"
           radius="var(--radius-sm)"
@@ -698,6 +702,7 @@ export default function UserDiagnosticDevPageUi(props) {
                 Click the heading to edit the saved source text.
               </p>
             </div>
+            {/* Pull-quote summarising the proposal in one line. */}
             <LayerSurface
               as="aside"
               radius="var(--radius-xs)"
@@ -825,6 +830,7 @@ export default function UserDiagnosticDevPageUi(props) {
           gap: "14px",
           alignItems: "stretch"
         }}>
+          {/* Main pitch cards: one per topic, each with a title and a list of points. */}
           {mainPitchSections.map(section => <section key={section.title} style={{
             border: "none",
             borderRadius: "var(--radius-xs)",
@@ -855,6 +861,7 @@ export default function UserDiagnosticDevPageUi(props) {
             </ul>
           </section>)}
         </div>
+        {/* Real world problems: the current workflow issues the system is meant to solve. */}
         <section style={{
           marginTop: "22px",
           display: "flex",
@@ -887,6 +894,7 @@ export default function UserDiagnosticDevPageUi(props) {
             gap: "14px",
             alignItems: "stretch"
           }}>
+            {/* One workflow issue with its title, introduction, list of points and closing line. */}
             {realWorldWorkflowIssues.map(issue => <section key={issue.title} style={{
               border: "none",
               borderRadius: "var(--radius-xs)",
@@ -933,6 +941,7 @@ export default function UserDiagnosticDevPageUi(props) {
               </p>}
             </section>)}
           </div>
+          {/* What the system aims to achieve: the list of benefits. */}
           <section style={{
             border: "none",
             borderRadius: "var(--radius-xs)",
@@ -999,6 +1008,7 @@ export default function UserDiagnosticDevPageUi(props) {
             gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
             gap: "14px"
           }}>
+            {/* Supporting pitch cards: one per topic, each with a title and a list of points. */}
             {supportingPitchSections.map(section => <section key={section.title} style={{
               border: "none",
               borderRadius: "var(--radius-xs)",

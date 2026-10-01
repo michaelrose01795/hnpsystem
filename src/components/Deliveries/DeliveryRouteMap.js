@@ -245,6 +245,7 @@ export default function DeliveryRouteMap({ map, loading, error, selectedId, onSe
     ? map?.detail || "No stop on this route has a postcode that can be located."
     : null;
 
+  // Route map card: total miles and drive time above a map showing the delivery route from the parts desk through each stop and back, with selectable stop pins.
   return (
     <LayerSurface
       padding="var(--space-3)"

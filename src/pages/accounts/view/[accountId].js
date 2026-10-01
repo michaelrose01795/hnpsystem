@@ -104,6 +104,7 @@ export default function ViewAccountPage() {
   };
 
   // detailCard sits inside the metrics-grid LayerSurface, so per the alternation rule it's a LayerTheme.
+  // Small tile showing one account figure: a caption with its value beneath.
   const detailCard = (label, value) =>
   <LayerTheme radius="var(--radius-sm)" padding="16px">
       <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>

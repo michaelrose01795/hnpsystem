@@ -46,6 +46,7 @@ function FeedSkeleton() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <SkeletonKeyframes />
       {Array.from({ length: 3 }).map((_, index) => (
+        // Placeholder news post shown while the feed loads.
         <LayerSurface key={index} radius="var(--radius-sm)" padding={18} gap={10}>
           <SkeletonBlock width="160px" height="14px" />
           <SkeletonBlock width="80%" height="18px" />
@@ -144,6 +145,7 @@ export default function NewsFeedUi(props) {
                 {visiblePosts.map((post) => {
                   const permissions = permissionsFor?.(post) || {};
                   return (
+                    // One news post in the feed, which can be opened, acknowledged, reacted to or edited.
                     <NewsPostCard
                       key={post.id}
                       post={post}

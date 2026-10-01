@@ -117,7 +117,9 @@ function PresentationContent() {
   if (!resolved) {
     return (
       <div style={{ padding: 40 }}>
+        {/* Message card shown when the address does not belong to the selected presentation deck. */}
         <LayerSurface>
+          {/* Inner panel with the heading and a hint to pick a tile from the presentation login page. */}
           <LayerTheme>
             <h2 style={{ marginTop: 0 }}>Presentation page not available</h2>
             <p style={{ color: "var(--text-1)" }}>
@@ -137,7 +139,9 @@ function PresentationContent() {
         </RouterParamsOverride>
       ) : (
         <div style={{ padding: 40 }}>
+          {/* Placeholder card shown while the real page for this slide is loading, or when no page is registered for it. */}
           <LayerSurface>
+            {/* Inner panel naming the page and stating whether it is loading or missing. */}
             <LayerTheme>
               <h2 style={{ marginTop: 0 }}>{resolved.template}</h2>
               <p style={{ color: "var(--text-1)" }}>

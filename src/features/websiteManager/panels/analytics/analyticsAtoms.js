@@ -49,6 +49,7 @@ export function NotConnectedNotice({
   endpoint,
   heading = "Analytics tracking not yet connected",
 }) {
+  // Notice card saying analytics tracking is not connected yet, listing the figures that will appear here once it is.
   return (
     <LayerTheme gap="var(--space-3)">
       <div className="website-manager__chip-row">

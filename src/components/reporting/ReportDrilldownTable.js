@@ -119,6 +119,7 @@ export default function ReportDrilldownTable({ kpiId, label, filter, onClose, pa
   const noData = !loading && rows.length === 0 && !error;
   const noMatch = !loading && rows.length > 0 && filteredRows.length === 0;
 
+  // Drill-down card: the measure's name and record count, a search box, export and close buttons, and a table of the records behind the figure.
   return (
     <LayerSurface
       radius="var(--radius-sm)"

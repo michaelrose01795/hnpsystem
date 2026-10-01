@@ -14,6 +14,7 @@ import { NotConnectedNotice } from "./analyticsAtoms";
 
 export default function ContentAuditSection() {
   return (
+    // Website content audit trail: a placeholder explaining that the long-term history of content changes is not connected yet, and listing what it will record.
     <Section
       title="Website Content Audit Trail"
       subtitle="The full, persisted history of website-content changes across all staff and sessions."

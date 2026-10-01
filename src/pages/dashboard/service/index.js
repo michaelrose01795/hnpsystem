@@ -110,7 +110,7 @@ const ProgressBar = ({ completed, target }) => {
   );
 };
 
-// QueueItem — list-row card inside a ThemeCard (LayerTheme), renders as LayerSurface.
+// Queue row card: one job with its job number, registration and current status.
 const QueueItem = ({ job }) => (
   <LayerSurface
     radius="var(--radius-sm)"

@@ -346,6 +346,7 @@ export default function PresentationCallout({ step, anchor }) {
   };
 
   return (
+    // Presentation note popup: the step's type, title and explanation, slide and step progress, Back, Next and Hide buttons, and the page route and file. It can be dragged by its header.
     <aside
       ref={ref}
       role="dialog"

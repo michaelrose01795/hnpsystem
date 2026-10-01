@@ -1696,6 +1696,7 @@ export default function Layout({
       <div className="app-workspace-embed">
         <main className="app-page-shell" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
           <div className="app-page-content" style={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+            {/* Main page card when a page is shown embedded inside a workspace pane: holds the page content in its own scrolling area, without the sidebar or top bar. */}
             <div
               className={[
                 "app-page-card",
@@ -1738,6 +1739,7 @@ export default function Layout({
     return null;
   }
 
+  // Whole-app frame: the outer shell that holds the sidebar on the left and the main column (top bar and page) on the right.
   return (
     <DevLayoutSection
       sectionKey="app-layout-chrome"
@@ -1746,6 +1748,7 @@ export default function Layout({
       backgroundToken="app-layout-chrome"
       style={layoutStyles}
     >
+      {/* Desktop sidebar rail: the main navigation menu, shown either expanded or collapsed to a narrow strip. */}
       {showDesktopSidebar && (
         <DevLayoutSection
           sectionKey="app-layout-sidebar-rail"
@@ -1794,6 +1797,7 @@ export default function Layout({
         </DevLayoutSection>
       )}
 
+      {/* Main column: everything to the right of the sidebar - the top bar, any workspace tabs and the page itself. */}
       <DevLayoutSection
         sectionKey="app-layout-main-column"
         parentKey="app-layout-chrome"
@@ -2054,6 +2058,7 @@ export default function Layout({
           />
         )}
 
+        {/* Page area: the scrolling region beneath the top bar where the current page is displayed. */}
         <DevLayoutSection
           as="main"
           sectionKey="app-layout-main-shell"
@@ -2117,6 +2122,7 @@ export default function Layout({
               navigationItems={navigationItems}
               onStateChange={handleWorkspaceShellChange}
             >
+            {/* Main page card: the large background card that every staff page's content sits inside. */}
             <DevLayoutSection
               sectionKey="app-layout-page-card"
               parentKey="app-layout-main-shell"
