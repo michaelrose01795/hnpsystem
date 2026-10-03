@@ -324,7 +324,7 @@ const DrumBrakesSection = ({
         style={{
           display: "flex",
           flexWrap: "wrap",
-          gap: "12px",
+          gap: "var(--button-gap)",
           marginTop: "8px",
         }}
       >

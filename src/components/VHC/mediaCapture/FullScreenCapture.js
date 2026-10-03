@@ -2005,7 +2005,7 @@ export default function FullScreenCapture({
               </div>
 
               {isDenied ? (
-                <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-1)", flexWrap: "wrap", justifyContent: "center" }}>
+                <div style={{ display: "flex", gap: "var(--button-gap)", marginTop: "var(--space-1)", flexWrap: "wrap", justifyContent: "center" }}>
                   <button
                     type="button"
                     onClick={handleClose}

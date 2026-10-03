@@ -163,7 +163,7 @@ export default function StaffUiShowcasePage() {
                 <DropdownField label="Technician selector" value={selectedTechnician} onChange={(event) => setSelectedTechnician(event.target.value)} options={technicians} />
                 <DropdownField label="Customer selector" value={selectedCustomer} onChange={(event) => setSelectedCustomer(event.target.value)} options={customers} />
               </Grid>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-sm)" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
                 <Button type="button">Create job card</Button>
                 <Button type="button" variant="secondary">Save draft</Button>
                 <Button type="button" variant="ghost">More actions</Button>
@@ -264,7 +264,7 @@ export default function StaffUiShowcasePage() {
                 <LayerSurface>
                   <strong>Overlay primitives</strong>
                   <span>Modal and drawer chrome now comes from shared staff primitives.</span>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-sm)" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
                     <Button type="button" onClick={() => setShowModal(true)}>Open modal</Button>
                     <Button type="button" variant="secondary" onClick={() => setShowDrawer(true)}>Open drawer</Button>
                   </div>

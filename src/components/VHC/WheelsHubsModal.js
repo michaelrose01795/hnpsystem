@@ -150,7 +150,7 @@ export default function WheelsHubsModal({
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)" }}>
           <button
             type="button"
             onClick={onClose}

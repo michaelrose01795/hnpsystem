@@ -337,7 +337,7 @@ export default function CookieBanner() {
         style={{
           display: "flex",
           flexWrap: "wrap",
-          gap: 8,
+          gap: "var(--button-gap)",
           justifyContent: "flex-end",
           position: "sticky",
           bottom: 0,

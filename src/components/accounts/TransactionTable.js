@@ -97,7 +97,7 @@ export default function TransactionTable({ transactions, loading, filters, onFil
             <CalendarField name="to" placeholder="To date" value={filters.to} onChange={handleFilterChange} size="sm" />
           </div>
         </ToolbarRow>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
           <Button type="button" variant="secondary" size="sm" onClick={() => onFilterChange({ search: "", type: "", payment_method: "", from: "", to: "" })}>Clear Filters</Button>
           <Button type="button" size="sm" onClick={onExport}>Export CSV</Button>
         </div>

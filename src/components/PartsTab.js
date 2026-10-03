@@ -2057,7 +2057,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             justifyContent: "space-between",
           }}
         >
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
             {PARTS_FILTERS.map((f) => {
               const isActive = activeFilter === f.key;
               return (
@@ -2273,7 +2273,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   </div>
                 )}
                 {/* auto-fit keeps the buttons side-by-side on desktop, stacks them on very narrow screens (CLAUDE.md §3.6) */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))", gap: "var(--button-gap)" }}>
                   <Button
                     type="button"
                     variant="primary"
@@ -2502,7 +2502,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 <div
                   style={{
                     display: "flex",
-                    gap: "10px",
+                    gap: "var(--button-gap)",
                     justifyContent: "flex-end",
                     flexWrap: "wrap",
                   }}

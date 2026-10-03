@@ -53,7 +53,7 @@ export default function PrePickLocationModal({
       height="auto"
       onClose={handleClose}
       footer={
-        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", justifyContent: "flex-end" }}>
           {allowSkip && (
             <Button
               variant="ghost"

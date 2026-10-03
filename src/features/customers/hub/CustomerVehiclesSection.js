@@ -97,7 +97,7 @@ function AddVehicleForm({ customerId, onDone, onCancel }) {
     <LayerSurface as="div" sectionKey="customer-profile-vehicle-add" parentKey="customer-profile-vehicles">
       <h3 className="app-record-heading">Add a vehicle</h3>
 
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "10px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "var(--button-gap)" }}>
         <div style={{ flex: "0 1 200px", minWidth: 0 }}>
           <InputField
             label="Registration"

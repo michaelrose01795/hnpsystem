@@ -60,7 +60,7 @@ function ReleaseCard({ release, onDecision }) {
           .join(" · ") || "No release metadata"
       }
       actions={
-        <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={() => onDecision(release, "approved")}

@@ -37,7 +37,27 @@ html.staff-scope input[type="number"] {
 /* === Reset & Base Styles === */
 /* ========================================================= */
 html.staff-scope {
+  /* Main card inset on every staff page and screen size: change only this value.
+     The mobile alias follows it, including the narrow-phone family rules. */
+  --page-card-padding: 10px;
+  --page-card-padding-mobile: var(--page-card-padding);
+  /* Shared card content inset and vertical spacing, identical at every width. */
+  --section-card-padding: 10px;
+  --section-card-padding-sm: var(--section-card-padding);
+  --page-stack-gap: 10px;
+  --page-stack-gap-mobile: var(--page-stack-gap);
+  --layout-card-gap: var(--page-stack-gap);
+  /* Staff cards grow with their content; compact conversation rows use this
+     same value for both their minimum and maximum height. */
+  --staff-card-min-height: 44px;
   --hover-surface-z: 80;
+}
+
+/* Toolbar-to-content spacing is measured from the visible controls. The filter
+   reserves 6px below its trigger for its badge; subtract that invisible space
+   without shifting the controls themselves. */
+html.staff-scope .app-content-toolbar:has(.app-filter) {
+  margin-bottom: -6px;
 }
 
 html.staff-scope * {
@@ -426,6 +446,15 @@ html.staff-scope .job-cards-view-density-icon {
   html.staff-scope .personal-widget-grid {
     grid-template-columns: minmax(0, 1fr) !important;
   }
+}
+
+/* Button spacing: any container holding two or more buttons as direct children
+   spaces them var(--button-gap) apart, both across a row and between wrapped
+   rows. Covers every page, popup and section with no per-feature rule. Inline
+   gaps on button rows have been moved onto the same token. Tab strips and
+   navigation lists are excluded: their spacing belongs to the tab / nav look. */
+html.staff-scope :has(> :is(.app-btn, .app-symbol-btn) ~ :is(.app-btn, .app-symbol-btn)):not([role="tablist"], [role="radiogroup"], :has(> .app-btn--nav)) {
+  gap: var(--button-gap);
 }
 
 html.staff-scope .app-layout-main-column {
@@ -914,10 +943,6 @@ html.staff-scope .app-sidebar.app-sidebar--collapsed .app-sidebar__module-button
     padding: 10px 12px;
   }
 
-  html.staff-scope .app-page-card {
-    padding: var(--page-card-padding-mobile);
-  }
-
   html.staff-scope .app-section-card {
     padding: var(--section-card-padding-sm);
   }
@@ -991,14 +1016,88 @@ html.staff-scope .app-phone-search-bar__field {
 
 /* Page search bars at every screen size (PhoneSearchCollapse, used by SearchBar,
    InputField type="search" and the few raw search inputs). The field folds into
-   a search symbol button; pressing it opens the global search's overlay above —
-   backdrop, floating .app-phone-search-bar and Close — with the page's own field
-   inside.
+   a search symbol button; pressing it opens the global search's floating
+   .app-phone-search-bar and Close with the page's own field inside — but only
+   the topbar itself is tinted and blurred, with the bar sitting inside it, so
+   the page underneath stays readable.
    A page search's overlay layers above popups too, because a search can sit
    inside one. (Not the global search's: its results list is a body portal at
    3700 that must stay above its own overlay.) */
 html.staff-scope .app-mobile-sidebar-overlay.app-phone-search-overlay--page {
   z-index: var(--z-popover);
+  /* The page stays visible and usable underneath so the user can watch the
+     search filter it: only the topbar strip and the bar take pointer events. */
+  pointer-events: none;
+}
+
+html.staff-scope .app-phone-search-overlay--page .app-mobile-sidebar-backdrop,
+html.staff-scope .app-phone-search-overlay--page .app-phone-search-bar {
+  pointer-events: auto;
+}
+
+/* Fallback (no topbar on screen): a page search tints and blurs only a strip
+   across the top (gutter + bar row + gutter), not the whole page. 20px = the
+   bar's vertical padding. The anchored rules below replace it whenever a
+   topbar is showing. */
+html.staff-scope .app-phone-search-overlay--page .app-mobile-sidebar-backdrop {
+  bottom: auto;
+  height: calc(
+    env(safe-area-inset-top, 0px) + 2 * var(--page-gutter-y-mobile) + var(--control-height) + 20px
+  );
+}
+
+@media (min-width: 641px) {
+  html.staff-scope .app-phone-search-overlay--page .app-mobile-sidebar-backdrop {
+    height: calc(
+      env(safe-area-inset-top, 0px) + 2 * var(--page-gutter-y) + var(--control-height) + 20px
+    );
+  }
+}
+
+/* Anchored (every screen size): PhoneSearchCollapse measures the topbar and
+   sets --page-search-topbar-top / -left / -width / -height. The tint covers
+   exactly the topbar (same box, same corners); nothing outside it is tinted. */
+html.staff-scope .app-phone-search-overlay--page[data-topbar-anchored="true"] .app-mobile-sidebar-backdrop {
+  top: var(--page-search-topbar-top);
+  right: auto;
+  bottom: auto;
+  left: var(--page-search-topbar-left);
+  width: var(--page-search-topbar-width);
+  height: var(--page-search-topbar-height);
+  border-radius: var(--radius-md);
+}
+
+/* The search bar keeps its solid surface fill and sits INSIDE the tinted
+   topbar — inset 6px from its edges and vertically centred — so the bar stays
+   clear while the topbar around it is tinted. 12px = the 6px inset (and the
+   bar's 6px padding) on both sides. */
+html.staff-scope .app-phone-search-overlay--page[data-topbar-anchored="true"] .app-phone-search-bar {
+  top: calc(
+    var(--page-search-topbar-top) +
+      (var(--page-search-topbar-height) - var(--control-height) - 12px) / 2
+  );
+  right: auto;
+  bottom: auto;
+  left: calc(var(--page-search-topbar-left) + 6px);
+  width: calc(var(--page-search-topbar-width) - 12px);
+  height: calc(var(--control-height) + 12px);
+  max-width: none;
+  margin-inline: 0;
+  padding: 6px;
+  gap: 6px;
+  border-radius: var(--radius-md);
+}
+
+/* Above phone width the topbar is far wider than a search needs: the bar is
+   capped at 40rem and centred in the tinted topbar. */
+@media (min-width: 641px) {
+  html.staff-scope .app-phone-search-overlay--page[data-topbar-anchored="true"] .app-phone-search-bar {
+    left: calc(
+      var(--page-search-topbar-left) +
+        (var(--page-search-topbar-width) - min(40rem, var(--page-search-topbar-width) - 12px)) / 2
+    );
+    width: min(40rem, calc(var(--page-search-topbar-width) - 12px));
+  }
 }
 
 /* Inside the bar the field fills the row, whatever width cap its page gave it. */
@@ -7600,6 +7699,11 @@ html.staff-scope .tracking-viewswitch[role="group"] > .app-btn {
     margin-block: calc(-1 * var(--app-filter-badge-overhang));
   }
 
+  /* The filter already removes its badge reserve from the phone row. */
+  html.staff-scope .app-content-toolbar:has(.app-filter) {
+    margin-bottom: 0;
+  }
+
   /* 6. Vertical rhythm around that row is 10px: between the toolbar's own
         wrapped lines, and from the toolbar down to the content beneath it
         (the toolbar's container, up to two wrappers above the button).
@@ -7610,7 +7714,7 @@ html.staff-scope .tracking-viewswitch[role="group"] > .app-btn {
       > * > * > .app-phone-search-trigger
     ),
   html.staff-scope .app-page-stack:has(> * > * > * > .app-phone-search-trigger) {
-    row-gap: var(--space-2);
+    row-gap: var(--page-stack-gap);
   }
 }
 
@@ -10540,9 +10644,11 @@ html.staff-scope .app-filter__label {
 /* === Phone portrait: every popup fills the screen        === */
 /* ========================================================= */
 /* THE LAW for popups on a vertical phone. Anything that opens over the page —
-   popup cards, the floating Notes panel, the Filter card, the calendar / month /
-   time pickers, the modal and drawer family — takes the whole screen, less one
-   gap on every side so it still reads as a floating card.
+   popup cards, the floating Notes panel, the calendar / month / time pickers,
+   the modal and drawer family — takes the whole screen, less one gap on every
+   side so it still reads as a floating card. The one exception is the Filter
+   card: it is a half-height sheet that slides up from the bottom of the screen
+   (see "Phone portrait: the Filter card is a bottom sheet" below).
 
    The gap is the pair .popup-backdrop already pads with: --popup-viewport-gap-x
    on the left and right (10px — the full width of the phone, less 10px a side)
@@ -10607,7 +10713,6 @@ html.staff-scope .app-filter__label {
   }
 
   /* Free-floating panels are pinned to the viewport, one gap in from each edge. */
-  html.staff-scope .app-filter__panel,
   html.staff-scope .calendar-api__menu,
   html.staff-scope .monthpicker-api__menu,
   html.staff-scope .timepicker-api__menu,
@@ -10642,23 +10747,39 @@ html.staff-scope .app-filter__label {
     animation: none;
   }
 
-  /* The Filter card's unfold animation leaves a transform on the card (and it
-     declares will-change: transform). Either makes the card the containing block
-     for fixed descendants, so a calendar opened inside it would pin to the card
-     instead of the screen. Here it fades instead. */
-  html.staff-scope .app-filter__panel {
-    will-change: opacity;
+  /* Phone portrait: the Filter card is a bottom sheet. FilterButton gives it
+     placement "sheet" and no inline position here, so this rule owns the whole
+     box: docked to the bottom edge, full width, half the screen tall, with the
+     top corners rounded and the home-indicator inset kept clear. It keeps the
+     card's own surface, padding, gap and shadow from the base rule above, and
+     its content scrolls inside it. Outside taps still close it. */
+  html.staff-scope .app-filter__panel[data-placement="sheet"] {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50dvh;
+    max-height: 50dvh;
+    padding-bottom: calc(var(--section-card-padding) + env(safe-area-inset-bottom, 0px));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    transform-origin: 50% 100%;
+    will-change: transform;
   }
 
-  html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] {
-    animation-name: app-filter-panel-fade-in;
+  /* Slides up from below the screen and back down on close. The open animation
+     fills backwards only, so no transform is left on the sheet once it lands —
+     a lingering transform would make it the containing block for any fixed
+     menu opened inside it. */
+  html.staff-scope .app-filter__panel[data-placement="sheet"][data-positioned="true"][data-state="open"] {
+    animation: app-filter-sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) backwards;
   }
 
-  html.staff-scope .app-filter__panel[data-state="closing"] {
-    animation-name: app-filter-panel-fade-out;
+  html.staff-scope .app-filter__panel[data-placement="sheet"][data-state="closing"] {
+    animation: app-filter-sheet-out 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
   }
 
-  html.staff-scope .app-filter__panel[data-positioned="true"][data-state="open"] .app-filter__body {
+  html.staff-scope .app-filter__panel[data-placement="sheet"][data-positioned="true"][data-state="open"] .app-filter__body {
     animation-name: app-filter-panel-fade-in;
   }
 
@@ -10748,7 +10869,61 @@ html.staff-scope .app-filter__label {
   to { opacity: 1; }
 }
 
-@keyframes app-filter-panel-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+@keyframes app-filter-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes app-filter-sheet-out {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+/* Shared staff card contract. These overrides deliberately outrank legacy
+   inline sizing and margins so page-specific styles cannot change the floor
+   or add extra space to the fixed card gap. Scrolling panel shells still flex
+   to their viewport; their content cards keep their natural height. */
+html.staff-scope :is(
+  .app-layer-surface, .app-layer-theme, .app-section-card,
+  .app-layout-section-shell, .app-layout-card,
+  .app-layout-surface-subtle, .app-layout-surface-accent,
+  .app-layout-stat-card, .app-staff-card, .card, .news-card,
+  .app-msg-section, .app-msg-entry, .app-msg-row, .app-msg-pin,
+  [data-dev-section-type="content-card"], [data-dev-section-type="stat-card"]
+) {
+  min-height: var(--staff-card-min-height) !important;
+  margin-block: 0 !important;
+}
+
+html.staff-scope :is(
+  .app-layer-surface, .app-layer-theme, .app-section-card,
+  .app-layout-section-shell, .app-layout-card,
+  .app-layout-surface-subtle, .app-layout-surface-accent,
+  .app-layout-stat-card, .app-staff-card, .card, .news-card,
+  .app-msg-section, .app-msg-entry, .app-msg-row, .app-msg-pin,
+  [data-dev-section-type="content-card"], [data-dev-section-type="stat-card"]
+):not(.app-msg__panel):not(.app-page-card) {
+  flex-shrink: 0 !important;
+}
+
+html.staff-scope :is(div, section, aside, article, main, ul, ol, form):has(> :is(
+  .app-layer-surface, .app-layer-theme, .app-section-card,
+  .app-layout-section-shell, .app-layout-card,
+  .app-layout-surface-subtle, .app-layout-surface-accent,
+  .app-layout-stat-card, .app-staff-card, .card, .news-card,
+  .app-msg-section, .app-msg-entry, .app-msg-row, .app-msg-pin,
+  [data-dev-section-type="content-card"], [data-dev-section-type="stat-card"]
+)) {
+  row-gap: var(--page-stack-gap) !important;
+  align-content: start;
+}
+
+/* Reduced motion: the Filter sheet appears and goes without sliding. Placed
+   after the phone block so it outranks the sheet's own animation rules. */
+@media (prefers-reduced-motion: reduce) and (max-width: 640px) and (orientation: portrait) {
+  html.staff-scope .app-filter__panel[data-placement="sheet"][data-positioned="true"][data-state="open"],
+  html.staff-scope .app-filter__panel[data-placement="sheet"][data-state="closing"],
+  html.staff-scope .app-filter__panel[data-placement="sheet"][data-positioned="true"][data-state="open"] .app-filter__body {
+    animation: none;
+  }
 }

@@ -104,7 +104,7 @@ export default function MyJobsPageUi(props) {
           {/* Filter Buttons */}
           <div data-dev-section="1" data-dev-section-key="myjobs-filter-buttons" data-dev-section-type="toolbar" data-dev-section-parent="app-layout-page-card" style={{
         display: "flex",
-        gap: "8px",
+        gap: "var(--button-gap)",
         flexWrap: "nowrap",
         flexShrink: 0
       }}>

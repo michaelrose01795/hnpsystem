@@ -178,7 +178,7 @@ function DisciplinaryContent() {
               placeholder="Describe the incident, who was involved, and immediate actions taken." />
             
           </label>
-          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "var(--space-3)" }}>
+          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "var(--button-gap)" }}>
             <Button type="button" variant="primary">
               Save record
             </Button>

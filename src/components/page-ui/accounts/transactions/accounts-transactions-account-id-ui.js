@@ -84,7 +84,7 @@ export default function AccountTransactionsPageUi(props) {
               <div style={{ flex: "0 0 160px" }}>
                 <CalendarField name="to" placeholder="To date" value={filters.to} onChange={handleFilterChange} size="sm" />
               </div>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", marginLeft: "auto" }}>
                 <Button type="button" variant="secondary" size="sm" onClick={handleClearFilters}>Clear Filters</Button>
                 {permissions.canExport && <Button type="button" size="sm" onClick={handleExport}>Export CSV</Button>}
               </div>

@@ -497,7 +497,7 @@ export default function InvoiceBuilderPopup({
             }}
           >
             <h3 style={{ margin: "0 0 10px 0" }}>Invoice Actions</h3>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
               <button
                 type="button"
                 disabled={!pdfUrl}
@@ -654,7 +654,7 @@ export default function InvoiceBuilderPopup({
             marginTop: "20px",
             display: "flex",
             justifyContent: "flex-end",
-            gap: "10px"
+            gap: "var(--button-gap)"
           }}
         >
           <button

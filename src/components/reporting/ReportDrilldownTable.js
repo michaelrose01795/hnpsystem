@@ -150,7 +150,7 @@ export default function ReportDrilldownTable({ kpiId, label, filter, onClose, pa
           style={{ flex: "0 1 220px", minWidth: 120 }}
         />
 
-        <div style={{ display: "flex", gap: 8, flex: "0 0 auto" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", flex: "0 0 auto" }}>
           <a
             className="app-btn app-btn--primary app-btn--sm"
             href={buildExportUrl(kpiId, filter)}

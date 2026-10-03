@@ -33,7 +33,7 @@ export default function PartsUtilitiesTab({ filter, onApplySavedView }) {
             <LayerSurface key={kpi.id} radius="var(--radius-sm)" padding="14px" gap="8px" sectionKey={reportDevKey("report-export-card", kpi.id)} data-dev-text-preview={`${kpi.label} export card`}>
               <div style={{ fontWeight: 600, color: "var(--text-1)", fontSize: "0.88rem" }}>{kpi.label}</div>
               <div style={{ fontSize: "0.72rem", color: "var(--surfaceTextMuted)" }}>{kpi.id}</div>
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", marginTop: 4 }}>
                 <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => setExplore(kpi)}>
                   Explore
                 </button>

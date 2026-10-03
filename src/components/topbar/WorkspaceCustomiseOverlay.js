@@ -62,7 +62,7 @@ export default function WorkspaceCustomiseOverlay({
           return (
             <div
               key={widget.id}
-              style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 2px" }}
+              style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)", padding: "6px 2px" }}
             >
               <button
                 type="button"

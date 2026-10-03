@@ -264,7 +264,7 @@ export default function CustomersIndexUi(props) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "flex-end",
-                    gap: "8px",
+                    gap: "var(--button-gap)",
                     marginTop: "10px",
                     flexWrap: "wrap",
                   }}

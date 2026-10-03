@@ -26,6 +26,7 @@ import { isRestorableRoute } from "@/lib/auth/returnRoute";
 import StaffTopbar from "@/components/layout/StaffTopbar";
 import SymbolButton, { Symbol as SymbolGlyph } from "@/components/ui/SymbolButton";
 import { usePhoneSearchOverlay } from "@/components/ui/searchBarAPI";
+import { PAGE_SEARCH_EVENT } from "@/components/ui/searchBarAPI/PhoneSearchCollapse";
 import WorkspaceCommandCenter from "@/components/topbar/WorkspaceCommandCenter";
 import useAutoHideTopbar from "@/hooks/useAutoHideTopbar";
 import useVisualViewport from "@/hooks/useVisualViewport";
@@ -499,6 +500,15 @@ export default function Layout({
   // the locked model the bar is an absolute overlay and the page itself does not
   // scroll, so the hook watches the inner page scroller (pageScrollRef).
   const enableTopbarAutoHide = (!isTablet || compactPhoneTopbar) && !hideSidebar;
+  // A page search's bar sits inside the topbar while open (PhoneSearchCollapse),
+  // so the topbar must not fold away underneath it.
+  const [isPageSearchOpen, setIsPageSearchOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handlePageSearch = (event) => setIsPageSearchOpen(Boolean(event.detail?.open));
+    window.addEventListener(PAGE_SEARCH_EVENT, handlePageSearch);
+    return () => window.removeEventListener(PAGE_SEARCH_EVENT, handlePageSearch);
+  }, []);
   const {
     wrapperRef: topbarWrapperRef,
     barRef: topbarBarRef,
@@ -511,11 +521,12 @@ export default function Layout({
     // Multi-workspace cards scroll inside their own frames, so the bar stays
     // docked; swapping the ref also re-arms the hook when the page card returns.
     scrollRef: multiWorkspaceActive ? null : pageScrollRef,
-    // The bar stays visible while the global search overlay is open. Portrait
-    // phone also holds it open while one of its own panels (menu, status) is
-    // open, so it can't fold away underneath them.
+    // The bar stays visible while the global search overlay or a page search is
+    // open. Portrait phone also holds it open while one of its own panels (menu,
+    // status) is open, so it can't fold away underneath them.
     suppressHide:
       isPhoneSearchOpen ||
+      isPageSearchOpen ||
       (compactPhoneTopbar && (isMobileSidebarVisible || isMobileStatusVisible)),
     // Portrait phone pins the floating bar where the docked bar rests: the mobile
     // gutter below the notch / status bar (matches the main column's padding).
@@ -919,13 +930,13 @@ export default function Layout({
     if (!scroller || !stack || typeof ResizeObserver === "undefined") return undefined;
 
     // Distance the card grows when the bar folds away — mirrors lockedCardTopOffset
-    // (page gutter + 75px topbar + 12px gap). Read the gutter from the same token.
+    // (page gutter + 65px topbar + 12px gap). Read the gutter from the same token.
     const computeCollapseDistance = () => {
       const parsed = parseFloat(
         getComputedStyle(document.documentElement).getPropertyValue("--page-gutter-y")
       );
       const gutter = Number.isFinite(parsed) ? parsed : 18;
-      return gutter + 75 + 12;
+      return gutter + 65 + 12;
     };
 
     const HOLD_MARGIN = 12; // keep a little range past the fold so it never snaps back
@@ -1637,8 +1648,8 @@ export default function Layout({
   const toggleHeight = isMobile ? 48 : isTablet ? 52 : 56;
   const toggleFontSize = isMobile ? "14px" : isTablet ? "16px" : "18px";
   const fixedMessagesPageHeight = isTablet
-    ? "calc(100vh - 75px - 12px - (var(--page-gutter-y-mobile) * 2))"
-    : "calc(100vh - 75px - 12px - (var(--page-gutter-y) * 2))";
+    ? "calc(100vh - 65px - 12px - (var(--page-gutter-y-mobile) * 2))"
+    : "calc(100vh - 65px - 12px - (var(--page-gutter-y) * 2))";
 
   // Fixed-card model: the page card is a frosted *frame* that clips (overflow
   // hidden) and scrolls its content internally. It sits BELOW the overlay topbar
@@ -1649,7 +1660,7 @@ export default function Layout({
     ? { height: "100%", minHeight: 0, overflow: "hidden" }
     : null;
   // Two resting heights for the card's top edge in the locked model:
-  //  • at top      → card sits BELOW the bar: gutter + 75px bar + 12px gap (the
+  //  • at top      → card sits BELOW the bar: gutter + 65px bar + 12px gap (the
   //    12px matches the sidebar-to-main-column chrome gap, so both gaps read
   //    alike).
   //  • scrolled    → the moment scrolling starts the bar folds away and the card
@@ -1658,7 +1669,7 @@ export default function Layout({
   //    offset is zero; adding the gutter here created a visible ~20px drop.
   //    The two animate together. The bar (and the gap) come back only when
   //    scrolled all the way back to the top. Bottom stays pinned throughout.
-  const lockedCardTopOffset = "calc(var(--page-gutter-y) + 75px + 12px)"; // gutter + topbar height + gap
+  const lockedCardTopOffset = "calc(var(--page-gutter-y) + 65px + 12px)"; // gutter + topbar height + gap
   const lockedCardScrolledOffset = "0"; // card top rises to the topbar's top edge once scrolled
 
 
@@ -1869,7 +1880,7 @@ export default function Layout({
               style={{
                 display: "flex",
                 width: "100%",
-                gap: "var(--space-sm)",
+                gap: "var(--button-gap)",
               }}
             >
               <button
@@ -2092,7 +2103,7 @@ export default function Layout({
                 ? "margin-top 0.45s cubic-bezier(0.4, 0, 0.2, 1)"
                 : undefined,
             // Phone /messages sizes by flex instead: the column above is already the
-            // visible viewport, and the fixed calc assumes the desktop 75px topbar,
+            // visible viewport, and the fixed calc assumes the desktop 65px topbar,
             // not the Menu / search / topbar rows a phone stacks above the card.
             height:
               isMessagesLayout && !hideSidebar && !isPhoneMessagesLayout ? fixedMessagesPageHeight : undefined,

@@ -202,7 +202,7 @@ export default function HrAttendanceUi(props) {
           {/* Absence tracking: holiday, sickness and other leave, with buttons to export a PDF or add a new absence. */}
           <SectionCard title="Absence Tracking" subtitle="Holiday, sickness, unpaid leave, and other absences" action={<div style={{
       display: "flex",
-      gap: "var(--space-2)"
+      gap: "var(--button-gap)"
     }}>
                 <Button variant="secondary" size="sm">
                   Export PDF

@@ -758,7 +758,7 @@ export default function NotesTabNew({
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
           <SearchBar
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -896,7 +896,7 @@ export default function NotesTabNew({
                   />
                   Hide from customer
                 </label>
-                <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                <div style={{ display: "flex", gap: "var(--button-gap)" }}>
                   <button
                     type="button"
                     className="app-btn app-btn--secondary app-btn--sm"
@@ -1063,7 +1063,7 @@ export default function NotesTabNew({
                             color: "var(--text-1)",
                           }}
                         />
-                        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                        <div style={{ display: "flex", gap: "var(--button-gap)" }}>
                           <button
                             type="button"
                             className="app-btn app-btn--primary app-btn--sm"
@@ -1406,7 +1406,7 @@ export default function NotesTabNew({
 
                   {/* Detail actions */}
                   {canEdit && (
-                    <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
                       <button type="button" className="app-btn app-btn--secondary app-btn--sm" onClick={() => handleEditNote(selectedNote)}>
                         Edit note
                       </button>
@@ -1579,7 +1579,7 @@ export default function NotesTabNew({
                     />
                   )}
 
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)" }}>
                     <button
                       type="button"
                       className="app-btn app-btn--secondary app-btn--sm"
@@ -1647,7 +1647,7 @@ export default function NotesTabNew({
                   {requestOptions.length === 0 ? (
                     <div style={{ fontSize: "13px", color: "rgba(var(--text-1-rgb), 0.6)" }}>No requests available.</div>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--button-gap)" }}>
                       {requestOptions.map((req) => {
                         const activeNote = notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
                         const isSelected = isLinkedToRequest(activeNote, req.requestIndex);
@@ -1690,7 +1690,7 @@ export default function NotesTabNew({
                   {authorisedItems.length === 0 ? (
                     <div style={{ fontSize: "13px", color: "rgba(var(--text-1-rgb), 0.6)" }}>No authorised items available.</div>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--button-gap)" }}>
                       {authorisedItems.map((item) => {
                         const itemId = item.vhc_id ?? item.id;
                         const activeNote = notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
@@ -1732,7 +1732,7 @@ export default function NotesTabNew({
                   {authorisedParts.length === 0 ? (
                     <div style={{ fontSize: "13px", color: "rgba(var(--text-1-rgb), 0.6)" }}>No authorised parts available.</div>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--button-gap)" }}>
                       {authorisedParts.map((part) => {
                         const activeNote = notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
                         const partId = part.partId ?? part.part_id ?? part.id;

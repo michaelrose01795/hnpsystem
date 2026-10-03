@@ -5726,7 +5726,7 @@ function DocumentsTab({
 
                 <div
                 style={{
-                  display: "flex", gap: "var(--space-1)", padding: "var(--space-sm) var(--space-3)",
+                  display: "flex", gap: "var(--button-gap)", padding: "var(--space-sm) var(--space-3)",
                   backgroundColor: "var(--surface)"
                 }}>
                 

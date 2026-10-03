@@ -1,8 +1,10 @@
 // file location: src/components/support/SupportReportModal.js
 //
 // The "Report a problem" popup for the Help & Diagnostics ("support") feature.
-// Built on the shared PopupModal and the canonical shared dropdown
-// (DropdownField — see CLAUDE.md §3.4: never a raw <select>).
+// Built on the shared PopupModal with the staff popup conventions: a compact
+// header (title + Send / Clear / Close symbol buttons), the canonical shared
+// dropdown (DropdownField — see CLAUDE.md §3.4: never a raw <select>) and
+// LayerTheme panels.
 //
 // What the user controls (the only things they see leave the browser):
 //   - Category (shared dropdown), required description, optional screenshots.
@@ -21,6 +23,9 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
+import LayerTheme from "@/components/ui/LayerTheme";
+import StatusMessage from "@/components/ui/StatusMessage";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { useAlerts } from "@/context/AlertContext";
 import { useSupportReport } from "@/context/SupportReportContext";
@@ -29,6 +34,19 @@ import { buildEnrichedDescription } from "@/lib/support/diagnosticAnalysis";
 import { loadDraft, saveDraft, clearDraft } from "@/lib/support/supportDraft";
 import SupportScreenshotsField from "@/components/support/SupportScreenshotField";
 import { recordReportCreated } from "@/lib/support/feedbackDevBridge";
+
+// The header's Send button sits outside the <form>, so it targets it by id.
+const REPORT_FORM_ID = "support-report-form";
+
+// Layout-only overrides on the shared popup card; its look comes from the
+// staff popup rules.
+const REPORT_POPUP_CARD_STYLE = {
+  width: "min(560px, 100%)",
+  padding: "var(--page-card-padding)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "var(--layout-card-gap)",
+};
 
 const getStorage = () => {
   try {
@@ -204,128 +222,119 @@ export default function SupportReportModal() {
     }
   };
 
+  // Report a problem popup: choose a category, describe what went wrong and attach optional screenshots, then send, clear or close from the header.
   return (
     <PopupModal
       isOpen={isOpen}
       onClose={isSubmitting ? undefined : closeSupportReport}
+      closeOnBackdrop={!isSubmitting}
       ariaLabel="Report a problem"
       // Hide (don't unmount) the popup during screen capture so it never appears
       // in the screenshot; the component stays mounted, preserving all form state.
       backdropStyle={isCapturing ? { visibility: "hidden", pointerEvents: "none" } : undefined}
-      cardStyle={{
-        width: "min(560px, 100%)",
-        padding: "clamp(20px, 4vw, 28px)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "18px",
-      }}
+      cardStyle={REPORT_POPUP_CARD_STYLE}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
-        <div>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "0.7rem",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "var(--text-1)",
-              opacity: 0.72,
-            }}
+      {/* Staff popup convention: one title plus actions. Send and Clear sit to
+          the left of Close, which the shared rules pin to the top-right corner.
+          Send lives outside the form, so it submits it through `form=`. "Send
+          report" is not in the label map, so its symbol is named explicitly;
+          Clear (eraser) and Close (cross) resolve from their labels. */}
+      <header className="app-popup-compact-header">
+        <h2>Report a problem</h2>
+        <div className="app-popup-compact-header__actions">
+          <Button
+            type="submit"
+            form={REPORT_FORM_ID}
+            variant="primary"
+            symbol="send"
+            busy={isSubmitting}
+            disabled={isCapturing}
           >
-            Help &amp; Support
-          </p>
-          <h2 style={{ margin: "4px 0 0", color: "var(--text-1)" }}>Report a problem</h2>
-          <p style={{ margin: "6px 0 0", color: "var(--text-1)", opacity: 0.7, lineHeight: 1.5, fontSize: "0.9rem" }}>
-            Tell us what went wrong. We&apos;ll attach a private technical snapshot to help us fix it.
-          </p>
-          {/* The code the user already saw on the toast or recovery screen. It
-              is worth showing again here: it is what they quote to support, and
-              it is the key the automatically-captured technical detail is filed
-              under. Selectable in one drag. */}
-          {referenceCode && (
-            <p className="app-error-reference" style={{ marginTop: "8px" }}>
-              Reference: <span className="app-error-reference__code">{referenceCode}</span>
-            </p>
-          )}
+            Send report
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleClear}
+            disabled={isSubmitting || isCapturing}
+          >
+            Clear
+          </Button>
+          <Button type="button" variant="secondary" onClick={closeSupportReport} disabled={isSubmitting}>
+            Close
+          </Button>
         </div>
-        <button
-          type="button"
-          className="app-btn app-btn--ghost"
-          onClick={closeSupportReport}
-          disabled={isSubmitting}
-          aria-label="Close report"
-        >
-          Close
-        </button>
-      </div>
+      </header>
 
+      {/* The code the user already saw on the toast or recovery screen. It is
+          worth showing again here: it is what they quote to support, and it is
+          the key the automatically-captured technical detail is filed under.
+          Selectable in one drag. */}
+      {referenceCode && (
+        <p className="app-error-reference">
+          Reference: <span className="app-error-reference__code">{referenceCode}</span>
+        </p>
+      )}
+
+      {/* Diagnostic assistant: the likely cause of the problem, how confident it is and where in the system it probably sits; shown only when it is reasonably sure. */}
       {analysis?.probableCause && analysis.probableCause.confidence >= 0.3 && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "6px",
-            padding: "12px 14px",
-            borderRadius: "var(--radius-md)",
-            background: "var(--theme)",
-            fontSize: "0.85rem",
-            color: "var(--text-1)",
-            lineHeight: 1.5,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-            <strong style={{ fontWeight: 600 }}>Diagnostic assistant</strong>
-            <span
-              className="app-badge app-badge--neutral"
-              style={{ fontSize: "0.7rem" }}
-            >
+        <LayerTheme gap="var(--space-xs)">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-xs)" }}>
+            <strong>Diagnostic assistant</strong>
+            <span className="app-badge app-badge--neutral">
               {Math.round(analysis.probableCause.confidence * 100)}% confidence
             </span>
           </div>
-          <span style={{ opacity: 0.85 }}>{analysis.probableCause.summary}</span>
+          <p>{analysis.probableCause.summary}</p>
           {analysis.affected?.component && (
-            <span style={{ opacity: 0.7, fontSize: "0.8rem" }}>
+            <p className="app-field-hint">
               Likely in <strong>{analysis.affected.component}</strong>
               {analysis.affected.codeOwnership?.file
                 ? ` · ${analysis.affected.codeOwnership.file}${
                     analysis.affected.codeOwnership.line ? `:${analysis.affected.codeOwnership.line}` : ""
                   }`
                 : ""}
-            </span>
+            </p>
           )}
-          <span style={{ opacity: 0.6, fontSize: "0.78rem" }}>
+          <p className="app-field-hint">
             We&apos;ve pre-filled the description below from this — please edit or correct it.
-          </span>
-        </div>
+          </p>
+        </LayerTheme>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span style={{ color: "var(--text-1)", fontWeight: 600 }}>What kind of problem is it?</span>
-          <DropdownField
-            aria-label="What kind of problem is it?"
-            options={SUPPORT_CATEGORIES}
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            placeholder="Choose a category"
-          />
-        </div>
+      <form
+        id={REPORT_FORM_ID}
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}
+      >
+        <DropdownField
+          id="support-report-category"
+          label="What kind of problem is it?"
+          options={SUPPORT_CATEGORIES}
+          value={category}
+          onChange={(event) => setCategory(event.target.value)}
+          placeholder="Choose a category"
+        />
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-1)", fontWeight: 600 }}>
-          <span>
-            What happened? <span style={{ color: "var(--accentText)" }}>*</span>
-          </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+          <label htmlFor="support-report-description">
+            What happened?
+            <span className="app-field-required" aria-hidden="true">
+              {" *"}
+            </span>
+          </label>
           <textarea
+            id="support-report-description"
             ref={descriptionRef}
             className="app-input app-input--textarea"
             value={description}
             rows={7}
             maxLength={5000}
+            aria-required="true"
             onChange={handleDescriptionChange}
             placeholder="Describe what you were doing and what went wrong…"
-            style={{ resize: "vertical" }}
           />
-        </label>
+        </div>
 
         <SupportScreenshotsField
           initialScreenshots={screenshots}
@@ -335,64 +344,21 @@ export default function SupportReportModal() {
           onCaptureVisibilityChange={setIsCapturing}
         />
 
-        {/* Transparency disclosure — the CATEGORIES of private data attached,
-            never the values (plan §4/§5). */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "4px",
-            padding: "12px 14px",
-            borderRadius: "var(--radius-md)",
-            background: "var(--theme)",
-            fontSize: "0.8rem",
-            color: "var(--text-1)",
-            lineHeight: 1.5,
-          }}
-        >
-          <strong style={{ fontWeight: 600 }}>What we attach to help us investigate</strong>
-          <span style={{ opacity: 0.8 }}>
+        {/* What gets attached: the kinds of private technical detail sent with the report (never the actual values) and who can see it. */}
+        <LayerTheme gap="var(--space-xs)">
+          <strong>What we attach to help us investigate</strong>
+          <p className="app-field-hint">
             The page you&apos;re on, your role, your device, browser &amp; timezone, recent actions, and any
-            errors. It
-            never includes passwords, tokens, cookies, or full personal data — and only the support team
-            can see it.
-          </span>
-        </div>
+            errors. It never includes passwords, tokens, cookies, or full personal data — and only the support
+            team can see it.
+          </p>
+        </LayerTheme>
 
         {error && (
-          <div className="app-status-message app-status-message--danger" role="alert">
-            {error}
-          </div>
+          <StatusMessage tone="danger">
+            <span role="alert">{error}</span>
+          </StatusMessage>
         )}
-
-        <div style={{ display: "flex", gap: "12px", justifyContent: "space-between", flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="app-btn app-btn--ghost"
-            onClick={handleClear}
-            disabled={isSubmitting || isCapturing}
-          >
-            Clear
-          </button>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="app-btn app-btn--secondary"
-              onClick={closeSupportReport}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="app-btn app-btn--primary"
-              disabled={isSubmitting || isCapturing}
-              style={{ minWidth: "140px" }}
-            >
-              {isSubmitting ? "Sending…" : "Send report"}
-            </button>
-          </div>
-        </div>
       </form>
     </PopupModal>
   );

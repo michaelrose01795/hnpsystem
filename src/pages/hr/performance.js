@@ -259,7 +259,7 @@ function PerformanceContent() {
               placeholder="Enter objectives, observations, and feedback" />
             
           </label>
-          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "var(--space-3)" }}>
+          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "var(--button-gap)" }}>
             <Button type="button" variant="primary">
               Save Draft
             </Button>

@@ -1423,7 +1423,7 @@ export default function EfficiencyTab({
             sectionType="toolbar"
             parentKey="tech-efficiency-nav-group"
             className="efficiency-topbar-actions"
-            style={{ display: "flex", gap: "8px", flexShrink: 0 }}
+            style={{ display: "flex", gap: "var(--button-gap)", flexShrink: 0 }}
           >
             {activeTab !== "overall" && (
               <Button
@@ -1464,7 +1464,7 @@ export default function EfficiencyTab({
         </DevLayoutSection>
       </DevLayoutSection>
 
-      {/* Filters: switch between day, week and month, pick a date, search entries and, on the overall view, filter by technician. */}
+      {/* Filters: search entries and, on the overall view, filter by technician, then switch between day, week and month and pick a date. */}
       <DevLayoutSection
         sectionKey="tech-efficiency-filter-shell"
         sectionType="content-card"
@@ -1487,26 +1487,6 @@ export default function EfficiencyTab({
             width: "100%",
           }}
         >
-          <div className="efficiency-period-toggle" style={{ flex: "0 0 auto" }}>
-            <TabGroup
-              value={periodFilter}
-              onChange={setPeriodFilter}
-              items={[
-                { value: "day", label: "Day" },
-                { value: "week", label: "Week" },
-                { value: "month", label: "Month" },
-              ]}
-              ariaLabel="Efficiency period"
-            />
-          </div>
-          <div style={{ width: "100%", maxWidth: "220px", flex: "1 1 180px" }}>
-            <CalendarField
-              id="efficiencyFilterDate"
-              className="compact-picker efficiency-filter-field efficiency-filter-calendar"
-              value={filterDate}
-              onChange={(event) => setFilterDate(event.target.value)}
-            />
-          </div>
           <div className="efficiency-search-wrap" style={{ width: "100%", flex: "2 1 280px", minWidth: "220px" }}>
             <SearchBar
               value={searchTerm}
@@ -1539,6 +1519,26 @@ export default function EfficiencyTab({
               </FilterField>
             </FilterButton>
           )}
+          <div className="efficiency-period-toggle" style={{ flex: "0 0 auto" }}>
+            <TabGroup
+              value={periodFilter}
+              onChange={setPeriodFilter}
+              items={[
+                { value: "day", label: "Day" },
+                { value: "week", label: "Week" },
+                { value: "month", label: "Month" },
+              ]}
+              ariaLabel="Efficiency period"
+            />
+          </div>
+          <div style={{ width: "100%", maxWidth: "220px", flex: "1 1 180px" }}>
+            <CalendarField
+              id="efficiencyFilterDate"
+              className="compact-picker efficiency-filter-field efficiency-filter-calendar"
+              value={filterDate}
+              onChange={(event) => setFilterDate(event.target.value)}
+            />
+          </div>
         </div>
       </DevLayoutSection>
 

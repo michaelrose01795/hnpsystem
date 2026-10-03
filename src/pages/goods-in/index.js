@@ -2615,7 +2615,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
             <div style={selectedSectionStyle}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <label style={labelStyle}>Selected for job</label>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)" }}>
                 <button
                   type="button"
                   style={{ ...secondaryButtonStyle }}

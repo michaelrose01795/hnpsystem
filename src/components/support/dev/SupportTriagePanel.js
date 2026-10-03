@@ -44,7 +44,7 @@ export default function SupportTriagePanel({ report, patch }) {
         <KeyValue
           label="Assignee"
           value={
-            <span style={{ display: "inline-flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ display: "inline-flex", gap: "var(--button-gap)", alignItems: "center", flexWrap: "wrap" }}>
               {assignedTo ? <span className="app-badge app-badge--accent-soft">{isMine ? "You" : `User #${assignedTo}`}</span> : <span style={{ opacity: 0.6 }}>Unassigned</span>}
               {!isMine && Number.isInteger(dbUserId) ? (
                 <button type="button" onClick={() => patch({ assignedTo: dbUserId })} className="app-btn app-btn--secondary app-btn--sm">Assign to me</button>

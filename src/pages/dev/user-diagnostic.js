@@ -931,7 +931,7 @@ function UsagePopup({ itemKey, title, onClose }) {
               <div style={{ marginTop: "4px", fontSize: "11px", color: "var(--text-1)", fontStyle: "italic" }}>{u.suggestion}</div>
               }
               </div>
-              <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", flexShrink: 0 }}>
                 {u.suggestion &&
               <button
                 type="button"
@@ -1000,7 +1000,7 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
       backgroundToken="surface"
       className={`app-section-card showcase-section-card${bordersAllowed ? " showcase-section-card--borders-allowed" : ""}`}>
       
-      <div style={{ display: "flex", alignItems: "center", gap: "6px", margin: "0 0 12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)", margin: "0 0 12px" }}>
         <button
           type="button"
           onClick={() => itemKey && onOpenUsage?.(itemKey, title)}
@@ -2709,7 +2709,7 @@ function GlobalUiShowcase() {
         </div>
         {/* Sample of symbol buttons at full size next to the smaller size they take inside a table row. */}
         <LayerTheme padding="12px" gap="12px">
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)" }}>
             <SymbolButton symbol="view" label="View" />
             <SymbolButton symbol="edit" label="Edit" />
             <SymbolButton symbol="delete" label="Delete" />
@@ -2724,7 +2724,7 @@ function GlobalUiShowcase() {
                 <td>PS-10432</td>
                 <td><span className="app-badge app-badge--success">Paid</span></td>
                 <td style={{ textAlign: "right" }}>
-                  <div style={{ display: "inline-flex", gap: "8px" }}>
+                  <div style={{ display: "inline-flex", gap: "var(--button-gap)" }}>
                     <SymbolButton symbol="view" label="View" />
                     <SymbolButton symbol="edit" label="Edit" />
                     <SymbolButton symbol="delete" label="Delete" />
@@ -2735,7 +2735,7 @@ function GlobalUiShowcase() {
                 <td>PS-10433</td>
                 <td><span className="app-badge app-badge--warning">Pending</span></td>
                 <td style={{ textAlign: "right" }}>
-                  <div style={{ display: "inline-flex", gap: "8px" }}>
+                  <div style={{ display: "inline-flex", gap: "var(--button-gap)" }}>
                     <SymbolButton symbol="view" label="View" />
                     <SymbolButton symbol="edit" label="Edit" />
                     <SymbolButton symbol="delete" label="Delete" />
@@ -2816,20 +2816,20 @@ function GlobalUiShowcase() {
       {/* Buttons: the primary, secondary, ghost and danger button styles together with their size options. */}
       {isSectionVisible("buttons-app-btn") &&
       <ShowcaseSection title="Buttons (.app-btn)" itemKey="buttons-app-btn" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)", marginBottom: "10px" }}>
           <Button variant="primary">Primary</Button>
           <Button variant="secondary">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
           <Button variant="danger">Danger</Button>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)", marginBottom: "10px" }}>
           <Button variant="primary" pill>Pill</Button>
           <Button variant="primary" disabled>Disabled</Button>
         </div>
         {/* Phase 6 button-busy pattern: `busy` renders the inline spinner +
              disables + sets aria-busy; useBusyAction (BusyButtonDemo) blocks
              re-entrant double-submits. */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)", alignItems: "center" }}>
           <Button variant="primary" busy>Saving…</Button>
           <Button variant="secondary" busy>Loading</Button>
           <BusyButtonDemo />
@@ -2844,7 +2844,7 @@ function GlobalUiShowcase() {
              overrides from React cannot paint through — the data-attribute
              selectors in the family file are the one supported way to mock a
              static pseudo-state. Not for production use. */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)", alignItems: "center", marginBottom: "8px" }}>
           <Button variant="primary">Default</Button>
           <button type="button" className="app-btn app-btn--primary" data-demo-state="hover">Hover</button>
           <button type="button" className="app-btn app-btn--primary" data-demo-state="active">Active</button>
@@ -3753,7 +3753,7 @@ function GlobalUiShowcase() {
             <div style={{ height: "var(--table-row-height)", padding: "0 var(--space-md)", background: "var(--theme)", borderLeft: "3px solid var(--primary)", display: "flex", alignItems: "center" }}>Row (selected)</div>
             <div style={{ height: "var(--table-row-height)", padding: "0 var(--space-md)", background: "var(--surface)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>Row w/ actions</span>
-              <span style={{ display: "flex", gap: "4px" }}>
+              <span style={{ display: "flex", gap: "var(--button-gap)" }}>
                 <button type="button" className="app-table-action-btn">Edit</button>
                 <button type="button" className="app-table-action-btn app-table-action-btn--danger">Delete</button>
               </span>
@@ -3808,7 +3808,7 @@ function GlobalUiShowcase() {
           <div style={{ padding: "14px", background: "var(--surface)", border: "none", borderRadius: "var(--radius-md)" }}>
             <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--danger-text)", marginBottom: "4px" }}>Delete record?</div>
             <div style={{ fontSize: "12px", color: "var(--text-1)", marginBottom: "10px" }}>This action cannot be undone.</div>
-            <div style={{ display: "flex", gap: "6px" }}><Button variant="danger" size="sm">Delete</Button><Button variant="ghost" size="sm">Cancel</Button></div>
+            <div style={{ display: "flex", gap: "var(--button-gap)" }}><Button variant="danger" size="sm">Delete</Button><Button variant="ghost" size="sm">Cancel</Button></div>
           </div>
           <div style={{ padding: "14px", background: "var(--surface)", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-md)" }}>
             <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--info)", marginBottom: "4px" }}>Heads up</div>
@@ -3831,7 +3831,7 @@ function GlobalUiShowcase() {
             <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "10px" }}>
               width: min(100%, 960px) · radius-xl · padding --space-6 · --overlay backdrop · z-index var(--z-popover)
             </div>
-            <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", justifyContent: "flex-end" }}>
               <Button variant="ghost" size="sm">Cancel</Button>
               <Button variant="primary" size="sm">Confirm</Button>
             </div>
@@ -4042,7 +4042,7 @@ function GlobalUiShowcase() {
         <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", marginBottom: "10px", color: "var(--text-1)" }}>
           <span>Home</span><span>/</span><span>Accounts</span><span>/</span><span style={{ color: "var(--primary)", fontWeight: 700 }}>Invoices</span>
         </div>
-        <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", alignItems: "center", flexWrap: "wrap" }}>
           {["Prev", "1", "2", "3", "…", "10", "Next"].map((p, i) =>
           <button key={i} type="button" style={{ minWidth: "28px", height: "28px", padding: "0 8px", borderRadius: "var(--radius-xs)", border: "1px solid var(--primary-border)", background: p === "2" ? "var(--primary)" : "var(--surface)", color: p === "2" ? "var(--text-2)" : "var(--text-1)", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>{p}</button>
           )}
@@ -4111,7 +4111,7 @@ function GlobalUiShowcase() {
       {isSectionVisible("icon-system") &&
       <ShowcaseSection title="Icon System (proposed wrapper)" itemKey="icon-system" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", alignItems: "center" }}>
             <Button variant="primary">Icon left</Button>
             <Button variant="secondary">Icon right</Button>
             <button type="button" aria-label="Menu" style={{ width: "40px", height: "40px", display: "inline-flex", alignItems: "center", justifyContent: "center", background: "var(--control-bg)", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-xs)", cursor: "pointer", fontSize: "11px", fontWeight: 700 }}>Menu</button>

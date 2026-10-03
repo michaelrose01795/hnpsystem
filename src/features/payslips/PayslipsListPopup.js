@@ -247,7 +247,7 @@ export default function PayslipsListPopup({
                 : "No payslips match that search."}
             </div>
           ) : (
-            <div style={{ display: "grid", gap: "8px" }}>
+            <div style={{ display: "grid", gap: "var(--button-gap)" }}>
               {filtered.map((slip) => {
                 const tone = getStatusTone(slip.status);
                 return (

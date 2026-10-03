@@ -470,7 +470,7 @@ export default function CreateJobCardPageUi(props) {
                     <div style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "var(--button-gap)",
                 marginLeft: "auto",
                 flexShrink: 0
               }}>

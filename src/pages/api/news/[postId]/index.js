@@ -4,8 +4,8 @@
 //   PATCH  /api/news/:postId   -> edit (snapshots the previous wording)
 //   DELETE /api/news/:postId   -> soft delete
 //
-// Edit and delete rights are per-post: the author keeps them, moderators have
-// them everywhere. The check runs against the stored post, never against what
+// Edit and delete rights are per-post: only the author can edit; the author
+// and moderators can delete. The check runs against the stored post, never against what
 // the client claims.
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";

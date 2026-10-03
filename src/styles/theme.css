@@ -369,6 +369,9 @@
   --control-label-size: 0.82rem;
   --control-label-weight: 600;
   --control-gap: 10px;
+  /* Space between any two buttons that sit next to each other — side by side,
+     or wrapped onto the line below. One value app-wide. */
+  --button-gap: 10px;
   --secondary-border: transparent; /* DEPRECATED — see --primary-border note above */
   --control-border: none; /* DEPRECATED — inputs use --input-ring directly */
   --control-border-hover: var(--secondary-hover); /* colour-only alias for hover ring */

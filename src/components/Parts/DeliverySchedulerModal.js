@@ -301,7 +301,7 @@ export default function DeliverySchedulerModal({
               }}
             />
           </div>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", alignItems: "center" }}>
             <button
               type="button"
               onClick={handleSave}

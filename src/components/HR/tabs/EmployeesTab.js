@@ -953,7 +953,7 @@ function EmployeeForm({
         title={title}
         subtitle={subtitle}
         action={
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)" }}>
             <button
               type="button"
               onClick={onCancel}
@@ -1210,7 +1210,7 @@ function SearchableMultiSelect({
           background: "var(--surface)",
           display: "flex",
           alignItems: "center",
-          gap: "8px",
+          gap: "var(--button-gap)",
           flexWrap: "wrap",
           cursor: "text",
         }}
@@ -1867,7 +1867,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
         }}
         placeholder="First Name: Soren&#10;Last Name: Sorensen&#10;Email: soren@example.com&#10;..."
       />
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
         <button type="button" style={buttonStylePrimary} onClick={onApply}>
           Apply Sample
         </button>

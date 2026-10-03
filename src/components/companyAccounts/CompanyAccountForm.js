@@ -297,7 +297,7 @@ export default function CompanyAccountForm({
         <p style={{ margin: 0, color: "var(--danger-text)" }}>{formError}</p>
       )}
       <DevLayoutSection sectionKey={`${sectionKey}-actions`} sectionType="toolbar" parentKey={sectionKey}>
-        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", justifyContent: "flex-end" }}>
           <button
             type="button"
             onClick={onCancel}

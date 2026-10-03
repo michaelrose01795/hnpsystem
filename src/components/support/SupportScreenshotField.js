@@ -16,7 +16,7 @@
 //     never in the shot; the component stays mounted, so all state survives.
 //   - "+ Add another" captures extra shots (capped). Identical re-captures are
 //     detected and skipped.
-//   - Each shot has an annotation field, and ↑/↓/Remove controls.
+//   - Each shot has an annotation field, and up / down / remove symbol buttons.
 //   - Capture uses the stream's intrinsic device-pixel dimensions, so it is
 //     correct across browser zoom levels and multi-monitor setups (the user picks
 //     the surface in the browser's own picker).
@@ -25,6 +25,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MAX_DRAFT_SCREENSHOTS } from "@/lib/support/supportDraft";
+import Button from "@/components/ui/Button";
+import StatusMessage from "@/components/ui/StatusMessage";
 import SymbolButton from "@/components/ui/SymbolButton";
 
 const MAX_DIMENSION = 1600; // cap the longest edge — keeps payload small
@@ -171,15 +173,15 @@ function EditableShot({ shotId, rawSrc, onChange, disabled }) {
           background: "var(--theme)",
         }}
       />
-      <button
+      <Button
         type="button"
-        className="app-btn app-btn--ghost"
+        variant="ghost"
         onClick={() => setRects((prev) => prev.slice(0, -1))}
         disabled={disabled || rects.length === 0}
-        style={{ minHeight: "44px", alignSelf: "flex-start" }}
+        style={{ alignSelf: "flex-start" }}
       >
         Undo redaction
-      </button>
+      </Button>
     </>
   );
 }
@@ -316,42 +318,41 @@ export default function SupportScreenshotsField({
   }, [autoStart, resetSignal, supported]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-        <span style={{ fontWeight: 600, color: "var(--text-1)" }}>Screenshots (optional)</span>
-        <button
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
+        <strong>Screenshots (optional)</strong>
+        <Button
           type="button"
-          className="app-btn app-btn--secondary"
+          variant="secondary"
           onClick={capture}
           disabled={isCapturing || !supported || items.length >= MAX_SHOTS}
           aria-label="Add a screenshot"
-          style={{ minHeight: "44px" }}
         >
           {isCapturing ? "Capturing…" : items.length ? "Add another" : "Capture screen"}
-        </button>
+        </Button>
       </div>
 
       {!supported && (
-        <span style={{ fontSize: "0.8rem", color: "var(--text-1)", opacity: 0.7 }}>
+        <p className="app-field-hint">
           Screen capture isn&apos;t supported on this device — you can still submit without one.
-        </span>
+        </p>
       )}
 
       {supported && items.length === 0 && !isCapturing && (
-        <span style={{ fontSize: "0.8rem", color: "var(--text-1)", opacity: 0.7 }}>
+        <p className="app-field-hint">
           You choose what to share, preview it here, and can black out anything private before sending.
           The report popup is hidden while the screen is captured.
-        </span>
+        </p>
       )}
 
       {items.map((item, index) => (
-        <div key={item.id} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-            <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-1)" }}>
-              Screenshot {index + 1}
+        <div key={item.id} style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-xs)" }}>
+            <p className="app-field-hint">
+              <strong>Screenshot {index + 1}</strong>
               {item.rawSrc ? " — drag on the image to black out anything private" : ""}
-            </span>
-            <div style={{ display: "flex", gap: "6px" }}>
+            </p>
+            <div style={{ display: "flex", gap: "var(--button-gap)" }}>
               <SymbolButton
                 symbol="up"
                 label={`Move screenshot ${index + 1} up`}
@@ -362,15 +363,15 @@ export default function SupportScreenshotsField({
                 label={`Move screenshot ${index + 1} down`}
                 onClick={() => move(item.id, 1)}
                 disabled={isCapturing || index === items.length - 1} />
-              <button
+              <Button
                 type="button"
-                className="app-btn app-btn--danger"
+                variant="danger"
                 onClick={() => handleRemove(item.id)}
                 disabled={isCapturing}
-                style={{ minHeight: "44px" }}
+                aria-label={`Remove screenshot ${index + 1}`}
               >
                 Remove
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -399,9 +400,9 @@ export default function SupportScreenshotsField({
       ))}
 
       {error && (
-        <div className="app-status-message app-status-message--warning" role="status">
-          {error}
-        </div>
+        <StatusMessage tone="warning">
+          <span role="status">{error}</span>
+        </StatusMessage>
       )}
     </div>
   );

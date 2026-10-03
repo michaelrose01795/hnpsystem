@@ -782,7 +782,7 @@ function TechnicianAssignmentModal({ job, technicians, onClose, onAssign, onUnas
           </div>
         )}
 
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "var(--button-gap)" }}>
           <button type="submit" className="app-btn app-btn--primary" disabled={!technicianId || isAssigning}>
             {isAssigning
               ? technicianId === UNASSIGN_TECHNICIAN_VALUE

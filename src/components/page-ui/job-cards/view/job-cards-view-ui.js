@@ -457,7 +457,7 @@ export default function ViewJobCardsUi(props) {
               {/* Action Buttons */}
               <div style={{
                 display: "flex",
-                gap: "12px",
+                gap: "var(--button-gap)",
                 flexWrap: "wrap"
               }}>
                 <button onClick={() => goToJobCard(popupJob.jobNumber)} style={popupPrimaryActionButtonStyle} onMouseEnter={e => {

@@ -64,9 +64,10 @@ const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
 // Neither resting state changes. The boxes below reproduce exactly what the
 // header renders today:
 //   expanded  — wordmark in the header's content box: 260px rail - 2x18px
-//               padding = 224px wide, its 68.6px height centred in 75px.
-//   collapsed — icon 44px square (48px rail - 2x2px padding), centred in 75px.
-const BRAND_HEADER_HEIGHT = 75;
+//               padding = 224px wide, its 68.6px height centred in 65px (the
+//               header crops ~1.8px of empty artwork top and bottom).
+//   collapsed — icon 44px square (48px rail - 2x2px padding), centred in 65px.
+const BRAND_HEADER_HEIGHT = 65; // matches the 65px tablet/desktop topbar
 const BRAND_WORDMARK_SIZE = { width: 881, height: 270 }; // Logo.png, natural size
 const BRAND_WORDMARK_WIDTH = 224; // 260px rail - 2x18px of header padding
 // Derived, not rounded: the old layout sized the wordmark `width:100%,
@@ -132,7 +133,7 @@ const BRAND_ICON_EXPANDED_TRANSFORM = `translate(${-BRAND_DX}px, ${-BRAND_DY}px)
 // The window sits at the end of the close (and the very start of the open, where
 // easeOutExpo covers most of the distance in the first fraction of a second),
 // for a second reason: the disc is much bigger than the car inside it, so while
-// the icon is scaled up to meet the wordmark it is taller than the 75px header
+// the icon is scaled up to meet the wordmark it is taller than the 65px header
 // and would be cut off top and bottom if it were painted that early.
 const BRAND_ICON_CLIP_HIDDEN = "circle(0% at 50% 50%)";
 const BRAND_ICON_CLIP_SHOWN = "circle(80% at 50% 50%)"; // 80% of 44px clears the disc's corners
@@ -955,6 +956,7 @@ export default function Sidebar({
       }}
     >
       {/* Desktop header. Compact top-drop sidebars begin directly with navigation. */}
+      {/* Logo header: the company logo at the top of the sidebar; clicking it returns to the news feed. */}
       {!isVerticalPhone && (
         <DevLayoutSection
           className="sidebar-logo-header app-sidebar__header"
@@ -984,8 +986,14 @@ export default function Sidebar({
         >
           {isCondensed ? (
             // Compact top-drop sidebar: no collapsed state, so it keeps the
-            // simple centred wordmark it has always had.
-            <div
+            // simple centred wordmark it has always had. The logo links home to
+            // the news feed.
+            <Link
+              href={getNavHref("/newsfeed")}
+              prefetch={inPresentationMode ? false : undefined}
+              onClick={handleNavigationPress}
+              aria-label="Go to the news feed"
+              data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
               style={{
                 flex: "1 1 auto",
                 width: "100%",
@@ -996,7 +1004,7 @@ export default function Sidebar({
               }}
             >
               <BrandLogo alt="H&P logo" width={800} height={240} style={headerLogoStyle} />
-            </div>
+            </Link>
           ) : (
             // Brand stage. Both logos live here permanently, each pinned by its
             // own car: the wordmark rests in the expanded position, the icon in
@@ -1004,10 +1012,16 @@ export default function Sidebar({
             // car onto the other's. Toggling swaps which transform is applied,
             // so the car glides and scales between the two resting states on the
             // same clock as the rail itself — see the geometry block at the top
-            // of this file.
-            <div
+            // of this file. The whole stage links home to the news feed.
+            <Link
+              href={getNavHref("/newsfeed")}
+              prefetch={inPresentationMode ? false : undefined}
+              onClick={handleNavigationPress}
+              aria-label="Go to the news feed"
+              data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
               style={{
                 position: "relative",
+                display: "block",
                 width: "100%",
                 height: "100%",
                 overflow: "hidden",
@@ -1040,7 +1054,7 @@ export default function Sidebar({
               {/* The car on its disc. Sits above the wordmark so that, once it
                   has faded in, its opaque disc covers whatever is left of the
                   wordmark underneath. icon-256 rather than the 1254x1254
-                  desktop.png: this rail renders at 75px, and BrandLogo fetches
+                  desktop.png: this rail renders at 65px, and BrandLogo fetches
                   the raw file at full size to recolour it on a canvas. */}
               <BrandLogo
                 src="/images/logo/icon-256.png"
@@ -1064,7 +1078,7 @@ export default function Sidebar({
                   }`,
                 }}
               />
-            </div>
+            </Link>
           )}
         </DevLayoutSection>
       )}
@@ -1076,7 +1090,7 @@ export default function Sidebar({
             // Stick the hairline directly beneath the pinned logo header so the
             // separator stays with the logo as the nav list scrolls behind it.
             position: "sticky",
-            top: isCondensed ? "60px" : "75px",
+            top: isCondensed ? "60px" : `${BRAND_HEADER_HEIGHT}px`,
             zIndex: 3,
             height: "1px",
             background: "var(--theme)",
@@ -1336,7 +1350,7 @@ export default function Sidebar({
                 }
                 return (
                   <Fragment key="clock-logout-row">
-                    <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+                    <div style={{ display: "flex", gap: "var(--button-gap)", width: "100%" }}>
                       {canUseEmployeeClock && (
                         <button
                           className={`app-btn ${
@@ -1364,7 +1378,7 @@ export default function Sidebar({
                       <div
                         style={{
                           display: "flex",
-                          gap: "8px",
+                          gap: "var(--button-gap)",
                           width: "100%",
                           marginTop: "8px",
                         }}

@@ -66,7 +66,7 @@ export default function VhcAssistantPanel({
       </div>
 
       {/* Counters row - spread across full width */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
         <span
           className="app-btn app-btn--xs app-btn--pill"
           style={{ color: "var(--danger-dark)", background: "var(--danger-surface)", cursor: "default" }}

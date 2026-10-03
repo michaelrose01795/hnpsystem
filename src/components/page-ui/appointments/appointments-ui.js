@@ -1745,7 +1745,7 @@ export default function AppointmentsUi(props) {
                 display: "flex",
                 justifyContent: "space-between",
                 marginTop: "16px",
-                gap: "10px"
+                gap: "var(--button-gap)"
               }}>
               <Button onClick={saveNote} style={{ flex: 1 }}>
                 Save Note

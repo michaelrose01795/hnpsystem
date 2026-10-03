@@ -254,13 +254,13 @@ export default function SupportWorkspace() {
           </FilterButton>
         </div>
 
-        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", opacity: 0.6 }}>Views:</span>
           {SAVED_VIEW_PRESETS.map((v) => (
             <button type="button" key={v.id} onClick={() => applyView(v)} className="app-btn app-btn--secondary app-btn--sm">{v.name}</button>
           ))}
           {savedViews.map((v) => (
-            <span key={v.id} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
+            <span key={v.id} style={{ display: "inline-flex", alignItems: "center", gap: "var(--button-gap)" }}>
               <button type="button" onClick={() => applyView(v)} className="app-btn app-btn--secondary app-btn--sm">
                 {v.shared ? `Shared · ${v.name}` : v.name}
               </button>

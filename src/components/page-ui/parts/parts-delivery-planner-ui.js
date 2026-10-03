@@ -102,7 +102,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
       }}>
             <div style={{
           display: "flex",
-          gap: "10px",
+          gap: "var(--button-gap)",
           flexWrap: "wrap"
         }}>
               <button type="button" onClick={() => setPlannerTab("delivery")} style={plannerTabButton(plannerTab === "delivery")}>
@@ -242,7 +242,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                       <div style={{
               display: "flex",
               flexDirection: "column",
-              gap: "10px"
+              gap: "var(--button-gap)"
             }}>
                         {jobs.map(job => {
                 const jobItems = Array.isArray(job.items) ? job.items : [];

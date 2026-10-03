@@ -90,7 +90,7 @@ export function ProfilePage({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
+                gap: "var(--button-gap)",
                 flexWrap: "wrap"
               }}>
                 <Button

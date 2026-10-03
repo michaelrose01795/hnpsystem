@@ -81,7 +81,7 @@ function ItemRow({ item, presence, onNavigate }) {
       : null;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)" }}>
       <button
         type="button"
         onClick={() => item.href && onNavigate(item.href)}

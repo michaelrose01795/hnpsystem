@@ -349,7 +349,7 @@ function RecurringRulesSection() {
             </div>
           )}
 
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
             <Button type="button" variant="secondary" size="sm" pill onClick={addRule} disabled={isSaving}>
               Add rule
             </Button>

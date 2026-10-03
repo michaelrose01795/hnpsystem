@@ -820,7 +820,7 @@ export default function TechJobDetailPageUi(props) {
         display: "flex",
         alignItems: "center",
         justifyContent: "flex-end",
-        gap: "8px",
+        gap: "var(--button-gap)",
         flexWrap: "wrap"
       }}>
             {/* Technical info / Clock In / Clock Out / Complete Job are icon-only
@@ -1405,7 +1405,7 @@ export default function TechJobDetailPageUi(props) {
                     <div style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "12px"
+                gap: "var(--button-gap)"
               }}>
                       {saveStatus === "saving" && <span style={{
                   fontSize: "13px",
@@ -1717,7 +1717,7 @@ export default function TechJobDetailPageUi(props) {
                       </div>
                       <div style={{ color: "var(--text-1)", fontSize: "12px" }}>Latest update: {latestUpdate}</div>
                       {isExpanded && <div style={{ color: "var(--text-1)", fontSize: "13px", whiteSpace: "pre-wrap" }}>{request.description || "No detail supplied."}</div>}
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)", flexWrap: "wrap" }}>
                         <Button type="button" variant="secondary" size="sm" onClick={() => setExpandedPartRequestId(isExpanded ? null : request.request_id)}>{isExpanded ? "Hide Details" : "View Details"}</Button>
                         {editingPartRequestId === request.request_id ? <>
                           <Button type="button" variant="primary" size="sm" onClick={() => saveEditRequest(request)}>Save Edit</Button>
@@ -1864,7 +1864,7 @@ export default function TechJobDetailPageUi(props) {
                   <LayerTheme sectionKey="myjob-parts-quantity-field" sectionType="content-card" parentKey="myjob-parts-request" radius="var(--radius-sm)" padding="14px" gap="8px" style={{ justifyContent: "center" }}>
                     <label style={compactLabelStyle}>
                       Quantity
-                      <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr) 44px", gap: "var(--space-2)", alignItems: "center" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr) 44px", gap: "var(--button-gap)", alignItems: "center" }}>
                         <Button type="button" variant="secondary" size="sm" onClick={() => setPartRequestQuantity(Math.max(1, Number(partRequestQuantity || 1) - 1))}>-</Button>
                         <input
                           type="number"
@@ -1908,7 +1908,7 @@ export default function TechJobDetailPageUi(props) {
                   {partsFeedback}
                 </div>}
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)", flexWrap: "wrap" }}>
                   <Button type="button" variant="secondary" onClick={clearPartRequestForm} disabled={partsSubmitting || partsUploadBusy}>Clear</Button>
                   <Button type="button" variant="primary" busy={partsSubmitting || partsUploadBusy} onClick={submitIndividualPartRequest}>
                     Send Request to Parts
@@ -1980,7 +1980,7 @@ export default function TechJobDetailPageUi(props) {
             }} />
                   <div style={{
               display: "flex",
-              gap: "10px",
+              gap: "var(--button-gap)",
               justifyContent: "flex-end"
             }}>
                     <button onClick={() => setShowAddNote(false)} style={{

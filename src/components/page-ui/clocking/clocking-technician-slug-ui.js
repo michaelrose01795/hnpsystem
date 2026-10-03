@@ -318,7 +318,7 @@ export default function UserClockingHistoryUi(props) {
                 <div style={{
               display: "flex",
               flexWrap: "wrap",
-              gap: "12px"
+              gap: "var(--button-gap)"
             }}>
                   <button type="submit" disabled={formSubmitting || Boolean(selectedJobLockedMessage)} style={{
                 ...buttonPrimaryStyle,

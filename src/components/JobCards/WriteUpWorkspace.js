@@ -1379,7 +1379,7 @@ export function WriteUpWorkspace({
       {editing &&
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
         {editing &&
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)" }}>
             <button
             onClick={handleSave}
             style={{

@@ -122,7 +122,7 @@ export default function TypingAssistPanel() {
         ) : (
           <p className="app-field-hint">No words added yet. Choose Add to dictionary on a word you want accepted.</p>
         )}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
           <Button type="button" variant="secondary" onClick={clearLearned}>
             Clear learned predictions
           </Button>

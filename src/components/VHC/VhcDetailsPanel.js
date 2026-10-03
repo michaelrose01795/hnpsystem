@@ -5004,7 +5004,7 @@ export default function VhcDetailsPanel({
       fontSize: "13px",
     };
     return (
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
         {severity === "completed" ? (
           <button
             type="button"
@@ -8854,7 +8854,7 @@ export default function VhcDetailsPanel({
                       {isCustomerView || readOnly ? (
                         <span style={{ color: "var(--text-1)", fontSize: "12px" }}>—</span>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "stretch" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--button-gap)", alignItems: "stretch" }}>
                           {/* Authorised items: per-part order → here progression. */}
                           {authorised && hasParts && linkedParts.map((part) => {
                             const st = getPartAuthorisedDisplayStatus(part);
@@ -9677,7 +9677,7 @@ export default function VhcDetailsPanel({
                 media in from another row). Reported red/amber rows only. */}
             {showControls ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
                   <Button
                     type="button"
                     variant="secondary"
@@ -9985,7 +9985,7 @@ export default function VhcDetailsPanel({
               >
                 Back
               </Button>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", alignItems: "center", flexWrap: "wrap" }}>
               {/* Button to redirect to car and key tracking page with job details pre-filled */}
               <Button
                 type="button"
@@ -10506,7 +10506,7 @@ export default function VhcDetailsPanel({
                           </span>
                         </button>
                         {!isCustomerView && isExpanded ? (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", padding: "0 12px 10px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)", padding: "0 12px 10px" }}>
                             <Button
                               type="button"
                               variant="primary"
@@ -11202,7 +11202,7 @@ export default function VhcDetailsPanel({
             </span>
             {/* Action buttons use the shared .app-btn family (staffglobal.css)
                 so they share one height and sit centred in the footer. */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)", flexWrap: "wrap" }}>
               <Button type="button" variant="secondary" onClick={handleCopyPhotoLink}>
                 Copy link
               </Button>
@@ -11401,7 +11401,7 @@ export default function VhcDetailsPanel({
               gap="var(--layout-card-gap)"
             >
               <h3 style={{ margin: 0 }}>Search parts catalogue</h3>
-              <div style={{ display: "flex", gap: "var(--control-gap)", flexWrap: "wrap", alignItems: "end" }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", alignItems: "end" }}>
                 <div style={{ flex: "1 1 280px", minWidth: 0 }}>
                   <PhoneSearchCollapse
                     label="Part number or description"
@@ -11441,7 +11441,7 @@ export default function VhcDetailsPanel({
               </div>
 
               {partsSearchSuggestions.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--control-gap)", alignItems: "center" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)", alignItems: "center" }}>
                   <span>Search suggestions</span>
                   {partsSearchSuggestions.map((suggestion) => (
                     <Button
@@ -11972,7 +11972,7 @@ export default function VhcDetailsPanel({
                   );
                 })()}
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "6px" }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)", marginTop: "6px" }}>
                   <button
                     type="button"
                     onClick={closeLabourCostModal}

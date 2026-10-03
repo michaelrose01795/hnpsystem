@@ -5,19 +5,23 @@
 // to tablet and desktop too.)
 //
 // The field folds into a search SymbolButton; pressing it opens the same
-// overlay the topbar's global search uses (blurred drop-panel backdrop +
-// floating .app-phone-search-bar with a Close button), with the page's own
-// field inside it. The value stays with the page, so the list underneath is
-// already filtered when the overlay closes. Pass enabled={false} to keep a
-// field inline.
+// floating .app-phone-search-bar (with a Close button) the topbar's global
+// search uses, with the page's own field inside it. Unlike the global search,
+// only the topbar itself is tinted and blurred, and the bar sits inside it on
+// its own clear (untinted) surface —
+// the page stays clear and usable, so the user watches the list filter as they
+// type. With no topbar on screen (e.g. a page without staff chrome) the tint
+// falls back to a strip across the top. Pass enabled={false} to keep a field
+// inline.
 //
-// Close: the Close button, a tap on the backdrop, Escape, or Enter. Enter also
+// Close: the Close button, a click anywhere outside the bar (the click still
+// reaches the page), Escape, or Enter. Enter also
 // submits the trigger's <form> when there is one — the field is portalled out
 // of that form while open, so native implicit submission cannot reach it.
 //
 // renderField(inOverlay) returns the field. Hosts drop wrapper sizing (and
 // visible labels) when inOverlay is true so the field fills the bar.
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import SymbolButton from "@/components/ui/SymbolButton";
 
@@ -25,6 +29,37 @@ import SymbolButton from "@/components/ui/SymbolButton";
 // staffglobal.css). Only a safety net: animationend normally ends the close.
 const CLOSE_FALLBACK_MS = 400;
 const CLOSE_ANIMATION = "app-phone-search-bar-out";
+
+// Window event a page search fires as it opens / closes ({ detail: { open } }).
+// StaffLayout listens so the auto-hiding topbar stays unfolded while a page
+// search is anchored to it.
+export const PAGE_SEARCH_EVENT = "app:page-search";
+
+// The topbar's resting box in viewport pixels, ignoring its fold transform, so
+// the tint and bar land on the topbar even while it is still unfolding. Left and
+// width come from the dock (which the bar always spans); top from the bar's own
+// fixed position when it floats, otherwise from the dock. A topbar scrolled
+// above the screen (tablet, where it stays in the page flow) pins to the top
+// gutter instead. null when no topbar is showing.
+function measureTopbar() {
+  const bar = document.querySelector(".app-topbar-shell");
+  const dock = bar?.closest(".app-topbar-dock");
+  if (!bar || !dock || !bar.offsetHeight) return null;
+  const dockRect = dock.getBoundingClientRect();
+  const barStyle = window.getComputedStyle(bar);
+  const rawTop = barStyle.position === "fixed" ? parseFloat(barStyle.top) : dockRect.top;
+  const gutter = parseFloat(
+    window
+      .getComputedStyle(document.documentElement)
+      .getPropertyValue(window.innerWidth <= 640 ? "--page-gutter-y-mobile" : "--page-gutter-y")
+  );
+  return {
+    top: Math.max(Number.isFinite(rawTop) ? rawTop : 0, Number.isFinite(gutter) ? gutter : 0),
+    left: dockRect.left,
+    width: dockRect.width,
+    height: bar.offsetHeight,
+  };
+}
 
 /**
  * Open / closing / closed state for a search overlay, shared by
@@ -89,6 +124,8 @@ export default function PhoneSearchCollapse({
   const { isOpen, isClosing, open, close: closeOverlay, overlayProps } = usePhoneSearchOverlay();
   const triggerRef = useRef(null);
   const fieldRef = useRef(null);
+  const barRef = useRef(null);
+  const overlayRef = useRef(null);
 
   const close = useCallback(() => {
     closeOverlay();
@@ -102,6 +139,71 @@ export default function PhoneSearchCollapse({
     if (!isOpen || isClosing) return;
     fieldRef.current?.querySelector("input, textarea")?.focus();
   }, [isOpen, isClosing]);
+
+  // The page is no longer covered, so "tap outside" is a document listener.
+  // It uses click (not pointerdown) so scrolling the page leaves the search
+  // open, and it never cancels the click, so a tapped row still opens.
+  useEffect(() => {
+    if (!isOpen || isClosing) return undefined;
+    const handleOutsideClick = (event) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (barRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
+      // Suggestion menus portalled to <body> belong to the field.
+      if (target instanceof Element && target.closest(".searchbar-api__results-menu")) return;
+      close();
+    };
+    document.addEventListener("click", handleOutsideClick, true);
+    return () => document.removeEventListener("click", handleOutsideClick, true);
+  }, [isOpen, isClosing, close]);
+
+  // Hold the topbar unfolded while this search is open (see PAGE_SEARCH_EVENT).
+  useEffect(() => {
+    if (!isOpen || isClosing) return undefined;
+    const announce = (open) =>
+      window.dispatchEvent(new CustomEvent(PAGE_SEARCH_EVENT, { detail: { open } }));
+    announce(true);
+    return () => announce(false);
+  }, [isOpen, isClosing]);
+
+  // Anchor the tint and the bar to the topbar's box, before first paint and
+  // again whenever scrolling, resizing or the topbar's own size moves it. Set on
+  // the DOM directly (not via React state) so scrolling never re-renders.
+  useLayoutEffect(() => {
+    if (!isOpen) return undefined;
+    const overlayEl = overlayRef.current;
+    if (!overlayEl) return undefined;
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
+      const box = measureTopbar();
+      overlayEl.dataset.topbarAnchored = box ? "true" : "false";
+      if (!box) return;
+      const vars = {
+        "--page-search-topbar-top": `${box.top}px`,
+        "--page-search-topbar-left": `${box.left}px`,
+        "--page-search-topbar-width": `${box.width}px`,
+        "--page-search-topbar-height": `${box.height}px`,
+      };
+      Object.entries(vars).forEach(([name, value]) => overlayEl.style.setProperty(name, value));
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(apply);
+    };
+    apply();
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("resize", schedule);
+    const topbarEl = document.querySelector(".app-topbar-shell");
+    const resizeObserver =
+      topbarEl && typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
+    resizeObserver?.observe(topbarEl);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+      resizeObserver?.disconnect();
+    };
+  }, [isOpen]);
 
   if (!enabled) {
     return renderField(false);
@@ -129,11 +231,12 @@ export default function PhoneSearchCollapse({
       ? createPortal(
           <div
             {...overlayProps}
+            ref={overlayRef}
             className={`${overlayProps.className} app-phone-search-overlay--page`}
             data-draft-ignore="true"
           >
-            <div className="app-mobile-sidebar-backdrop" onClick={close} />
-            <div className="app-phone-search-bar" role="dialog" aria-modal="true" aria-label={label}>
+            <div className="app-mobile-sidebar-backdrop" />
+            <div className="app-phone-search-bar" ref={barRef} role="dialog" aria-label={label}>
               <div className="app-phone-search-bar__field" ref={fieldRef} onKeyDown={handleKeyDown}>
                 {renderField(true)}
               </div>

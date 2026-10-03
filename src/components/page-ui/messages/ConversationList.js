@@ -307,6 +307,7 @@ export default function ConversationList({
 
       <ListDivider label="Conversations" />
 
+      {/* Conversation list: system feeds and chats in fixed-height rows, with equal space between them and any waiting website chats. */}
       <div
         className="app-msg-list__scroll custom-scrollbar"
         role="listbox"

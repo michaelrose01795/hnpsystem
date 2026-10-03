@@ -161,7 +161,7 @@ export default function TechConsumableRequestPageUi(props) {
                   {stockLoading ? <InlineLoading width={70} label="Loading" /> : `${stockItems.length} items`}
                 </span>
               </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
                 <SearchBar
                   value={requestForm.partName}
                   onChange={(event) => setRequestForm({ partName: event.target.value })}
@@ -204,7 +204,7 @@ export default function TechConsumableRequestPageUi(props) {
                 flexWrap: "wrap",
                 alignItems: "center",
                 alignContent: "flex-start",
-                gap: "8px",
+                gap: "var(--button-gap)",
                 width: "100%"
               }}>
                         {stockMatches.map(item => <Button key={item.id} type="button" onClick={() => addStockItemToSelection(item)} variant="secondary" size="sm" style={{ flex: "0 1 auto", maxWidth: "100%" }}>
@@ -229,7 +229,7 @@ export default function TechConsumableRequestPageUi(props) {
 
             {/* Full stock list, shown when toggled on: a scrollable set of add buttons for every consumable matching the search. */}
             {showStockList && (
-              <DevLayoutSection as="div" sectionKey="tech-consumables-stock-list" parentKey="tech-consumables-stock-workspace" sectionType="list" backgroundToken="transparent" style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "280px", overflowY: "auto" }}>
+              <DevLayoutSection as="div" sectionKey="tech-consumables-stock-list" parentKey="tech-consumables-stock-workspace" sectionType="list" backgroundToken="transparent" style={{ display: "flex", flexDirection: "column", gap: "var(--button-gap)", maxHeight: "280px", overflowY: "auto" }}>
                 {visibleStockItems.length > 0 ? visibleStockItems.map((item) => (
                   <Button key={item.id} type="button" onClick={() => addStockItemToSelection(item)} variant="secondary" size="sm" style={{ alignSelf: "flex-start" }}>
                     Add {item.name}
@@ -258,7 +258,7 @@ export default function TechConsumableRequestPageUi(props) {
                       </td>
                       <td style={{ fontWeight: 600 }}>{item.name}</td>
                       <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)" }}>
                           <button className="app-table-action-btn" type="button" onClick={() => updateSelectedStockQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1} aria-label={`Decrease quantity for ${item.name}`} style={quantityCircleButtonStyle}>-</button>
                           <input className="app-input" type="number" min="1" max="999" step="1" inputMode="numeric" value={item.quantity} onChange={(event) => updateSelectedStockQuantity(item.id, event.target.value)} aria-label={`Quantity for ${item.name}`} style={quantityInputStyle} />
                           <button className="app-table-action-btn" type="button" onClick={() => updateSelectedStockQuantity(item.id, item.quantity + 1)} disabled={item.quantity >= 999} aria-label={`Increase quantity for ${item.name}`} style={quantityCircleButtonStyle}>+</button>

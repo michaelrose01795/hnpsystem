@@ -36,7 +36,7 @@ export default function InvoicesPageUi(props) {
             {/* Actions bar: invoice filters and search, with the export and other page buttons. */}
             <DevLayoutSection as="div" data-presentation="invoices-actions" sectionKey="accounts-invoices-header-actions" sectionType="toolbar" parentKey="accounts-invoices-page-shell" style={{
           display: "flex",
-          gap: "10px",
+          gap: "var(--button-gap)",
           flexWrap: "wrap",
           alignItems: "center"
         }}>

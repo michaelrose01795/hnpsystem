@@ -410,7 +410,7 @@ export default function DocumentsUploadPopup({
                   >
                     {renamingIndex === idx ? (
                       /* Inline rename row */
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)" }}>
                         <input
                           className="app-input"
                           autoFocus
@@ -447,7 +447,7 @@ export default function DocumentsUploadPopup({
                           </strong>
                           <small>{formatBytes(file.size)}</small>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)" }}>
                           <Button
                             type="button"
                             variant="secondary"

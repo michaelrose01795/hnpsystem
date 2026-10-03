@@ -333,7 +333,7 @@ export default function PartsDeliveriesPageUi(props) {
                   );
                 })}
               </div>
-              <div style={{ display: "flex", flexWrap: isMobile ? "wrap" : "nowrap", alignItems: "center", justifyContent: "flex-end", gap: "var(--space-sm)", flex: "1 1 auto", minWidth: 0 }}>
+              <div style={{ display: "flex", flexWrap: isMobile ? "wrap" : "nowrap", alignItems: "center", justifyContent: "flex-end", gap: "var(--button-gap)", flex: "1 1 auto", minWidth: 0 }}>
                 <CalendarField
                   className="app-delivery-month-picker"
                   name="selectedDate"

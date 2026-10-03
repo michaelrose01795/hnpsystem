@@ -464,7 +464,7 @@ export default function PayslipUpsertModal({
             padding: "16px 24px",
             display: "flex",
             justifyContent: "flex-end",
-            gap: "10px",
+            gap: "var(--button-gap)",
             flexWrap: "wrap",
           }}
         >

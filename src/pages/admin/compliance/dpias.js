@@ -100,7 +100,7 @@ function NewDpiaForm({ onCreated }) {
         />
       </label>
       {error && <p role="alert" style={{ margin: 0, color: "var(--danger-base)" }}>{error}</p>}
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: "var(--button-gap)" }}>
         <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Creating..." : "Create"}
         </Button>

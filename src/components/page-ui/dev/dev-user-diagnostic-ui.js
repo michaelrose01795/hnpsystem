@@ -409,7 +409,7 @@ export default function UserDiagnosticDevPageUi(props) {
       <DevLayoutSection sectionKey="user-diagnostic/toolbar" sectionType="toolbar" parentKey="" backgroundToken="">
       <div className="user-diagnostic-toolbar" style={{
         display: "flex",
-        gap: "10px",
+        gap: "var(--button-gap)",
         alignItems: "center",
         marginBottom: "24px",
         flexWrap: "wrap"
@@ -763,7 +763,7 @@ export default function UserDiagnosticDevPageUi(props) {
               <div style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "var(--button-gap)",
                 flexWrap: "wrap"
               }}>
                 <Button

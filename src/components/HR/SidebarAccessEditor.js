@@ -179,7 +179,7 @@ export default function SidebarAccessEditor({ role, value, onChange }) {
             >
               <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{group.label}</span>
               {!isAccount && (
-                <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ display: "flex", gap: "var(--button-gap)" }}>
                   <button
                     type="button"
                     onClick={() => openGroupManager(group)}

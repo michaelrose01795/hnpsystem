@@ -211,14 +211,31 @@ html.staff-scope .app-msg-list__toolbar > * {
   flex: none;
 }
 
+/* All four buttons share one 44px line: the search button is centred like
+   the rest (it pins itself to the top elsewhere), and the filter keeps its
+   badge reserve inside its own box instead of adding it to the row. */
+html.staff-scope .app-msg-list__toolbar .app-phone-search-trigger {
+  align-self: center;
+}
+
+html.staff-scope .app-msg-list__toolbar .app-filter {
+  margin-block: calc(-1 * var(--app-filter-badge-overhang));
+}
+
 /* "——— PINNED ———" / "——— CONVERSATIONS ———": a caption between two
    separating lines, heading each block of the list. The lines are 1px fills,
-   not borders. */
+   not borders.
+   Header rule alignment: every panel opens with a 44px row, then the panel
+   gap. The divider is 21px tall so its 1px line sits exactly 10px into it,
+   and the conversation header and details head draw their rule at that same
+   depth (their padding-bottom is the panel gap + 11px). The three rules line
+   up across the workspace. */
 html.staff-scope .app-msg-divider {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   flex: none;
+  height: 21px;
 }
 
 html.staff-scope .app-msg-divider::before,
@@ -242,7 +259,7 @@ html.staff-scope .app-msg-divider__label {
 html.staff-scope .app-msg-list__scroll {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--page-stack-gap);
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -279,8 +296,10 @@ html.staff-scope .app-msg-pin {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  height: var(--control-height);
-  min-height: var(--control-height);
+  height: var(--staff-card-min-height);
+  min-height: var(--staff-card-min-height);
+  max-height: var(--staff-card-min-height);
+  flex-shrink: 0;
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -353,7 +372,7 @@ html.staff-scope .app-msg-row__count {
 html.staff-scope .app-msg-pins {
   display: grid;
   grid-template-columns: repeat(var(--msg-pin-count, 1), minmax(0, 1fr));
-  gap: var(--space-xs);
+  gap: var(--page-stack-gap);
   flex: none;
 }
 
@@ -388,7 +407,9 @@ html.staff-scope .app-msg-header {
   flex-wrap: nowrap;
   min-height: var(--control-height);
   position: relative;
-  padding-bottom: var(--space-sm);
+  /* Puts the rule level with the list's first divider (see .app-msg-divider).
+     The depth is split evenly above and below so the text sits mid-height. */
+  padding-block: calc((var(--layout-card-gap) + 11px) / 2);
 }
 
 /* The line between the header and the chat below it: a 1px fill, like
@@ -1078,12 +1099,30 @@ html.staff-scope .app-msg-notice__text {
 /* Details panel                                                              */
 /* ========================================================================== */
 
+/* Title and close on one 44px row, with a rule beneath it level with the
+   conversation header's rule and the list's first divider (see
+   .app-msg-divider). A 1px fill, not a border. */
 html.staff-scope .app-msg-details__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
   flex: none;
+  min-height: var(--control-height);
+  position: relative;
+  /* Same total depth as before, split evenly so the title sits mid-height. */
+  padding-block: calc((var(--layout-card-gap) + 11px) / 2);
+}
+
+html.staff-scope .app-msg-details__head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--separating-line-color);
+  pointer-events: none;
 }
 
 html.staff-scope .app-msg-details__title {
@@ -1105,7 +1144,9 @@ html.staff-scope .app-msg-details__scroll {
 html.staff-scope .app-msg-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--layout-card-gap);
+  min-height: var(--staff-card-min-height);
+  margin: 0;
 }
 
 /* A <section> is a --surface card (staffglobal's global section rule), so the
@@ -1172,7 +1213,7 @@ html.staff-scope .app-msg-entry {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  min-height: var(--control-height);
+  min-height: var(--staff-card-min-height);
   padding: var(--space-xs) var(--space-3);
   border-radius: var(--radius-md);
   background: var(--surface);

@@ -99,7 +99,7 @@ export default function WorkspacePanel({
         <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--accentText)" }}>
           My workspace
         </h2>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)" }}>
           {onCustomise && (
             <button type="button" onClick={onCustomise} className="app-btn app-btn--ghost">
               Customise
@@ -217,7 +217,7 @@ function ReminderList({ reminders, items, emptyText, draft, setDraft, onSubmit }
           {items.map((item) => (
             <div
               key={item.id}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 4px" }}
+              style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)", padding: "6px 4px" }}
             >
               <button
                 type="button"

@@ -427,7 +427,7 @@ export default function ServiceIndicatorDetailsModal({
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Service Reminder
             </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "var(--button-gap)" }}>
               {SERVICE_OPTIONS.map((option) => {
                 const isActive = serviceChoice === option.key;
                 const optionStatus = SERVICE_CHOICE_STATUS[option.key] || "Amber";
@@ -467,7 +467,7 @@ export default function ServiceIndicatorDetailsModal({
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Oil Level
             </h3>
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
               {OIL_OPTIONS.map((option) => {
                 const isActive = oilStatus === option;
                 const isPositive = option === "Good" || option === "EV";
@@ -516,7 +516,7 @@ export default function ServiceIndicatorDetailsModal({
                 display: "grid",
                 gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                 gridAutoRows: "minmax(90px, 1fr)",
-                gap: "16px",
+                gap: "var(--button-gap)",
                 alignContent: "stretch",
                 flex: 1,
               }}

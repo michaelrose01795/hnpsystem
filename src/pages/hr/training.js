@@ -238,7 +238,7 @@ function TrainingContent() {
               placeholder="Provide additional guidance or pre-reading" />
             
           </label>
-          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "var(--space-3)" }}>
+          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "var(--button-gap)" }}>
             <Button type="button" variant="primary">
               Assign training
             </Button>

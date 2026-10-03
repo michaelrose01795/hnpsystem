@@ -710,7 +710,7 @@ export default function ServiceHistoryTab({ vehicleJobHistory }) {
         }}
       >
         <SummaryStatsRow analytics={analytics} />
-        <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginLeft: "auto" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", marginLeft: "auto" }}>
           <button
             type="button"
             className="app-btn app-btn--secondary"

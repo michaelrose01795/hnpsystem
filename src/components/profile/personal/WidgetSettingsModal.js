@@ -260,7 +260,7 @@ function SegmentedTabs({ value, options = [], onChange }) {
     <div
       style={{
         display: "grid",
-        gap: "8px",
+        gap: "var(--button-gap)",
         gridTemplateColumns: `repeat(${options.length || 1}, minmax(0, 1fr))`,
         ...widgetInsetSurfaceStyle,
         padding: "6px",
@@ -1209,7 +1209,7 @@ function RecurringRulesEditor({ isMobile }) {
             </div>
           )}
 
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
             <Button type="button" variant="secondary" size="sm" pill onClick={addRule} disabled={isSaving}>
               Add rule
             </Button>
@@ -2464,7 +2464,7 @@ export default function WidgetSettingsModal({
         </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap", paddingTop: "2px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)", flexWrap: "wrap", paddingTop: "2px" }}>
           <Button type="button" variant="secondary" size="sm" pill onClick={onClose}>
             Cancel
           </Button>

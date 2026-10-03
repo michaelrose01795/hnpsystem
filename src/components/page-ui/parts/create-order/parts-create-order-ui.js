@@ -449,7 +449,7 @@ export default function PartsCreateOrderUi(props) {
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
             <h3>Parts</h3>
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", alignItems: "center" }}>
               <span className="app-badge app-badge--accent-soft">{populatedLines.length} lines</span>
               {searchTargetIndex !== -1 ? <span className="app-field-hint">Fills Part {searchTargetIndex + 1}</span> : null}
               <Button
@@ -642,7 +642,7 @@ export default function PartsCreateOrderUi(props) {
                 </div>
               ))}
             </LayerTheme>
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
               <Button type="button" variant={stockResolution.mode === "goods_in" ? "primary" : "secondary"} aria-pressed={stockResolution.mode === "goods_in"} onClick={() => setStockResolution((current) => ({ ...current, mode: "goods_in" }))}>Goods in now</Button>
               <Button type="button" variant={stockResolution.mode === "ordered" ? "primary" : "secondary"} aria-pressed={stockResolution.mode === "ordered"} onClick={() => setStockResolution((current) => ({ ...current, mode: "ordered" }))}>Ordered from supplier</Button>
             </div>

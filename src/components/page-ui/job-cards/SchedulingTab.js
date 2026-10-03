@@ -696,7 +696,7 @@ export function CustomerUpdatesSection({
       </div>
 
       {canEdit && (
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", alignItems: "center" }}>
           <button
             type="button"
             className="app-btn app-btn--primary"
@@ -761,7 +761,7 @@ export function QuickActionsSection({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
-          gap: "10px",
+          gap: "var(--button-gap)",
         }}
       >
         {actions.map((action) => (

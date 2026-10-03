@@ -76,7 +76,7 @@ export default function ConcernPickerModal({ isOpen, title = "Link capture to a 
         ) : null}
 
         {groups.map((group) => (
-          <section key={group.label || "__ungrouped"} style={{ display: "grid", gap: 4 }}>
+          <section key={group.label || "__ungrouped"} style={{ display: "grid", gap: "var(--button-gap)" }}>
             {group.label ? (
               <header
                 style={{

@@ -79,7 +79,7 @@ export default function RedirectToWorkshopButton({ jobNumber, onRedirected }) {
                 placeholder="e.g. part not available on van, vehicle requires ramp access"
               />
             </label>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)" }}>
               <button type="button" onClick={() => setOpen(false)} disabled={submitting}>
                 Cancel
               </button>

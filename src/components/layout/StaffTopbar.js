@@ -20,6 +20,7 @@
 // before the Global Search button.
 import React from "react";
 import Link from "next/link";
+import BrandLogo from "@/components/BrandLogo";
 import { hasAllAccessRole } from "@/lib/auth/roles";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import SupportControl from "@/components/support/SupportControl";
@@ -109,8 +110,9 @@ export default function StaffTopbar({
   barRef = null,
   wrapperStyle = undefined,
   barStyle = undefined,
-  // Portrait-phone compact bar. When set, the bar is one row of symbol buttons —
-  // Menu, Status and Search on the left, Help on the far right — and everything
+  // Portrait-phone compact bar. When set, the bar is one row — the Menu,
+  // Status, Help and Search symbol buttons, with the brand logo pinned to the
+  // far right — and everything
   // else (KPIs, insight, technician controls, pages) is hidden to save height.
   // Shape: { onOpenMenu, onOpenStatus, onOpenSearch, menuOpen, statusOpen,
   // searchOpen, menuButtonRef, statusButtonRef, showStatus }. The refs let
@@ -162,7 +164,7 @@ export default function StaffTopbar({
       className={["app-topbar-dock", wrapperClassName].filter(Boolean).join(" ")}
       style={{ overflow: "visible", ...wrapperStyle, ...overlayStyle }}
     >
-    {/* Top bar: live figures, technician job controls, a rotating insight, quick links to most-used pages, a search button that opens the global search, and help. */}
+    {/* Top bar: live figures, technician job controls, a rotating insight, quick links to most-used pages, a search button that opens the global search, and help. On a portrait phone it shrinks to menu, status, help and search buttons, with the logo at the far right, which returns to the news feed when clicked. */}
     <DevLayoutSection
       as="section"
       ref={barRef}
@@ -184,7 +186,7 @@ export default function StaffTopbar({
         flexDirection: "column",
         // Uniform 10px spacing between everything in the bar (symmetry).
         gap: "10px",
-        minHeight: isMobile ? "auto" : "75px",
+        minHeight: isMobile ? "auto" : "65px",
         justifyContent: "center",
         overflow: "visible",
         // Float-on-scroll positioning (desktop): fixes the bar in place, mirrors
@@ -213,6 +215,12 @@ export default function StaffTopbar({
               aria-controls="compact-status-sidebar"
             />
           )}
+          {/* Help & Diagnostics — takes the slot straight after Status. */}
+          {!presentationShell && (
+            <div style={{ flexShrink: 0 }}>
+              <SupportControl />
+            </div>
+          )}
           <SymbolButton
             symbol="search"
             label="Open global search"
@@ -220,11 +228,31 @@ export default function StaffTopbar({
             aria-expanded={Boolean(compact.searchOpen)}
             aria-haspopup="dialog"
           />
-          {/* Help & Diagnostics — pinned to the far right of the row. */}
-          {!presentationShell && (
-            <div className="app-topbar-compact__end">
-              <SupportControl />
-            </div>
+          {/* Brand mark — the same car-on-a-disc icon the collapsed sidebar
+              shows, pinned to the far right of the row (portrait phone only).
+              Links home to the news feed, except in the demo deck. */}
+          {presentationShell ? (
+            <BrandLogo
+              src="/images/logo/icon-256.png"
+              alt="H&P logo"
+              width={256}
+              height={256}
+              style={{ width: "var(--control-height)", height: "var(--control-height)", flexShrink: 0, display: "block", marginLeft: "auto" }}
+            />
+          ) : (
+            <Link
+              href="/newsfeed"
+              aria-label="Go to the news feed"
+              style={{ flexShrink: 0, display: "block", marginLeft: "auto" }}
+            >
+              <BrandLogo
+                src="/images/logo/icon-256.png"
+                alt="H&P logo"
+                width={256}
+                height={256}
+                style={{ width: "var(--control-height)", height: "var(--control-height)", display: "block" }}
+              />
+            </Link>
           )}
         </div>
       ) : (
@@ -379,7 +407,7 @@ export default function StaffTopbar({
               display: "flex",
               alignItems: "center",
               // Uniform 10px spacing between everything in the bar (symmetry).
-              gap: "10px",
+              gap: "var(--button-gap)",
               minWidth: 0,
               justifyContent: "flex-end",
               // Pins the cluster to the right edge. The KPI/insight sections
@@ -399,7 +427,7 @@ export default function StaffTopbar({
                   display: "flex",
                   alignItems: "center",
                   // Uniform 10px spacing between the two page buttons (symmetry).
-                  gap: "10px",
+                  gap: "var(--button-gap)",
                   flexShrink: 0,
                   minWidth: 0,
                 }}
@@ -436,9 +464,13 @@ export default function StaffTopbar({
               />
             )}
 
+            {/* display:contents — when there is no next action this wrapper is
+                empty, and as a real flex item it added a second 10px gap
+                between Search and Help (20px). Without a box of its own it
+                takes no gap, so Search sits 10px from Help. */}
             <div
               style={{
-                flexShrink: 0,
+                display: "contents",
               }}
             >
               <NextActionPrompt />

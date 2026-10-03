@@ -5861,7 +5861,7 @@ function SchedulingTab({
               jobData.appointment && String(jobData.appointment.status || "").toLowerCase() !== "cancelled" ?
               "repeat(2, minmax(0, 1fr))" :
               "minmax(0, 1fr)",
-            gap: "var(--layout-card-gap)",
+            gap: "var(--button-gap)",
             marginTop: "var(--layout-card-gap)"
           }}>
             <Button
@@ -8821,7 +8821,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             justifyContent: "space-between"
           }}>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
             {isJustClockState && selectedTechnicianId ?
             <Button
               type="button"
@@ -9735,7 +9735,7 @@ function DocumentsTab({
                 {/* Action row */}
                 <div
                 style={{
-                  display: "flex", gap: "6px", padding: "8px 12px",
+                  display: "flex", gap: "var(--button-gap)", padding: "8px 12px",
                   backgroundColor: "var(--surface)"
                 }}>
 

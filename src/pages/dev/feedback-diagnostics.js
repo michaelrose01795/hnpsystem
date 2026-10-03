@@ -92,7 +92,7 @@ function FeedbackDiagnosticsView() {
         title="Feedback & Errors"
         subtitle="Live state of the Frontend Feedback & Error System (Phases 2–9)."
         actions={
-          <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
             <button type="button" onClick={takeSnapshot} className="app-btn app-btn--secondary app-btn--sm">Capture snapshot</button>
             <button type="button" onClick={() => openSupportReport()} className="app-btn app-btn--secondary app-btn--sm">Open report</button>
           </div>
@@ -210,7 +210,7 @@ function FeedbackDiagnosticsView() {
       <Panel
         title="Feedback primitives (the standard)"
         actions={
-          <div style={{ display: "flex", gap: "var(--space-xs)", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
             <button type="button" onClick={() => reportError("Test error from feedback diagnostics.", new Error("synthetic test error"), { source: "dev:feedback-diagnostics" })} className="app-btn app-btn--secondary app-btn--sm">
               Emit error
             </button>

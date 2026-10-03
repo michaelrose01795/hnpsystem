@@ -7,8 +7,8 @@
 // acknowledgement banner) flips back to --surface, which is what
 // src/styles/families/news.css does for those pieces.
 //
-// Density: "comfortable" and "compact" differ in padding, gap and how much of
-// the body is shown. The padding/gap come through LayerTheme's props rather
+// Density: "comfortable" and "compact" differ in gap and how much of
+// the body is shown. Both use the shared card inset. Padding/gap come through LayerTheme's props rather
 // than a stylesheet override, because the primitive owns the surface.
 
 import React from "react";
@@ -30,12 +30,12 @@ import {
 const DENSITY = {
   comfortable: {
     radius: "var(--radius-sm)",
-    padding: "var(--space-5) var(--space-lg) var(--space-4)",
+    padding: "var(--section-card-padding)",
     gap: "var(--space-2)",
   },
   compact: {
     radius: "var(--radius-sm)",
-    padding: "var(--space-3) var(--space-md)",
+    padding: "var(--section-card-padding)",
     gap: "var(--space-1)",
   },
 };

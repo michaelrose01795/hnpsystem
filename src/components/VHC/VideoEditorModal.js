@@ -343,7 +343,7 @@ export default function VideoEditorModal({
           style={{ flex: "0 1 auto", minHeight: 0 }}
         >
           {onBack || onNext ? (
-            <div style={{ display: "flex", gap: 10, flex: "0 0 auto" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", flex: "0 0 auto" }}>
               <Button type="button" variant="secondary" size="sm" onClick={handleBackPress} disabled={!onBack || processing || !videoLoaded}>
                 Back
               </Button>

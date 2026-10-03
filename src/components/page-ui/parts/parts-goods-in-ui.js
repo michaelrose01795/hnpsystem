@@ -292,7 +292,7 @@ export default function GoodsInPageUi(props) {
         }}>Invoice details</h2>
             <div style={{
           display: "flex",
-          gap: "10px",
+          gap: "var(--button-gap)",
           flexWrap: "wrap"
         }}>
               <Button type="button" variant="secondary" onClick={() => {
@@ -421,7 +421,7 @@ export default function GoodsInPageUi(props) {
             </div>}
           {duplicateCandidate && <div className="app-status-message app-status-message--warning" role="status">
               <div><strong>This part is already on line {duplicateCandidate.line_number || "—"}.</strong> Increase that line by {partForm.quantity || 1}, or keep a separate invoice line.</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", marginTop: 10 }}>
                 <button type="button" style={primaryButtonStyle(savingPart)} onClick={handleIncreaseExistingLine} disabled={savingPart}>Increase existing line</button>
                 <button type="button" style={secondaryButtonStyle} onClick={() => handleAddPart({ allowDuplicate: true })} disabled={savingPart}>Add separate line</button>
                 <button type="button" style={secondaryButtonStyle} onClick={() => setDuplicateCandidate(null)} disabled={savingPart}>Review entry</button>
@@ -734,7 +734,7 @@ export default function GoodsInPageUi(props) {
             </button>
             <div style={{
           display: "flex",
-          gap: "10px",
+          gap: "var(--button-gap)",
           alignItems: "center",
           flexWrap: "nowrap"
         }}>
@@ -805,7 +805,7 @@ export default function GoodsInPageUi(props) {
             </div>
             <div style={{
           display: "flex",
-          gap: "10px"
+          gap: "var(--button-gap)"
         }}>
               <Button type="button" variant="secondary" onClick={() => goodsInRecord && fetchGoodsIn(goodsInRecord.id)} disabled={!goodsInRecord}>
                 Refresh
@@ -903,7 +903,7 @@ export default function GoodsInPageUi(props) {
             {recentLoading ? <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading recent records" style={{ display: "grid", gap: 8 }}>
               <SkeletonKeyframes />
               {[0, 1, 2, 3].map(index => <SkeletonBlock key={index} height="var(--control-height)" />)}
-            </div> :recentError ? <div className="app-status-message app-status-message--warning">Recent records unavailable. {recentError}</div> : recentGoodsIn.length === 0 ? <div style={{ color: "var(--text-1)" }}>No recent goods-in records.</div> : <div style={{ display: "grid", gap: 8, overflowY: "auto" }}>
+            </div> :recentError ? <div className="app-status-message app-status-message--warning">Recent records unavailable. {recentError}</div> : recentGoodsIn.length === 0 ? <div style={{ color: "var(--text-1)" }}>No recent goods-in records.</div> : <div style={{ display: "grid", gap: "var(--button-gap)", overflowY: "auto" }}>
               {recentGoodsIn.filter(record => {
                 const query = historySearch.trim().toLowerCase();
                 if (!query) return true;

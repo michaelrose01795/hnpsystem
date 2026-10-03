@@ -384,7 +384,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             padding: "16px 24px",
             display: "flex",
             justifyContent: "flex-end",
-            gap: "12px",
+            gap: "var(--button-gap)",
           }}
         >
           <button

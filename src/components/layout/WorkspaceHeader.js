@@ -103,7 +103,7 @@ export default function WorkspaceHeader({ pathname, roles }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
-            gap: "8px",
+            gap: "var(--button-gap)",
             flexWrap: "wrap",
             maxWidth: "100%",
           }}

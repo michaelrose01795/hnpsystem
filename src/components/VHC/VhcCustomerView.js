@@ -186,7 +186,7 @@ function Row({ item, severity, interactive, onUpdateStatus, onRequestAuthorise, 
       {interactive && !isGreen && (
         // Wraps to a stack below ~260px of row width so the two 44px targets
         // never squash on a narrow phone in portrait.
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
           <Button
             variant={isAuthorized ? "primary" : "secondary"}
             size="sm"
@@ -592,7 +592,7 @@ function AuthoriseConfirmModal({ item, authorizedTotal = 0, onConfirm, onDecline
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-              gap: 8
+              gap: "var(--button-gap)"
             }}
           >
             <Button
@@ -714,7 +714,7 @@ export default function VhcCustomerView({
               padding: "12px 12px 0"
             }}
           >
-            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", alignItems: "center", flexWrap: "wrap" }}>
               <BrandLogo alt="HP Logo" width={84} height={36} style={{ objectFit: "contain", flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: "var(--text-body)", fontWeight: 700, color: "var(--text-1)", lineHeight: 1.2 }}>

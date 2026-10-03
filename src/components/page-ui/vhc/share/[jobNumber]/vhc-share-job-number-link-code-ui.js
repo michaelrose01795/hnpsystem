@@ -273,7 +273,7 @@ export default function PublicSharePreviewPageUi(props) {
       }}>
             <div style={{
           display: "flex",
-          gap: "8px"
+          gap: "var(--button-gap)"
         }}>
               {TAB_OPTIONS.map(tab => <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
             padding: "16px 24px",

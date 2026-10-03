@@ -269,7 +269,7 @@ export default function InvoiceDetail({
         </div>
         <div className="invoice-action-buttons" style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
           {!hideActions && !isProforma && (
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", justifyContent: "flex-end" }}>
               <button type="button" className={styles.printButton} onClick={onPrint}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px", verticalAlign: "middle" }}>
                   <polyline points="6 9 6 2 18 2 18 9" />

@@ -1497,7 +1497,7 @@ function DeliveryJobModal({
               padding: "8px",
               display: "flex",
               flexDirection: "column",
-              gap: "6px",
+              gap: "var(--button-gap)",
               maxHeight: "200px",
               overflowY: "auto"
             }}>
@@ -1722,7 +1722,7 @@ function DeliveryJobModal({
             style={{
               display: "flex",
               justifyContent: "flex-end",
-              gap: "12px",
+              gap: "var(--button-gap)",
               marginTop: "8px",
               flexWrap: "wrap"
             }}>

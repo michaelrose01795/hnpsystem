@@ -16,6 +16,8 @@
 //
 // The card is portalled to <body> and fixed-positioned under the button, so no
 // page card's overflow or stacking context can clip it or sit on top of it.
+// On a vertical phone it is a half-height sheet that slides up from the bottom
+// of the screen instead (placement "sheet", placed entirely by staffglobal.css).
 // The button itself opens and closes the card: one press opens it, the next
 // closes it. A click outside or Escape also closes it, and it animates out
 // before it unmounts.
@@ -29,6 +31,7 @@ import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState
 import { createPortal } from "react-dom";
 import SymbolButton, { Symbol } from "@/components/ui/SymbolButton";
 import Button from "@/components/ui/Button";
+import { MEDIA } from "@/styles/breakpoints";
 
 // Gap between the button and the card, and the minimum gap to the viewport.
 const PANEL_OFFSET = 8;
@@ -37,6 +40,9 @@ const VIEWPORT_GUTTER = 16;
 // Longest the close animation may take before the card unmounts regardless —
 // a fallback for when animationend never fires (reduced motion, hidden tab).
 const CLOSE_FALLBACK_MS = 220;
+
+// A phone held upright: the card becomes a bottom sheet (see updatePosition).
+const VERTICAL_PHONE_QUERY = `${MEDIA.mobile} and (orientation: portrait)`;
 
 // Portalled menus opened from inside the card (MultiSelectDropdown with
 // usePortal, and the calendar / month / time pickers on a vertical phone)
@@ -124,6 +130,15 @@ export default function FilterButton({
     const trigger = triggerRef.current;
     const panel = panelRef.current;
     if (!trigger || !panel) return;
+
+    // Vertical phone: a half-height sheet docked to the bottom of the screen.
+    // No inline position — staffglobal.css owns its whole box and motion.
+    if (window.matchMedia(VERTICAL_PHONE_QUERY).matches) {
+      setPanelPosition((previous) =>
+        previous?.placement === "sheet" ? previous : { placement: "sheet", style: undefined }
+      );
+      return;
+    }
 
     const rect = trigger.getBoundingClientRect();
     const viewportWidth = document.documentElement.clientWidth;
@@ -280,8 +295,8 @@ export default function FilterButton({
           </div>
         )}
 
-        {/* Phone portrait only: the card fills the screen and covers the
-            trigger, so it needs its own close. Hidden elsewhere by staffglobal.css. */}
+        {/* Phone portrait only: the card is a bottom sheet away from its
+            trigger, so it carries its own close. Hidden elsewhere by staffglobal.css. */}
         <SymbolButton
           symbol="close"
           label={`Close ${title}`}

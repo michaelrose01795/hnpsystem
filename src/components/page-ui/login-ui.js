@@ -106,7 +106,7 @@ export default function LoginPageUi(props) {
                     {errorMessage}
                   </p>}
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--layout-card-gap)" }}> {/* Local 50/50 login actions; no shared layout primitive matches this row. */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--button-gap)" }}> {/* Local 50/50 login actions; no shared layout primitive matches this row. */}
                   <Button type="submit" variant="primary" style={{ width: "100%" }} disabled={isRedirecting}>
                     {isRedirecting ? "Signing in..." : "Login"}
                   </Button>
@@ -327,7 +327,7 @@ export default function LoginPageUi(props) {
                 </p>}
               <div style={{
           display: "flex",
-          gap: "8px",
+          gap: "var(--button-gap)",
           justifyContent: "flex-end",
           marginTop: "4px"
         }}>

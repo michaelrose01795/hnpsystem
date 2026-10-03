@@ -423,7 +423,7 @@ export default function PresentationCallout({ step, anchor }) {
         style={{
           display: "grid",
           gridTemplateColumns: actionGridColumns,
-          gap: 8,
+          gap: "var(--button-gap)",
           marginTop: 4,
           paddingTop: 10,
           borderTop: "1px solid rgba(var(--primary-rgb), 0.16)",

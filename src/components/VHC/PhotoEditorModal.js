@@ -460,7 +460,7 @@ export default function PhotoEditorModal({
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: 10,
+                  gap: "var(--button-gap)",
                 }}
               >
                 {presetColors.map((c) => {
@@ -492,7 +492,7 @@ export default function PhotoEditorModal({
             {/* Same two-column grid again: Undo / Redo on the first row, Back
                 under Undo and Next under Redo on the second. */}
             <div style={{ flex: "1 1 0", minWidth: 0 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--button-gap)" }}>
                 <Button type="button" variant="secondary" size="sm" onClick={undo} disabled={!canUndo} style={{ width: "100%" }}>
                   Undo
                 </Button>

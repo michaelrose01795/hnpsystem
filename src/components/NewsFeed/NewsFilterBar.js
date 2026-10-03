@@ -39,7 +39,7 @@ export default function NewsFilterBar({
   };
 
   return (
-    <div className="app-news-filters">
+    <div className="app-news-filters app-content-toolbar">
       <div className="app-news-toolbar">
         <div className="app-news-toolbar__control">
           <SearchBar

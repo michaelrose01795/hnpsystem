@@ -381,6 +381,7 @@ const RUNTIME_TOKEN_SOURCES = [
   "src/components/VHC/VideoEditorModal.js", // --video-editor-max-width / -aspect-ratio
   "src/components/ui/StaffCardGrid.js", // --app-card-grid-min
   "src/components/StatusTracking/JobProgressTracker.js", // --job-tracker-phase-color
+  "src/components/ui/searchBarAPI/PhoneSearchCollapse.js", // --page-search-topbar-top / -left / -width / -height
 ];
 
 // var(--radius-<size>) template literals compose the token name at runtime, so

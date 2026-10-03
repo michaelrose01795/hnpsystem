@@ -540,7 +540,7 @@ export default function DevSidebarAccess() {
                   </button>
                 </div>
 
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
                   <button type="button" onClick={saveLayout} disabled={saving || isPreviewUser || !isDirty || !hasSavableModules} className="app-btn app-btn--primary">
                     {saving ? "Saving" : "Save modules"}
                   </button>
@@ -593,7 +593,7 @@ export default function DevSidebarAccess() {
                     Assigned modules ({draftModules.length})
                   </button>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))", gap: "var(--button-gap)" }}>
                   {moduleCatalog.map((bundle) => {
                     const availableCount = bundle.items.filter((item) => !usedHrefs.has(item.href)).length;
                     const assigned = draftModules.some((module) => module.key === bundle.key);
@@ -918,7 +918,7 @@ export default function DevSidebarAccess() {
               Copy {userDisplayName(selectedUser)}&apos;s current layout to one or more staff members.
             </p>
           </div>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", justifyContent: "flex-end" }}>
             <button
               type="button"
               onClick={copyLayout}

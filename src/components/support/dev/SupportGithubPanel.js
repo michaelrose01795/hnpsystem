@@ -146,7 +146,7 @@ export default function SupportGithubPanel({ reportId, report }) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "var(--button-gap)",
                 padding: "8px 10px",
                 borderRadius: "var(--radius-md)",
                 background: "color-mix(in srgb, var(--text-1) 6%, transparent)",

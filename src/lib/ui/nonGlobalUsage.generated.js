@@ -12,8 +12,8 @@
 export const NON_GLOBAL_AUDIT = {
   "non-global-buttons": {
     title: "buttons carrying their own fill / radius / type instead of .app-btn",
-    total: 195,
-    files: 59,
+    total: 193,
+    files: 58,
     usage: [
       { label: "VhcDetailsPanel (VHC) — 21", file: "src/components/VHC/VhcDetailsPanel.js" },
       { label: "[jobNumber] (job-cards) — 15", file: "src/pages/job-cards/[jobNumber].js" },
@@ -126,21 +126,22 @@ export const NON_GLOBAL_AUDIT = {
     total: 3,
     files: 3,
     usage: [
-      { label: "TabGroup / .tab-api — dominant (42 files)", file: "src/components/ui/tabAPI/TabGroup.js" },
+      { label: "TabGroup / .tab-api — dominant (45 files)", file: "src/components/ui/tabAPI/TabGroup.js" },
       { label: ".app-tab--* — second base (3 files)", file: "src/styles/families/tabs.css" },
       { label: "StaffTabs / .app-staff-tabs — third (2 files)", file: "src/styles/staffglobal.css" },
     ],
   },
   "non-global-stylesheets": {
     title: "CSS Modules declaring surfaces outside the family system",
-    total: 199,
-    files: 5,
+    total: 203,
+    files: 6,
     usage: [
       { label: "roleTreeDemo.module.css — 297 rules, 104 surface declarations", file: "src/features/roleTreeDemo/styles/roleTreeDemo.module.css" },
-      { label: "GlobalNotesWidget.module.css — 75 rules, 34 surface declarations", file: "src/components/GlobalNotesWidget.module.css" },
+      { label: "GlobalNotesWidget.module.css — 77 rules, 34 surface declarations", file: "src/components/GlobalNotesWidget.module.css" },
       { label: "invoice.module.css — 54 rules, 31 surface declarations", file: "src/features/invoices/styles/invoice.module.css" },
       { label: "AiGuidePanel.module.css — 96 rules, 24 surface declarations", file: "src/features/appGuide/components/AiGuidePanel.module.css" },
       { label: "ShareNotePopup.module.css — 17 rules, 6 surface declarations", file: "src/components/GlobalNotes/ShareNotePopup.module.css" },
+      { label: "stockAccess.module.css — 48 rules, 4 surface declarations", file: "src/features/stockAccess/stockAccess.module.css" },
     ],
   },
 };

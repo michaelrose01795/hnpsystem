@@ -297,7 +297,7 @@ export default function InvoiceWorkspace({
             <h2 style={{ margin: 0, fontSize: "1.15rem", color: "var(--accentText)" }}>Invoice</h2>
             <span className={`app-badge ${statusTone} app-badge--uppercase`}>{paymentStatusLabel}</span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)", justifyContent: "flex-end" }}>
             <Button variant="secondary" size="sm" onClick={() => setPreviewOpen(true)}>
               Preview Final Invoice
             </Button>
@@ -436,7 +436,7 @@ export default function InvoiceWorkspace({
               {finalInvoiceNumber} · Final invoice · {formatCurrency(invoiceTotal)}
             </p>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)", justifyContent: "flex-end" }}>
             <Button variant="secondary" size="sm" onClick={onPrint}>
               Print
             </Button>

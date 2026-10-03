@@ -1136,7 +1136,7 @@ export function CustomerRequestsTab({
             </button>
           }
           {editing &&
-          <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "auto" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", alignItems: "center", marginLeft: "auto" }}>
               <button
               onClick={handleSave}
               style={{

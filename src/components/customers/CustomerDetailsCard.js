@@ -126,7 +126,7 @@ export default function CustomerDetailsCard({
                   </label>
                   {input.type === "textarea" ? <BufferedInput as="textarea" id={`customer-${input.field}`} value={customerForm[input.field] || ""} onChange={next => handleCustomerFieldChange(input.field, next)} disabled={!isCustomerEditing || isSavingCustomer} placeholder={input.placeholder} rows={3} className="app-input app-input--textarea" /> : input.type === "multi-select" ? <div style={{
                     display: "flex",
-                    gap: "8px",
+                    gap: "var(--button-gap)",
                     flexWrap: "wrap",
                     width: "100%"
                   }}>
@@ -172,7 +172,7 @@ export default function CustomerDetailsCard({
 
           <div className={`job-cards-create-customer-actions${isCustomerEditing ? " job-cards-create-customer-actions--editing" : ""}`} style={{
             display: "flex",
-            gap: "10px",
+            gap: "var(--button-gap)",
             justifyContent: "center",
             alignItems: "flex-start",
             flexWrap: "nowrap",
@@ -217,7 +217,7 @@ export default function CustomerDetailsCard({
           {emptySelectionLabel ? <span style={CUSTOMER_SELECTION_LABEL_STYLE}>{emptySelectionLabel}</span> : null}
           <div className="job-cards-create-customer-actions job-cards-create-customer-actions--empty" role="group" aria-label={emptySelectionLabel || "Customer actions"} style={{
           display: "flex",
-          gap: "10px",
+          gap: "var(--button-gap)",
           alignItems: "flex-start",
           minHeight: "var(--control-height)" // matches the Registration Number / Delivery Method row height
         }}>

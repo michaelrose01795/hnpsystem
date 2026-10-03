@@ -247,7 +247,7 @@ export default function NextActionPrompt() {
                 </div>
               )}
 
-              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", justifyContent: "flex-end" }}>
                 <button
                   type="button"
                   onClick={closePrompt}

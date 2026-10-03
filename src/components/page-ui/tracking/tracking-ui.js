@@ -80,7 +80,7 @@ export default function TrackingDashboardUi(props) {
       <DevLayoutSection sectionKey="tracking-page" parentKey="app-layout-page-card" sectionType="section-shell" backgroundToken="surface" className="app-page-stack" style={{
     display: "flex",
     flexDirection: "column",
-    gap: "20px",
+    gap: "var(--page-stack-gap)",
     width: "100%",
     maxWidth: "100%",
     minWidth: 0,
@@ -90,12 +90,12 @@ export default function TrackingDashboardUi(props) {
         <DevLayoutSection sectionKey="tracking-page-body" parentKey="tracking-page" sectionType="section-shell" style={{
       display: "flex",
       flexDirection: "column",
-      gap: isMobileView ? "10px" : "18px",
+      gap: "var(--page-stack-gap)",
       width: "100%",
       maxWidth: "100%",
       minWidth: 0
     }}>
-          <div style={{
+          <div className="app-content-toolbar" style={{
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
@@ -195,7 +195,7 @@ export default function TrackingDashboardUi(props) {
               </DevLayoutSection>
               <div style={{
           display: "flex",
-          gap: "var(--space-sm)",
+          gap: "var(--button-gap)",
           flexWrap: wrapHeaderControls ? "wrap" : "nowrap",
           alignItems: "center",
           justifyContent: "flex-end",

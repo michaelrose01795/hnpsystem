@@ -362,7 +362,7 @@ export default function DeliveryRoutePageUi(props) {
     }}>
           <div style={{
         display: "flex",
-        gap: "12px",
+        gap: "var(--button-gap)",
         flexWrap: "wrap"
       }}>
             <button type="button" onClick={handleStartRoute} disabled={actionLoading || !nextPlannedStop} style={{
@@ -536,7 +536,7 @@ export default function DeliveryRoutePageUi(props) {
                     <div style={{
               marginTop: "8px",
               display: "flex",
-              gap: "8px",
+              gap: "var(--button-gap)",
               flexWrap: "wrap"
             }}>
                       <button type="button" onClick={() => handleStatusUpdate([stop.id], "delivered")} style={{
@@ -637,7 +637,7 @@ export default function DeliveryRoutePageUi(props) {
               }} />
                         <div style={{
                 display: "flex",
-                gap: "8px",
+                gap: "var(--button-gap)",
                 flexWrap: "wrap"
               }}>
                           <button type="button" onClick={handleSaveNote} disabled={noteSaving} style={{

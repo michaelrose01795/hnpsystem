@@ -190,7 +190,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
             </ToolbarRow>
           </DevLayoutSection>
           <DevLayoutSection sectionKey="accounts-invoices-table-actions" sectionType="toolbar" parentKey="accounts-invoices-table-header">
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
               <Button type="button" variant="secondary" size="sm" onClick={() => onFilterChange({ ...filters, search: "", status: "", from: "", to: "" })}>Clear Filters</Button>
               <Button type="button" size="sm" onClick={onExport}>Export CSV</Button>
             </div>

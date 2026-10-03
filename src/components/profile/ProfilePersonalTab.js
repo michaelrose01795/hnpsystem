@@ -165,7 +165,7 @@ function PasscodeModal({
           </div>
         ) : null}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)", flexWrap: "wrap" }}>
           <Button type="button" variant="secondary" size="sm" pill onClick={onClose}>
             Close
           </Button>
@@ -329,7 +329,7 @@ function AddWidgetModal({
         <div
           style={{
             display: "grid",
-            gap: "8px",
+            gap: "var(--button-gap)",
             gridTemplateColumns: isMobile
               ? "minmax(0, 1fr)"
               : "repeat(auto-fill, minmax(min(100%, 200px), 1fr))",
@@ -683,7 +683,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            gap: "var(--button-gap)",
             flexWrap: "nowrap",
             justifyContent: "flex-end",
             overflowX: "auto",
@@ -844,7 +844,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
           }}
         >
           <div style={{ fontSize: "1.05rem", fontWeight: 700 }}>Personal dashboard locked</div>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", alignItems: "center" }}>
             <Button type="button" variant="primary" size="sm" pill onClick={() => setIsPasscodeModalOpen(true)}>
               {dashboard.isSetup ? "Unlock" : "Set up passcode"}
             </Button>

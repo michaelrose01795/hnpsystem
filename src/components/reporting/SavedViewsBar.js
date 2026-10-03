@@ -55,7 +55,7 @@ export default function SavedViewsBar({ targetRef, currentFilter, onApply }) {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 6,
+              gap: "var(--button-gap)",
               background: "var(--theme)",
               borderRadius: 999,
               padding: "4px 6px 4px 12px",

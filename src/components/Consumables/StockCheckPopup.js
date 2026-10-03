@@ -733,7 +733,7 @@ function StockCheckPopup({
           {(checked || isManager) && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", gap: "4px 8px", marginLeft: "auto", minWidth: 0 }}>
           {checked && (
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: "0 0 auto" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)", flex: "0 0 auto" }}>
               <button
                 type="button"
                 className="app-table-action-btn"
@@ -769,7 +769,7 @@ function StockCheckPopup({
             </div>
           )}
           {isManager && (
-            <div style={{ display: "flex", gap: "8px", flex: "0 0 auto" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", flex: "0 0 auto" }}>
               <Button
                 type="button"
                 variant="secondary"
@@ -794,7 +794,7 @@ function StockCheckPopup({
           )}
         </div>
         {isRenaming && (
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
             <input
               type="text"
               value={renameItemState.value}
@@ -1007,7 +1007,7 @@ function StockCheckPopup({
                               </td>
                               <td>
                                 {request.status === "pending" ? (
-                                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                                  <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
                                     <button
                                       className="app-table-action-btn"
                                       type="button"
@@ -1063,7 +1063,7 @@ function StockCheckPopup({
                   padding: "14px",
                 }}
               >
-                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "var(--button-gap)", alignItems: "center", flexWrap: "wrap" }}>
                   <SearchBar
                     value={stockSearchInput}
                     onChange={(event) => setStockSearchInput(event.target.value)}
@@ -1130,7 +1130,7 @@ function StockCheckPopup({
                       </Button>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
                       {searchSuggestions.map((item) => (
                         <Button
                           key={item.id}

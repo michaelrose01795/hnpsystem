@@ -165,7 +165,7 @@ function CaptureReviewModal({
           <div
             style={{
               display: "flex",
-              gap: "var(--space-2)",
+              gap: "var(--button-gap)",
               flex: "1 1 240px",
               minWidth: 0,
               overflowX: "auto",
@@ -226,7 +226,7 @@ function CaptureReviewModal({
           </div>
 
           {selected ? (
-            <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", flex: "0 0 auto" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", flex: "0 0 auto" }}>
               <a
                 href={selected.previewUrl}
                 target="_blank"

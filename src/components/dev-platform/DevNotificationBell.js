@@ -88,7 +88,7 @@ export default function DevNotificationBell() {
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-sm)" }}>
             <strong style={{ color: "var(--accentText)", fontSize: "var(--text-body)" }}>Notifications</strong>
-            <div style={{ display: "flex", gap: "6px" }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)" }}>
               {unread > 0 && (
                 <button type="button" onClick={markAllRead} className="app-btn app-btn--ghost app-btn--xs">
                   Mark all read

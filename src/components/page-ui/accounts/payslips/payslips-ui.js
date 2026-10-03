@@ -227,7 +227,7 @@ export default function PayslipsAdminPageUi(uiProps) {
                           </span>
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <div style={{ display: "inline-flex", gap: "8px" }}>
+                          <div style={{ display: "inline-flex", gap: "var(--button-gap)" }}>
                             <SymbolButton symbol="view" label="View payslip" onClick={() => setActivePayslip(slip)} />
                             <SymbolButton symbol="edit" label="Edit payslip" onClick={() => setEditingPayslip(slip)} />
                             <SymbolButton symbol="delete" label="Delete payslip" onClick={() => handleDelete(slip)} />

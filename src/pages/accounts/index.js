@@ -373,7 +373,7 @@ export default function AccountsListPage() {
                 </div>
                 <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>{formatShortDate(invoice.due_date || invoice.created_at)}</span>
               </div>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
                 {invoice.job_number &&
               <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/job-cards/${encodeURIComponent(invoice.job_number)}`)}>
                     Job {invoice.job_number}
@@ -414,7 +414,7 @@ export default function AccountsListPage() {
                 </div>
                 <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>{formatShortDate(record.invoice_date || record.created_at)}</span>
               </div>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
                 {record.goods_in_number &&
               <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/goods-in/${encodeURIComponent(record.goods_in_number)}`)}>
                     {record.goods_in_number}

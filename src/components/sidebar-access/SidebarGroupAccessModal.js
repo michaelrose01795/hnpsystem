@@ -154,7 +154,7 @@ export default function SidebarGroupAccessModal({
             style={{ alignItems: "center", justifyContent: "space-between", minHeight: 44 }}
           >
             <span style={{ minWidth: 0 }}>{item.label}</span>
-            <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: "var(--button-gap)", flexShrink: 0 }}>
               <Button type="button" size="sm" variant="ghost" disabled={readOnly || index === 0} onClick={() => moveItem(item.href, -1)}>
                 Up
               </Button>

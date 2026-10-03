@@ -84,7 +84,7 @@ const renderTrackingSummaryItem = (item) => (
     key={item.label}
     className="app-summary-item"
     radius="var(--radius-sm)"
-    padding="8px 10px"
+    padding="var(--section-card-padding)"
     gap="2px var(--space-sm)"
     style={{
       flexDirection: "row",
@@ -180,7 +180,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
     <div
       onClick={onClick}
       style={{
-        padding: "16px 18px",
+        padding: "var(--section-card-padding)",
         borderRadius: "var(--radius-sm)",
         border: "none",
         background: isHighlighted ? "rgba(var(--danger-rgb), 0.08)" : "var(--theme)",
@@ -200,7 +200,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
       {/* Job heading: the job number followed by the vehicle and customer details. */}
       <LayerSurface
         radius="var(--radius-sm)"
-        padding="10px 12px"
+        padding="var(--section-card-padding)"
         gap="4px"
         style={{ minWidth: 0 }}>
 
@@ -262,7 +262,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         {/* Key location: where the vehicle's keys are right now, or "Pending" if not yet recorded. */}
         <LayerSurface
           radius="var(--radius-sm)"
-          padding="10px 12px"
+          padding="var(--section-card-padding)"
           gap="2px"
           style={{ minWidth: 0 }}>
 
@@ -283,7 +283,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         {/* Car location: where the vehicle itself is currently parked. */}
         <LayerSurface
           radius="var(--radius-sm)"
-          padding="10px 12px"
+          padding="var(--section-card-padding)"
           gap="2px"
           style={{ minWidth: 0 }}>
 

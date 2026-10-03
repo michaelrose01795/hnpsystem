@@ -370,7 +370,7 @@ function ErrorPreviewPage() {
             </p>
           </div>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
             <button type="button" className="app-btn app-btn--secondary" onClick={triggerRuntime}>
               Uncaught runtime error
             </button>
@@ -413,7 +413,7 @@ function ErrorPreviewPage() {
             log, never to the screen.
           </p>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
             <Link href="/this-route-does-not-exist" className="app-btn app-btn--secondary">
               Visit a 404
             </Link>
@@ -443,7 +443,7 @@ function ErrorPreviewPage() {
               first, or it will simply crash again and demonstrate the crash-loop screen).
             </p>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
             <button
               type="button"
               className="app-btn app-btn--primary"

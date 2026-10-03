@@ -46,7 +46,7 @@ function SettingsContent() {
             } />
           
           <InputField label="Upload File" type="file" />
-          <div style={{ display: "flex", gap: "var(--space-3)" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)" }}>
             <Button type="button" variant="primary">
               Upload policy
             </Button>

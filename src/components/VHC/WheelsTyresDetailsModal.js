@@ -898,7 +898,7 @@ export default function WheelsTyresDetailsModal({
                   Complete all highlighted wheel sections to continue.
                 </span>
               ) : null}
-              <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "nowrap", flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: "var(--button-gap)", alignItems: "center", flexWrap: "nowrap", flexShrink: 0 }}>
                 {activeWheel !== "Spare" ? (
                   <>
                     <button
@@ -1067,7 +1067,7 @@ export default function WheelsTyresDetailsModal({
                       <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>
                         Space Saver Condition
                       </span>
-                      <div style={{ display: "flex", gap: "12px" }}>
+                      <div style={{ display: "flex", gap: "var(--button-gap)" }}>
                         {["Good", "Bad"].map((condition) => (
                           <button
                             key={condition}

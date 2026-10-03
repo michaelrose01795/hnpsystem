@@ -521,7 +521,7 @@ export default function StaffVehiclesCard({
             <div style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
               This will remove the vehicle and its repair history from your profile.
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)" }}>
               <button
                 type="button"
                 onClick={() => setConfirmRemoveId(null)}
@@ -656,7 +656,7 @@ export default function StaffVehiclesCard({
                     {vehicle.vin ? `VIN ${vehicle.vin}` : "VIN not recorded"}
                   </p>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)", flexWrap: "wrap", justifyContent: "flex-end" }}>
                   <span
                     style={{
                       padding: "var(--control-padding)",
@@ -789,7 +789,7 @@ export default function StaffVehiclesCard({
                       />
                     </label>
                   </div>
-                  <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end", gap: "12px", alignItems: "center" }}>
+                  <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)", alignItems: "center" }}>
                     <label style={{ ...historyLabelStyle, flexDirection: "row", alignItems: "center", gap: "8px", margin: 0 }}>
                       <input
                         type="checkbox"

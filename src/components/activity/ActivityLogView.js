@@ -355,7 +355,7 @@ export default function ActivityLogView() {
             placeholder="User, action or record"
           />
         </div>
-        <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
           <FilterButton activeCount={activeDropdownFilterCount} onClear={clearDropdownFilters} onApply={applyFilters}>
             <FilterField label="User" htmlFor="activity-filter-userId">
               <DropdownField
@@ -487,7 +487,7 @@ export default function ActivityLogView() {
               onChange={(event) => setRetention((current) => ({ ...current, session_timeout_minutes: event.target.value }))}
             />
           </div>
-          <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
             <Button type="button" busy={retentionBusy} onClick={saveRetention}>Save retention</Button>
             <Button type="button" variant="secondary" busy={retentionBusy} onClick={runMaintenance}>
               Run maintenance
@@ -644,7 +644,7 @@ export default function ActivityLogView() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: "var(--layout-card-gap)",
+            gap: "var(--button-gap)",
             flexWrap: "wrap",
           }}
         >

@@ -67,9 +67,10 @@ export function canPinNews(userRoles = []) {
 }
 
 /**
- * Can edit or delete somebody else's post. Deliberately narrower than
- * canPublishNews: a department manager owns their own posts, but only HR core
- * / all-access can rewrite another manager's announcement.
+ * Can delete somebody else's post. Deliberately narrower than canPublishNews:
+ * a department manager owns their own posts, but only HR core / all-access can
+ * remove another manager's announcement. Editing is author-only for everyone —
+ * see canEditPost.
  */
 export function canModerateNews(userRoles = []) {
   const roles = normalizeRoles(userRoles);
@@ -78,14 +79,14 @@ export function canModerateNews(userRoles = []) {
 }
 
 /**
- * Per-post edit rights: the author always keeps them; moderators have them
- * everywhere. System-generated posts are never editable by hand — they are
- * rewritten by the job that owns them.
+ * Per-post edit rights: only the person who created the post. Moderators
+ * (all-access / HR core) do NOT get to rewrite someone else's wording — the
+ * byline must stay true. System-generated posts are never editable by hand —
+ * they are rewritten by the job that owns them.
  */
 export function canEditPost(post, { userRoles = [], userId = null } = {}) {
   if (!post) return false;
   if (post.source === "system") return false;
-  if (canModerateNews(userRoles)) return true;
   if (!userId || post.createdBy == null) return false;
   return String(post.createdBy) === String(userId);
 }

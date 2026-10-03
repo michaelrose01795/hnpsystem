@@ -301,7 +301,7 @@ export default function JobCardDetailPageUi(props) {
             </div>
             <div style={{
             display: "flex",
-            gap: "8px",
+            gap: "var(--button-gap)",
             alignItems: "center",
             flexWrap: "wrap",
             flexShrink: 0

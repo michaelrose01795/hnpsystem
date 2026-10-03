@@ -81,7 +81,7 @@ function BlockHeading({ icon, title, action }) {
 // plus an optional trailing "message" button.
 function Row({ tone, icon, label, subtitle, href, onNavigate, messageHref, messageLabel }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)" }}>
       <button
         type="button"
         onClick={() => href && onNavigate(href)}
@@ -312,7 +312,7 @@ export default function TeamPanel({
                 ) : null
               }
             />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
               {selectableStates().map((state) => {
                 const active = selfAvailability.effectiveId === state.id;
                 return (

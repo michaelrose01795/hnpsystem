@@ -205,7 +205,7 @@ function WarrantyLinkPanel({
           {linkError && (
             <p style={{ margin: 0, fontSize: "12px", color: "var(--danger)" }}>{linkError}</p>
           )}
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
             <button
               type="button"
               className="app-btn app-btn--primary"
@@ -698,7 +698,7 @@ function WarrantyRequestsTable({
               />
             </div>
           </div>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
             <button
               type="button"
               className="app-btn app-btn--primary"
@@ -752,7 +752,7 @@ function WarrantyRequestsTable({
                     <td>{requesterName(request)}</td>
                     {canEdit && (
                       <td>
-                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
                           {status !== "approved" && (
                             <button
                               type="button"

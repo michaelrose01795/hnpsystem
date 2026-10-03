@@ -150,7 +150,7 @@ export default function AccountTable({
 
                   })}
                   <td style={{ textAlign: "right" }}>
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)", flexWrap: "wrap" }}>
                       {/* In-row actions use the canonical Button: secondary for the
                           read-only View, primary for Edit. */}
                       <Button

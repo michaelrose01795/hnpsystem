@@ -47,7 +47,7 @@ export default function PresentationControls({ onExport, exportBusy }) {
         backdropFilter: "blur(10px)",
       }}
     >
-      <div style={{ display: "flex", gap: 8, minWidth: 0, flex: "0 0 auto" }}>
+      <div style={{ display: "flex", gap: "var(--button-gap)", minWidth: 0, flex: "0 0 auto" }}>
         <button
           type="button"
           className="app-btn app-btn--ghost app-btn--sm"
@@ -84,7 +84,7 @@ export default function PresentationControls({ onExport, exportBusy }) {
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, minWidth: 0, flex: "0 0 auto" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)", minWidth: 0, flex: "0 0 auto" }}>
         <button
           type="button"
           className="app-btn app-btn--ghost app-btn--sm"

@@ -101,13 +101,13 @@ html.staff-scope .app-news-filters__label {
 html.staff-scope .app-news-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--page-stack-gap);
   width: 100%;
   min-width: 0;
 }
 
 html.staff-scope .app-news-list--compact {
-  gap: var(--space-sm);
+  gap: var(--page-stack-gap);
 }
 
 html.staff-scope .app-news-group-heading {
@@ -954,7 +954,22 @@ html.staff-scope .app-news-revision__body {
    starts 10px beneath it — the same 10px rhythm as the phone gutter. */
 @media (max-width: 640px) and (orientation: portrait) {
   html.staff-scope .app-news {
-    row-gap: var(--space-2);
+    row-gap: var(--page-stack-gap);
+  }
+
+  /* The title takes the whole line on a phone, so the badge row always wraps
+     beneath it. Right-aligned there it left a ragged gap on the left; instead
+     it spans the card and starts at the left edge, keeping every badge on one
+     line until they genuinely run out of room. */
+  html.staff-scope .app-news-card__head > .app-news-badge-row {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+
+  /* A badge moves to the next line whole rather than breaking its own label. */
+  html.staff-scope .app-news-badge-row > .app-badge {
+    white-space: nowrap;
   }
 }
 

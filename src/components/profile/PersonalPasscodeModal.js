@@ -113,7 +113,7 @@ export default function PersonalPasscodeModal({
           </div>
         ) : null}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)", flexWrap: "wrap" }}>
           <Button type="button" variant="secondary" size="sm" pill onClick={onClose}>
             Close
           </Button>

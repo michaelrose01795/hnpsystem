@@ -209,7 +209,7 @@ function ContactActionPopup({ action, contact = {}, onClose }) {
         </span>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--button-gap)" }}>
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
@@ -504,7 +504,7 @@ function CustomerContactSection({
           </Button>
         )}
         {canEdit && editing && (
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)" }}>
             <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={customerSaving}>
               Cancel
             </Button>
@@ -638,7 +638,7 @@ function CustomerContactSection({
           <div
             style={{
               display: "grid",
-              gap: "10px",
+              gap: "var(--button-gap)",
               gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
             }}
           >

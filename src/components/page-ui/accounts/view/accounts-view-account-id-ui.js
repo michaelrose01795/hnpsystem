@@ -111,7 +111,7 @@ export default function ViewAccountPageUi(props) {
                   <span className={`app-badge ${statusToneClass(account.status)}`}>{account.status}</span>
                   <div style={{
                 display: "flex",
-                gap: "10px",
+                gap: "var(--button-gap)",
                 flexWrap: "wrap",
                 marginLeft: "auto"
               }}>

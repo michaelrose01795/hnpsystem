@@ -463,7 +463,7 @@ function LeaveRequestModal({
           {error && <div style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>}
           {!error && submitError ? <div style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{submitError}</div> : null}
 
-          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
+          <div style={{ display: "flex", gap: "var(--button-gap)", justifyContent: "flex-end", marginTop: "4px" }}>
             {mode === "edit" && onRemove ? (
               <Button
                 type="button"
@@ -672,7 +672,7 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null, initialM
           <div>
             <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>Overtime</h3>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)" }}>
             {mode === "single" ? (
               <Button type="submit" form="manual-overtime-form" variant="primary" size="sm" disabled={isSaving}>
                 {isSaving ? "Saving..." : "Add overtime"}
@@ -1026,7 +1026,7 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
     >
       {/* Quick preset chips — only shown in add mode */}
       {formMode === "add" && (
-        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap" }}>
           {PRESET_CHIPS.map((preset) => (
             <button
               key={preset.label}
@@ -1049,7 +1049,7 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
       )}
 
       {/* Day selection — Mon to Sat as toggle buttons */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--button-gap)" }}>
         {RECURRING_DAY_OPTIONS.map((dow) => (
           <button
             key={dow}
@@ -1071,7 +1071,7 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
       </div>
 
       {/* Recurrence selector — Every week / Every other week */}
-      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: "var(--button-gap)", flexWrap: "wrap", alignItems: "center" }}>
         <button
           type="button"
           onClick={() => setFormData((prev) => ({ ...prev, patternType: "weekly", weekParity: null }))}
@@ -1188,7 +1188,7 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
       )}
 
       {/* Form actions — Save / Cancel / Delete (when editing) */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--button-gap)" }}>
         <button
           type="button"
           onClick={handleSaveForm}
@@ -2373,7 +2373,7 @@ export function ProfileWorkTab({
                       <div
                         style={{
                           display: "grid",
-                          gap: "10px",
+                          gap: "var(--button-gap)",
                           padding: "12px 14px",
                           borderRadius: "var(--radius-md)",
                           background: "var(--theme)",
@@ -2543,7 +2543,7 @@ export function ProfileWorkTab({
                         </label>
                       </div>
                       {ecError && <div style={{ color: "var(--danger)", fontSize: "0.82rem" }}>{ecError}</div>}
-                      <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                      <div style={{ display: "flex", gap: "var(--button-gap)", justifyContent: "flex-end" }}>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setEcEditing(false)}>
                           Cancel
                         </Button>

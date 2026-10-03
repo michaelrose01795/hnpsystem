@@ -93,7 +93,7 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
         ))}
       </section>
       {!readOnly && (
-        <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: "var(--button-gap)", justifyContent: "flex-end" }}>
           {onCancel && (
             <Button type="button" variant="secondary" onClick={onCancel}>
               Cancel

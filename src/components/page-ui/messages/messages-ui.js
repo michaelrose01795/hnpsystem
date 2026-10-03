@@ -39,6 +39,11 @@ import {
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
+// The three panels open 10px from their top edge so the list toolbar, the
+// conversation header and the details head share one row, and the rules
+// beneath them line up (see .app-msg-divider in the messages family).
+const PANEL_PADDING = "var(--space-2) var(--section-card-padding) var(--section-card-padding)";
+
 const NEW_CONVERSATION_MODES = [
   { value: "direct", label: "Direct" },
   { value: "group", label: "Group" },
@@ -495,7 +500,7 @@ function CommandHelpModal({ help }) {
         const commands = help.commands.filter((cmd) => cmd.group === group.value);
         if (!commands.length) return null;
         return (
-          <div key={group.value} style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+          <div key={group.value} style={{ display: "flex", flexDirection: "column", gap: "var(--button-gap)" }}>
             <h4 style={{ margin: 0 }}>{group.label}</h4>
             {commands.map((cmd) => (
               <Button
@@ -658,6 +663,7 @@ export default function MessagesPageUi(props) {
               <LayerTheme
                 as="aside"
                 className="app-msg__panel app-msg__list"
+                padding={PANEL_PADDING}
                 sectionKey="messages-threads-panel"
                 parentKey="messages-page-shell"
                 sectionType="section-shell"
@@ -674,6 +680,7 @@ export default function MessagesPageUi(props) {
               <LayerTheme
                 as="section"
                 className="app-msg__panel app-msg__conversation app-msg-convo"
+                padding={PANEL_PADDING}
                 sectionKey="messages-conversation-panel"
                 parentKey="messages-page-shell"
                 sectionType="section-shell"
@@ -748,6 +755,7 @@ export default function MessagesPageUi(props) {
               <LayerTheme
                 as="aside"
                 className="app-msg__panel app-msg__details"
+                padding={PANEL_PADDING}
                 sectionKey="messages-details-panel"
                 parentKey="messages-page-shell"
                 sectionType="section-shell"

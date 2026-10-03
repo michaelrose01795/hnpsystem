@@ -106,7 +106,7 @@ export default function CompanyAccountDetailPageUi(props) {
               {account && mode !== "edit" && permissions.canEditAccount &&
                 <div style={{
                   display: "flex",
-                  gap: "10px",
+                  gap: "var(--button-gap)",
                   flexWrap: "wrap",
                   justifyContent: "flex-end",
                   justifySelf: "end"
